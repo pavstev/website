@@ -1,0 +1,68 @@
+/*
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: DENY
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/portraits/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/favicon.ico
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/favicon-32x32.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/android-chrome-192x192.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/android-chrome-512x512.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/og-image.jpg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/manifest.webmanifest
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/resume.pdf
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/llms.txt
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/ee32ef309c036fb4c6b716d08e9bf922.txt
+  ! Content-Security-Policy
+  ! X-Frame-Options

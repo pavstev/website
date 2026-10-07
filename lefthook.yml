@@ -1,0 +1,9 @@
+pre-commit:
+  skip:
+    - merge
+    - rebase
+  commands:
+    verify:
+      run: pnpm verify
+      stage_fixed: true
+      fail_text: "Verification failed: run pnpm verify for details."
