@@ -24,7 +24,7 @@ pnpm build     # next build → ./dist
 pnpm preview   # serve ./dist on port 4321
 pnpm verify    # prettier + eslint --fix + tsc + build + knip  ← REQUIRED before done (also the pre-commit hook)
 pnpm icons     # re-extract src/lib/icon-data.ts
-pnpm profile   # build the GitHub profile files into ./.profile-out
+pnpm profile:build  # build the GitHub profile files into ./.profile-out
 pnpm profile:check  # profile tests + build + validation (also run in CI)
 ```
 

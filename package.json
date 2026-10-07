@@ -10,7 +10,7 @@
     "icons": "node scripts/generate-icon-data.ts",
     "prepare": "lefthook install",
     "preview": "serve dist -l 4321",
-    "profile": "node src/profile/cli.ts",
+    "profile:build": "node src/profile/cli.ts",
     "profile:check": "node --test \"src/profile/**/*.test.ts\" && node src/profile/cli.ts --check",
     "verify": "prettier --write . --cache --log-level=warn && eslint . --fix --max-warnings=0 --cache && tsc --noEmit && next build && knip"
   },

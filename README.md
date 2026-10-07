@@ -61,7 +61,7 @@ The site runs at <http://localhost:4321>. The repo strip calls the GitHub API at
 | `pnpm preview`       | Serves `dist/` on port 4321                                    |
 | `pnpm verify`        | Formats, lints, type-checks, builds and checks for unused code |
 | `pnpm icons`         | Rebuilds `src/lib/icon-data.ts` from the icons used in `src/`  |
-| `pnpm profile`       | Builds the GitHub profile files into `.profile-out/`           |
+| `pnpm profile:build` | Builds the GitHub profile files into `.profile-out/`           |
 | `pnpm profile:check` | Runs the profile tests, builds the files and checks them       |
 
 `pnpm verify` also runs as the pre-commit hook (lefthook) and in GitHub Actions. Dependency settings live in `pnpm-workspace.yaml`: an allowlist for build scripts, a one-day minimum release age and a trust policy that blocks package downgrades, with one exact, documented exception.
@@ -101,11 +101,11 @@ flowchart LR
 ### Run it
 
 ```bash
-pnpm profile
+pnpm profile:build
 pnpm profile:check
 ```
 
-`pnpm profile` writes the files to `.profile-out/`. That folder is not committed. The output is the same every time for the same input: no dates, no random values. `pnpm profile:check` runs the tests, builds the files and fails when something is wrong: a missing image, an image without alt text, an empty section, a link that is not https, or a website or résumé URL that does not answer. CI runs it on every pull request.
+`pnpm profile:build` writes the files to `.profile-out/`. That folder is not committed. The output is the same every time for the same input: no dates, no random values. `pnpm profile:check` runs the tests, builds the files and fails when something is wrong: a missing image, an image without alt text, an empty section, a link that is not https, or a website or résumé URL that does not answer. CI runs it on every pull request.
 
 ### How the sync works
 

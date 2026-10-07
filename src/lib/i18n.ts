@@ -52,7 +52,7 @@ export const en = {
       "This repository is generated. Do not edit it by hand: a GitHub Action overwrites every file here.",
     contributingLayout: "Layout, header and icons: `src/profile/`",
     contributingPreview:
-      "Run `pnpm profile` in that repository to preview the result in `.profile-out/`.",
+      "Run `pnpm profile:build` in that repository to preview the result in `.profile-out/`.",
     contributingSource:
       "To change anything, edit the source in [pavstev/website](https://github.com/pavstev/website):",
     contributingStrings: "Text and labels: `src/lib/i18n.ts`",
