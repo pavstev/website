@@ -26,4 +26,7 @@ jobs:
       - run: pnpm verify
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: pnpm profile:check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: git diff --exit-code
