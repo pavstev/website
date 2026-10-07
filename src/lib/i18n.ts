@@ -46,6 +46,22 @@ export const en = {
     local:
       "This site sets no cookies, stores nothing on your device and loads nothing from other companies.",
   },
+  profile: {
+    contributingContent: "Bio, links and location: `src/lib/personal.ts`",
+    contributingIntro:
+      "This repository is generated. Do not edit it by hand: a GitHub Action overwrites every file here.",
+    contributingLayout: "Layout, header and icons: `src/profile/`",
+    contributingPreview:
+      "Run `pnpm profile` in that repository to preview the result in `.profile-out/`.",
+    contributingSource:
+      "To change anything, edit the source in [pavstev/website](https://github.com/pavstev/website):",
+    contributingStrings: "Text and labels: `src/lib/i18n.ts`",
+    contributingTitle: "Contributing",
+    generated:
+      "Generated from pavstev/website (src/profile). Do not edit here.",
+    resume: "Résumé (PDF)",
+    website: "Website",
+  },
   repos: {
     countOne: "{count} repository",
     countOther: "{count} repositories",

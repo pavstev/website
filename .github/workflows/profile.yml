@@ -1,0 +1,110 @@
+name: Profile
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/profile.yml
+      - .nvmrc
+      - package.json
+      - pnpm-lock.yaml
+      - public/fonts/inter-*
+      - src/lib/github.ts
+      - src/lib/i18n.ts
+      - src/lib/icon-data.ts
+      - src/lib/personal.ts
+      - src/lib/theme.ts
+      - src/profile/**
+      - tsconfig.json
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        default: false
+        description: Print the diff and skip the push
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  cancel-in-progress: false
+  group: profile-sync
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check the deploy key
+        env:
+          PROFILE_DEPLOY_KEY: ${{ secrets.PROFILE_DEPLOY_KEY }}
+        run: |
+          if [ -z "$PROFILE_DEPLOY_KEY" ]; then
+            echo "::error::The secret PROFILE_DEPLOY_KEY is not set. See the GitHub profile section in README.md."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          cache: pnpm
+          node-version-file: .nvmrc
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm profile:check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: pnpm profile
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: mirror
+          repository: pavstev/pavstev
+          ssh-key: ${{ secrets.PROFILE_DEPLOY_KEY }}
+      - name: Replace the mirror with the new output
+        run: |
+          find mirror -mindepth 1 -maxdepth 1 -not -name .git -exec rm -rf {} +
+          cp -R .profile-out/. mirror/
+      - name: Find what changed
+        id: diff
+        working-directory: mirror
+        run: |
+          git add --all
+          {
+            echo "## Profile sync"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing changed. The profile is already up to date."
+            echo "Nothing changed. The profile is already up to date." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "Changed files:"
+            echo
+            echo '```'
+            git diff --cached --stat
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          git diff --cached --stat
+      - name: Print the diff (dry run)
+        if: inputs.dry_run && steps.diff.outputs.changed == 'true'
+        working-directory: mirror
+        run: |
+          git diff --cached -- . ':!assets/header.svg'
+          echo "Dry run: nothing was pushed." >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit and push
+        if: github.ref == 'refs/heads/main' && !inputs.dry_run && steps.diff.outputs.changed == 'true'
+        working-directory: mirror
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: sync profile from pavstev/website@${SOURCE_SHA::7}" -m "Source: https://github.com/pavstev/website/commit/${SOURCE_SHA}"
+          git push origin HEAD:main
+          echo "Pushed the new profile." >> "$GITHUB_STEP_SUMMARY"

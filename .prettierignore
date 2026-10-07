@@ -1,3 +1,4 @@
 .next
+.profile-out
 dist
 pnpm-lock.yaml
