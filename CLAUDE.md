@@ -11,8 +11,9 @@ One static page: a contact card over a WebGL sky, plus a plain 404.
 - **Repo strip:** `src/lib/github.ts` fetches public repos at build time. Set the optional `GITHUB_TOKEN` build variable to lift the 60 requests per hour limit. Any non-200 answer fails the build on purpose, so a broken strip never ships.
 - **Static files:** `public/resume.pdf` is committed and replaced by hand when the CV changes (the button downloads it as `Stevan_Pavlovic_Resume.pdf`). Portraits (`public/portraits/`), favicons and `og-image.jpg` (1200x630: the sky, the portrait, name, title, Vienna) are committed too. Nothing is generated at build time.
 - **Content:** `src/lib/personal.ts` (name, title, summary, links); all UI strings in `src/lib/i18n.ts`.
-- **Pkg mgr:** pnpm 12 (`packageManager`), Node 24 (`.nvmrc`), both enforced by `engines` with `engineStrict`. All pnpm settings live in `pnpm-workspace.yaml`: the build-script allowlist (`allowBuilds`, `strictDepBuilds`), a one-day `minimumReleaseAge`, `trustPolicy: no-downgrade` with one exact `trustPolicyExclude` entry (`semver@6.3.1`, a 2023 security backport without provenance; evidence in the commit that added it), `blockExoticSubdeps` and `verifyDepsBeforeRun: install` (scripts install first when the lockfile changed). Keep `package.json` scripts to the six that exist. Add a trust exception only as an exact `name@version` with checked evidence, never by turning the policy off.
-- **CI:** `.github/workflows/ci.yml` runs `pnpm verify` on pushes and pull requests and fails when it would change files. Dependabot opens grouped weekly updates.
+- **Pkg mgr:** pnpm 12 (`packageManager`), Node 24 (`.nvmrc`), both enforced by `engines` with `engineStrict`. All pnpm settings live in `pnpm-workspace.yaml`: the build-script allowlist (`allowBuilds`, `strictDepBuilds`), a one-day `minimumReleaseAge`, `trustPolicy: no-downgrade` with one exact `trustPolicyExclude` entry (`semver@6.3.1`, a 2023 security backport without provenance; evidence in the commit that added it), `blockExoticSubdeps` and `verifyDepsBeforeRun: install` (scripts install first when the lockfile changed). Keep `package.json` scripts to the eight that exist. Add a trust exception only as an exact `name@version` with checked evidence, never by turning the policy off.
+- **Profile mirror:** `src/profile/` builds the README and images for `pavstev/pavstev` from `personal.ts`, `i18n.ts`, `icon-data.ts`, `theme.ts` and the same `getRepos` call as the site. `render.ts` is pure (data in, `{ path, contents }[]` out, deterministic); `cli.ts` is the only file that reads or writes. Output goes to the gitignored `.profile-out/`. `.github/workflows/profile.yml` pushes it to `pavstev/pavstev` with the deploy key secret `PROFILE_DEPLOY_KEY`. The code never reaches the Next.js bundle (nothing in `src/app` imports it). The header is a generated SVG with Inter embedded; keep it under 120 KB.
+- **CI:** `.github/workflows/ci.yml` runs `pnpm verify` and `pnpm profile:check` on pushes and pull requests and fails when it would change files. Dependabot opens grouped weekly updates.
 - **Deploy:** every push to `main` makes Cloudflare build the repo and publish `dist` as Workers static assets (`wrangler.jsonc`, `404.html` for unknown paths). Nobody deploys by hand: do not run `wrangler deploy` or `pnpm deploy`. Push to `main` only when asked and after `pnpm verify` passes. `public/_headers`: immutable for `/_next/static/*` and `/fonts/*`, one day plus stale-while-revalidate for `/portraits/*`, the favicons, the manifest icons and `og-image.jpg`; HTML and `resume.pdf` revalidate every time. `/*` carries the security headers and a CSP (`'self'` only; scripts and styles need `'unsafe-inline'` for Next's inline payload and style attributes); every non-HTML rule detaches the CSP and `X-Frame-Options` with `! Header-Name`, so they reach pages only. Keep the rules disjoint (Cloudflare joins duplicate headers with a comma).
 
 ## Commands
@@ -23,6 +24,8 @@ pnpm build     # next build → ./dist
 pnpm preview   # serve ./dist on port 4321
 pnpm verify    # prettier + eslint --fix + tsc + build + knip  ← REQUIRED before done (also the pre-commit hook)
 pnpm icons     # re-extract src/lib/icon-data.ts
+pnpm profile   # build the GitHub profile files into ./.profile-out
+pnpm profile:check  # profile tests + build + validation (also run in CI)
 ```
 
 ## Non-negotiables
@@ -34,7 +37,7 @@ pnpm icons     # re-extract src/lib/icon-data.ts
 - **No hardcoded hex/hsl** outside `globals.css` or `src/lib/theme.ts`.
 - **No inline UI strings** → `src/lib/i18n.ts`.
 - **Tailwind v4 paren syntax** (`bg-(--surface)`) over bracket syntax.
-- **Never edit generated files** in `dist/`. **Never commit `.env`.** **Never deploy by hand.**
+- **Never edit generated files** in `dist/`. **Never commit `.env`.** **Never deploy by hand.** **Never edit `pavstev/pavstev` by hand** (the Action overwrites it).
 
 ## Code Style
 
@@ -51,6 +54,7 @@ src/lib/          personal, i18n, theme (hex for theme-color, sky palette, repo 
                   pill-aurora, cursor, webgl, icon-data
 src/styles/       globals.css (tokens, one dark palette + print, type utilities, card styles)
 public/           resume.pdf, portraits/, fonts/, favicons, og-image.jpg, manifest.webmanifest, _headers
+src/profile/      types, text, icons, header, readme, render (pure), validate, cli, tests
 scripts/          generate-icon-data.ts (pnpm icons, run by Node's type stripping)
 ```
 
