@@ -12,6 +12,14 @@ const skyTokens = {
 
 type SkyTokenName = keyof typeof skyTokens;
 
+export const profilePalette = {
+  background: designTokens.background,
+  glyph: "#C3C7D6",
+  muted: "#8B91A7",
+  ring: "#E8EAF2",
+  sky: skyTokens,
+} as const;
+
 export const skyRgb = (name: SkyTokenName): [number, number, number] => {
   const value = Number.parseInt(skyTokens[name].slice(1), 16);
   return [

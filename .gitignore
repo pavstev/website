@@ -4,6 +4,7 @@
 .env*
 .eslintcache
 .next/
+.profile-out/
 .superpowers/
 .wrangler/
 dist/

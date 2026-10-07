@@ -63,6 +63,7 @@ const eslintConfig = defineConfig([
   globalIgnores([
     ".claude/skills/**",
     ".next/**",
+    ".profile-out/**",
     ".superpowers/**",
     "dist/**",
   ]),
@@ -231,8 +232,12 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["scripts/**"],
+    files: ["scripts/**", "src/profile/cli.ts"],
     rules: { "security/detect-non-literal-fs-filename": "off" },
+  },
+  {
+    files: ["**/*.test.ts"],
+    rules: { "@typescript-eslint/no-floating-promises": "off" },
   },
   ...markdown.configs.recommended,
   {
