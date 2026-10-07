@@ -26,7 +26,7 @@ export const Icon = ({
       className={`inline-block shrink-0 ${className}`.trim()}
       dangerouslySetInnerHTML={{ __html: data.body }}
       height={size}
-      viewBox={`0 0 ${data.width} ${data.height}`}
+      viewBox={`0 0 ${String(data.width)} ${String(data.height)}`}
       width={size}
     />
   );

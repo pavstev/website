@@ -1,11 +1,14 @@
-import { getRepos } from "@/lib/github";
+import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
 import { personalData, plainName } from "@/lib/personal";
 
 export const dynamic = "force-static";
 
 export const GET = async (): Promise<Response> => {
-  const repos = await getRepos(personalData.githubHandle);
+  const [repos, contact] = await Promise.all([
+    getRepos(personalData.githubHandle),
+    getContact(personalData.githubHandle),
+  ]);
   const body = [
     `# ${personalData.name}`,
     "",
@@ -30,8 +33,8 @@ export const GET = async (): Promise<Response> => {
     `- [${en.llms.website}](${personalData.website}/)`,
     `- [${en.llms.resume}](${personalData.website}/resume.pdf)`,
     `- [${en.llms.github}](${personalData.github})`,
-    `- [${en.llms.linkedin}](${personalData.linkedin})`,
-    `- [${en.llms.email}](mailto:${personalData.email})`,
+    `- [${en.llms.linkedin}](${contact.linkedin})`,
+    `- [${en.llms.email}](mailto:${contact.email})`,
     "",
   ].join("\n");
   return new Response(body, {

@@ -19,7 +19,12 @@ const iconPattern = /(?:circle-flags|lucide|simple-icons):[a-z0-9-]+/g;
 
 const sourceFiles = (dir: string): string[] =>
   readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name))
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        /\.tsx?$/.test(entry.name) &&
+        entry.name !== "icon-data.ts"
+    )
     .map((entry) => path.join(entry.parentPath, entry.name));
 
 const usedIcons = (): string[] => {

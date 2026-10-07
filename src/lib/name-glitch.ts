@@ -1,14 +1,16 @@
 import { reducedMotionQuery } from "@/lib/media";
+import { createNameTear } from "@/lib/name-tear";
 
 const introEndMs = 5600;
 const firstGapMs = 2400;
 const everyMs = 8000;
 const restAfterMs = 30_000;
-const burstMs = 720;
+const burstMs = 1900;
 const wakeEvents = ["pointermove", "pointerdown", "keydown", "wheel", "scroll"];
 
 export const initNameGlitch = (name: HTMLElement): (() => void) => {
   const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const tear = createNameTear(name);
   let lastInput = performance.now();
   let tick: ReturnType<typeof setTimeout> | undefined;
   let settle: ReturnType<typeof setTimeout> | undefined;
@@ -25,11 +27,12 @@ export const initNameGlitch = (name: HTMLElement): (() => void) => {
       performance.now() - lastInput > restAfterMs
     )
       return;
-    name.dataset.tuned = "";
-    name.dataset.glitch = "";
+    name.dataset["tuned"] = "";
+    name.dataset["glitch"] = "";
+    tear.play();
     globalThis.clearTimeout(settle);
     settle = globalThis.setTimeout(() => {
-      delete name.dataset.glitch;
+      delete name.dataset["glitch"];
     }, burstMs);
   };
 
@@ -47,6 +50,7 @@ export const initNameGlitch = (name: HTMLElement): (() => void) => {
     }
     globalThis.clearTimeout(tick);
     globalThis.clearTimeout(settle);
-    delete name.dataset.glitch;
+    tear.dispose();
+    delete name.dataset["glitch"];
   };
 };

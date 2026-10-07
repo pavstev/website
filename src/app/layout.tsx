@@ -1,9 +1,13 @@
-import "@/styles/globals.css";
 import type { Metadata, Viewport } from "next";
+
+import "@/styles/globals.css";
 import type { ReactElement, ReactNode } from "react";
+
+import Script from "next/script";
 
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
+import { privacyAckScript } from "@/lib/privacy-ack";
 import { designTokens } from "@/lib/theme";
 
 export const viewport: Viewport = {
@@ -61,11 +65,16 @@ export default function RootLayout({
   children,
 }: RootLayoutProps): ReactElement {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link href="/sitemap.xml" rel="sitemap" />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Script id="privacy-ack" strategy="beforeInteractive">
+          {privacyAckScript}
+        </Script>
+      </body>
     </html>
   );
 }

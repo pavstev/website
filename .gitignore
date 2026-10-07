@@ -4,9 +4,9 @@
 .env*
 .eslintcache
 .next/
+.profile-out/
 .superpowers/
 .wrangler/
 dist/
-lefthook-local.yml
 next-env.d.ts
 node_modules/

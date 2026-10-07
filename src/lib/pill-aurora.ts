@@ -82,8 +82,8 @@ export const initPillAurora = (
 
   const sync = (): void => {
     const active = (hovered || focused) && !("busy" in pill.dataset);
-    if (active) pill.dataset.aurora = "";
-    else delete pill.dataset.aurora;
+    if (active) pill.dataset["aurora"] = "";
+    else delete pill.dataset["aurora"];
     const current = active ? ensure() : animation;
     if (!current) return;
     goal = active ? 1 : 0;
@@ -154,6 +154,6 @@ export const initPillAurora = (
     animation?.cancel();
     animation = null;
     clearBias();
-    delete pill.dataset.aurora;
+    delete pill.dataset["aurora"];
   };
 };

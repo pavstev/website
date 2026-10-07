@@ -3,9 +3,13 @@ import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
 const edgeGap = 8;
 const tipGap = 10;
 
-interface ContactItem {
+interface AimTarget {
   angle: number;
   center: null | { x: number; y: number };
+  link: HTMLElement;
+}
+
+interface ContactItem extends AimTarget {
   link: HTMLAnchorElement;
   root: HTMLElement;
   tip: HTMLElement;
@@ -23,14 +27,14 @@ const placeTip = (
   avoid: Element[]
 ): void => {
   tip.style.setProperty("--tip-shift", "0px");
-  delete tip.dataset.flip;
+  delete tip.dataset["flip"];
   const rect = tip.getBoundingClientRect();
   const root = document.documentElement;
   const limit = root.clientWidth - edgeGap;
   let shift = 0;
   if (rect.left < edgeGap) shift = edgeGap - rect.left;
   else if (rect.right > limit) shift = limit - rect.right;
-  tip.style.setProperty("--tip-shift", `${Math.round(shift)}px`);
+  tip.style.setProperty("--tip-shift", `${String(Math.round(shift))}px`);
   const blocked = avoid.some((element) =>
     overlaps(rect, element.getBoundingClientRect(), shift)
   );
@@ -41,7 +45,7 @@ const placeTip = (
     (anchor.getBoundingClientRect().bottom + tipGap + rect.height);
   const flip =
     roomAbove < 0 ? roomBelow > roomAbove : blocked && roomBelow >= 0;
-  if (flip) tip.dataset.flip = "";
+  if (flip) tip.dataset["flip"] = "";
 };
 
 export const initContactLinks = (list: HTMLElement): (() => void) => {
@@ -55,6 +59,11 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
       items.push({ angle: 315, center: null, link, root, tip });
     }
   }
+  const pill = list.parentElement?.querySelector<HTMLElement>(".download-pill");
+  const targets: AimTarget[] = [
+    ...items,
+    ...(pill ? [{ angle: 315, center: null, link: pill }] : []),
+  ];
   const avoid = [
     ...(list.parentElement?.querySelectorAll(":scope > :is(a, button)") ?? []),
     ...(list
@@ -79,18 +88,18 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
       if ((event as PointerEvent).pointerType !== "mouse" || !fine.matches) {
         return;
       }
-      delete item.root.dataset.dismissed;
+      delete item.root.dataset["dismissed"];
       placeTip(item.tip, item.link, avoid);
     });
     on(item.root, "pointerleave", () => {
-      if (!item.link.matches(":focus")) delete item.root.dataset.dismissed;
+      if (!item.link.matches(":focus")) delete item.root.dataset["dismissed"];
     });
     on(item.link, "focus", () => {
-      delete item.root.dataset.dismissed;
+      delete item.root.dataset["dismissed"];
       placeTip(item.tip, item.link, avoid);
     });
     on(item.link, "blur", () => {
-      if (!item.root.matches(":hover")) delete item.root.dataset.dismissed;
+      if (!item.root.matches(":hover")) delete item.root.dataset["dismissed"];
     });
   }
 
@@ -99,7 +108,7 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
 
   const paintAim = (): void => {
     aimFrame = 0;
-    for (const item of items) {
+    for (const item of targets) {
       if (!item.center) {
         const box = item.link.getBoundingClientRect();
         item.center = {
@@ -117,7 +126,7 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
   };
 
   const forgetCenters = (): void => {
-    for (const item of items) item.center = null;
+    for (const item of targets) item.center = null;
   };
 
   on(globalThis, "pointermove", (event) => {
@@ -136,8 +145,8 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
     if (resizeFrame) return;
     resizeFrame = requestAnimationFrame(() => {
       resizeFrame = 0;
+      for (const item of targets) item.center = null;
       for (const item of items) {
-        item.center = null;
         if (item.root.matches(":hover") || item.link.matches(":focus")) {
           placeTip(item.tip, item.link, avoid);
         }
@@ -149,7 +158,7 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
     if ((event as KeyboardEvent).key !== "Escape") return;
     for (const item of items) {
       if (item.root.matches(":hover") || item.link.matches(":focus-visible")) {
-        item.root.dataset.dismissed = "";
+        item.root.dataset["dismissed"] = "";
       }
     }
   });
@@ -158,9 +167,7 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
     if (resizeFrame) cancelAnimationFrame(resizeFrame);
     if (aimFrame) cancelAnimationFrame(aimFrame);
     for (const dispose of disposers) dispose();
-    for (const item of items) {
-      delete item.root.dataset.dismissed;
-      item.link.style.removeProperty("--ma");
-    }
+    for (const item of items) delete item.root.dataset["dismissed"];
+    for (const item of targets) item.link.style.removeProperty("--ma");
   };
 };

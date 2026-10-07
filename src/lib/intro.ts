@@ -6,7 +6,7 @@ const lateStartMs = 1000;
 
 export const initIntro = (card: HTMLElement): (() => void) => {
   if (globalThis.matchMedia(reducedMotionQuery).matches) {
-    return () => {};
+    return () => undefined;
   }
 
   const blurTargets =

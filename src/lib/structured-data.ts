@@ -1,6 +1,6 @@
 import type { Graph, ImageObject } from "schema-dts";
 
-import type { Repo } from "@/lib/github";
+import type { Contact, Repo } from "@/lib/github";
 
 import { en } from "@/lib/i18n";
 import { personalData, plainName } from "@/lib/personal";
@@ -18,7 +18,11 @@ const portrait: ImageObject = {
   width: String(personalData.portrait.width),
 };
 
-export const structuredData = (repos: Repo[], modified: Date): Graph => ({
+export const structuredData = (
+  repos: Repo[],
+  contact: Contact,
+  modified: Date
+): Graph => ({
   "@context": "https://schema.org",
   "@graph": [
     {
@@ -51,7 +55,7 @@ export const structuredData = (repos: Repo[], modified: Date): Graph => ({
       },
       alternateName: [plainName, personalData.githubHandle],
       description: en.meta.description,
-      email: `mailto:${personalData.email}`,
+      email: `mailto:${contact.email}`,
       familyName: personalData.familyName,
       givenName: personalData.givenName,
       homeLocation: {
@@ -65,7 +69,7 @@ export const structuredData = (repos: Repo[], modified: Date): Graph => ({
       knowsLanguage: [...personalData.languages],
       mainEntityOfPage: { "@id": profileId },
       name: personalData.name,
-      sameAs: [personalData.github, personalData.linkedin],
+      sameAs: [personalData.github, contact.linkedin],
       subjectOf: {
         "@type": "DigitalDocument",
         encodingFormat: "application/pdf",

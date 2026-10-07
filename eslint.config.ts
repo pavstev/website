@@ -36,7 +36,7 @@ const eslintConfig = defineConfig([
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
   {
-    ...(securityPlugin.configs?.recommended as Linter.Config),
+    ...(securityPlugin.configs?.["recommended"] as Linter.Config),
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
   {
@@ -63,9 +63,14 @@ const eslintConfig = defineConfig([
   globalIgnores([
     ".claude/skills/**",
     ".next/**",
+    ".profile-out/**",
     ".superpowers/**",
     "dist/**",
   ]),
+  ...[
+    ...tseslint.configs.strictTypeChecked,
+    ...tseslint.configs.stylisticTypeChecked,
+  ].map((config) => ({ ...config, files: ["**/*.{ts,tsx,mts,cts}"] })),
   {
     files: ["**/*.{ts,tsx,mts,cts}"],
     languageOptions: {
@@ -85,6 +90,7 @@ const eslintConfig = defineConfig([
     },
     rules: {
       ...unicornPlugin.configs.recommended.rules,
+      "@eslint-community/eslint-comments/no-use": "error",
       "@typescript-eslint/array-type": ["error", { default: "array-simple" }],
       "@typescript-eslint/consistent-generic-constructors": [
         "error",
@@ -173,7 +179,19 @@ const eslintConfig = defineConfig([
       "better-tailwindcss/no-unnecessary-whitespace": "error",
       eqeqeq: ["error", "always", { null: "ignore" }],
       "func-style": ["error", "expression", { allowArrowFunctions: true }],
+      "import-x/no-cycle": "error",
       "import-x/no-duplicates": ["error", { "prefer-inline": true }],
+      "import-x/no-extraneous-dependencies": [
+        "error",
+        {
+          devDependencies: [
+            "*.config.ts",
+            "scripts/**",
+            "src/profile/**",
+            "**/*.test.ts",
+          ],
+        },
+      ],
       "import-x/no-mutable-exports": "error",
       "import-x/no-named-as-default": "off",
       "import-x/no-named-as-default-member": "off",
@@ -193,6 +211,10 @@ const eslintConfig = defineConfig([
       "no-useless-rename": "error",
       "no-useless-return": "error",
       "no-var": "error",
+      "no-warning-comments": [
+        "error",
+        { location: "anywhere", terms: ["todo", "fixme", "xxx", "hack"] },
+      ],
       "object-shorthand": ["error", "always"],
       "prefer-arrow-callback": "error",
       "prefer-const": "error",
@@ -216,6 +238,10 @@ const eslintConfig = defineConfig([
       "unicorn/no-nested-ternary": "off",
       "unicorn/no-null": "off",
       "unicorn/no-top-level-assignment-in-function": "off",
+      "unicorn/no-useless-undefined": [
+        "error",
+        { checkArrowFunctionBody: false },
+      ],
       "unicorn/prefer-at": "off",
       "unicorn/prefer-module": "off",
       "unused-imports/no-unused-imports": "error",
@@ -231,8 +257,12 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["scripts/**"],
+    files: ["scripts/**", "src/profile/cli.ts"],
     rules: { "security/detect-non-literal-fs-filename": "off" },
+  },
+  {
+    files: ["**/*.test.ts"],
+    rules: { "@typescript-eslint/no-floating-promises": "off" },
   },
   ...markdown.configs.recommended,
   {

@@ -10,11 +10,6 @@ export const iconData: Record<string, IconData> = {
     height: 512,
     width: 512,
   },
-  "lucide:arrow-up-right": {
-    body: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10v10M7 17L17 7"/>',
-    height: 24,
-    width: 24,
-  },
   "lucide:check": {
     body: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 6L9 17l-5-5"/>',
     height: 24,
@@ -30,8 +25,28 @@ export const iconData: Record<string, IconData> = {
     height: 24,
     width: 24,
   },
+  "lucide:globe": {
+    body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20a14.5 14.5 0 0 0 0-20M2 12h20"/></g>',
+    height: 24,
+    width: 24,
+  },
+  "lucide:locate-fixed": {
+    body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M2 12h3m14 0h3M12 2v3m0 14v3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/></g>',
+    height: 24,
+    width: 24,
+  },
   "lucide:mail": {
     body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m22 7l-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect width="20" height="16" x="2" y="4" rx="2"/></g>',
+    height: 24,
+    width: 24,
+  },
+  "lucide:minus": {
+    body: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"/>',
+    height: 24,
+    width: 24,
+  },
+  "lucide:plus": {
+    body: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7v14"/>',
     height: 24,
     width: 24,
   },

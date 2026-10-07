@@ -4,6 +4,7 @@ import { type ReactElement, useEffect, useRef } from "react";
 
 import { createFramePacer, pacerIdleMs } from "@/lib/frame-pacer";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
+import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
 import { type ScrollMotion, watchScrollMotion } from "@/lib/scroll-motion";
 import { skyRgb } from "@/lib/theme";
 import { isSoftwareRenderer } from "@/lib/webgl";
@@ -234,6 +235,8 @@ const rippleHoldMs = rippleSeconds * 1000 - pacerIdleMs;
 const resizeDelayMs = 150;
 const meteorMs = 1100;
 const meteorGapMs: [number, number] = [15_000, 30_000];
+const timeWrapHighSeconds = 86_400;
+const timeWrapLowSeconds = 1024;
 
 const nextGap = (): number =>
   meteorGapMs[0] + Math.random() * (meteorGapMs[1] - meteorGapMs[0]);
@@ -294,6 +297,10 @@ const startSky = (
 
   const uRes = gl.getUniformLocation(program, "u_res");
   const uTime = gl.getUniformLocation(program, "u_time");
+  const highPrecision =
+    (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
+      ?.precision ?? 0) > 0;
+  const timeWrap = highPrecision ? timeWrapHighSeconds : timeWrapLowSeconds;
   const uPointer = gl.getUniformLocation(program, "u_pointer");
   const uRipple = gl.getUniformLocation(program, "u_ripple");
   const uScroll = gl.getUniformLocation(program, "u_scroll");
@@ -367,7 +374,7 @@ const startSky = (
     pointer.x += (pointerTarget.x - pointer.x) * follow;
     pointer.y += (pointerTarget.y - pointer.y) * follow;
     gl.uniform2f(uRes, canvas.width, canvas.height);
-    gl.uniform1f(uTime, now / 1000);
+    gl.uniform1f(uTime, (now / 1000) % timeWrap);
     gl.uniform2f(uScroll, scroll.progress, scroll.velocity);
     gl.uniform2f(uPointer, pointer.x, pointer.y);
     if (ripple.age < rippleSeconds) ripple.age += dt / 1000;
@@ -412,7 +419,7 @@ const startSky = (
       setState("static");
       return;
     }
-    if (document.hidden) {
+    if (document.hidden || isSceneHeld()) {
       setState("paused");
       return;
     }
@@ -471,6 +478,7 @@ const startSky = (
   globalThis.addEventListener("pointerdown", onDown, { passive: true });
   window.addEventListener("blur", onBlur);
   window.addEventListener("focus", sync);
+  globalThis.addEventListener(sceneHoldEvent, sync);
   document.addEventListener("visibilitychange", sync);
   reduceMotion.addEventListener("change", sync);
   return () => {
@@ -482,6 +490,7 @@ const startSky = (
     globalThis.removeEventListener("pointerdown", onDown);
     window.removeEventListener("blur", onBlur);
     window.removeEventListener("focus", sync);
+    globalThis.removeEventListener(sceneHoldEvent, sync);
     document.removeEventListener("visibilitychange", sync);
     reduceMotion.removeEventListener("change", sync);
   };
@@ -495,7 +504,7 @@ export const SpaceBackground = (): ReactElement => {
     if (!canvas) return;
     const reduceMotion = globalThis.matchMedia(reducedMotionQuery);
     const setState = (state: SpaceState): void => {
-      canvas.dataset.spaceState = state;
+      canvas.dataset["spaceState"] = state;
     };
     const fallback = (): void => {
       canvas.hidden = true;

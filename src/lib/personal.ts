@@ -1,8 +1,8 @@
 export const personalData = {
   city: "Vienna",
+  cityCoordinates: { latitude: 48.2082, longitude: 16.3738 },
   country: "Austria",
   countryCode: "AT",
-  email: "pavlovicmstevan@gmail.com",
   familyName: "Pavlović",
   github: "https://github.com/pavstev",
   githubHandle: "pavstev",
@@ -25,8 +25,6 @@ export const personalData = {
     "Fleet logistics",
   ],
   languages: ["en", "sr"],
-  linkedin: "https://www.linkedin.com/in/stevanpavlovic/",
-  linkedinHandle: "stevanpavlovic",
   name: "Stevan Pavlović",
   portrait: { height: 800, url: "/portraits/portrait-800.webp", width: 800 },
   summary:

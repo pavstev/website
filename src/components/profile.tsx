@@ -1,6 +1,7 @@
-import type { ReactElement } from "react";
+import type { CSSProperties, ReactElement } from "react";
 
-import { Icon } from "@/components/icon";
+import { CityPanel } from "@/components/city-panel";
+import { CityTrigger } from "@/components/city-trigger";
 import { Portrait } from "@/components/portrait";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
@@ -9,6 +10,13 @@ const [summaryBefore = "", ...summaryRest] = personalData.summary.split(
   personalData.city
 );
 const summaryAfter = summaryRest.join(personalData.city);
+
+const letters = Array.from(
+  new Intl.Segmenter("en", { granularity: "grapheme" }).segment(
+    personalData.name
+  ),
+  (part) => part.segment
+);
 
 export const Profile = (): ReactElement => (
   <>
@@ -21,7 +29,18 @@ export const Profile = (): ReactElement => (
       data-text={personalData.name}
       id="card-name"
     >
-      {personalData.name}
+      <span className="sr-only">{personalData.name}</span>
+      <span aria-hidden="true" className="name-letters">
+        {letters.map((char, index) => (
+          <span
+            className="name-letter"
+            key={`${String(index)}-${char}`}
+            style={{ "--i": index } as CSSProperties}
+          >
+            {char}
+          </span>
+        ))}
+      </span>
       <span
         aria-hidden="true"
         className="name-scan"
@@ -33,16 +52,9 @@ export const Profile = (): ReactElement => (
       data-blur-in=""
     >
       {summaryBefore}
-      <span className="whitespace-nowrap">
-        {personalData.city}
-        <Icon
-          aria-hidden
-          className="bio-flag"
-          name="circle-flags:at"
-          size="0.95em"
-        />
-      </span>
+      <CityTrigger />
       {summaryAfter}
     </p>
+    <CityPanel />
   </>
 );

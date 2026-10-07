@@ -32,7 +32,7 @@ export const initDownloadRing = (
   );
   const checkIcon = anchor.querySelector<HTMLElement>("[data-icon-check]");
   if (!label || !ring || !arc || !downloadIcon || !checkIcon) {
-    return () => {};
+    return () => undefined;
   }
 
   const reduce = globalThis.matchMedia(reducedMotionQuery);
@@ -62,12 +62,12 @@ export const initDownloadRing = (
     animations = [];
     label.textContent = labels.idle;
     status.textContent = "";
-    delete anchor.dataset.busy;
+    delete anchor.dataset["busy"];
     busy = false;
   };
 
   const playReduced = (): void => {
-    anchor.style.minWidth = `${anchor.getBoundingClientRect().width}px`;
+    anchor.style.minWidth = `${String(anchor.getBoundingClientRect().width)}px`;
     label.textContent = labels.downloaded;
     status.textContent = labels.downloaded;
     later(settle, reducedMs);
@@ -77,10 +77,17 @@ export const initDownloadRing = (
     const { width } = anchor.getBoundingClientRect();
     status.textContent = labels.downloading;
 
-    run(anchor, [{ width: `${width}px` }, { width: `${collapsedWidth}px` }], {
-      duration: collapseMs,
-      easing: ease,
-    });
+    run(
+      anchor,
+      [
+        { width: `${String(width)}px` },
+        { width: `${String(collapsedWidth)}px` },
+      ],
+      {
+        duration: collapseMs,
+        easing: ease,
+      }
+    );
     run(label, [{ opacity: 1 }, { opacity: 0 }], { duration: collapseMs });
 
     run(ring, [{ opacity: 1 }, { opacity: 1 }], {
@@ -114,11 +121,18 @@ export const initDownloadRing = (
       { delay: checkStartMs, duration: checkMs, easing: ease }
     );
 
-    run(anchor, [{ width: `${collapsedWidth}px` }, { width: `${width}px` }], {
-      delay: expandStartMs,
-      duration: expandMs,
-      easing: ease,
-    });
+    run(
+      anchor,
+      [
+        { width: `${String(collapsedWidth)}px` },
+        { width: `${String(width)}px` },
+      ],
+      {
+        delay: expandStartMs,
+        duration: expandMs,
+        easing: ease,
+      }
+    );
     run(label, [{ opacity: 0 }, { opacity: 1 }], {
       delay: expandStartMs,
       duration: expandMs,
@@ -135,7 +149,7 @@ export const initDownloadRing = (
   const onClick = (): void => {
     if (busy) return;
     busy = true;
-    anchor.dataset.busy = "";
+    anchor.dataset["busy"] = "";
     globalThis.dispatchEvent(new Event("sky:pulse"));
     if (reduce.matches) playReduced();
     else play();

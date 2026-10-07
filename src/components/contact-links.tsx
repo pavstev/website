@@ -1,15 +1,23 @@
 import type { ReactElement } from "react";
 
+import type { Contact } from "@/lib/github";
+
 import { Icon } from "@/components/icon";
 import { en } from "@/lib/i18n";
 import { personalData as personal } from "@/lib/personal";
 
-export const ContactLinks = (): ReactElement => {
+interface ContactLinksProps {
+  contact: Contact;
+}
+
+export const ContactLinks = ({
+  contact: profile,
+}: ContactLinksProps): ReactElement => {
   const contacts = [
     {
-      detail: personal.email,
+      detail: profile.email,
       external: false,
-      href: `mailto:${personal.email}`,
+      href: `mailto:${profile.email}`,
       icon: "lucide:mail",
       id: "email",
       label: en.card.email,
@@ -25,9 +33,9 @@ export const ContactLinks = (): ReactElement => {
       tone: "purple",
     },
     {
-      detail: personal.linkedinHandle,
+      detail: profile.linkedinHandle,
       external: true,
-      href: personal.linkedin,
+      href: profile.linkedin,
       icon: "simple-icons:linkedin",
       id: "linkedin",
       label: en.card.linkedin,
@@ -46,8 +54,7 @@ export const ContactLinks = (): ReactElement => {
           <a
             aria-describedby={`contact-detail-${contact.id}`}
             aria-label={contact.label}
-            className="contact-link focus-ring inline-flex size-11 items-center justify-center rounded-full"
-            data-pointer-light=""
+            className="contact-link focus-ring inline-flex size-11 items-center justify-center rounded-lg"
             href={contact.href}
             rel={contact.external ? "me noopener noreferrer" : undefined}
             target={contact.external ? "_blank" : undefined}

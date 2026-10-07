@@ -17,6 +17,7 @@ import {
 
 import { createFramePacer, pacerIdleMs } from "@/lib/frame-pacer";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
+import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
 import { watchScrollMotion } from "@/lib/scroll-motion";
 import { skyRgb } from "@/lib/theme";
 
@@ -256,6 +257,7 @@ export const initClouds = (
     stencil: false,
   });
   renderer.autoClear = false;
+  renderer.debug.checkShaderErrors = process.env.NODE_ENV !== "production";
   renderer.sortObjects = false;
   const scene = new Scene();
   const camera = new Camera();
@@ -318,7 +320,7 @@ export const initClouds = (
   let resizeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 
   const setState = (state: CloudsState): void => {
-    canvas.dataset.cloudsState = state;
+    canvas.dataset["cloudsState"] = state;
   };
 
   const measureCard = (): void => {
@@ -476,7 +478,7 @@ export const initClouds = (
       setState("static");
       return;
     }
-    if (!visible || document.hidden) {
+    if (!visible || document.hidden || isSceneHeld()) {
       setState("paused");
       return;
     }
@@ -541,6 +543,7 @@ export const initClouds = (
     if (ready && !lost) setState("paused");
   });
   listen(globalThis.window, "focus", sync);
+  listen(globalThis.window, sceneHoldEvent, sync);
   listen(document, "visibilitychange", sync);
   listen(reduceMotion, "change", () => {
     reduced = reduceMotion.matches;
@@ -589,7 +592,7 @@ export const initClouds = (
   };
   void renderer
     .compileAsync(scene, camera)
-    .catch(() => {})
+    .catch(() => undefined)
     .then(start);
 
   return () => {

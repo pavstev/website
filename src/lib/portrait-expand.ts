@@ -42,6 +42,7 @@ export const createPortraitExpander = (
     button.querySelector<HTMLElement>("[data-portrait-photo]") ?? button;
   const scrim = dialog.querySelector<HTMLElement>("[data-expander-scrim]");
   const halo = dialog.querySelector<HTMLElement>("[data-expander-halo]");
+  const lens = dialog.querySelector<HTMLElement>("[data-expander-lens]");
   let running: Animation[] = [];
   let closing = false;
 
@@ -64,7 +65,7 @@ export const createPortraitExpander = (
   const settle = (): void => {
     stopAll();
     closing = false;
-    delete button.dataset.expanded;
+    delete button.dataset["expanded"];
     root.style.removeProperty("--scroll-gap");
   };
 
@@ -74,9 +75,9 @@ export const createPortraitExpander = (
     stopAll();
     closing = false;
     const gap = globalThis.innerWidth - root.clientWidth;
-    if (gap > 0) root.style.setProperty("--scroll-gap", `${gap}px`);
+    if (gap > 0) root.style.setProperty("--scroll-gap", `${String(gap)}px`);
     dialog.showModal();
-    button.dataset.expanded = "";
+    button.dataset["expanded"] = "";
     button.dispatchEvent(new CustomEvent("portrait:open"));
     globalThis.dispatchEvent(new Event("sky:pulse"));
     if (reduce.matches) {
@@ -98,6 +99,17 @@ export const createPortraitExpander = (
         easing: openEasing,
       }),
     ];
+    if (lens) {
+      running.push(
+        lens.animate(
+          [
+            { borderRadius: "50%" },
+            { borderRadius: getComputedStyle(lens).borderTopLeftRadius },
+          ],
+          { duration: openMs, easing: openEasing }
+        )
+      );
+    }
     if (scrim) {
       running.push(
         scrim.animate([{ opacity: 0 }, { opacity: 1 }], {
@@ -110,8 +122,8 @@ export const createPortraitExpander = (
       running.push(
         halo.animate(
           [
-            { opacity: 0, rotate: "-70deg" },
-            { opacity: 1, rotate: "0deg" },
+            { opacity: 0, scale: "0.96" },
+            { opacity: 1, scale: "1" },
           ],
           {
             delay: extraDelayMs,
@@ -133,7 +145,7 @@ export const createPortraitExpander = (
       } catch {
         return;
       }
-      delete button.dataset.expanded;
+      delete button.dataset["expanded"];
       dialog.close();
     };
     if (reduce.matches) {
@@ -150,6 +162,7 @@ export const createPortraitExpander = (
     const current = getComputedStyle(frame).transform;
     const scrimOpacity = scrim ? getComputedStyle(scrim).opacity : "1";
     const haloOpacity = halo ? getComputedStyle(halo).opacity : "1";
+    const corner = lens ? getComputedStyle(lens).borderTopLeftRadius : "0px";
     stopAll();
     const target = offsetFrom(
       photo.getBoundingClientRect(),
@@ -160,6 +173,15 @@ export const createPortraitExpander = (
       { duration: closeMs, easing: closeEasing, fill: "forwards" }
     );
     running = [shrink];
+    if (lens) {
+      running.push(
+        lens.animate([{ borderRadius: corner }, { borderRadius: "50%" }], {
+          duration: closeMs,
+          easing: closeEasing,
+          fill: "forwards",
+        })
+      );
+    }
     if (scrim) {
       running.push(
         scrim.animate([{ opacity: scrimOpacity }, { opacity: 0 }], {

@@ -13,7 +13,7 @@ concurrency:
   group: ci-${{ github.ref }}
 
 jobs:
-  verify:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -23,7 +23,7 @@ jobs:
           cache: pnpm
           node-version-file: .nvmrc
       - run: pnpm install --frozen-lockfile
-      - run: pnpm verify
+      - run: pnpm check
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: git diff --exit-code

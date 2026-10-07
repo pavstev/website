@@ -1,4 +1,6 @@
-import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
+import { reducedMotionQuery } from "@/lib/media";
+import { createPortraitBead } from "@/lib/portrait-bead";
+import { prefersLightLoad } from "@/lib/save-data";
 
 const cometMs = 16_000;
 const whisperMs = 44_000;
@@ -7,12 +9,9 @@ const hoverRate = 4;
 const openRate = 14;
 const rampMs = 700;
 const openHoldMs = 520;
-
-const clampPercent = (value: number): number =>
-  Math.min(100, Math.max(0, value));
-
-const toPercent = (value: number): string =>
-  `${clampPercent(value).toFixed(1)}%`;
+const pressMs = 320;
+const slopPx = 10;
+const clickGuardMs = 450;
 
 const isMouse = (event: Event): boolean =>
   event instanceof PointerEvent && event.pointerType === "mouse";
@@ -99,102 +98,138 @@ const startOrbit = (root: HTMLElement): (() => void) => {
   };
 };
 
+const startBead = (root: HTMLElement): (() => void) => {
+  const photo = root.querySelector<HTMLElement>("[data-portrait-photo]");
+  const source = photo?.dataset["beadSrc"];
+  if (!photo || !source || prefersLightLoad()) return () => undefined;
+  const bead = createPortraitBead(photo, source);
+  let frame = 0;
+  let clientX = 0;
+  let clientY = 0;
+  let startX = 0;
+  let startY = 0;
+  let touchId: null | number = null;
+  let pressing = false;
+  let guardUntil = 0;
+  let press: ReturnType<typeof globalThis.setTimeout> | undefined;
+
+  const toUv = (): [number, number] => {
+    const rect = photo.getBoundingClientRect();
+    return [
+      (clientX - rect.left) / Math.max(1, rect.width),
+      (clientY - rect.top) / Math.max(1, rect.height),
+    ];
+  };
+
+  const paint = (): void => {
+    frame = 0;
+    bead.move(...toUv());
+  };
+
+  const track = (event: PointerEvent): void => {
+    ({ clientX, clientY } = event);
+    if (frame === 0) frame = globalThis.requestAnimationFrame(paint);
+  };
+
+  const cancelPress = (): void => {
+    globalThis.clearTimeout(press);
+    press = undefined;
+  };
+
+  const onEnter = (event: PointerEvent): void => {
+    if (event.pointerType !== "mouse") return;
+    ({ clientX, clientY } = event);
+    bead.show(...toUv());
+  };
+
+  const onLeave = (event: PointerEvent): void => {
+    if (event.pointerType === "mouse") bead.hide();
+  };
+
+  const onDown = (event: PointerEvent): void => {
+    if (touchId !== null || event.pointerType === "mouse") return;
+    touchId = event.pointerId;
+    ({ clientX, clientY } = event);
+    startX = clientX;
+    startY = clientY;
+    press = globalThis.setTimeout(() => {
+      press = undefined;
+      pressing = true;
+      bead.show(...toUv());
+    }, pressMs);
+  };
+
+  const onMove = (event: PointerEvent): void => {
+    const mouse = event.pointerType === "mouse";
+    if (mouse || pressing) {
+      if (mouse || event.pointerId === touchId) track(event);
+      return;
+    }
+    if (event.pointerId !== touchId) return;
+    if (Math.hypot(event.clientX - startX, event.clientY - startY) > slopPx) {
+      cancelPress();
+    }
+  };
+
+  const onUp = (event: PointerEvent): void => {
+    if (event.pointerId !== touchId) return;
+    cancelPress();
+    touchId = null;
+    if (!pressing) return;
+    pressing = false;
+    bead.hide();
+    guardUntil = performance.now() + clickGuardMs;
+  };
+
+  const onTouchMove = (event: TouchEvent): void => {
+    if (pressing && event.cancelable) event.preventDefault();
+  };
+
+  const onContextMenu = (event: Event): void => {
+    if (touchId !== null || pressing) event.preventDefault();
+  };
+
+  const onClick = (event: Event): void => {
+    if (performance.now() > guardUntil) return;
+    guardUntil = 0;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  };
+
+  const onOpen = (): void => {
+    bead.hide();
+  };
+
+  root.addEventListener("pointerenter", onEnter);
+  root.addEventListener("pointerleave", onLeave);
+  root.addEventListener("pointerdown", onDown);
+  root.addEventListener("pointermove", onMove);
+  root.addEventListener("pointerup", onUp);
+  root.addEventListener("pointercancel", onUp);
+  root.addEventListener("touchmove", onTouchMove, { passive: false });
+  root.addEventListener("contextmenu", onContextMenu);
+  root.addEventListener("click", onClick, { capture: true });
+  root.addEventListener("portrait:open", onOpen);
+
+  return () => {
+    root.removeEventListener("pointerenter", onEnter);
+    root.removeEventListener("pointerleave", onLeave);
+    root.removeEventListener("pointerdown", onDown);
+    root.removeEventListener("pointermove", onMove);
+    root.removeEventListener("pointerup", onUp);
+    root.removeEventListener("pointercancel", onUp);
+    root.removeEventListener("touchmove", onTouchMove);
+    root.removeEventListener("contextmenu", onContextMenu);
+    root.removeEventListener("click", onClick, { capture: true });
+    root.removeEventListener("portrait:open", onOpen);
+    cancelPress();
+    if (frame !== 0) globalThis.cancelAnimationFrame(frame);
+    bead.dispose();
+  };
+};
+
 const startEffects = (root: HTMLElement): (() => void) => {
-  const fine = globalThis.matchMedia(finePointerQuery);
-  const relight = root.querySelector<HTMLElement>("[data-relight]");
-  const foil = root.querySelector<HTMLElement>("[data-foil]");
-
-  const disposers: Array<() => void> = [startOrbit(root)];
-
-  if (fine.matches) {
-    let rect = root.getBoundingClientRect();
-    let stale = false;
-    let frame = 0;
-    let pointerX = 0;
-    let pointerY = 0;
-    let hovering = false;
-
-    const markStale = (): void => {
-      stale = true;
-    };
-
-    const paint = (): void => {
-      frame = 0;
-      if (stale) {
-        rect = root.getBoundingClientRect();
-        stale = false;
-      }
-      const x = ((pointerX - rect.left) / rect.width) * 100;
-      const y = ((pointerY - rect.top) / rect.height) * 100;
-      if (relight) {
-        relight.style.setProperty("--lx", toPercent(x));
-        relight.style.setProperty("--ly", toPercent(y));
-      }
-      if (!(foil && hovering)) {
-        return;
-      }
-
-      foil.style.setProperty("--mx", toPercent(x));
-      foil.style.setProperty("--my", toPercent(y));
-      foil.style.setProperty("--fx", toPercent(100 - x));
-      foil.style.setProperty("--fy", toPercent(100 - y));
-    };
-
-    const onMove = (event: Event): void => {
-      if (!(event instanceof PointerEvent)) return;
-      pointerX = event.clientX;
-      pointerY = event.clientY;
-      if (frame === 0) frame = globalThis.requestAnimationFrame(paint);
-    };
-
-    const onEnter = (event: Event): void => {
-      if (!(event instanceof PointerEvent)) return;
-      hovering = true;
-      rect = root.getBoundingClientRect();
-      stale = false;
-      pointerX = event.clientX;
-      pointerY = event.clientY;
-      paint();
-      if (foil) foil.dataset.active = "";
-    };
-
-    const onLeave = (): void => {
-      hovering = false;
-      if (foil) delete foil.dataset.active;
-    };
-
-    globalThis.addEventListener("pointermove", onMove, { passive: true });
-    globalThis.addEventListener("resize", markStale, { passive: true });
-    globalThis.addEventListener("scroll", markStale, { passive: true });
-    const resize = new ResizeObserver(markStale);
-    resize.observe(root);
-    root.addEventListener("pointerenter", onEnter);
-    root.addEventListener("pointerleave", onLeave);
-
-    disposers.push(() => {
-      globalThis.removeEventListener("pointermove", onMove);
-      globalThis.removeEventListener("resize", markStale);
-      globalThis.removeEventListener("scroll", markStale);
-      resize.disconnect();
-      root.removeEventListener("pointerenter", onEnter);
-      root.removeEventListener("pointerleave", onLeave);
-      if (frame !== 0) globalThis.cancelAnimationFrame(frame);
-      frame = 0;
-      if (foil) {
-        delete foil.dataset.active;
-        for (const property of ["--mx", "--my", "--fx", "--fy"]) {
-          foil.style.removeProperty(property);
-        }
-      }
-      if (!relight) {
-        return;
-      }
-
-      relight.style.removeProperty("--lx");
-      relight.style.removeProperty("--ly");
-    });
-  }
-
+  const disposers = [startOrbit(root), startBead(root)];
   return () => {
     for (const dispose of disposers) dispose();
   };

@@ -76,7 +76,7 @@ const startCursorEffects = (): (() => void) => {
     const pointer = event as PointerEvent;
     if (glow) {
       glow.style.opacity = "1";
-      glow.style.transform = `translate3d(${pointer.clientX - 160}px, ${pointer.clientY - 160}px, 0)`;
+      glow.style.transform = `translate3d(${String(pointer.clientX - 160)}px, ${String(pointer.clientY - 160)}px, 0)`;
     }
     if (targets.length === 0) return;
     pointerX = pointer.clientX;

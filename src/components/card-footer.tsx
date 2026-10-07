@@ -5,7 +5,7 @@ import { personalData } from "@/lib/personal";
 export const CardFooter = (): ReactElement => {
   const year = new Date().getFullYear();
   return (
-    <p className="fade-up tabular mt-(--card-gap-footer) type-chip text-foreground-soft delay-4 text-halo-strong">
+    <p className="card-footer fade-up tabular mt-(--card-gap-footer) type-chip text-foreground-soft delay-4">
       © {year} {personalData.name}
     </p>
   );

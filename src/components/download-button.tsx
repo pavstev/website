@@ -33,7 +33,7 @@ export const DownloadButton = (): ReactElement => {
     <>
       <a
         aria-label={en.card.downloadPdf}
-        className="download-pill focus-ring relative inline-flex h-11 items-center justify-center-safe overflow-hidden rounded-full bg-primary pr-5 pl-3 font-sans text-[0.875rem] font-medium whitespace-nowrap text-primary-foreground no-underline transition-colors duration-(--duration-normal) ease-(--ease-smooth) select-none hover:bg-(--primary-hover)"
+        className="download-pill focus-ring relative inline-flex h-11 items-center justify-center-safe overflow-hidden rounded-lg pr-5 pl-3.5 font-sans text-[0.875rem] font-semibold whitespace-nowrap text-foreground no-underline select-none"
         download="Stevan_Pavlovic_Resume.pdf"
         href="/resume.pdf"
         ref={ref}

@@ -11,7 +11,7 @@ import { PrivacyNote } from "@/components/privacy-note";
 import { Profile } from "@/components/profile";
 import { RepoStrip } from "@/components/repo-strip";
 import { SpaceBackground } from "@/components/space-background";
-import { getRepos } from "@/lib/github";
+import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
 import { serializeJsonLd, structuredData } from "@/lib/structured-data";
@@ -34,12 +34,15 @@ export const metadata: Metadata = {
 };
 
 export default async function Page(): Promise<ReactElement> {
-  const repos = await getRepos(personalData.githubHandle);
+  const [repos, contact] = await Promise.all([
+    getRepos(personalData.githubHandle),
+    getContact(personalData.githubHandle),
+  ]);
   return (
     <>
       <script
         dangerouslySetInnerHTML={{
-          __html: serializeJsonLd(structuredData(repos, new Date())),
+          __html: serializeJsonLd(structuredData(repos, contact, new Date())),
         }}
         type="application/ld+json"
       />
@@ -55,16 +58,16 @@ export default async function Page(): Promise<ReactElement> {
           data-card=""
         >
           <Profile />
-          <div className="fade-up relative z-1 mt-(--card-gap-actions) flex flex-wrap items-center justify-center gap-x-5 gap-y-4 delay-2">
+          <div className="fade-up relative z-1 mt-(--card-gap-actions) flex flex-wrap items-center justify-center gap-3 delay-2">
             <DownloadButton />
-            <ContactLinks />
+            <ContactLinks contact={contact} />
           </div>
           <RepoStrip repos={repos} />
           <CardFooter />
         </div>
         <EffectsInit />
       </main>
-      <PrivacyNote />
+      <PrivacyNote email={contact.email} />
     </>
   );
 }

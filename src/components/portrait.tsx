@@ -5,8 +5,9 @@ import { PortraitExpander } from "@/components/portrait-expander";
 import { en } from "@/lib/i18n";
 
 const portrait = {
+  beadUrl: "/portraits/portrait-448.webp",
   largeUrl: "/portraits/portrait-800.webp",
-  sizes: "(min-width: 768px) 128px, 112px",
+  sizes: "(min-width: 768px) 154px, 134px",
   srcSet:
     "/portraits/portrait-224.webp 224w, /portraits/portrait-336.webp 336w, /portraits/portrait-448.webp 448w",
   url: "/portraits/portrait-336.webp",
@@ -27,6 +28,7 @@ export const Portrait = ({ alt }: PortraitProps): ReactElement => (
   >
     <span
       className="portrait-photo absolute inset-0 block overflow-hidden rounded-full ring-1 ring-(--border)"
+      data-bead-src={portrait.beadUrl}
       data-portrait-photo=""
     >
       <img
@@ -37,16 +39,6 @@ export const Portrait = ({ alt }: PortraitProps): ReactElement => (
         sizes={portrait.sizes}
         src={portrait.url}
         srcSet={portrait.srcSet}
-      />
-      <span
-        aria-hidden="true"
-        className="absolute inset-0 rounded-full"
-        data-foil=""
-      />
-      <span
-        aria-hidden="true"
-        className="absolute inset-0 rounded-full"
-        data-relight=""
       />
     </span>
     <span aria-hidden="true" className="orbit" data-orbit="">

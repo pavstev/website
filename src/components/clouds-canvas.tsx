@@ -2,11 +2,8 @@
 
 import { type ReactElement, useEffect, useRef } from "react";
 
+import { prefersLightLoad } from "@/lib/save-data";
 import { hasSeenSoftwareRenderer, isSoftwareRenderer } from "@/lib/webgl";
-
-interface ConnectionHint {
-  saveData?: boolean;
-}
 
 const contextAttributes: WebGLContextAttributes = {
   alpha: false,
@@ -14,13 +11,6 @@ const contextAttributes: WebGLContextAttributes = {
   depth: false,
   powerPreference: "low-power",
   stencil: false,
-};
-
-const prefersLightLoad = (): boolean => {
-  const { connection } = navigator as Navigator & {
-    connection?: ConnectionHint;
-  };
-  return connection?.saveData === true;
 };
 
 export const CloudsCanvas = (): ReactElement => {
@@ -34,7 +24,7 @@ export const CloudsCanvas = (): ReactElement => {
     let timerHandle: ReturnType<typeof globalThis.setTimeout> | undefined;
     const hide = (): void => {
       canvas.hidden = true;
-      canvas.dataset.cloudsState = "fallback";
+      canvas.dataset["cloudsState"] = "fallback";
     };
     const boot = (): void => {
       if (hasSeenSoftwareRenderer()) {

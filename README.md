@@ -11,10 +11,10 @@ My personal site: one contact card floating over a live WebGL sky.
 - **One static page.** A Next.js 16 App Router export with Tailwind CSS 4. No server, no extra pages. The 404 is plain.
 - **A real sky.** A hand-written WebGL nebula with sparkling stars, a rising planet and a shooting star every so often.
 - **Real clouds.** One three.js shader with three decks (thin cirrus, far, near), lit from below, with silver edges. They part around the cursor.
-- **Small details.** The name tunes in like a signal and glitches while you are around. The portrait turns holographic on hover. Every open-source tile gets its own planet.
+- **Small details.** The name tunes in like a signal and glitches while you are around. A glass bead follows your cursor over the portrait (press and hold on a phone). Every open-source tile gets its own planet.
 - **Found by people and machines.** Metadata, a JSON-LD graph (`WebSite`, `ProfilePage`, `Person`, one `SoftwareSourceCode` per project), a sitemap with images, a manifest, `robots.txt` and `llms.txt`.
 - **Careful with your device.** Both animations slow down when idle, pause when hidden and freeze on slow frames.
-- **No cookies, no tracking.** A small glass chip at the bottom opens a short note: the site sets no cookies, stores nothing on your device and loads nothing from other companies. Built on the Popover API, with no JavaScript and no consent banner, because there is nothing to consent to.
+- **No cookies, anonymous stats.** A small glass chip at the bottom opens a short note: no cookies, no ads, and Cloudflare Web Analytics counts visits without cookies or personal data. One OK hides it for good on that device.
 
 ## How it works
 
@@ -41,7 +41,7 @@ flowchart LR
 
 ### Checks
 
-`pnpm verify` runs Prettier, ESLint (typescript-eslint, unicorn, Next.js and React hooks rules), the TypeScript compiler, the build and knip. On the built site, Lighthouse gives 100 for SEO, accessibility, best practices and agentic browsing, and axe-core finds 0 violations at desktop, short and phone sizes. Text contrast over the moving sky is measured by hand, because axe cannot read canvas pixels.
+`pnpm check` runs everything once and changes no file: Prettier, ESLint (typescript-eslint strict and stylistic type-checked presets, unicorn, Next.js and React hooks rules, no directive comments), the TypeScript compiler with a very strict `tsconfig.json`, the profile tests, knip with every rule on, the build and the profile validation. On the built site, Lighthouse gives 100 for SEO, accessibility, best practices and agentic browsing, and axe-core finds 0 violations at desktop, short and phone sizes. Text contrast over the moving sky is measured by hand, because axe cannot read canvas pixels.
 
 ## Getting started
 
@@ -52,17 +52,19 @@ pnpm install
 pnpm dev
 ```
 
-The site runs at <http://localhost:4321>. The repo strip calls the GitHub API at build time. Set the optional `GITHUB_TOKEN` environment variable to lift the 60 requests per hour limit.
+The site runs at <http://localhost:4321>. The repo strip calls the GitHub API at build time. Set the `GITHUB_TOKEN` environment variable (required: GitHub shows the profile email only to authenticated requests and serves the language colors only through GraphQL, which needs a token, so the build fails without it; locally it falls back to `gh auth token` when the variable is unset). It also lifts the 60 requests per hour limit.
 
-| Script         | What it does                                                   |
-| -------------- | -------------------------------------------------------------- |
-| `pnpm dev`     | Starts the dev server on port 4321                             |
-| `pnpm build`   | Builds the static site into `dist/`                            |
-| `pnpm preview` | Serves `dist/` on port 4321                                    |
-| `pnpm verify`  | Formats, lints, type-checks, builds and checks for unused code |
-| `pnpm icons`   | Rebuilds `src/lib/icon-data.ts` from the icons used in `src/`  |
+| Script               | What it does                                                      |
+| -------------------- | ----------------------------------------------------------------- |
+| `pnpm dev`           | Starts the dev server on port 4321                                |
+| `pnpm build`         | Builds the static site into `dist/`                               |
+| `pnpm preview`       | Serves `dist/` on port 4321                                       |
+| `pnpm check`         | Runs every check (format, lint, types, tests, unused code, build) |
+| `pnpm fix`           | Applies Prettier and ESLint fixes                                 |
+| `pnpm icons`         | Rebuilds `src/lib/icon-data.ts` from the icons used in `src/`     |
+| `pnpm profile:build` | Builds the GitHub profile files into `.profile-out/`              |
 
-`pnpm verify` also runs as the pre-commit hook (lefthook) and in GitHub Actions. Dependency settings live in `pnpm-workspace.yaml`: an allowlist for build scripts, a one-day minimum release age and a trust policy that blocks package downgrades, with one exact, documented exception.
+`pnpm check` also runs as the pre-commit hook (husky) and in GitHub Actions. Dependency settings live in `pnpm-workspace.yaml`: an allowlist for build scripts, a one-day minimum release age and a trust policy that blocks package downgrades, with one exact, documented exception.
 
 ## Project layout
 
@@ -72,10 +74,61 @@ src/components/   one component per file
 src/lib/          content, i18n strings, structured data, theme, WebGL and effects
 src/styles/       globals.css: tokens, utilities, card styles
 public/           résumé, portraits, fonts, icons, share image, headers
+src/profile/      generator for the GitHub profile README and its images
 scripts/          icon extraction
 ```
 
 Content lives in `src/lib/personal.ts`. Every UI string lives in `src/lib/i18n.ts`.
+
+## GitHub profile
+
+The README on [github.com/pavstev](https://github.com/pavstev) is not written by hand. This repo builds it. The repo `pavstev/pavstev` only holds a copy that a GitHub Action writes.
+
+The name, title, summary, links and city come from `src/lib/personal.ts` and `src/lib/i18n.ts`. The project list comes from the same GitHub API call as the site (`src/lib/github.ts`). The icons come from `src/lib/icon-data.ts`. The header image is an SVG that the build draws: a sky, your name and your title, with the Inter font inside the file.
+
+```mermaid
+flowchart LR
+  data["personal.ts, i18n.ts, icon-data.ts"] --> gen["src/profile (TypeScript)"]
+  api["GitHub API"] --> gen
+  gen --> out[".profile-out/"]
+  push["push to main / daily / manual"] --> action["profile.yml"]
+  action --> gen
+  out --> action
+  action -->|"deploy key"| mirror["pavstev/pavstev"]
+  mirror --> profile["github.com/pavstev"]
+```
+
+### Run it
+
+```bash
+pnpm profile:build
+pnpm profile:build --check
+```
+
+`pnpm profile:build` writes the files to `.profile-out/`. That folder is not committed. The output is the same every time for the same input: no dates, no random values. `pnpm profile:build --check` also checks the links, and every build fails when something is wrong: a missing image, an image without alt text, an empty section, a link that is not https, or a website or résumé URL that does not answer. `pnpm check` runs it, with the profile tests, on every commit and pull request.
+
+### How the sync works
+
+The workflow `.github/workflows/profile.yml` runs on a push to `main` that touches the profile code or data, once a day (the project list can change without a push), and by hand. It builds the files, replaces everything in `pavstev/pavstev` except `.git`, and commits only if something changed. The commit comes from `github-actions[bot]` and names the source commit. Run it by hand with `dry_run` to see the diff and skip the push.
+
+Never edit `pavstev/pavstev` by hand. The next run overwrites it.
+
+### One-time setup
+
+The Action needs a deploy key with write access to `pavstev/pavstev`. Run these commands once:
+
+```bash
+ssh-keygen -t ed25519 -N "" -C "profile-sync" -f /tmp/profile_sync
+gh repo deploy-key add /tmp/profile_sync.pub -R pavstev/pavstev --allow-write -t "website profile sync"
+gh secret set PROFILE_DEPLOY_KEY -R pavstev/website < /tmp/profile_sync
+rm /tmp/profile_sync /tmp/profile_sync.pub
+```
+
+After this branch is on `main`, test it without a push:
+
+```bash
+gh workflow run profile.yml -R pavstev/website -f dry_run=true
+```
 
 ## Deploy
 
