@@ -12,6 +12,14 @@ import {
 } from "three";
 
 import { createFramePacer } from "@/lib/frame-pacer";
+import {
+  createLogoMotion,
+  type LogoMotion,
+  logoSpin,
+  settleLogoMotion,
+  stepLogoMotion,
+} from "@/lib/logo-motion";
+import { createLogoPlanet, type LogoPlanet } from "@/lib/logo-planet";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
 import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
 import { globePalette } from "@/lib/theme";
@@ -19,6 +27,14 @@ import { isSoftwareRenderer } from "@/lib/webgl";
 
 export interface PlanetsControls {
   dispose: () => void;
+}
+
+interface LogoState {
+  hotGoal: number;
+  inView: boolean;
+  motion: LogoMotion;
+  node: HTMLElement;
+  planet: LogoPlanet;
 }
 
 interface Planet {
@@ -59,6 +75,8 @@ const ringOuter = 1.74;
 const moonOrbit = 1.56;
 const moonSize = 0.2;
 const bodyScale = 0.42;
+const logoScale = 0.5;
+const sunriseVisibility = 0.6;
 const frameMs = 1000 / 30;
 
 const commonNoise = `
@@ -83,12 +101,10 @@ float noise3(vec3 x) {
 const planetVertex = `
 varying vec3 vObj;
 varying vec3 vNormal;
-varying vec3 vView;
 void main() {
   vObj = position;
   vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
   vNormal = normalize(normalMatrix * normal);
-  vView = normalize(-viewPosition.xyz);
   gl_Position = projectionMatrix * viewPosition;
 }
 `;
@@ -104,7 +120,6 @@ uniform float uTime;
 uniform float uSeed;
 varying vec3 vObj;
 varying vec3 vNormal;
-varying vec3 vView;
 ${commonNoise}
 void main() {
   vec3 p = normalize(vObj);
@@ -114,7 +129,7 @@ void main() {
   vec3 drift = vec3(0.0, uTime * 0.07, uTime * 0.05);
   float warp = noise3(q * 2.2 + drift + uSeed);
   vec3 n = normalize(vNormal);
-  vec3 v = normalize(vView);
+  vec3 v = vec3(0.0, 0.0, 1.0);
   vec3 sun = normalize(vec3(-0.6, 0.55, 0.58));
   float ndl = dot(n, sun);
   float day = smoothstep(-0.18, 0.55, ndl);
@@ -206,7 +221,8 @@ export const initRepoPlanets = (
     throw new Error("software renderer");
   }
   const nodes = [...stage.querySelectorAll<HTMLElement>(".repo-planet")];
-  if (nodes.length === 0) {
+  const logoNodes = [...stage.querySelectorAll<HTMLElement>(".logo-planet")];
+  if (nodes.length === 0 && logoNodes.length === 0) {
     renderer.dispose();
     throw new Error("no planets");
   }
@@ -221,6 +237,23 @@ export const initRepoPlanets = (
   const ring = new RingGeometry(ringInner, ringOuter, 72, 1);
   const materials: ShaderMaterial[] = [];
   const timeUniform = { value: 0 };
+  const logos: LogoState[] = [];
+  try {
+    for (const node of logoNodes) {
+      const planet = createLogoPlanet(node, sphere, renderer, timeUniform);
+      scene.add(planet.group);
+      logos.push({
+        hotGoal: 0,
+        inView: false,
+        motion: createLogoMotion(),
+        node,
+        planet,
+      });
+    }
+  } catch (error) {
+    renderer.dispose();
+    throw error;
+  }
 
   const makePlanetMaterial = (
     color: Color,
@@ -317,18 +350,40 @@ export const initRepoPlanets = (
     camera.updateProjectionMatrix();
   };
 
+  const placeAt = (
+    group: Group,
+    node: HTMLElement,
+    scale: number,
+    origin: DOMRect
+  ): void => {
+    const size = node.offsetWidth;
+    const box = node.getBoundingClientRect();
+    group.visible = size > 0;
+    group.position.set(
+      box.left - origin.left + box.width / 2,
+      -(box.top - origin.top + box.height / 2),
+      0
+    );
+    group.scale.setScalar(size * scale);
+  };
+
   const place = (): void => {
     const origin = stage.getBoundingClientRect();
     for (const planet of planets) {
-      const size = planet.node.offsetWidth;
-      const box = planet.node.getBoundingClientRect();
-      planet.group.visible = size > 0;
-      planet.group.position.set(
-        box.left - origin.left + box.width / 2,
-        -(box.top - origin.top + box.height / 2),
-        0
+      placeAt(
+        planet.group,
+        planet.node,
+        bodyScale * (1 + planet.hot * 0.07),
+        origin
       );
-      planet.group.scale.setScalar(size * bodyScale * (1 + planet.hot * 0.07));
+    }
+    for (const logo of logos) {
+      placeAt(
+        logo.planet.group,
+        logo.node,
+        logoScale * (1 + logo.motion.hot * 0.07),
+        origin
+      );
     }
   };
 
@@ -368,6 +423,14 @@ export const initRepoPlanets = (
         Math.sin(planet.moonAngle) * moonOrbit * 0.9
       );
     }
+    for (const logo of logos) {
+      logo.motion = stepLogoMotion(logo.motion, dt, {
+        hotGoal: logo.hotGoal,
+        started: logo.inView,
+      });
+      logo.planet.uniforms.uSpin.value = logoSpin(logo.motion);
+      logo.planet.uniforms.uHot.value = logo.motion.hot;
+    }
   };
 
   const pacer = createFramePacer({
@@ -391,8 +454,7 @@ export const initRepoPlanets = (
     const step = pacer.step(now);
     if (step.kind === "freeze") {
       frozen = true;
-      stop();
-      draw();
+      sync();
       return;
     }
     if (step.kind !== "draw") return;
@@ -402,16 +464,29 @@ export const initRepoPlanets = (
     draw();
   };
 
+  const settleLogos = (): boolean => {
+    let moved = false;
+    for (const logo of logos) {
+      if (logoSpin(logo.motion) !== 0) moved = true;
+      logo.motion = settleLogoMotion(logo.motion);
+    }
+    return moved;
+  };
+
   const sync = (): void => {
     stop();
     if (lost) return;
+    const moved = (frozen || reduce.matches || isSceneHeld()) && settleLogos();
     if (reduce.matches) {
       advance(0);
       draw();
       return;
     }
     if (frozen || !visible || document.hidden || isSceneHeld()) {
-      if (frozen) draw();
+      if (frozen || moved) {
+        advance(0);
+        draw();
+      }
       return;
     }
     pacer.markActive();
@@ -437,30 +512,44 @@ export const initRepoPlanets = (
     disposers.push(() => target.removeEventListener(type, listener));
   };
 
-  for (const planet of planets) {
-    const tile = planet.node.closest<HTMLElement>(".repo-tile");
+  for (const logo of logos) {
+    const watcher = new IntersectionObserver(
+      (entries) => {
+        logo.inView =
+          (entries.at(-1)?.intersectionRatio ?? 0) >= sunriseVisibility;
+      },
+      { threshold: sunriseVisibility }
+    );
+    watcher.observe(logo.node);
+    disposers.push(() => {
+      watcher.disconnect();
+    });
+  }
+
+  for (const target of [...planets, ...logos]) {
+    const tile = target.node.closest<HTMLElement>(".repo-tile");
     if (!tile) continue;
     listen(tile, "pointerenter", () => {
       if (!fine.matches) {
         return;
       }
 
-      planet.hotGoal = 1;
+      target.hotGoal = 1;
       wake();
     });
     listen(tile, "pointerleave", () => {
-      planet.hotGoal = 0;
+      target.hotGoal = 0;
     });
     listen(tile, "focusin", () => {
       if (!tile.querySelector(":focus-visible")) {
         return;
       }
 
-      planet.hotGoal = 1;
+      target.hotGoal = 1;
       wake();
     });
     listen(tile, "focusout", () => {
-      planet.hotGoal = 0;
+      target.hotGoal = 0;
     });
   }
 
@@ -511,6 +600,7 @@ export const initRepoPlanets = (
       sphere.dispose();
       ring.dispose();
       for (const material of materials) material.dispose();
+      for (const logo of logos) logo.planet.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       delete canvas.dataset["ready"];

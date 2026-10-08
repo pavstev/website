@@ -2414,6 +2414,12 @@ html:has(.portrait-dialog[open]) {
   fill: var(--logo-accent);
 }
 
+@media screen and (forced-colors: none) {
+  [data-planets="gl"] .logo-planet svg {
+    opacity: 0;
+  }
+}
+
 .product-top {
   display: contents;
 }
