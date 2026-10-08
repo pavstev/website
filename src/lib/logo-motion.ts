@@ -41,7 +41,7 @@ export const stepLogoMotion = (
   dtMs: number,
   input: LogoInput
 ): LogoMotion => {
-  if (dtMs <= 0) return state;
+  if (!Number.isFinite(dtMs) || dtMs <= 0) return state;
   const hot =
     state.hot + (input.hotGoal - state.hot) * (1 - Math.exp(-dtMs / hotTauMs));
   if (!input.started && state.elapsedMs < 0) return { ...state, hot };

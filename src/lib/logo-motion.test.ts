@@ -32,6 +32,13 @@ const lcg = (seed: number): (() => number) => {
   };
 };
 
+const near = (actual: number, expected: number, tolerance: number): void => {
+  assert.ok(
+    Math.abs(actual - expected) <= tolerance,
+    `${String(actual)} is not within ${String(tolerance)} of ${String(expected)}`
+  );
+};
+
 describe("logo motion", () => {
   it("keeps the spec numbers", () => {
     assert.deepEqual(logoMotionConfig, {
@@ -67,8 +74,30 @@ describe("logo motion", () => {
     }
   });
 
+  it("follows the ease-out cubic halfway through the sunrise", () => {
+    near(logoSpin(run(1200, 100, seen)), -0.2375, 1e-9);
+  });
+
   it("rests at exactly 0 rad when the sunrise ends", () => {
     assert.equal(logoSpin(run(2400, 100, seen)), 0);
+  });
+
+  it("finishes the sunrise after it leaves the view", () => {
+    const begun = stepLogoMotion(createLogoMotion(), 1000, seen);
+    const state = stepLogoMotion(begun, 2000, unseen);
+    assert.equal(state.elapsedMs, 2400);
+    near(logoSpin(state), 0.35 * Math.sin((2 * Math.PI * 600) / 9000), 1e-9);
+  });
+
+  it("swings to 0.35 rad a quarter period after the sunrise", () => {
+    const state = stepLogoMotion(run(2400, 100, seen), 2250, seen);
+    near(logoSpin(state), 0.35, 1e-6);
+  });
+
+  it("swings 3.4 times as fast and up to 0.5 rad while hovered", () => {
+    const glowing = settleLogoMotion(run(5000, 100, hover));
+    const state = stepLogoMotion(glowing, 9000 / 3.4 / 4, hover);
+    near(logoSpin(state), 0.5, 1e-3);
   });
 
   it("wobbles within 0.5 rad after the sunrise, hovered or not", () => {
@@ -94,6 +123,13 @@ describe("logo motion", () => {
     assert.deepEqual(stepLogoMotion(fresh, 0, hover), fresh);
     const midway = run(1200, frameMs, seen);
     assert.deepEqual(stepLogoMotion(midway, 0, hover), midway);
+  });
+
+  it("ignores a time step that is not a finite number", () => {
+    const midway = run(1200, frameMs, seen);
+    for (const dtMs of [NaN, Infinity]) {
+      assert.deepEqual(stepLogoMotion(midway, dtMs, hover), midway);
+    }
   });
 
   it("eases the hover glow in within a second", () => {
