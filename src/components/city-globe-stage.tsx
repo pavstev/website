@@ -120,7 +120,8 @@ export const CityGlobeStage = ({
       </ul>
       <p className="city-credit">{cityStrings.hubsSource}</p>
       <p aria-hidden="true" className="city-hint">
-        {cityStrings.hint}
+        <span className="city-hint-fine">{cityStrings.hint}</span>
+        <span className="city-hint-touch">{cityStrings.hintTouch}</span>
       </p>
       <div className="city-tools">
         <button

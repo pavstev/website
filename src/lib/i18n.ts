@@ -26,6 +26,7 @@ export const en = {
     globeLabel:
       "Interactive globe centered on {city}, lit where it is daytime right now. Arrow keys rotate, plus and minus zoom.",
     hint: "Drag to rotate. Scroll or pinch to zoom.",
+    hintTouch: "Drag to rotate. Pinch to zoom.",
     hubs: {
       beijing: "Beijing",
       bengaluru: "Bengaluru",
