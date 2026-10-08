@@ -33,6 +33,7 @@ export const CityGlobeStage = ({
 }: CityGlobeStageProps): ReactElement => {
   const viewport = useRef<HTMLDivElement>(null);
   const labelLayer = useRef<HTMLDivElement>(null);
+  const homeLabel = useRef<HTMLSpanElement>(null);
   const controls = useRef<GlobeControls | null>(null);
   const handlers = useRef({ onBuilt, onFail, onReady, onUnsupported });
   const [ready, setReady] = useState(false);
@@ -45,19 +46,17 @@ export const CityGlobeStage = ({
   useEffect(() => {
     const frame = viewport.current;
     const labels = labelLayer.current;
-    if (!frame || !labels) return;
+    const home = homeLabel.current;
+    if (!frame || !labels || !home) return;
     const canvas = document.createElement("canvas");
     canvas.className = "city-canvas";
     frame.append(canvas);
     let live: GlobeControls | undefined;
     try {
       live = createCityGlobe(canvas, {
-        home: {
-          latitude: personalData.cityCoordinates.latitude,
-          longitude: personalData.cityCoordinates.longitude,
-          name: personalData.city,
-        },
-        hubs: techHubs,
+        cities: techHubs,
+        home: personalData.cityCoordinates,
+        homeLabel: home,
         labels,
         onInteract: () => {
           setTouched(true);
@@ -103,7 +102,17 @@ export const CityGlobeStage = ({
         role="group"
         tabIndex={0}
       />
-      <div aria-hidden="true" className="city-labels" ref={labelLayer} />
+      <div aria-hidden="true" className="city-labels" ref={labelLayer}>
+        <span className="city-label" data-kind="home" ref={homeLabel}>
+          <Icon
+            aria-hidden
+            className="city-flag"
+            name="circle-flags:at"
+            size="1.125em"
+          />
+          {personalData.city}
+        </span>
+      </div>
       <ul aria-label={cityStrings.hubsLabel} className="sr-only">
         {techHubs.map((hub) => (
           <li key={hub.key}>{hub.name}</li>
