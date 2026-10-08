@@ -102,7 +102,7 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
     ...[
       ...(list
         .closest("[data-card]")
-        ?.querySelectorAll(":scope > [data-blur-in]") ?? []),
+        ?.querySelectorAll(":scope > [data-blur-in], .repo-head") ?? []),
     ].map((element) => ({ element, weight: 1 })),
   ];
   const disposers: Array<() => void> = [];

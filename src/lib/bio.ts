@@ -1,5 +1,10 @@
 type BioPart<T> = { tail: string; term: T } | { text: string };
 
+interface TextPiece {
+  compound: boolean;
+  text: string;
+}
+
 export const splitBio = <T extends { word: string }>(
   summary: string,
   terms: readonly T[]
@@ -25,4 +30,20 @@ export const splitBio = <T extends { word: string }>(
   }
   if (cursor < summary.length) parts.push({ text: summary.slice(cursor) });
   return parts;
+};
+
+export const splitCompounds = (text: string): TextPiece[] => {
+  const pieces: TextPiece[] = [];
+  let plain = "";
+  for (const piece of text.split(/(\s+)/u)) {
+    if (/\S-\S/u.test(piece)) {
+      if (plain !== "") pieces.push({ compound: false, text: plain });
+      pieces.push({ compound: true, text: piece });
+      plain = "";
+    } else {
+      plain += piece;
+    }
+  }
+  if (plain !== "") pieces.push({ compound: false, text: plain });
+  return pieces;
 };

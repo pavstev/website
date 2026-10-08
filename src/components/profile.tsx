@@ -1,10 +1,15 @@
-import type { CSSProperties, ReactElement } from "react";
+import {
+  type CSSProperties,
+  Fragment,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 import { CityPanel } from "@/components/city-panel";
 import { IndustryPanel } from "@/components/industry-panel";
 import { Portrait } from "@/components/portrait";
 import { TopicTrigger } from "@/components/topic-trigger";
-import { splitBio } from "@/lib/bio";
+import { splitBio, splitCompounds } from "@/lib/bio";
 import { cityPanelId, cityStrings } from "@/lib/city";
 import { en } from "@/lib/i18n";
 import { industries } from "@/lib/industries";
@@ -25,12 +30,43 @@ const bio = splitBio(personalData.summary, [
   })),
 ]);
 
-const letters = Array.from(
-  new Intl.Segmenter("en", { granularity: "grapheme" }).segment(
-    personalData.name
-  ),
-  (part) => part.segment
-);
+interface NameLetter {
+  char: string;
+  index: number;
+}
+
+const graphemes = new Intl.Segmenter("en", { granularity: "grapheme" });
+
+const groupWords = (name: string): NameLetter[][] => {
+  const words: NameLetter[][] = [];
+  let word: NameLetter[] = [];
+  let index = 0;
+  const segments = graphemes.segment(name);
+  for (const { segment } of segments) {
+    if (/^\s$/u.test(segment)) {
+      words.push(word);
+      word = [];
+    } else {
+      word.push({ char: segment, index });
+    }
+    index += 1;
+  }
+  words.push(word);
+  return words.filter((letters) => letters.length > 0);
+};
+
+const nameWords = groupWords(personalData.name);
+
+const keepCompounds = (text: string): ReactNode[] =>
+  splitCompounds(text).map(({ compound, text: piece }, index) =>
+    compound ? (
+      <span className="whitespace-nowrap" key={`${String(index)}-${piece}`}>
+        {piece}
+      </span>
+    ) : (
+      piece
+    )
+  );
 
 export const Profile = (): ReactElement => (
   <>
@@ -45,14 +81,21 @@ export const Profile = (): ReactElement => (
     >
       <span className="sr-only">{personalData.name}</span>
       <span aria-hidden="true" className="name-letters">
-        {letters.map((char, index) => (
-          <span
-            className="name-letter"
-            key={`${String(index)}-${char}`}
-            style={{ "--i": index } as CSSProperties}
-          >
-            {char}
-          </span>
+        {nameWords.map((word, wordIndex) => (
+          <Fragment key={word.map(({ char }) => char).join("")}>
+            {wordIndex > 0 ? " " : null}
+            <span className="name-word">
+              {word.map(({ char, index }) => (
+                <span
+                  className="name-letter"
+                  key={`${String(index)}-${char}`}
+                  style={{ "--i": index } as CSSProperties}
+                >
+                  {char}
+                </span>
+              ))}
+            </span>
+          </Fragment>
         ))}
       </span>
       <span
@@ -72,7 +115,7 @@ export const Profile = (): ReactElement => (
             {part.tail}
           </span>
         ) : (
-          part.text
+          <Fragment key={part.text}>{keepCompounds(part.text)}</Fragment>
         )
       )}
     </p>

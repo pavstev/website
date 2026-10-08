@@ -31,7 +31,8 @@ export const initDownloadRing = (
     "[data-icon-download]"
   );
   const checkIcon = anchor.querySelector<HTMLElement>("[data-icon-check]");
-  if (!label || !ring || !arc || !downloadIcon || !checkIcon) {
+  const slot = anchor.parentElement;
+  if (!label || !ring || !arc || !downloadIcon || !checkIcon || !slot) {
     return () => undefined;
   }
 
@@ -58,6 +59,7 @@ export const initDownloadRing = (
     for (const timer of timers) globalThis.clearTimeout(timer);
     for (const animation of animations) animation.cancel();
     anchor.style.minWidth = "";
+    slot.style.minWidth = "";
     timers = [];
     animations = [];
     label.textContent = labels.idle;
@@ -74,20 +76,14 @@ export const initDownloadRing = (
   };
 
   const play = (): void => {
-    const { width } = anchor.getBoundingClientRect();
+    const { width } = getComputedStyle(slot);
+    slot.style.minWidth = width;
     status.textContent = labels.downloading;
 
-    run(
-      anchor,
-      [
-        { width: `${String(width)}px` },
-        { width: `${String(collapsedWidth)}px` },
-      ],
-      {
-        duration: collapseMs,
-        easing: ease,
-      }
-    );
+    run(anchor, [{ width }, { width: `${String(collapsedWidth)}px` }], {
+      duration: collapseMs,
+      easing: ease,
+    });
     run(label, [{ opacity: 1 }, { opacity: 0 }], { duration: collapseMs });
 
     run(ring, [{ opacity: 1 }, { opacity: 1 }], {
@@ -121,18 +117,11 @@ export const initDownloadRing = (
       { delay: checkStartMs, duration: checkMs, easing: ease }
     );
 
-    run(
-      anchor,
-      [
-        { width: `${String(collapsedWidth)}px` },
-        { width: `${String(width)}px` },
-      ],
-      {
-        delay: expandStartMs,
-        duration: expandMs,
-        easing: ease,
-      }
-    );
+    run(anchor, [{ width: `${String(collapsedWidth)}px` }, { width }], {
+      delay: expandStartMs,
+      duration: expandMs,
+      easing: ease,
+    });
     run(label, [{ opacity: 0 }, { opacity: 1 }], {
       delay: expandStartMs,
       duration: expandMs,

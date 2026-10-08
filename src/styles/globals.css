@@ -106,7 +106,7 @@
   --radius-sm: 4px;
   --radius-lg: 10px;
 
-  --text-display-size: clamp(2.75rem, 8vw, 5rem);
+  --text-display-size: clamp(2rem, max(8vw, min(2.75rem, 22vw - 0.5rem)), 5rem);
   --text-display-leading: 1;
   --text-display-tracking: -0.03em;
   --text-body-size: 1rem;
@@ -609,6 +609,11 @@ html {
   clip-path: inset(0 0 100% 0);
 }
 
+.name-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .name-letter {
   font-variation-settings: "wght" 700;
   transform-origin: 50% 72%;
@@ -629,6 +634,12 @@ html {
 
 [data-name][data-tearing] .name-letters {
   opacity: 0;
+}
+
+[data-name][data-glitch] .name-word {
+  display: inline-flex;
+  justify-content: center;
+  width: var(--word-width, auto);
 }
 
 [data-name][data-glitch] .name-letter {
@@ -1429,6 +1440,7 @@ html:has(.portrait-dialog[open]) {
   --tone: var(--primary);
   position: relative;
   display: inline-flex;
+  justify-content: center;
 }
 
 .resume-tip {
@@ -1781,6 +1793,17 @@ html:has(.portrait-dialog[open]) {
 
 :root[data-motion-paused] .download-pill::after {
   display: none;
+}
+
+@media (max-width: 22.5em) {
+  .download-pill {
+    white-space: normal;
+  }
+
+  .download-pill [data-label] {
+    line-height: 1.15;
+    text-align: start;
+  }
 }
 
 .download-aurora {
