@@ -8,13 +8,14 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import { Icon } from "@/components/icon";
 import { en } from "@/lib/i18n";
 import {
   isMotionPaused,
   setMotionPaused,
   subscribeMotionPause,
 } from "@/lib/motion-pause";
+
+const flashMs = 2000;
 
 export const MotionToggle = (): ReactElement => {
   const paused = useSyncExternalStore(
@@ -23,8 +24,10 @@ export const MotionToggle = (): ReactElement => {
     () => false
   );
   const [dismissed, setDismissed] = useState(false);
-  const itemRef = useRef<HTMLSpanElement>(null);
+  const [flash, setFlash] = useState(0);
+  const itemRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const pointerRef = useRef("");
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -42,10 +45,21 @@ export const MotionToggle = (): ReactElement => {
     };
   }, []);
 
+  useEffect(() => {
+    if (flash === 0) return;
+    const timer = setTimeout(() => {
+      setFlash(0);
+    }, flashMs);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [flash]);
+
   return (
-    <span
+    <header
       className="motion-item"
       data-dismissed={dismissed ? "" : undefined}
+      data-flash={flash > 0 ? "" : undefined}
       onPointerLeave={() => {
         setDismissed(false);
       }}
@@ -61,13 +75,19 @@ export const MotionToggle = (): ReactElement => {
         }}
         onClick={() => {
           setMotionPaused(!paused);
+          if (pointerRef.current === "touch") {
+            setFlash((count) => count + 1);
+          }
+          pointerRef.current = "";
+        }}
+        onPointerDown={(event) => {
+          pointerRef.current = event.pointerType;
         }}
         ref={buttonRef}
         type="button"
       >
-        <span aria-hidden="true" className="motion-toggle-face fade-up delay-4">
-          <Icon className="motion-icon-pause" name="lucide:pause" size="1rem" />
-          <Icon className="motion-icon-play" name="lucide:play" size="1rem" />
+        <span aria-hidden="true" className="motion-orbit fade-up delay-4">
+          <span className="motion-moon" />
         </span>
       </button>
       <span className="contact-tip motion-tip" id="motion-tip" role="tooltip">
@@ -78,6 +98,6 @@ export const MotionToggle = (): ReactElement => {
           {en.motion.tipPlay}
         </span>
       </span>
-    </span>
+    </header>
   );
 };

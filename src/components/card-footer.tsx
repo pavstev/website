@@ -6,7 +6,7 @@ export const CardFooter = (): ReactElement => {
   const year = new Date().getFullYear();
   return (
     <p className="card-footer fade-up tabular mt-(--card-gap-footer) type-chip text-foreground-soft delay-4">
-      © {year} {personalData.name}
+      © {year} <span className="whitespace-nowrap">{personalData.name}</span>
     </p>
   );
 };
