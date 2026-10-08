@@ -215,6 +215,15 @@ const eslintConfig = defineConfig([
       "no-implicit-coercion": "error",
       "no-lonely-if": "error",
       "no-param-reassign": "error",
+      "no-restricted-syntax": [
+        "error",
+        {
+          message:
+            'Import zod as `import * as z from "zod"`: `{ z }` puts every zod locale in the Worker.',
+          selector:
+            "ImportDeclaration[source.value='zod'] > :matches(ImportSpecifier, ImportDefaultSpecifier)",
+        },
+      ],
       "no-shadow": "off",
       "no-throw-literal": "error",
       "no-useless-constructor": "off",

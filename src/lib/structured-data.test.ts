@@ -2,7 +2,7 @@ import type { Graph } from "schema-dts";
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { z } from "zod";
+import * as z from "zod";
 
 import type { Contact, Repo } from "./github.ts";
 

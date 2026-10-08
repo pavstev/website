@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { z } from "zod";
+import * as z from "zod";
 
 const text = (): z.ZodDefault<z.ZodString> => z.string().default("");
 

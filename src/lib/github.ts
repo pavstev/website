@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { z } from "zod";
+import * as z from "zod";
 
 export interface Contact {
   email: string;

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
-import { z } from "zod";
+import * as z from "zod";
 
 import { cvSchema, stripPrivate } from "./cv.ts";
 
