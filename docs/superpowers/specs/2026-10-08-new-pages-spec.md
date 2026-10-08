@@ -2,16 +2,18 @@
 
 Date: 2026-10-08. Status: agreed in interview; the CV feed, the Worker, `/mcp` and the Ask panel are built. The other pages are not. Plan: `docs/superpowers/plans/2026-10-08-new-pages.md`. Lines marked superseded were replaced by `docs/superpowers/plans/2026-10-08-hirista-integration.md`.
 
+> **Removed 2026-10-08 by the owner's decision:** the Ask panel, `/api/ask`, the Turnstile check and the Workers AI binding (decisions 2, 5 and 7 and the entries below about them). The Worker keeps `/mcp` only. What the removed parts said is kept here as history.
+
 ## Goal
 
 Add a small set of mostly automatic pages and one AI endpoint so more people find the site and more of them want to hire Stevan, without a writing habit.
 
 ## Decisions
 
-1. **Pages: /sapat, /cronfluent, /lab, /colophon, /now, plus /api/ask and /mcp.**
+1. **Pages: /sapat, /cronfluent, /lab, /colophon, /now, plus /api/ask and /mcp.** _Removed 2026-10-08: /api/ask._
    Reason: the user's picks. Rejected: /cv page, /tools with cronfluent, /activity, hire-me block, timeline, micro tools, changelog, /uses, explainer.
 
-2. **Ask-me AI has two routes on one Worker: /api/ask for humans and /mcp for agents.**
+2. **Ask-me AI has two routes on one Worker: /api/ask for humans and /mcp for agents.** _Removed 2026-10-08: /api/ask; /mcp stays._
    Reason: both ticked. Rejected: chat only, MCP only.
 
 3. **CV facts come from the jobsearch app through a secure endpoint, fetched at build time.**
@@ -19,12 +21,12 @@ Add a small set of mostly automatic pages and one AI endpoint so more people fin
 
 4. **Strip only the phone number.** The current employer appears everywhere: page data, AI answers, MCP. Reason: the user dropped the old rule on 2026-10-08. The memory note was updated.
 
-5. **Cloudflare plan: Workers Free. Guard: Turnstile plus a per-IP rate limiter. Nothing stored.**
+5. **Cloudflare plan: Workers Free. Guard: Turnstile plus a per-IP rate limiter. Nothing stored.** _Removed 2026-10-08: Turnstile; the per-IP rate limiter stays on /mcp._
    Reason: the free plan stops at 10,000 neurons a day, so the bill cannot grow. Rejected: paid plan with a KV daily cap; rate limit only.
 
 6. **Home navigation: a quiet link row under the repo strip** (Projects, Lab, Now, Colophon). Reason: always visible, crawlable, 24 px. Rejected: a "More" popover; a header bar.
 
-7. **Chat for humans: an "Ask" button on the card that opens a popover panel**, like the Vienna panel. Reason: the card stays one screen. Rejected: a /ask page; an inline input.
+7. _Removed 2026-10-08:_ **Chat for humans: an "Ask" button on the card that opens a popover panel**, like the Vienna panel. Reason: the card stays one screen. Rejected: a /ask page; an inline input.
 
 ## Defaults and assumptions (decided without you)
 
@@ -33,12 +35,12 @@ Add a small set of mostly automatic pages and one AI endpoint so more people fin
 - **Freshness:** when the résumé is saved in jobsearch, it POSTs the website's Workers Builds deploy hook, so the site rebuilds within minutes.
 - **The PDF:** `public/resume.pdf` is no longer committed. ~~The build downloads `/api/public/cv.pdf` (made by cvexp with Browser Rendering in jobsearch) into `dist/resume.pdf`.~~ The download name stays `Stevan_Pavlovic_Resume.pdf`. _Superseded: the website build renders `dist/resume.pdf` itself from the feed JSON with `@react-pdf/renderer` (`src/lib/resume-pdf.ts`, `src/lib/resume-file.ts`)._
 - **Validation:** the website validates the JSON with ~~the `cvexp` zod schema (new dependency)~~ and again strips `basics.phone` defensively. _Superseded: `cvSchema` in `src/lib/cv.ts` mirrors cvexp's shape and adds `projects`; there is no `cvexp` dependency._
-- **Worker layout:** `wrangler.jsonc` gets `main` and `run_worker_first: ["/api/*", "/mcp", "/mcp/*"]`. All other paths stay free static assets. The Worker code lives in `worker/` and never reaches the Next.js bundle.
-- **/api/ask:** POST, JSON body `{ question, turnstileToken }`, 500-character question cap, Turnstile verified server-side, per-IP limiter (Workers Rate Limiting binding, about 20 a minute), Workers AI with a current small instruct model from the catalog, system prompt built from the same CV JSON and the repo list at build time, answers only from the facts, says "I do not know" otherwise, no memory, no logs of question text. Replies stream as text.
-- **/mcp:** authless Streamable HTTP, stateless, official `@modelcontextprotocol/sdk`. Tools: `profile`, `experience`, `skills`, `projects`, `contact`. Same rate limiter. Listed in llms.txt.
-- **Chat panel:** `popover="auto"`, `holdScene` while open, Turnstile widget inside the panel only, a one-line note "Answers come from an AI reading my CV. Nothing is stored."
-- **CSP:** add `challenges.cloudflare.com` to `script-src` and `frame-src`, `'self'` already covers `/api/ask`. Non-HTML rules stay as they are.
-- **Privacy note:** one new line: "The Ask panel sends your question to Cloudflare's AI model and keeps nothing."
+- **Worker layout:** `wrangler.jsonc` gets `main` and `run_worker_first: ["/api/*", "/mcp", "/mcp/*"]`. All other paths stay free static assets. The Worker code lives in `worker/` and never reaches the Next.js bundle. _Changed 2026-10-08 by the owner's decision: `run_worker_first` is now `["/mcp", "/mcp/*"]`._
+- **/api/ask:** POST, JSON body `{ question, turnstileToken }`, 500-character question cap, Turnstile verified server-side, per-IP limiter (Workers Rate Limiting binding, about 20 a minute), Workers AI with a current small instruct model from the catalog, system prompt built from the same CV JSON and the repo list at build time, answers only from the facts, says "I do not know" otherwise, no memory, no logs of question text. Replies stream as text. _Removed 2026-10-08 by the owner's decision._
+- **/mcp:** authless Streamable HTTP, stateless, official `@modelcontextprotocol/sdk`. Tools: `profile`, `experience`, `skills`, `projects`, `contact`. Same rate limiter. Listed in llms.txt. _The rate limiter binding is now named `MCP_LIMITER`._
+- **Chat panel:** `popover="auto"`, `holdScene` while open, Turnstile widget inside the panel only, a one-line note "Answers come from an AI reading my CV. Nothing is stored." _Removed 2026-10-08 by the owner's decision._
+- **CSP:** add `challenges.cloudflare.com` to `script-src` and `frame-src`, `'self'` already covers `/api/ask`. Non-HTML rules stay as they are. _Removed 2026-10-08 by the owner's decision; the CSP is back to its earlier form._
+- **Privacy note:** one new line: "The Ask panel sends your question to Cloudflare's AI model and keeps nothing." _Removed 2026-10-08 by the owner's decision._
 - **Project pages (/sapat, /cronfluent):** one page per repo that `getRepos` already picks, except `website` keeps no page (its README is the repo's own). Built from the README (GitHub markdown API, GFM) and the releases list. HTML is sanitized at build with an allowlist (no scripts, no inline handlers, no iframes), images rewritten to `raw.githubusercontent.com`. Šapat shows the latest release with its download link and SHA-256. JSON-LD `SoftwareApplication` (sapat) and `SoftwareSourceCode` (cronfluent). Added to the sitemap and llms.txt.
 - **/lab:** one page, one effect at a time (sky, clouds, planets, globe, name tear), a switcher, a source link per effect, the same reduced-motion and software-renderer rules as the card. Title and description for galleries. `noindex` is off.
 - **/colophon:** generated from `package.json` (framework, libraries, versions), the build date, the repo link and the checks list. Hand-written intro of three sentences in `i18n.ts`. No scores (they need a stored measurement).

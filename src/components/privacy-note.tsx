@@ -6,11 +6,10 @@ import { en } from "@/lib/i18n";
 const panelId = "privacy-panel";
 
 interface PrivacyNoteProps {
-  ask: boolean;
   email: string;
 }
 
-export const PrivacyNote = ({ ask, email }: PrivacyNoteProps): ReactElement => (
+export const PrivacyNote = ({ email }: PrivacyNoteProps): ReactElement => (
   <footer className="privacy-note">
     <button className="privacy-chip" popoverTarget={panelId} type="button">
       <span className="privacy-chip-face fade-up type-chip delay-4">
@@ -22,7 +21,6 @@ export const PrivacyNote = ({ ask, email }: PrivacyNoteProps): ReactElement => (
       <p className="privacy-lead">{en.privacy.local}</p>
       <p>{en.privacy.stats}</p>
       <p>{en.privacy.host}</p>
-      {ask ? <p>{en.privacy.ask}</p> : null}
       <p className="privacy-contact">
         {en.privacy.contact}{" "}
         <a className="privacy-mail focus-ring" href={`mailto:${email}`}>

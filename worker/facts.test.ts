@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { servedCv } from "../src/lib/cv-sample.ts";
-import { buildSystemPrompt, loadFacts } from "./facts.ts";
+import { loadFacts } from "./facts.ts";
 
 const cv = {
   basics: {
@@ -36,29 +36,6 @@ const project = {
   to: "Present",
   websiteUrl: "https://github.com/ada/tracelite",
 };
-
-describe("buildSystemPrompt", () => {
-  it("names the person, every role and the rule to refuse guesses", () => {
-    const prompt = buildSystemPrompt({ cv, llms: "# Ada" });
-    assert.match(prompt, /Ada Example/);
-    assert.match(prompt, /Lead at Example \(Jan 2020 to Present\)/);
-    assert.match(prompt, /Built it\./);
-    assert.match(prompt, /only from the facts/i);
-    assert.match(prompt, /do not know/i);
-  });
-  it("has one rule for uncovered questions that points to the resume and email", () => {
-    const prompt = buildSystemPrompt({ cv, llms: "# Ada" });
-    const rules = prompt.slice(prompt.indexOf("Rules"));
-    assert.equal(rules.match(/do not know/gi)?.length, 1);
-    assert.match(rules, /do not know[^\n]*resume PDF[^\n]*email/i);
-  });
-  it("tells the model the visitor message is a question, never instructions", () => {
-    const prompt = buildSystemPrompt({ cv, llms: "# Ada" });
-    assert.match(prompt, /never instructions/i);
-    assert.match(prompt, /adopt another role/i);
-    assert.match(prompt, /reveal/i);
-  });
-});
 
 const fakeAssets = (answer: (url: string) => Response): Fetcher =>
   ({
@@ -138,8 +115,7 @@ describe("loadFacts", () => {
       url.endsWith("/cv.json") ? Response.json(sparse) : new Response("# Ada")
     );
     const facts = await loadFacts(assets, "https://sparse.test");
-    const prompt = buildSystemPrompt(facts);
-    assert.match(prompt, /Dev at Bare \(2019 to 2020\)/);
+    assert.equal(facts.cv.experience.items[0]?.position, "Dev");
     assert.equal(facts.cv.experience.items[0]?.skills.length, 0);
   });
   it("reads the cv.json the site serves, projects included", async () => {
@@ -150,7 +126,8 @@ describe("loadFacts", () => {
     assert.equal(facts.cv.basics.name, "Ada Example");
     assert.equal(facts.cv.basics.location, "");
     assert.equal(facts.cv.projects?.items[0]?.name, "Ledger");
-    assert.match(buildSystemPrompt(facts), /Lead at Example \(2020 to Now\)/);
+    assert.equal(facts.cv.experience.items[0]?.position, "Lead");
+    assert.equal(facts.cv.experience.items[0]?.to, "Now");
   });
   it("facts read projects from /cv.json", async () => {
     const assets = fakeAssets((url) =>

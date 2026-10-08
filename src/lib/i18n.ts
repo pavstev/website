@@ -1,23 +1,4 @@
 export const en = {
-  ask: {
-    button: "Ask about me",
-    checkFirst: "Finish the human check first",
-    close: "Close",
-    errors: {
-      bot: "The human check did not pass. Reload the page and try again.",
-      failed: "Something went wrong on my end. Try again in a moment.",
-      limit: "Too many questions for now. Wait a minute, then try again.",
-      question: "Type a question of up to 500 characters.",
-    },
-    hint: "An AI answers from my CV",
-    label: "Your question",
-    note: "Answers come from an AI reading my CV. Nothing is stored.",
-    placeholder: "Ask about my work, skills or projects",
-    questionFirst: "Type a question first",
-    send: "Ask",
-    thinking: "Thinking…",
-    title: "Ask about me",
-  },
   card: {
     close: "Close",
     contactLabel: "Contact",
@@ -145,7 +126,6 @@ export const en = {
   },
   privacy: {
     acknowledge: "OK",
-    ask: "The Ask panel sends your question to Cloudflare’s AI model and keeps nothing.",
     chip: "No cookies, anonymous stats",
     contact: "Privacy questions:",
     host: "The host, Cloudflare, sees technical request data such as your IP address to deliver the page and keep it safe.",

@@ -112,14 +112,6 @@ const envOf = (
 ): { env: Env; limiterCalls: unknown[] } => {
   const limiterCalls: unknown[] = [];
   const env = {
-    ASK_LIMITER: {
-      limit: (input: unknown) => {
-        limiterCalls.push(input);
-        return options.limiterThrows
-          ? Promise.reject(new Error("limiter down"))
-          : Promise.resolve({ success: options.limiterSuccess ?? true });
-      },
-    },
     ASSETS: {
       fetch: (url: string) =>
         Promise.resolve(
@@ -129,6 +121,14 @@ const envOf = (
               ? Response.json(sampleFacts.cv)
               : new Response(llms)
         ),
+    },
+    MCP_LIMITER: {
+      limit: (input: unknown) => {
+        limiterCalls.push(input);
+        return options.limiterThrows
+          ? Promise.reject(new Error("limiter down"))
+          : Promise.resolve({ success: options.limiterSuccess ?? true });
+      },
     },
   } as unknown as Env;
 

@@ -1,4 +1,4 @@
-export const noStore = { "Cache-Control": "no-store" };
+const noStore = { "Cache-Control": "no-store" };
 
 export const failure = (
   status: number,

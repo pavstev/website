@@ -10,6 +10,7 @@ interface AimTarget {
 }
 
 interface ContactItem extends AimTarget {
+  link: HTMLAnchorElement;
   root: HTMLElement;
   tip: HTMLElement;
 }
@@ -86,7 +87,7 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
   for (const root of row.querySelectorAll<HTMLElement>(
     ":is(.download-item, .contact-item)"
   )) {
-    const link = root.querySelector<HTMLElement>(":scope > :is(a, button)");
+    const link = root.querySelector<HTMLAnchorElement>(":scope > a");
     const tip = root.querySelector<HTMLElement>(":scope > [role='tooltip']");
     if (link && tip) {
       items.push({ angle: 315, center: null, link, root, tip });

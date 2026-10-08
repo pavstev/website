@@ -14,7 +14,6 @@ My personal site: one contact card floating over a live WebGL sky, plus a small 
 - **A name that tunes in.** A CSS signal intro, then every 8 s a WebGL tear and a weight-morph wave across the letters.
 - **A planet per project.** Each open-source repo gets its own three.js planet, with language chips in GitHub's colors.
 - **Vienna on a globe.** Click "Vienna" in the bio for the coat of arms, a few facts and a three.js globe that loads only then.
-- **Ask about me.** A button on the card opens a panel: an AI on Cloudflare answers from my CV, behind a human check, and nothing is stored.
 - **Kind to your device.** Every loop drops to 30 fps when idle, pauses when hidden, degrades on slow frames and draws one still frame under reduced motion or a software renderer.
 - **No cookies.** Cloudflare Web Analytics counts visits without them, and a small chip says so once.
 
@@ -25,20 +24,15 @@ flowchart LR
   data["personal.ts, i18n.ts, GitHub API, CV feed"] --> build["pnpm build"] --> dist["dist/: page, sitemap, llms.txt, cv.json, resume.pdf"]
   visitor["Visitor"] --> cf["Cloudflare"]
   cf -- "other paths" --> dist
-  cf -- "/api/*, /mcp" --> worker["worker/"]
+  cf -- "/mcp" --> worker["worker/"]
   worker -. "cv.json, llms.txt" .-> dist
 ```
 
-The page is a Next.js 16 static export. The Worker in `worker/` runs only for two endpoints:
-
-- `POST /api/ask` streams an AI answer (Workers AI) from the CV, behind Turnstile and a per-IP rate limit.
-- `POST /mcp` is a read-only MCP server with five tools: `profile`, `experience`, `skills`, `projects`, `contact`.
-
-Both read `/cv.json` and `/llms.txt` from the static assets. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
+The page is a Next.js 16 static export. The Worker in `worker/` runs only for `/mcp`: `POST /mcp` is a read-only MCP server with five tools (`profile`, `experience`, `skills`, `projects`, `contact`) behind a per-IP rate limit. It reads `/cv.json` and `/llms.txt` from the static assets. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
 
 ## Getting started
 
-Node 24 and pnpm 12. The build reads the GitHub API and needs `GITHUB_TOKEN`; locally it falls back to `gh auth token`. It also reads the CV feed and needs `CV_FEED_URL` (`https://hirista.app`) and `CV_FEED_TOKEN`; locally put them in `.env.local` (gitignored). The résumé PDF is built from the feed, not committed. The Ask panel's human check reads `NEXT_PUBLIC_TURNSTILE_SITE_KEY`; outside Cloudflare's build (local, CI, previews) an unset key means Cloudflare's test key.
+Node 24 and pnpm 12. The build reads the GitHub API and needs `GITHUB_TOKEN`; locally it falls back to `gh auth token`. It also reads the CV feed and needs `CV_FEED_URL` (`https://hirista.app`) and `CV_FEED_TOKEN`; locally put them in `.env.local` (gitignored). The résumé PDF is built from the feed, not committed.
 
 ```bash
 pnpm install
@@ -69,7 +63,7 @@ gh secret set PROFILE_DEPLOY_KEY -R pavstev/website < /tmp/profile_sync && rm /t
 
 ## Deploy
 
-Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). Cloudflare runs `pnpm run build` and needs `GITHUB_TOKEN`, `CV_FEED_URL`, `CV_FEED_TOKEN` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY` as build variables and `TURNSTILE_SECRET_KEY` as a Worker secret (the Ask button appears with the first build after both are set); CI needs the two CV feed values as GitHub Actions secrets (and Dependabot secrets). Saving a résumé in hirista starts a new build. The `workers.dev` and preview URLs are off. Nobody deploys by hand.
+Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). Cloudflare runs `pnpm run build` and needs `GITHUB_TOKEN`, `CV_FEED_URL` and `CV_FEED_TOKEN` as build variables; CI needs the two CV feed values as GitHub Actions secrets (and Dependabot secrets). Saving a résumé in hirista starts a new build. The `workers.dev` and preview URLs are off. Nobody deploys by hand.
 
 ## Contact
 

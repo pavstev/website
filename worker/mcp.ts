@@ -152,7 +152,7 @@ export const handleMcp = async (
   }
 
   try {
-    const { success } = await env.ASK_LIMITER.limit({
+    const { success } = await env.MCP_LIMITER.limit({
       key: clientIp(request),
     });
 

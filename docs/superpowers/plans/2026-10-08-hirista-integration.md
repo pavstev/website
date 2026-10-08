@@ -6,6 +6,8 @@
 deploys data older than a newer build, makes its own résumé PDF, takes the industry popovers from
 the feed, and ships the Ask panel.
 
+> The Ask panel, `/api/ask` and Turnstile were removed on 2026-10-08 by the owner's decision (Task 4, the Turnstile settings and the `/api/ask` check below are history).
+
 **Architecture:** `scripts/cv-fetch.ts` (before `next build`) writes the feed, or the live
 `/cv.json` when hirista is down, to the gitignored `.cv/cv.json`; `getCv()` reads that file for
 every page, route and the PDF; `scripts/cv-guard.ts` (after `next build`) fails the build when the
@@ -153,6 +155,8 @@ IndustryJob`; `export const formatPeriod = (from: string, to: string): string`. 
       `feat(card): the industry popovers read company, period and link from the CV feed`.
 
 ### Task 4: The Ask panel
+
+> **Removed** 2026-10-08 by the owner's decision.
 
 Follow Task 9 of `docs/superpowers/plans/2026-10-08-new-pages.md` exactly, with three changes: write
 the copy marked `"..."` yourself (plain, short, no em dashes; `design:ux-copy`); add
