@@ -15,6 +15,7 @@ import {
   WebGLRenderer,
 } from "three";
 
+import { createFrameClock } from "@/lib/frame-clock";
 import { createFramePacer, pacerIdleMs } from "@/lib/frame-pacer";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
 import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
@@ -300,7 +301,7 @@ export const initClouds = (
   const card = document.querySelector("[data-card]");
   const cardBox = { height: 0, top: 0, width: 0 };
   const view = { height: 1, width: 1 };
-  const startedAt = performance.now();
+  const clock = createFrameClock(timeOffset * 1000);
   const pointer = { x: 0, y: 0 };
   const pointerTarget = { x: 0, y: 0 };
   const part = { strength: 0, target: 0, x: 0, y: 0 };
@@ -385,9 +386,7 @@ export const initClouds = (
     const dt =
       prevRender > 0 ? Math.min((now - prevRender) / 1000, 0.1) : 1 / 60;
     prevRender = now;
-    const elapsed = reduced
-      ? timeOffset
-      : timeOffset + (now - startedAt) / 1000;
+    const elapsed = reduced ? timeOffset : clock.tick(now) / 1000;
     const follow = 1 - Math.exp(-pointerFollow * dt);
     pointer.x += (pointerTarget.x - pointer.x) * follow;
     pointer.y += (pointerTarget.y - pointer.y) * follow;
@@ -441,6 +440,7 @@ export const initClouds = (
     rafId = 0;
     prevRender = 0;
     pacer.reset();
+    clock.pause();
   };
 
   const freeze = (now: number): void => {
@@ -458,7 +458,9 @@ export const initClouds = (
   };
 
   const drawStill = (): void => {
-    if (ready && !lost && !rafId) renderFrame(performance.now());
+    if (!ready || lost || rafId) return;
+    clock.pause();
+    renderFrame(performance.now());
   };
 
   const queueStill = (): void => {
