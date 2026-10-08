@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { servedCv } from "../src/lib/cv-sample.ts";
 import { buildSystemPrompt, loadFacts } from "./facts.ts";
 
 const cv = {
@@ -130,5 +131,14 @@ describe("loadFacts", () => {
     const prompt = buildSystemPrompt(facts);
     assert.match(prompt, /Dev at Bare \(2019 to 2020\)/);
     assert.equal(facts.cv.experience.items[0]?.skills.length, 0);
+  });
+  it("reads the cv.json the site serves, projects included", async () => {
+    const assets = fakeAssets((url) =>
+      url.endsWith("/cv.json") ? Response.json(servedCv) : new Response("# Ada")
+    );
+    const facts = await loadFacts(assets, "https://served.test");
+    assert.equal(facts.cv.basics.name, "Ada Example");
+    assert.equal(facts.cv.basics.location, "");
+    assert.match(buildSystemPrompt(facts), /Lead at Example \(2020 to Now\)/);
   });
 });

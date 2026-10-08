@@ -63,6 +63,10 @@
   ! Content-Security-Policy
   ! X-Frame-Options
 
+/cv.json
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
 /ee32ef309c036fb4c6b716d08e9bf922.txt
   ! Content-Security-Policy
   ! X-Frame-Options

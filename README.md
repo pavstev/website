@@ -21,7 +21,7 @@ My personal site: one contact card floating over a live WebGL sky, plus a small 
 
 ```mermaid
 flowchart LR
-  data["personal.ts, i18n.ts, GitHub API"] --> build["next build"] --> dist["dist/: page, sitemap, llms.txt"]
+  data["personal.ts, i18n.ts, GitHub API, CV feed"] --> build["next build"] --> dist["dist/: page, sitemap, llms.txt, cv.json"]
   visitor["Visitor"] --> cf["Cloudflare"]
   cf -- "other paths" --> dist
   cf -- "/api/*, /mcp" --> worker["worker/"]
@@ -33,11 +33,11 @@ The page is a Next.js 16 static export. The Worker in `worker/` runs only for tw
 - `POST /api/ask` streams an AI answer (Workers AI) from the CV, behind Turnstile and a per-IP rate limit.
 - `POST /mcp` is a read-only MCP server with five tools: `profile`, `experience`, `skills`, `projects`, `contact`.
 
-Both read `/cv.json` from the static assets, which the upcoming CV feed will publish. Until then `/mcp` answers 502 and `/api/ask` 403 or 502.
+Both read `/cv.json` and `/llms.txt` from the static assets. The build makes `/cv.json` from a private CV feed in my job-search app, with the phone number removed.
 
 ## Getting started
 
-Node 24 and pnpm 12. The build reads the GitHub API and needs `GITHUB_TOKEN`; locally it falls back to `gh auth token`.
+Node 24 and pnpm 12. The build reads the GitHub API and needs `GITHUB_TOKEN`; locally it falls back to `gh auth token`. It also reads the CV feed and needs `CV_FEED_URL` and `CV_FEED_TOKEN`; locally put them in `.env.local` (gitignored). `public/resume.pdf` stays a committed file.
 
 ```bash
 pnpm install
@@ -68,7 +68,7 @@ gh secret set PROFILE_DEPLOY_KEY -R pavstev/website < /tmp/profile_sync && rm /t
 
 ## Deploy
 
-Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). Cloudflare needs `GITHUB_TOKEN` as a build variable and `TURNSTILE_SECRET_KEY` as a Worker secret. Nobody deploys by hand.
+Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). Cloudflare needs `GITHUB_TOKEN`, `CV_FEED_URL` and `CV_FEED_TOKEN` as build variables and `TURNSTILE_SECRET_KEY` as a Worker secret; CI needs the two CV feed values as GitHub Actions secrets (and Dependabot secrets). Nobody deploys by hand.
 
 ## Contact
 
