@@ -134,6 +134,23 @@ export const en = {
       "Cloudflare Web Analytics counts visits without cookies and without personal data.",
     stored: "Your OK is saved on this device, so this note stays hidden.",
   },
+  products: {
+    headingOne: "{count} product",
+    headingOther: "{count} products",
+    items: {
+      hirista: {
+        line: "Scores your saved jobs and writes the résumé for each.",
+        period: "2026",
+        role: "Solo founder",
+      },
+      "safety-real-time": {
+        line: "Fleet software for trucking: pre-trip checks, live dashboards.",
+        period: "since 2022",
+        role: "Co-founder & CTO",
+      },
+    },
+    llmsHeading: "Products",
+  },
   profile: {
     contributingContent: "Bio, links and location: `src/lib/personal.ts`",
     contributingIntro:

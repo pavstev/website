@@ -34,6 +34,21 @@ export const profilePalette = {
   sky: skyTokens,
 } as const;
 
+export const productPalette = {
+  hirista: {
+    accent: "#f79900",
+    disc: "#1c1410",
+    mark: "#efebe2",
+    tint: "#f79900",
+  },
+  "safety-real-time": {
+    accent: "#1f232c",
+    disc: "#32d74b",
+    mark: "#1f232c",
+    tint: "#32d74b",
+  },
+} as const;
+
 export const skyRgb = (name: SkyTokenName): [number, number, number] => {
   const value = Number.parseInt(skyTokens[name].slice(1), 16);
   return [
