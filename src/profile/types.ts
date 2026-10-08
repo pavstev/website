@@ -15,6 +15,7 @@ export interface ProfileInput {
   fonts: ProfileFonts;
   icons: Readonly<Record<string, IconData>>;
   personal: ProfilePerson;
+  products: ProfileProduct[];
   repos: readonly Repo[];
   strings: ProfileStrings;
 }
@@ -29,6 +30,13 @@ export interface ProfilePerson {
   website: string;
 }
 
+export interface ProfileProduct {
+  line: string;
+  meta: string;
+  name: string;
+  url: string;
+}
+
 interface ProfileFonts {
   extra: Uint8Array;
   latin: Uint8Array;
@@ -38,6 +46,7 @@ interface ProfileFonts {
 
 interface ProfileStrings {
   card: { linkedin: string };
+  products: { headingOne: string; headingOther: string };
   profile: {
     contributingContent: string;
     contributingIntro: string;

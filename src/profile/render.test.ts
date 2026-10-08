@@ -11,7 +11,7 @@ const file = (path: string): string => {
   return found.contents;
 };
 
-const expectedReadme = String.raw`<!-- Generated. Do not edit here. -->
+const expectedRepos = String.raw`<!-- Generated. Do not edit here. -->
 <p align="center">
   <a href="https://example.com"><img src="assets/header.svg" alt="Ada Example, Backend &amp; Systems Engineer"></a>
 </p>
@@ -32,6 +32,13 @@ const expectedReadme = String.raw`<!-- Generated. Do not edit here. -->
 - **[engine-two](https://github.com/ada/engine-two)** · A second engine.
 `;
 
+const expectedReadme = String.raw`${expectedRepos}
+## 2 products
+
+- **[trip\_kit](https://tripkit.example)** · Founder · 2026. Plans \*trips\* for you.
+- **[Road Works](https://roadworks.example)** · Co-founder & CTO · since 2022. Fleet tools: checks, maps.
+`;
+
 describe("renderProfile", () => {
   it("renders the expected files in a stable order", () => {
     assert.deepEqual(
@@ -50,6 +57,13 @@ describe("renderProfile", () => {
 
   it("renders the README exactly", () => {
     assert.equal(file("README.md"), expectedReadme);
+  });
+
+  it("leaves the products section out when there are none", () => {
+    const readme = renderProfile({ ...fixture, products: [] }).find(
+      (item) => item.path === "README.md"
+    );
+    assert.equal(readme?.contents, expectedRepos);
   });
 
   it("is deterministic", () => {

@@ -38,6 +38,20 @@ export const fixture: ProfileInput = {
     title: "Backend & Systems Engineer",
     website: "https://example.com",
   },
+  products: [
+    {
+      line: "Plans *trips* for you.",
+      meta: "Founder · 2026",
+      name: "trip_kit",
+      url: "https://tripkit.example",
+    },
+    {
+      line: "Fleet tools: checks, maps.",
+      meta: "Co-founder & CTO · since 2022",
+      name: "Road Works",
+      url: "https://roadworks.example",
+    },
+  ],
   repos: [
     {
       description: "A small engine. Uses *stars* and <tags>.",
@@ -61,6 +75,10 @@ export const fixture: ProfileInput = {
   ],
   strings: {
     card: { linkedin: "LinkedIn" },
+    products: {
+      headingOne: "{count} product",
+      headingOther: "{count} products",
+    },
     profile: {
       contributingContent: "Bio: `a`",
       contributingIntro: "Generated. Do not edit.",

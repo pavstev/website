@@ -1,4 +1,4 @@
-import type { ProfileInput } from "./types.ts";
+import type { ProfileInput, ProfileProduct } from "./types.ts";
 
 import { buildBadges } from "./icons.ts";
 import { escapeMarkdown, escapeXml } from "./text.ts";
@@ -21,8 +21,19 @@ const summaryLine = (input: ProfileInput): string => {
   return `${escapeXml(before)}${escapeXml(personal.city)} ${flag}${escapeXml(after)}`;
 };
 
+const countHeading = (
+  count: number,
+  forms: { headingOne: string; headingOther: string }
+): string =>
+  (count === 1 ? forms.headingOne : forms.headingOther).replace("{count}", () =>
+    String(count)
+  );
+
+const productLine = (product: ProfileProduct): string =>
+  `- **[${escapeMarkdown(product.name)}](${product.url})** · ${escapeMarkdown(product.meta)}. ${escapeMarkdown(product.line)}`;
+
 export const renderReadme = (input: ProfileInput): string => {
-  const { personal, repos, strings } = input;
+  const { personal, products, repos, strings } = input;
   const header = `<a href="${escapeXml(personal.website)}"><img src="assets/header.svg" alt="${escapeXml(`${personal.name}, ${personal.title}`)}"></a>`;
   const badges = buildBadges(input)
     .map(
@@ -37,17 +48,24 @@ export const renderReadme = (input: ProfileInput): string => {
         : "";
     return `- **[${escapeMarkdown(repo.name)}](${repo.url})** · ${escapeMarkdown(repo.description)}${languages}`;
   });
-  const heading = (
-    repos.length === 1 ? strings.repos.headingOne : strings.repos.headingOther
-  ).replace("{count}", () => String(repos.length));
+  const productSection =
+    products.length > 0
+      ? [
+          ``,
+          `## ${countHeading(products.length, strings.products)}`,
+          ``,
+          ...products.map((product) => productLine(product)),
+        ]
+      : [];
   return `${[
     `<!-- ${strings.profile.generated} -->`,
     ...paragraph(header),
     ...paragraph(summaryLine(input)),
     ...paragraph(badges),
-    `## ${heading}`,
+    `## ${countHeading(repos.length, strings.repos)}`,
     ``,
     ...projects,
+    ...productSection,
   ].join("\n")}\n`;
 };
 

@@ -11,6 +11,7 @@ import { getContact, getRepos } from "../lib/github.ts";
 import { en } from "../lib/i18n.ts";
 import { iconData } from "../lib/icon-data.ts";
 import { personalData } from "../lib/personal.ts";
+import { productMeta, products } from "../lib/products.ts";
 import { resumeUrl } from "./icons.ts";
 import { reachable } from "./reachable.ts";
 import { renderProfile } from "./render.ts";
@@ -45,6 +46,12 @@ const files = renderProfile({
   },
   icons: iconData,
   personal: person,
+  products: products.map((product) => ({
+    line: product.line,
+    meta: productMeta(product),
+    name: product.name,
+    url: product.url,
+  })),
   repos,
   strings: en,
 });
