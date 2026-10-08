@@ -33,6 +33,16 @@ const languageSchema = z.object({
   language: z.string().default(""),
 });
 
+const projectSchema = z.object({
+  contributions: z.array(contributionSchema).default([]),
+  from: z.string().default(""),
+  name: z.string(),
+  overview: z.string().default(""),
+  skills: z.array(z.string()).default([]),
+  to: z.string().default(""),
+  websiteUrl: z.string().default(""),
+});
+
 const cvSchema = z.object({
   basics: z.object({
     headline: z.string(),
@@ -42,6 +52,7 @@ const cvSchema = z.object({
   education: z.object({ items: z.array(educationSchema) }).optional(),
   experience: z.object({ items: z.array(roleSchema) }),
   languages: z.object({ items: z.array(languageSchema) }).optional(),
+  projects: z.object({ items: z.array(projectSchema) }).optional(),
   skills: z.object({ items: z.array(skillGroupSchema) }).optional(),
   summary: z.string(),
   updatedAt: z.string(),
@@ -52,6 +63,8 @@ export interface Facts {
   llms: string;
 }
 type Cv = z.infer<typeof cvSchema>;
+
+type Project = NonNullable<Cv["projects"]>["items"][number];
 
 type Role = Cv["experience"]["items"][number];
 
@@ -120,15 +133,41 @@ export const loadFacts = async (
 export const compact = (lines: Array<string | undefined>): string[] =>
   lines.filter((line): line is string => Boolean(line?.trim()));
 
+const contributionLine = (item: {
+  description: string;
+  title: string;
+}): string =>
+  item.title ? `${item.title}: ${item.description}` : item.description;
+
 export const roleBlock = (role: Role): string =>
   compact([
     `${role.position} at ${role.company} (${role.from} to ${role.to})`,
     role.overview,
-    ...role.contributions.map((item) =>
-      item.title ? `${item.title}: ${item.description}` : item.description
-    ),
+    ...role.contributions.map((item) => contributionLine(item)),
     role.skills.length > 0 ? `Skills: ${role.skills.join(", ")}` : undefined,
   ]).join("\n");
+
+const projectBlock = (project: Project): string => {
+  const years = [project.from, project.to].filter(Boolean).join(" to ");
+
+  return compact([
+    years ? `${project.name} (${years})` : project.name,
+    project.overview,
+    project.websiteUrl ? `Link: ${project.websiteUrl}` : undefined,
+    ...project.contributions.map((item) => contributionLine(item)),
+    project.skills.length > 0
+      ? `Skills: ${project.skills.join(", ")}`
+      : undefined,
+  ]).join("\n");
+};
+
+export const projectsText = (cv: Cv): string | undefined => {
+  const blocks = (cv.projects?.items ?? [])
+    .filter((project) => project.name.trim())
+    .map((project) => projectBlock(project));
+
+  return blocks.length > 0 ? blocks.join("\n\n") : undefined;
+};
 
 export const skillLines = (cv: Cv): string[] =>
   (cv.skills?.items ?? [])

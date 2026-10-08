@@ -5,9 +5,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "next build",
-    "check": "prettier --check . --cache --log-level=warn && eslint . --max-warnings=0 --cache && tsc --noEmit && tsc --noEmit -p worker/tsconfig.json && node --test \"src/**/*.test.ts\" \"worker/**/*.test.ts\" && knip && next build && node src/profile/cli.ts --check",
-    "dev": "next dev -p 4321",
+    "build": "node scripts/cv-fetch.ts && next build && node scripts/cv-guard.ts",
+    "check": "prettier --check . --cache --log-level=warn && eslint . --max-warnings=0 --cache && tsc --noEmit && tsc --noEmit -p worker/tsconfig.json && node --test \"src/**/*.test.ts\" \"worker/**/*.test.ts\" && knip && pnpm build && node src/profile/cli.ts --check",
+    "dev": "node scripts/cv-fetch.ts && next dev -p 4321",
     "fix": "prettier --write . --cache --log-level=warn && eslint . --fix --max-warnings=0 --cache",
     "icons": "node scripts/generate-icon-data.ts",
     "prepare": "husky",
@@ -16,7 +16,9 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
+    "@fontsource/inter": "^5.3.0",
     "@modelcontextprotocol/sdk": "1.32.1",
+    "@react-pdf/renderer": "^4.9.0",
     "next": "^16.3.8",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

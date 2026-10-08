@@ -61,6 +61,16 @@ const sampleFacts: Facts = {
   llms,
 };
 
+const bareProject = {
+  contributions: [],
+  from: "",
+  name: "",
+  overview: "",
+  skills: [],
+  to: "",
+  websiteUrl: "",
+};
+
 const connect = async (facts: Facts): Promise<Client> => {
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: "test", version: "0.0.0" });
@@ -213,6 +223,54 @@ describe("createMcpServer", () => {
     assert.match(text, /\[engine\]\(https:\/\/github\.com\/ada\/engine\)/);
     assert.doesNotMatch(text, /mailto:/);
     assert.doesNotMatch(text, /Systems/);
+  });
+  it("projects adds the projects of the feed after the open-source ones", async () => {
+    const client = await connect({
+      ...sampleFacts,
+      cv: {
+        ...sampleFacts.cv,
+        projects: {
+          items: [
+            {
+              contributions: [
+                { description: "Used by 300 teams.", title: "Adoption" },
+              ],
+              from: "Jan 2022",
+              name: "tracelite",
+              overview: "A small tracing library for Go services.",
+              skills: ["Go"],
+              to: "Present",
+              websiteUrl: "https://github.com/ada/tracelite",
+            },
+            { ...bareProject, name: "", overview: "Nameless." },
+          ],
+        },
+      },
+    });
+    const text = await textOf(client, "projects");
+
+    assert.match(text, /\[engine\]\(https:\/\/github\.com\/ada\/engine\)/);
+    assert.match(
+      text,
+      /Projects from the résumé\ntracelite \(Jan 2022 to Present\)/
+    );
+    assert.match(text, /Link: https:\/\/github\.com\/ada\/tracelite/);
+    assert.match(text, /Adoption: Used by 300 teams\./);
+    assert.ok(text.indexOf("engine") < text.indexOf("tracelite"));
+    assert.doesNotMatch(text, /Nameless/);
+    assert.doesNotMatch(text, /mailto:/);
+  });
+  it("projects answers with the feed projects when llms.txt has no section", async () => {
+    const client = await connect({
+      cv: {
+        ...sampleFacts.cv,
+        projects: { items: [{ ...bareProject, name: "tracelite" }] },
+      },
+      llms: "# Ada",
+    });
+    const text = await textOf(client, "projects");
+
+    assert.equal(text, "Projects from the résumé\ntracelite");
   });
   it("contact returns the Links section only", async () => {
     const client = await connect(sampleFacts);

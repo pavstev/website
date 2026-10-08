@@ -5,6 +5,7 @@ import {
   compact,
   type Facts,
   loadFacts,
+  projectsText,
   roleBlock,
   skillLines,
 } from "./facts.ts";
@@ -13,6 +14,7 @@ import { clientIp, failure } from "./http.ts";
 const serverName = "stevanpavlovic.com";
 const serverVersion = "0.1.0";
 const projectsHeading = "Open-source projects";
+const resumeProjectsHeading = "Projects from the résumé";
 const linksHeading = "Links";
 const unavailable = "Not available.";
 const maxRequestBodySize = 16_384;
@@ -74,6 +76,17 @@ const skillsText = (cv: Cv): string => {
   return lines.length > 0 ? lines.join("\n") : unavailable;
 };
 
+const projectsAnswer = (facts: Facts): string => {
+  const resume = projectsText(facts.cv);
+
+  return (
+    compact([
+      section(facts.llms, projectsHeading),
+      resume ? `${resumeProjectsHeading}\n${resume}` : undefined,
+    ]).join("\n\n") || unavailable
+  );
+};
+
 const textResult = (
   text: string
 ): { content: [{ text: string; type: "text" }] } => ({
@@ -113,9 +126,10 @@ export const createMcpServer = (facts: Facts): McpServer => {
     "projects",
     {
       annotations: readOnly,
-      description: "Open-source projects, one per line with a link.",
+      description:
+        "Open-source projects, one per line with a link, then the projects from the résumé.",
     },
-    () => textResult(section(llms, projectsHeading) ?? unavailable)
+    () => textResult(projectsAnswer(facts))
   );
   server.registerTool(
     "contact",

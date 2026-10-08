@@ -1,5 +1,6 @@
-import { readFile } from "node:fs/promises";
 import { inflateSync } from "node:zlib";
+
+import { getResumePdf } from "./resume-file.ts";
 
 export interface ResumeFacts {
   kilobytes: number;
@@ -37,14 +38,15 @@ const countPages = (text: string): number => {
   return fromTree > 0 ? fromTree : (text.match(pagePattern)?.length ?? 0);
 };
 
-const readResumeFacts = (raw: Buffer): ResumeFacts => {
+export const readResumeFacts = (pdf: Uint8Array): ResumeFacts => {
+  const raw = Buffer.from(pdf.buffer, pdf.byteOffset, pdf.byteLength);
   const text = raw.toString("latin1");
   const pages = countPages([text, ...objectStreams(raw, text)].join("\n"));
   if (pages === 0) {
-    throw new Error("public/resume.pdf: no page count found");
+    throw new Error("resume PDF: no page count found");
   }
   return { kilobytes: Math.round(raw.byteLength / 1024), pages };
 };
 
 export const getResumeFacts = async (): Promise<ResumeFacts> =>
-  readResumeFacts(await readFile("public/resume.pdf"));
+  readResumeFacts(await getResumePdf());

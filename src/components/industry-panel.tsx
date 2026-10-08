@@ -3,28 +3,33 @@ import type { ReactElement } from "react";
 import { Icon } from "@/components/icon";
 import { TopicHeading } from "@/components/topic-heading";
 import { TopicPanel } from "@/components/topic-panel";
+import { getCv } from "@/lib/cv";
 import { en } from "@/lib/i18n";
-import { type Industry } from "@/lib/industries";
+import { type Industry, industryJob } from "@/lib/industries";
 
 interface IndustryPanelProps {
   industry: Industry;
 }
 
-export const IndustryPanel = ({
+export const IndustryPanel = async ({
   industry,
-}: IndustryPanelProps): ReactElement => {
+}: IndustryPanelProps): Promise<ReactElement> => {
+  const job = industryJob(await getCv(), industry.key);
   const titleId = `${industry.panelId}-title`;
-  const company = (
-    <a
-      className="topic-company focus-ring"
-      href={industry.site}
-      rel="noopener noreferrer"
-      target="_blank"
-    >
-      {industry.company}
-      <span className="sr-only"> {en.industries.newTab}</span>
-    </a>
-  );
+  const company =
+    job.site === "" ? (
+      <span className="topic-company">{job.company}</span>
+    ) : (
+      <a
+        className="topic-company focus-ring"
+        href={job.site}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {job.company}
+        <span className="sr-only"> {en.industries.newTab}</span>
+      </a>
+    );
   return (
     <TopicPanel
       heading={
@@ -38,7 +43,7 @@ export const IndustryPanel = ({
             <>
               {company}
               {en.industries.separator}
-              {industry.period}
+              {job.period}
             </>
           }
           title={industry.title}

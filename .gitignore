@@ -1,6 +1,7 @@
 *.tsbuildinfo
 .DS_Store
 .claude/skills/
+.cv/
 .dev.vars
 .env*
 .eslintcache
@@ -11,3 +12,4 @@
 dist/
 next-env.d.ts
 node_modules/
+.cv/

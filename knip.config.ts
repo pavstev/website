@@ -1,8 +1,13 @@
 import type { KnipConfig } from "knip";
 
 const config: KnipConfig = {
-  entry: ["scripts/generate-globe-data.ts", "src/profile/**/*.test.ts"],
-  ignoreDependencies: ["wrangler"],
+  entry: [
+    "scripts/cv-fetch.ts",
+    "scripts/cv-guard.ts",
+    "scripts/generate-globe-data.ts",
+    "src/profile/**/*.test.ts",
+  ],
+  ignoreDependencies: ["@fontsource/inter", "wrangler"],
   ignoreExportsUsedInFile: false,
   includeEntryExports: true,
   project: [

@@ -1,0 +1,139 @@
+{
+  "basics": {
+    "email": "ana@example.com",
+    "githubHandle": "ana-example",
+    "headline": "Staff platform engineer",
+    "linkedinHandle": "ana-petrovic-example",
+    "location": "Novi Sad, Serbia",
+    "name": "Ana Petrović",
+    "phone": "",
+    "pictureUrl": "https://example.com/ana.jpg",
+    "websiteUrl": "https://ana.example.com"
+  },
+  "education": {
+    "items": [
+      {
+        "area": "Computer Science",
+        "contributions": [
+          {
+            "description": "Wrote a thesis on consistent hashing in small clusters.",
+            "title": "Thesis"
+          }
+        ],
+        "degree": "MSc",
+        "from": "Sep 2012",
+        "location": "Novi Sad, Serbia",
+        "overview": "Distributed systems track.",
+        "school": "Example University",
+        "skills": [
+          "Algorithms",
+          "Distributed systems"
+        ],
+        "to": "Jun 2017",
+        "websiteUrl": "https://university.example.edu"
+      }
+    ]
+  },
+  "experience": {
+    "items": [
+      {
+        "company": "Example Cloud",
+        "contributions": [
+          {
+            "description": "Cut deploy time from 40 to 9 minutes by caching build layers.",
+            "title": "Faster deploys"
+          },
+          {
+            "description": "Moved 120 services to one paved path with no downtime.",
+            "title": "Paved path"
+          }
+        ],
+        "from": "Mar 2021",
+        "location": "Remote",
+        "overview": "Leads the internal platform team.",
+        "position": "Staff Platform Engineer",
+        "skills": [
+          "Go",
+          "Kubernetes",
+          "Terraform"
+        ],
+        "to": "Present",
+        "websiteUrl": "https://cloud.example.com"
+      },
+      {
+        "company": "Sample Payments",
+        "contributions": [
+          {
+            "description": "Built an idempotent ledger that handled 2M writes a day.",
+            "title": "Idempotent ledger"
+          }
+        ],
+        "from": "Aug 2017",
+        "location": "Belgrade, Serbia",
+        "overview": "Backend engineer on the payments core.",
+        "position": "Backend Engineer",
+        "skills": [
+          "TypeScript",
+          "PostgreSQL"
+        ],
+        "to": "Feb 2021",
+        "websiteUrl": ""
+      }
+    ]
+  },
+  "languages": {
+    "items": [
+      {
+        "fluency": "Native",
+        "language": "Serbian"
+      },
+      {
+        "fluency": "Fluent",
+        "language": "English"
+      }
+    ]
+  },
+  "projects": {
+    "items": [
+      {
+        "contributions": [
+          {
+            "description": "Used by 300 teams in its first year.",
+            "title": "Adoption"
+          }
+        ],
+        "from": "Jan 2022",
+        "name": "tracelite",
+        "overview": "A small tracing library for Go services.",
+        "skills": [
+          "Go",
+          "OpenTelemetry"
+        ],
+        "to": "Present",
+        "websiteUrl": "https://github.com/ana-example/tracelite"
+      }
+    ]
+  },
+  "skills": {
+    "items": [
+      {
+        "keywords": [
+          "Go",
+          "TypeScript",
+          "SQL"
+        ],
+        "name": "Languages"
+      },
+      {
+        "keywords": [
+          "Kubernetes",
+          "Terraform",
+          "PostgreSQL"
+        ],
+        "name": "Infrastructure"
+      }
+    ]
+  },
+  "summary": "Platform engineer with eight years of experience turning slow, fragile delivery into a boring, fast path.",
+  "updatedAt": "2026-10-08T08:05:04.357Z"
+}

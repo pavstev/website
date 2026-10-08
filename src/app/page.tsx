@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
 
+import { AskPanel } from "@/components/ask-panel";
+import { AskTrigger } from "@/components/ask-trigger";
 import { CardFooter } from "@/components/card-footer";
 import { CloudsCanvas } from "@/components/clouds-canvas";
 import { ContactLinks } from "@/components/contact-links";
@@ -12,6 +14,7 @@ import { Profile } from "@/components/profile";
 import { RepoStrip } from "@/components/repo-strip";
 import { ResumeTip } from "@/components/resume-tip";
 import { SpaceBackground } from "@/components/space-background";
+import { askEnabled } from "@/lib/ask";
 import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
@@ -43,6 +46,10 @@ export default async function Page(): Promise<ReactElement> {
     getContact(personalData.githubHandle),
     getResumeFacts(),
   ]);
+  const showAsk = askEnabled(
+    process.env["NEXT_PUBLIC_TURNSTILE_SITE_KEY"],
+    process.env["WORKERS_CI"]
+  );
   return (
     <>
       <script
@@ -71,13 +78,15 @@ export default async function Page(): Promise<ReactElement> {
               <ResumeTip detailId={resumeDetailId} facts={resume} />
             </DownloadButton>
             <ContactLinks contact={contact} />
+            {showAsk ? <AskTrigger /> : null}
           </div>
           <RepoStrip repos={repos} />
           <CardFooter />
         </div>
         <EffectsInit />
       </main>
-      <PrivacyNote email={contact.email} />
+      <PrivacyNote ask={showAsk} email={contact.email} />
+      {showAsk ? <AskPanel /> : null}
     </>
   );
 }

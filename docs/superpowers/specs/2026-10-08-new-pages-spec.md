@@ -1,6 +1,6 @@
 # Decision record: new pages for stevanpavlovic.com
 
-Date: 2026-10-08. Status: agreed in interview, not yet implemented. Plan: `docs/superpowers/plans/2026-10-08-new-pages.md`.
+Date: 2026-10-08. Status: agreed in interview; the CV feed, the Worker, `/mcp` and the Ask panel are built. The other pages are not. Plan: `docs/superpowers/plans/2026-10-08-new-pages.md`. Lines marked superseded were replaced by `docs/superpowers/plans/2026-10-08-hirista-integration.md`.
 
 ## Goal
 
@@ -15,7 +15,7 @@ Add a small set of mostly automatic pages and one AI endpoint so more people fin
    Reason: both ticked. Rejected: chat only, MCP only.
 
 3. **CV facts come from the jobsearch app through a secure endpoint, fetched at build time.**
-   The data is in the cvexp schema (`ResumeData`, public npm package `cvexp` 2.1.0). The build fails on any non-200, like the GitHub calls today. Reason: one source of truth, no private GitHub read, no hand copying. Rejected: a jobsearch Action that pushes the JSON into the website repo (recommended, declined); copy by hand.
+   The data is in the cvexp schema (`ResumeData`, public npm package `cvexp` 2.1.0). The build fails on any non-200, like the GitHub calls today. _Superseded: a timeout, a network error or a 5xx now falls back to the live `/cv.json`; a 404, a redirect, a missing variable or invalid data still fails the build._ Reason: one source of truth, no private GitHub read, no hand copying. Rejected: a jobsearch Action that pushes the JSON into the website repo (recommended, declined); copy by hand.
 
 4. **Strip only the phone number.** The current employer appears everywhere: page data, AI answers, MCP. Reason: the user dropped the old rule on 2026-10-08. The memory note was updated.
 
@@ -28,11 +28,11 @@ Add a small set of mostly automatic pages and one AI endpoint so more people fin
 
 ## Defaults and assumptions (decided without you)
 
-- **Endpoint contract (jobsearch side, see Appendix A):** `GET https://js.stevanpavlovic.com/api/public/cv` and `/api/public/cv.pdf`. Bearer secret in the `Authorization` header, constant-time compare. Returns the owner's generic résumé as cvexp `ResumeData` plus `updatedAt`, phone removed server-side. A Cloudflare Access bypass policy covers only these two paths. Rate limited with the existing limiter.
+- **Endpoint contract (jobsearch side, see Appendix A):** `GET {CV_FEED_URL}/api/public/cv`, with `CV_FEED_URL` set to `https://hirista.app` ~~and `/api/public/cv.pdf`~~. Bearer secret in the `Authorization` header, constant-time compare. Returns the owner's generic résumé as cvexp `ResumeData` plus `updatedAt`, phone removed server-side. ~~A Cloudflare Access bypass policy covers only these two paths.~~ Rate limited with the existing limiter. _Superseded: the feed host is hirista.app (the old jobsearch host only answers a 308), there is no `cv.pdf` route and no Access bypass._
 - **Secrets:** website build variables `CV_FEED_URL` and `CV_FEED_TOKEN` on Cloudflare; locally in `.env.local` (gitignored). Missing values fail the build with a clear message. jobsearch Worker secrets: `CV_FEED_TOKEN`, `CV_FEED_OWNER_ID`, `WEBSITE_DEPLOY_HOOK_URL`.
 - **Freshness:** when the résumé is saved in jobsearch, it POSTs the website's Workers Builds deploy hook, so the site rebuilds within minutes.
-- **The PDF:** `public/resume.pdf` is no longer committed. The build downloads `/api/public/cv.pdf` (made by cvexp with Browser Rendering in jobsearch) into `dist/resume.pdf`. The download name stays `Stevan_Pavlovic_Resume.pdf`.
-- **Validation:** the website validates the JSON with the `cvexp` zod schema (new dependency) and again strips `basics.phone` defensively.
+- **The PDF:** `public/resume.pdf` is no longer committed. ~~The build downloads `/api/public/cv.pdf` (made by cvexp with Browser Rendering in jobsearch) into `dist/resume.pdf`.~~ The download name stays `Stevan_Pavlovic_Resume.pdf`. _Superseded: the website build renders `dist/resume.pdf` itself from the feed JSON with `@react-pdf/renderer` (`src/lib/resume-pdf.ts`, `src/lib/resume-file.ts`)._
+- **Validation:** the website validates the JSON with ~~the `cvexp` zod schema (new dependency)~~ and again strips `basics.phone` defensively. _Superseded: `cvSchema` in `src/lib/cv.ts` mirrors cvexp's shape and adds `projects`; there is no `cvexp` dependency._
 - **Worker layout:** `wrangler.jsonc` gets `main` and `run_worker_first: ["/api/*", "/mcp", "/mcp/*"]`. All other paths stay free static assets. The Worker code lives in `worker/` and never reaches the Next.js bundle.
 - **/api/ask:** POST, JSON body `{ question, turnstileToken }`, 500-character question cap, Turnstile verified server-side, per-IP limiter (Workers Rate Limiting binding, about 20 a minute), Workers AI with a current small instruct model from the catalog, system prompt built from the same CV JSON and the repo list at build time, answers only from the facts, says "I do not know" otherwise, no memory, no logs of question text. Replies stream as text.
 - **/mcp:** authless Streamable HTTP, stateless, official `@modelcontextprotocol/sdk`. Tools: `profile`, `experience`, `skills`, `projects`, `contact`. Same rate limiter. Listed in llms.txt.
@@ -49,7 +49,7 @@ Add a small set of mostly automatic pages and one AI endpoint so more people fin
 
 ## Accepted risks (your call over my advice)
 
-- **Build-time fetch from jobsearch.** Every website build depends on `js.stevanpavlovic.com` being up and the secret being valid. If either fails, the site does not deploy until fixed. The recommended push-from-jobsearch path avoided this.
+- **Build-time fetch from jobsearch.** Every website build depends on the feed being up and the secret being valid. If either fails, the site does not deploy until fixed. The recommended push-from-jobsearch path avoided this. _Superseded: a feed that is down no longer stops the build (it falls back to the live `/cv.json`); only a wrong token, a redirect, a missing variable or invalid data does._
 - **cronfluent stays on its subdomain.** The one idea with measured search demand (about 1300 US searches a month) is not on the main domain.
 - **No CV page.** The AI and the MCP know the full history, but no human-readable page shows it. Recruiters still get the PDF.
 
@@ -63,6 +63,8 @@ Add a small set of mostly automatic pages and one AI endpoint so more people fin
 
 Paste this into a session in `pavstev/jobsearch`:
 
+> _Superseded: the feed has one route, `GET /api/public/cv`; the PDF is rendered by the website build, so there is no `cv.pdf` route, no Browser Rendering binding and no Access bypass policy. The prompt below is the original._
+>
 > Add a read-only public CV feed for the website build. Two routes in the existing API handler: `GET /api/public/cv` returns the owner's generic résumé as cvexp `ResumeData` JSON plus `updatedAt` (ISO), with `basics.phone` set to an empty string; `GET /api/public/cv.pdf` returns the same résumé rendered by `cvexp` `generate` with `@cloudflare/puppeteer` (Browser Rendering binding `BROWSER`) as `application/pdf`, cached for one hour in the Cache API. Both require `Authorization: Bearer <CV_FEED_TOKEN>`; compare with `crypto.subtle.timingSafeEqual`; any other request gets 404, never 401, so the routes stay invisible. The owner is `CV_FEED_OWNER_ID` (a Worker secret); read the résumé with the existing `asOwner` path, never bypass RLS. Apply the existing `API_LIMITER`. Add a Cloudflare Access bypass policy for exactly these two paths (document the dashboard steps in DEPLOYMENT.md). When the résumé is saved, POST `WEBSITE_DEPLOY_HOOK_URL` once (ignore failures, log them). Add `check:db` cases for: wrong token is 404, right token returns the schema-valid JSON with an empty phone, PDF route returns `%PDF` bytes. Document the three secrets and the contract in CLAUDE.md. Do not log the token or the résumé.
 
 ## Appendix B: distribution checklist (your tasks, after launch)

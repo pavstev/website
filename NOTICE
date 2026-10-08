@@ -4,8 +4,8 @@ The source code in this repository is licensed under the MIT License (see LICENS
 
 These materials are NOT covered by that license. All rights are reserved by Stevan Pavlović:
 
-- Portraits and images: public/portraits/, public/og-image.jpg and .github/assets/
-- The résumé: public/resume.pdf
+- Portraits and images: public/portraits/, public/stevan-pavlovic.jpeg, public/og-image.jpg and .github/assets/
+- The résumé: /resume.pdf, made at build time from the CV feed
 - Personal text and identity: the name, summary, titles, links and facts in src/lib/personal.ts, and the copy in src/lib/i18n.ts that describes him
 
 You may read the code and reuse it under the MIT License. Please do not reuse these materials, or present them as your own, without written permission.

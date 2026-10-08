@@ -42,3 +42,10 @@ export const skyRgb = (name: SkyTokenName): [number, number, number] => {
     (value & 255) / 255,
   ];
 };
+
+export const resumePdfPalette = {
+  accent: "#3B82F6",
+  rule: "#D9D9E0",
+  subtle: "#60646C",
+  text: "#1C2024",
+} as const;

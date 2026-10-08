@@ -27,6 +27,16 @@ const cv = {
   updatedAt: "2026-10-08T00:00:00.000Z",
 };
 
+const project = {
+  contributions: [{ description: "Used by 300 teams.", title: "Adoption" }],
+  from: "Jan 2022",
+  name: "tracelite",
+  overview: "A small tracing library for Go services.",
+  skills: ["Go", "OpenTelemetry"],
+  to: "Present",
+  websiteUrl: "https://github.com/ada/tracelite",
+};
+
 describe("buildSystemPrompt", () => {
   it("names the person, every role and the rule to refuse guesses", () => {
     const prompt = buildSystemPrompt({ cv, llms: "# Ada" });
@@ -139,6 +149,26 @@ describe("loadFacts", () => {
     const facts = await loadFacts(assets, "https://served.test");
     assert.equal(facts.cv.basics.name, "Ada Example");
     assert.equal(facts.cv.basics.location, "");
+    assert.equal(facts.cv.projects?.items[0]?.name, "Ledger");
     assert.match(buildSystemPrompt(facts), /Lead at Example \(2020 to Now\)/);
+  });
+  it("facts read projects from /cv.json", async () => {
+    const assets = fakeAssets((url) =>
+      url.endsWith("/cv.json")
+        ? Response.json({ ...cv, projects: { items: [project] } })
+        : new Response("# Ada")
+    );
+    const facts = await loadFacts(assets, "https://projects.test");
+    assert.deepEqual(facts.cv.projects?.items, [project]);
+  });
+  it("accepts a project with only a name", async () => {
+    const assets = fakeAssets((url) =>
+      url.endsWith("/cv.json")
+        ? Response.json({ ...cv, projects: { items: [{ name: "Bare" }] } })
+        : new Response("# Ada")
+    );
+    const facts = await loadFacts(assets, "https://bareproject.test");
+    assert.equal(facts.cv.projects?.items[0]?.name, "Bare");
+    assert.equal(facts.cv.projects?.items[0]?.skills.length, 0);
   });
 });

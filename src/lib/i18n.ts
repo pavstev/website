@@ -1,4 +1,23 @@
 export const en = {
+  ask: {
+    button: "Ask about me",
+    checkFirst: "Finish the human check first",
+    close: "Close",
+    errors: {
+      bot: "The human check did not pass. Reload the page and try again.",
+      failed: "Something went wrong on my end. Try again in a moment.",
+      limit: "Too many questions for now. Wait a minute, then try again.",
+      question: "Type a question of up to 500 characters.",
+    },
+    hint: "An AI answers from my CV",
+    label: "Your question",
+    note: "Answers come from an AI reading my CV. Nothing is stored.",
+    placeholder: "Ask about my work, skills or projects",
+    questionFirst: "Type a question first",
+    send: "Ask",
+    thinking: "Thinking…",
+    title: "Ask about me",
+  },
   card: {
     close: "Close",
     contactLabel: "Contact",
@@ -62,37 +81,31 @@ export const en = {
   industries: {
     label: "My work in {topic}",
     newTab: "(opens in a new tab)",
+    range: "{from} to {to}",
     separator: " · ",
+    since: "since {year}",
     topics: {
       betting: {
-        company: "167Pluto",
         facts:
           "I led the back-end architecture of a high-concurrency online betting platform: NestJS and Kafka services for the bet lifecycle, odds and settlement. Idempotency keys make the settlement pipeline safe to replay, and staged canary rollouts kept deploys at zero downtime through peak sporting events. Before that, from 2018 to 2020, I worked on AskGamblers, an iGaming review site with more than 150,000 registered users.",
-        period: "2024 to 2025",
         title: "Betting",
         word: "betting",
       },
       fintech: {
-        company: "Pannovate",
         facts:
           "I led the back end of LaunchPad, a core-banking platform. I kept its Symfony monolith running while I designed Syllo, the rewrite as NestJS microservices with typed gRPC contracts and events over Kafka and Redis. Every service that moves money checks balances double-entry style and handles each command only once, so concurrent load cannot leave accounts out of step.",
-        period: "2020",
         title: "Fintech",
         word: "fintech",
       },
       fleet: {
-        company: "Safety Real Time",
         facts:
           "As CTO I lead the architecture of a cloud fleet management platform for enterprise trucking operators, from the driver apps to the live operations dashboards. Vehicle and driver events travel over Redis pub/sub and reach those dashboards in under a second. Safety incidents such as failed pre-trip inspections and accident reports go straight to the people on duty, and compliance modules track renewals, inspections and driver scorecards.",
-        period: "since 2022",
         title: "Fleet logistics",
         word: "fleet logistics",
       },
       healthtech: {
-        company: "Evermed",
         facts:
           "I moved a healthcare education platform from a PHP and Symfony monolith to independently deployable AWS services, without a gap in delivery. I built its video transcoding pipelines with safe retries and a traceable state at every step, and audit logs across the whole media flow for compliance.",
-        period: "2021",
         title: "Healthtech",
         word: "healthtech",
       },
@@ -132,6 +145,7 @@ export const en = {
   },
   privacy: {
     acknowledge: "OK",
+    ask: "The Ask panel sends your question to Cloudflare’s AI model and keeps nothing.",
     chip: "No cookies, anonymous stats",
     contact: "Privacy questions:",
     host: "The host, Cloudflare, sees technical request data such as your IP address to deliver the page and keep it safe.",
@@ -166,5 +180,21 @@ export const en = {
     newTab: "Opens in a new tab",
     starsLabel: "stars",
     topics: "Topics",
+  },
+  resumePdf: {
+    education: "Education",
+    experience: "Work Experience",
+    githubPrefix: "github.com/",
+    languages: "Languages",
+    linkedinPrefix: "linkedin.com/in/",
+    month: "month",
+    months: "months",
+    page: "Page {page} of {pages}",
+    projects: "Projects",
+    skills: "Skills",
+    summary: "Summary",
+    technology: "Technology",
+    year: "year",
+    years: "years",
   },
 } as const;
