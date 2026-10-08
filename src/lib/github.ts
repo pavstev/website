@@ -7,6 +7,26 @@ export interface Contact {
   linkedinHandle: string;
 }
 
+export interface Project {
+  defaultBranch: string;
+  readmeHtml: string;
+  releases: Release[];
+}
+
+export interface Release {
+  assets: ReleaseAsset[];
+  name: string;
+  publishedAt: string;
+  tag: string;
+  url: string;
+}
+
+export interface ReleaseAsset {
+  name: string;
+  size: number;
+  url: string;
+}
+
 export interface Repo {
   description: string;
   forks: number;
@@ -65,6 +85,28 @@ const RawGraphLanguagesSchema = z.object({
     repository: z.object({ languages: RawLanguageConnectionSchema }),
   }),
 });
+
+const RawRepoInfoSchema = z.object({ default_branch: z.string() });
+
+const RawReadmeSchema = z.object({ content: z.string() });
+
+const RawAssetSchema = z.object({
+  browser_download_url: z.string(),
+  name: z.string(),
+  size: z.number(),
+});
+
+const RawReleaseSchema = z.object({
+  assets: z.array(RawAssetSchema),
+  draft: z.boolean(),
+  html_url: z.string(),
+  name: z.string().nullable(),
+  prerelease: z.boolean(),
+  published_at: z.string().nullable(),
+  tag_name: z.string(),
+});
+
+const RawReleasesSchema = z.array(RawReleaseSchema);
 
 type RawLanguageEdge = z.infer<typeof RawLanguageEdgeSchema>;
 
@@ -155,6 +197,23 @@ const request = async (
   return response.json();
 };
 
+const requestText = async (
+  path: string,
+  body: Record<string, string>,
+  fetchImpl: typeof fetch
+): Promise<string> => {
+  const response = await fetchImpl(`${api}${path}`, {
+    body: JSON.stringify(body),
+    cache: "force-cache",
+    headers: { ...headers(token()), "Content-Type": "application/json" },
+    method: "POST",
+  });
+  if (response.status !== 200) {
+    throw new Error(`GitHub API ${String(response.status)} for ${path}`);
+  }
+  return response.text();
+};
+
 const graph = async (
   query: string,
   variables: Record<string, string>,
@@ -236,4 +295,56 @@ export const getContact = async (
   const linkedinHandle =
     new URL(linkedin).pathname.split("/").findLast(Boolean) ?? "";
   return { email, linkedin, linkedinHandle };
+};
+
+const releaseName = (release: z.infer<typeof RawReleaseSchema>): string => {
+  const name = release.name?.trim() ?? "";
+  return name.length > 0 ? name : release.tag_name;
+};
+
+const releasePublishedAt = (
+  release: z.infer<typeof RawReleaseSchema>
+): string => {
+  if (!release.published_at) {
+    throw new Error(`GitHub release ${release.tag_name} has no publish date`);
+  }
+  return release.published_at;
+};
+
+export const getProject = async (
+  login: string,
+  repo: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<Project> => {
+  const base = `/repos/${login}/${repo}`;
+  const [info, readme, releases] = await Promise.all([
+    request(base, fetchImpl),
+    request(`${base}/readme`, fetchImpl),
+    request(`${base}/releases?per_page=5`, fetchImpl),
+  ]);
+  const text = Buffer.from(
+    RawReadmeSchema.parse(readme).content,
+    "base64"
+  ).toString("utf8");
+  return {
+    defaultBranch: RawRepoInfoSchema.parse(info).default_branch,
+    readmeHtml: await requestText(
+      "/markdown",
+      { context: `${login}/${repo}`, mode: "gfm", text },
+      fetchImpl
+    ),
+    releases: RawReleasesSchema.parse(releases)
+      .filter((release) => !release.draft && !release.prerelease)
+      .map((release) => ({
+        assets: release.assets.map((asset) => ({
+          name: asset.name,
+          size: asset.size,
+          url: asset.browser_download_url,
+        })),
+        name: releaseName(release),
+        publishedAt: releasePublishedAt(release),
+        tag: release.tag_name,
+        url: release.html_url,
+      })),
+  };
 };

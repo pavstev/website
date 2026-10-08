@@ -1,13 +1,21 @@
 "use client";
 
-import { type ReactElement, useEffect, useRef } from "react";
+import { type ReactElement, type ReactNode, useEffect, useRef } from "react";
 
 import { Icon } from "@/components/icon";
 import { initDownloadRing } from "@/lib/download-ring";
 import { en } from "@/lib/i18n";
 import { initPillAurora } from "@/lib/pill-aurora";
 
-export const DownloadButton = (): ReactElement => {
+interface DownloadButtonProps {
+  children: ReactNode;
+  describedBy: string;
+}
+
+export const DownloadButton = ({
+  children,
+  describedBy,
+}: DownloadButtonProps): ReactElement => {
   const ref = useRef<HTMLAnchorElement>(null);
   const statusRef = useRef<HTMLSpanElement>(null);
   const fieldRef = useRef<HTMLSpanElement>(null);
@@ -30,8 +38,9 @@ export const DownloadButton = (): ReactElement => {
   }, []);
 
   return (
-    <>
+    <span className="download-item">
       <a
+        aria-describedby={describedBy}
         aria-label={en.card.downloadPdf}
         className="download-pill focus-ring relative inline-flex h-11 items-center justify-center-safe overflow-hidden rounded-lg pr-5 pl-3.5 font-sans text-[0.875rem] font-semibold whitespace-nowrap text-foreground no-underline select-none"
         download="Stevan_Pavlovic_Resume.pdf"
@@ -78,12 +87,13 @@ export const DownloadButton = (): ReactElement => {
           <span data-label="">{en.card.downloadPdf}</span>
         </span>
       </a>
+      {children}
       <span
         aria-live="polite"
         className="sr-only"
         ref={statusRef}
         role="status"
       />
-    </>
+    </span>
   );
 };

@@ -10,11 +10,15 @@ import { EffectsInit } from "@/components/effects-init";
 import { PrivacyNote } from "@/components/privacy-note";
 import { Profile } from "@/components/profile";
 import { RepoStrip } from "@/components/repo-strip";
+import { ResumeTip } from "@/components/resume-tip";
 import { SpaceBackground } from "@/components/space-background";
 import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
+import { getResumeFacts } from "@/lib/resume-facts";
 import { serializeJsonLd, structuredData } from "@/lib/structured-data";
+
+const resumeDetailId = "resume-detail";
 
 export const metadata: Metadata = {
   alternates: { canonical: `${personalData.website}/` },
@@ -34,9 +38,10 @@ export const metadata: Metadata = {
 };
 
 export default async function Page(): Promise<ReactElement> {
-  const [repos, contact] = await Promise.all([
+  const [repos, contact, resume] = await Promise.all([
     getRepos(personalData.githubHandle),
     getContact(personalData.githubHandle),
+    getResumeFacts(),
   ]);
   return (
     <>
@@ -58,8 +63,13 @@ export default async function Page(): Promise<ReactElement> {
           data-card=""
         >
           <Profile />
-          <div className="fade-up relative z-1 mt-(--card-gap-actions) flex flex-wrap items-center justify-center gap-3 delay-2">
-            <DownloadButton />
+          <div
+            className="fade-up relative z-1 mt-(--card-gap-actions) flex flex-wrap items-center justify-center gap-3 delay-2"
+            data-proximity=""
+          >
+            <DownloadButton describedBy={resumeDetailId}>
+              <ResumeTip detailId={resumeDetailId} facts={resume} />
+            </DownloadButton>
             <ContactLinks contact={contact} />
           </div>
           <RepoStrip repos={repos} />

@@ -8,7 +8,12 @@ export interface PortraitBead {
   show: (x: number, y: number) => void;
 }
 
+export interface PortraitBeadOptions {
+  radiusPx?: number;
+}
+
 const maxPixelRatio = 3;
+const maxRadius = 0.22;
 const growRate = 7;
 const followRate = 14;
 
@@ -27,12 +32,13 @@ uniform sampler2D photo;
 uniform vec2 pointer;
 uniform vec2 velocity;
 uniform float hover;
+uniform float size;
 uniform vec3 cool;
 uniform vec3 warm;
 in vec2 vUv;
 out vec4 color;
 void main() {
-  float radius = max(0.22 * hover, 1e-4);
+  float radius = max(size * hover, 1e-4);
   float speed = clamp(length(velocity) * 9.0, 0.0, 0.45);
   vec2 dir = length(velocity) > 1e-5 ? normalize(velocity) : vec2(1.0, 0.0);
   vec2 rel = vUv - pointer;
@@ -109,11 +115,18 @@ const startEngine = (): null | Pending => {
     powerPreference: "low-power",
     stencil: false,
   });
-  if (!gl || isSoftwareRenderer(gl)) return null;
+  if (!gl) return null;
+  const vertex = isSoftwareRenderer(gl)
+    ? null
+    : compile(gl, gl.VERTEX_SHADER, vertexSource);
+  const fragment = vertex
+    ? compile(gl, gl.FRAGMENT_SHADER, fragmentSource)
+    : null;
+  if (!vertex || !fragment) {
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return null;
+  }
   const program = gl.createProgram();
-  const vertex = compile(gl, gl.VERTEX_SHADER, vertexSource);
-  const fragment = compile(gl, gl.FRAGMENT_SHADER, fragmentSource);
-  if (!vertex || !fragment) return null;
   gl.attachShader(program, vertex);
   gl.attachShader(program, fragment);
   gl.linkProgram(program);
@@ -160,10 +173,9 @@ const finishEngine = (host: HTMLElement, pending: Pending): Engine | null => {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   const locations = Object.fromEntries(
-    ["cool", "hover", "photo", "pointer", "velocity", "warm"].map((name) => [
-      name,
-      gl.getUniformLocation(program, name),
-    ])
+    ["cool", "hover", "photo", "pointer", "size", "velocity", "warm"].map(
+      (name) => [name, gl.getUniformLocation(program, name)]
+    )
   );
   gl.uniform1i(locations["photo"] ?? null, 0);
   gl.uniform3fv(locations["cool"] ?? null, skyRgb("blue"));
@@ -174,7 +186,8 @@ const finishEngine = (host: HTMLElement, pending: Pending): Engine | null => {
 
 export const createPortraitBead = (
   host: HTMLElement,
-  source: string
+  source: string,
+  options: PortraitBeadOptions = {}
 ): PortraitBead => {
   let engine: Engine | null | undefined;
   let pending: null | Pending = null;
@@ -188,8 +201,14 @@ export const createPortraitBead = (
   const velocity = { x: 0, y: 0 };
 
   const fit = (current: Engine): void => {
+    const width = Math.max(1, host.clientWidth);
+    const size =
+      options.radiusPx === undefined
+        ? maxRadius
+        : Math.min(maxRadius, options.radiusPx / width);
+    current.gl.uniform1f(current.locations["size"] ?? null, size);
     const ratio = Math.min(globalThis.devicePixelRatio || 1, maxPixelRatio);
-    const side = Math.max(1, Math.round(host.clientWidth * ratio));
+    const side = Math.max(1, Math.round(width * ratio));
     if (current.canvas.width === side && current.canvas.height === side) {
       return;
     }
@@ -245,12 +264,16 @@ export const createPortraitBead = (
       poll = globalThis.setTimeout(check, 50);
       return;
     }
-    engine = finishEngine(host, pending);
+    const started = finishEngine(host, pending);
     pending = null;
-    engine?.canvas.addEventListener(
+    engine = started;
+    started?.canvas.addEventListener(
       "webglcontextlost",
       () => {
-        engine?.canvas.remove();
+        started.canvas.remove();
+        if (engine !== started) return;
+        if (frame !== 0) globalThis.cancelAnimationFrame(frame);
+        frame = 0;
         engine = null;
       },
       { once: true }
@@ -296,12 +319,21 @@ export const createPortraitBead = (
     dispose: (): void => {
       if (frame !== 0) globalThis.cancelAnimationFrame(frame);
       frame = 0;
+      last = 0;
+      hover = 0;
+      target = 0;
       if (poll !== undefined) globalThis.clearTimeout(poll);
+      poll = undefined;
       pending?.gl.getExtension("WEBGL_lose_context")?.loseContext();
+      const wasPending = pending !== null;
       pending = null;
-      engine?.canvas.remove();
-      engine?.gl.getExtension("WEBGL_lose_context")?.loseContext();
-      engine = null;
+      if (!engine) {
+        if (wasPending) engine = undefined;
+        return;
+      }
+      engine.canvas.remove();
+      engine.gl.getExtension("WEBGL_lose_context")?.loseContext();
+      engine = undefined;
     },
     hide: (): void => {
       target = 0;

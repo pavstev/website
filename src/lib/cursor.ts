@@ -1,14 +1,16 @@
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
 
-const proximitySelector = "[data-proximity] > li > a";
+const proximitySelector = "[data-proximity] :is(.contact-link, .download-pill)";
 const glowSelector = "[data-cursor-glow]";
 const proximityRadius = 80;
 const proximityGain = 0.18;
 
 interface ProximityTarget {
+  core: number;
   cx: number;
   cy: number;
   element: HTMLElement;
+  limit: number;
   value: string;
 }
 
@@ -16,10 +18,11 @@ const startCursorEffects = (): (() => void) => {
   const glow = document.querySelector<HTMLElement>(glowSelector);
   const targets: ProximityTarget[] = [
     ...document.querySelectorAll<HTMLElement>(proximitySelector),
-  ].map((element) => ({ cx: 0, cy: 0, element, value: "" }));
+  ].map((element) => ({ core: 0, cx: 0, cy: 0, element, limit: 1, value: "" }));
   const lists = new Set<Element>();
   for (const target of targets) {
     const list = target.element.closest("[data-proximity]");
+    lists.add(target.element);
     if (list) lists.add(list);
     if (list?.parentElement) lists.add(list.parentElement);
   }
@@ -36,6 +39,17 @@ const startCursorEffects = (): (() => void) => {
       const rect = target.element.getBoundingClientRect();
       target.cx = rect.left + rect.width / 2;
       target.cy = rect.top + rect.height / 2;
+      const { offsetHeight, offsetWidth } = target.element;
+      const row = target.element.closest("[data-proximity]");
+      const gap = row
+        ? Number(getComputedStyle(row).columnGap.replace("px", ""))
+        : 0;
+      target.core = Math.max(0, offsetWidth - offsetHeight) / 2;
+      target.limit =
+        1 +
+        (offsetWidth > 0 && Number.isFinite(gap)
+          ? gap / offsetWidth
+          : proximityGain);
     }
     stale = false;
   };
@@ -56,11 +70,14 @@ const startCursorEffects = (): (() => void) => {
     frame = 0;
     if (stale) refresh();
     for (const target of targets) {
-      const distance = Math.hypot(pointerX - target.cx, pointerY - target.cy);
+      const distance = Math.hypot(
+        Math.max(0, Math.abs(pointerX - target.cx) - target.core),
+        pointerY - target.cy
+      );
       setValue(
         target,
         distance < proximityRadius
-          ? `scale(${(1 + proximityGain * (1 - distance / proximityRadius)).toFixed(3)})`
+          ? `scale(${Math.min(target.limit, 1 + proximityGain * (1 - distance / proximityRadius)).toFixed(3)})`
           : ""
       );
     }

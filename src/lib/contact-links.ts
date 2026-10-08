@@ -15,16 +15,39 @@ interface ContactItem extends AimTarget {
   tip: HTMLElement;
 }
 
-const overlaps = (a: DOMRect, b: DOMRect, shift: number): boolean =>
-  a.left + shift < b.right &&
-  a.right + shift > b.left &&
+interface Obstacle {
+  element: Element;
+  weight: number;
+}
+
+interface Span {
+  bottom: number;
+  left: number;
+  right: number;
+  top: number;
+}
+
+const offscreenCost = 4;
+
+const overlaps = (a: Span, b: DOMRect): boolean =>
+  a.left < b.right &&
+  a.right > b.left &&
   a.top - edgeGap < b.bottom &&
-  a.bottom > b.top;
+  a.bottom + edgeGap > b.top;
+
+const costOf = (span: Span, room: number, avoid: Obstacle[]): number =>
+  (room < 0 ? offscreenCost : 0) +
+  Math.max(
+    0,
+    ...avoid
+      .filter(({ element }) => overlaps(span, element.getBoundingClientRect()))
+      .map(({ weight }) => weight)
+  );
 
 const placeTip = (
   tip: HTMLElement,
   anchor: HTMLElement,
-  avoid: Element[]
+  avoid: Obstacle[]
 ): void => {
   tip.style.setProperty("--tip-shift", "0px");
   delete tip.dataset["flip"];
@@ -35,40 +58,51 @@ const placeTip = (
   if (rect.left < edgeGap) shift = edgeGap - rect.left;
   else if (rect.right > limit) shift = limit - rect.right;
   tip.style.setProperty("--tip-shift", `${String(Math.round(shift))}px`);
-  const blocked = avoid.some((element) =>
-    overlaps(rect, element.getBoundingClientRect(), shift)
-  );
+  const left = rect.left + shift;
+  const right = rect.right + shift;
+  const belowTop = anchor.getBoundingClientRect().bottom + tipGap;
   const roomAbove = rect.top - edgeGap;
-  const roomBelow =
-    root.clientHeight -
-    edgeGap -
-    (anchor.getBoundingClientRect().bottom + tipGap + rect.height);
+  const roomBelow = root.clientHeight - edgeGap - (belowTop + rect.height);
+  const above = costOf(
+    { bottom: rect.bottom, left, right, top: rect.top },
+    roomAbove,
+    avoid
+  );
+  const below = costOf(
+    { bottom: belowTop + rect.height, left, right, top: belowTop },
+    roomBelow,
+    avoid
+  );
   const flip =
-    roomAbove < 0 ? roomBelow > roomAbove : blocked && roomBelow >= 0;
+    below < above ||
+    (below === above && roomAbove < 0 && roomBelow > roomAbove);
   if (flip) tip.dataset["flip"] = "";
 };
 
 export const initContactLinks = (list: HTMLElement): (() => void) => {
   const fine = globalThis.matchMedia(finePointerQuery);
   const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const row = list.parentElement ?? list;
   const items: ContactItem[] = [];
-  for (const root of list.querySelectorAll<HTMLElement>(":scope > li")) {
-    const link = root.querySelector<HTMLAnchorElement>("a");
-    const tip = root.querySelector<HTMLElement>("[role='tooltip']");
+  for (const root of row.querySelectorAll<HTMLElement>(
+    ":is(.download-item, .contact-item)"
+  )) {
+    const link = root.querySelector<HTMLAnchorElement>(":scope > a");
+    const tip = root.querySelector<HTMLElement>(":scope > [role='tooltip']");
     if (link && tip) {
       items.push({ angle: 315, center: null, link, root, tip });
     }
   }
-  const pill = list.parentElement?.querySelector<HTMLElement>(".download-pill");
-  const targets: AimTarget[] = [
-    ...items,
-    ...(pill ? [{ angle: 315, center: null, link: pill }] : []),
-  ];
-  const avoid = [
-    ...(list.parentElement?.querySelectorAll(":scope > :is(a, button)") ?? []),
-    ...(list
-      .closest("[data-card]")
-      ?.querySelectorAll(":scope > [data-blur-in]") ?? []),
+  const targets: AimTarget[] = items;
+  const avoid: Obstacle[] = [
+    ...[...row.querySelectorAll(":is(.download-pill, .contact-link)")].map(
+      (element) => ({ element, weight: 2 })
+    ),
+    ...[
+      ...(list
+        .closest("[data-card]")
+        ?.querySelectorAll(":scope > [data-blur-in]") ?? []),
+    ].map((element) => ({ element, weight: 1 })),
   ];
   const disposers: Array<() => void> = [];
 

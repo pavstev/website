@@ -113,6 +113,7 @@ export const PortraitExpander = ({
       <dialog
         aria-label={dialogLabel}
         className="portrait-dialog"
+        data-expander-dialog=""
         onCancel={onCancel}
         onClick={onDialogClick}
         onClose={onClosed}
@@ -123,8 +124,12 @@ export const PortraitExpander = ({
           className="portrait-scrim"
           data-expander-scrim=""
         />
-        <div className="portrait-stage" ref={frameRef}>
-          <span className="portrait-lens" data-expander-lens="">
+        <div className="portrait-stage" data-expander-stage="" ref={frameRef}>
+          <span
+            className="portrait-lens"
+            data-bead-src={largeUrl}
+            data-expander-lens=""
+          >
             <img
               alt=""
               aria-hidden="true"

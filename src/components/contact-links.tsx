@@ -47,7 +47,6 @@ export const ContactLinks = ({
       aria-label={en.card.contactLabel}
       className="flex items-center justify-center gap-3"
       data-contacts=""
-      data-proximity=""
     >
       {contacts.map((contact) => (
         <li className="contact-item" data-tone={contact.tone} key={contact.id}>

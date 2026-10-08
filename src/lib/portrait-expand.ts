@@ -139,6 +139,7 @@ export const createPortraitExpander = (
   const close = (): void => {
     if (closing || !dialog.open) return;
     closing = true;
+    button.dispatchEvent(new CustomEvent("portrait:close"));
     const finish = async (animation: Animation): Promise<void> => {
       try {
         await animation.finished;

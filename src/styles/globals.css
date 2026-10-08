@@ -1067,6 +1067,10 @@ html:has(.portrait-dialog[open]) {
   pointer-events: none;
 }
 
+.portrait-lens > .portrait-bead {
+  border-radius: inherit;
+}
+
 .contact-item {
   --tone: var(--primary);
   position: relative;
@@ -1355,9 +1359,9 @@ html:has(.portrait-dialog[open]) {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  [data-contacts]:has(> .contact-item:hover)
-    > .contact-item:not(:hover)
-    > .contact-tip {
+  [data-proximity]:has(:is(.contact-item, .download-item):hover)
+    :is(.contact-item, .download-item):not(:hover)
+    > [role="tooltip"] {
     pointer-events: none;
     visibility: hidden;
     opacity: 0;
@@ -1366,6 +1370,240 @@ html:has(.portrait-dialog[open]) {
       opacity var(--duration-fast) var(--ease-smooth),
       transform var(--duration-fast) var(--ease-smooth),
       visibility 0s linear var(--duration-fast);
+  }
+}
+
+.download-item {
+  --tone: var(--primary);
+  position: relative;
+  display: inline-flex;
+}
+
+.resume-tip {
+  --slot: 10px;
+  position: absolute;
+  bottom: calc(100% + var(--slot));
+  left: 50%;
+  z-index: var(--z-popover);
+  display: block;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 1rem));
+  pointer-events: none;
+  visibility: hidden;
+  translate: calc(-50% + var(--tip-shift, 0px)) 0;
+  transition: visibility 0s linear var(--duration-fast);
+}
+
+.resume-tip::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: calc(var(--slot) + 1px);
+}
+
+.resume-tip[data-flip] {
+  top: calc(100% + var(--slot));
+  bottom: auto;
+}
+
+.resume-tip[data-flip]::before {
+  top: auto;
+  bottom: 100%;
+}
+
+.resume-sheet {
+  --print-ms: 640ms;
+  --print-ease: cubic-bezier(0.3, 0.75, 0.25, 1);
+  --print-from: calc(100% + var(--slot));
+  --clip-from: inset(-2rem -2rem 100% -2rem);
+  --clip-to: inset(-2rem -2rem calc(-1 * var(--slot)) -2rem);
+  display: flex;
+  align-items: center;
+  gap: 0.6875rem;
+  padding: 0.5rem 0.875rem 0.5rem 0.5625rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in oklab, var(--foreground) 7%, transparent),
+      transparent 60%
+    ),
+    color-mix(in oklab, var(--background) 95%, transparent);
+  box-shadow: 0 14px 34px -16px
+    color-mix(in oklab, var(--tone) 45%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  backdrop-filter: blur(12px) saturate(1.2);
+  color: var(--foreground);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-align: start;
+  opacity: 0;
+  translate: 0 var(--print-from);
+  clip-path: var(--clip-from);
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth),
+    translate 0s linear var(--duration-fast),
+    clip-path 0s linear var(--duration-fast);
+}
+
+.resume-tip[data-flip] .resume-sheet {
+  --print-from: calc(-100% - var(--slot));
+  --clip-from: inset(100% -2rem -2rem -2rem);
+  --clip-to: inset(calc(-1 * var(--slot)) -2rem -2rem -2rem);
+}
+
+.resume-page {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2.5px;
+  width: 1.375rem;
+  height: 1.75rem;
+  padding: 0.3125rem 0.25rem 0 0.25rem;
+  border-radius: 2px;
+  background: linear-gradient(
+    170deg,
+    var(--arms-white),
+    color-mix(in oklab, var(--arms-white) 82%, var(--sky-gold))
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--arms-white) 30%, transparent),
+    0 4px 10px -3px color-mix(in oklab, var(--sky-gold) 55%, transparent);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
+}
+
+.resume-page::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  background: linear-gradient(
+    225deg,
+    transparent 50%,
+    color-mix(in oklab, var(--arms-white) 62%, var(--background)) 50%
+  );
+}
+
+.resume-line {
+  display: block;
+  flex: none;
+  width: var(--w);
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in oklab, var(--background) 42%, transparent);
+  scale: 0 1;
+  transform-origin: left center;
+  transition: scale 0s linear var(--duration-fast);
+}
+
+.resume-line:first-child {
+  height: 3px;
+  margin-bottom: 1px;
+  background: var(--sky-blue);
+}
+
+.resume-tip-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.resume-tip-name {
+  font-weight: 500;
+}
+
+.resume-tip-detail {
+  color: var(--muted-foreground);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .download-item:hover > .resume-tip {
+    pointer-events: auto;
+    visibility: visible;
+    transition: visibility 0s;
+  }
+
+  .download-item:hover > .resume-tip > .resume-sheet {
+    opacity: 1;
+    translate: 0 0;
+    clip-path: var(--clip-to);
+    transition:
+      opacity var(--duration-fast) var(--ease-smooth),
+      translate var(--print-ms) var(--print-ease),
+      clip-path var(--print-ms) var(--print-ease);
+  }
+
+  .download-item:hover .resume-line {
+    scale: 1;
+    transition: scale var(--duration-slow) var(--ease-entrance)
+      calc(220ms + var(--i) * 70ms);
+  }
+}
+
+@media (any-hover: hover) {
+  .download-pill:focus-visible ~ .resume-tip {
+    pointer-events: auto;
+    visibility: visible;
+    transition: visibility 0s;
+  }
+
+  .download-pill:focus-visible ~ .resume-tip > .resume-sheet {
+    opacity: 1;
+    translate: 0 0;
+    clip-path: var(--clip-to);
+    transition:
+      opacity var(--duration-fast) var(--ease-smooth),
+      translate var(--print-ms) var(--print-ease),
+      clip-path var(--print-ms) var(--print-ease);
+  }
+
+  .download-pill:focus-visible ~ .resume-tip .resume-line {
+    scale: 1;
+    transition: scale var(--duration-slow) var(--ease-entrance)
+      calc(220ms + var(--i) * 70ms);
+  }
+}
+
+.download-item[data-dismissed] > .resume-tip,
+.download-item:has(> .download-pill[data-busy]) > .resume-tip {
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear var(--duration-fast);
+}
+
+.download-item[data-dismissed] > .resume-tip > .resume-sheet,
+.download-item:has(> .download-pill[data-busy]) > .resume-tip > .resume-sheet {
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth),
+    translate 0s linear var(--duration-fast),
+    clip-path 0s linear var(--duration-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resume-sheet {
+    translate: none;
+    clip-path: none;
+  }
+
+  .resume-line {
+    scale: 1;
+  }
+}
+
+@media (forced-colors: active) {
+  .resume-page {
+    border: 1px solid CanvasText;
+  }
+
+  .resume-line,
+  .resume-line:first-child {
+    background: CanvasText;
   }
 }
 
@@ -2113,7 +2351,6 @@ html:has(.portrait-dialog[open]) {
 }
 
 .city-trigger {
-  position: relative;
   display: inline;
   margin: 0;
   padding: 0;
@@ -2133,59 +2370,13 @@ html:has(.portrait-dialog[open]) {
   background-clip: text;
   background-image: linear-gradient(
     135deg,
-    var(--city-red) 12%,
-    var(--arms-white) 50%,
-    var(--city-red) 88%
+    var(--city-red) 0 37%,
+    var(--arms-white) 43% 57%,
+    var(--city-red) 63% 100%
   );
   color: transparent;
   font-weight: 500;
   transition: filter var(--duration-slow) var(--ease-smooth);
-}
-
-.city-trigger {
-  --danube-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 8' preserveAspectRatio='none'%3E%3Cpath d='M0 4 C4 0.5 8 0.5 12 4 S20 7.5 24 4' fill='none' stroke='%23000' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
-}
-
-.city-trigger::before,
-.city-trigger::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  bottom: -0.36em;
-  left: 0;
-  height: 0.34em;
-  background: linear-gradient(
-      90deg,
-      var(--sky-blue),
-      var(--sky-teal),
-      var(--sky-blue)
-    )
-    0 0 / 200% 100%;
-  -webkit-mask: var(--danube-wave) 0 50% / 0.8em 100% repeat-x;
-  mask: var(--danube-wave) 0 50% / 0.8em 100% repeat-x;
-  pointer-events: none;
-  transition: opacity var(--duration-slow) var(--ease-smooth);
-}
-
-.city-trigger::before {
-  opacity: 0.65;
-  animation: danube-flow 6s linear infinite;
-}
-
-.city-trigger::after {
-  opacity: 0;
-  filter: drop-shadow(
-    0 0 3px color-mix(in oklab, var(--sky-teal) 70%, transparent)
-  );
-  animation: danube-flow 2.4s linear infinite;
-}
-
-@keyframes danube-flow {
-  to {
-    -webkit-mask-position: 0.8em 50%;
-    mask-position: 0.8em 50%;
-    background-position: -200% 0;
-  }
 }
 
 .arms-field-light {
@@ -2234,16 +2425,6 @@ html:has(.portrait-dialog[open]) {
   filter: drop-shadow(
     0 0 6px color-mix(in oklab, var(--arms-red) 45%, transparent)
   );
-}
-
-.city-trigger:focus-visible::before,
-.bio:has(+ .city-panel:popover-open) .city-trigger::before {
-  opacity: 0;
-}
-
-.city-trigger:focus-visible::after,
-.bio:has(+ .city-panel:popover-open) .city-trigger::after {
-  opacity: 1;
 }
 
 @keyframes arms-glint {
@@ -2779,14 +2960,6 @@ html:has(.globe-dialog[open]) {
     );
   }
 
-  .city-trigger:hover::before {
-    opacity: 0;
-  }
-
-  .city-trigger:hover::after {
-    opacity: 1;
-  }
-
   .city-launch:hover {
     border-color: color-mix(in oklab, var(--primary) 55%, transparent);
     background: color-mix(in oklab, var(--primary) 14%, var(--background));
@@ -2811,11 +2984,6 @@ html:has(.globe-dialog[open]) {
     background: none;
     color: LinkText;
     text-decoration: underline;
-  }
-
-  .city-trigger::before,
-  .city-trigger::after {
-    display: none;
   }
 }
 

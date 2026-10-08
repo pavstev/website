@@ -5,7 +5,12 @@ const config: KnipConfig = {
   ignoreDependencies: ["wrangler"],
   ignoreExportsUsedInFile: false,
   includeEntryExports: true,
-  project: ["*.ts", "scripts/**/*.ts", "src/**/*.{css,ts,tsx}"],
+  project: [
+    "*.ts",
+    "scripts/**/*.ts",
+    "src/**/*.{css,ts,tsx}",
+    "worker/**/*.ts",
+  ],
   rules: {
     binaries: "error",
     catalog: "error",

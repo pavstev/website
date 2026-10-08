@@ -12,6 +12,7 @@ const openHoldMs = 520;
 const pressMs = 320;
 const slopPx = 10;
 const clickGuardMs = 450;
+const dialogBeadRadiusPx = 64;
 
 const isMouse = (event: Event): boolean =>
   event instanceof PointerEvent && event.pointerType === "mouse";
@@ -98,11 +99,32 @@ const startOrbit = (root: HTMLElement): (() => void) => {
   };
 };
 
-const startBead = (root: HTMLElement): (() => void) => {
-  const photo = root.querySelector<HTMLElement>("[data-portrait-photo]");
-  const source = photo?.dataset["beadSrc"];
-  if (!photo || !source || prefersLightLoad()) return () => undefined;
-  const bead = createPortraitBead(photo, source);
+interface BeadWiring {
+  blocked?: () => boolean;
+  host: HTMLElement;
+  radiusPx?: number;
+  root: HTMLElement;
+  source: string;
+}
+
+interface WiredBead {
+  dispose: () => void;
+  hide: () => void;
+  release: () => void;
+}
+
+const wireBead = ({
+  blocked = (): boolean => false,
+  host,
+  radiusPx,
+  root,
+  source,
+}: BeadWiring): WiredBead => {
+  const bead = createPortraitBead(
+    host,
+    source,
+    radiusPx === undefined ? {} : { radiusPx }
+  );
   let frame = 0;
   let clientX = 0;
   let clientY = 0;
@@ -110,15 +132,27 @@ const startBead = (root: HTMLElement): (() => void) => {
   let startY = 0;
   let touchId: null | number = null;
   let pressing = false;
+  let shown = false;
   let guardUntil = 0;
   let press: ReturnType<typeof globalThis.setTimeout> | undefined;
 
   const toUv = (): [number, number] => {
-    const rect = photo.getBoundingClientRect();
+    const rect = host.getBoundingClientRect();
     return [
       (clientX - rect.left) / Math.max(1, rect.width),
       (clientY - rect.top) / Math.max(1, rect.height),
     ];
+  };
+
+  const show = (): void => {
+    if (blocked()) return;
+    shown = true;
+    bead.show(...toUv());
+  };
+
+  const hide = (): void => {
+    shown = false;
+    bead.hide();
   };
 
   const paint = (): void => {
@@ -128,6 +162,10 @@ const startBead = (root: HTMLElement): (() => void) => {
 
   const track = (event: PointerEvent): void => {
     ({ clientX, clientY } = event);
+    if (!shown) {
+      if (event.pointerType === "mouse") show();
+      return;
+    }
     if (frame === 0) frame = globalThis.requestAnimationFrame(paint);
   };
 
@@ -139,11 +177,11 @@ const startBead = (root: HTMLElement): (() => void) => {
   const onEnter = (event: PointerEvent): void => {
     if (event.pointerType !== "mouse") return;
     ({ clientX, clientY } = event);
-    bead.show(...toUv());
+    show();
   };
 
   const onLeave = (event: PointerEvent): void => {
-    if (event.pointerType === "mouse") bead.hide();
+    if (event.pointerType === "mouse") hide();
   };
 
   const onDown = (event: PointerEvent): void => {
@@ -154,8 +192,9 @@ const startBead = (root: HTMLElement): (() => void) => {
     startY = clientY;
     press = globalThis.setTimeout(() => {
       press = undefined;
+      if (blocked()) return;
       pressing = true;
-      bead.show(...toUv());
+      show();
     }, pressMs);
   };
 
@@ -177,7 +216,7 @@ const startBead = (root: HTMLElement): (() => void) => {
     touchId = null;
     if (!pressing) return;
     pressing = false;
-    bead.hide();
+    hide();
     guardUntil = performance.now() + clickGuardMs;
   };
 
@@ -196,8 +235,14 @@ const startBead = (root: HTMLElement): (() => void) => {
     event.stopImmediatePropagation();
   };
 
-  const onOpen = (): void => {
-    bead.hide();
+  const release = (): void => {
+    cancelPress();
+    if (frame !== 0) globalThis.cancelAnimationFrame(frame);
+    frame = 0;
+    touchId = null;
+    pressing = false;
+    shown = false;
+    bead.dispose();
   };
 
   root.addEventListener("pointerenter", onEnter);
@@ -209,22 +254,97 @@ const startBead = (root: HTMLElement): (() => void) => {
   root.addEventListener("touchmove", onTouchMove, { passive: false });
   root.addEventListener("contextmenu", onContextMenu);
   root.addEventListener("click", onClick, { capture: true });
+
+  return {
+    dispose: (): void => {
+      root.removeEventListener("pointerenter", onEnter);
+      root.removeEventListener("pointerleave", onLeave);
+      root.removeEventListener("pointerdown", onDown);
+      root.removeEventListener("pointermove", onMove);
+      root.removeEventListener("pointerup", onUp);
+      root.removeEventListener("pointercancel", onUp);
+      root.removeEventListener("touchmove", onTouchMove);
+      root.removeEventListener("contextmenu", onContextMenu);
+      root.removeEventListener("click", onClick, { capture: true });
+      release();
+    },
+    hide,
+    release,
+  };
+};
+
+const isMorphing = (element: Element): boolean =>
+  element
+    .getAnimations()
+    .some((animation) => animation.playState === "running");
+
+const startCardBead = (root: HTMLElement): (() => void) => {
+  const photo = root.querySelector<HTMLElement>("[data-portrait-photo]");
+  const source = photo?.dataset["beadSrc"];
+  if (!photo || !source) return () => undefined;
+  const wired = wireBead({
+    blocked: () => root.dataset["expanded"] !== undefined,
+    host: photo,
+    root,
+    source,
+  });
+  root.addEventListener("portrait:open", wired.release);
+  return () => {
+    root.removeEventListener("portrait:open", wired.release);
+    wired.dispose();
+  };
+};
+
+const startDialogBead = (root: HTMLElement): (() => void) => {
+  const dialog = root.parentElement?.querySelector<HTMLDialogElement>(
+    "[data-expander-dialog]"
+  );
+  const lens = dialog?.querySelector<HTMLElement>("[data-expander-lens]");
+  const stage = dialog?.querySelector<HTMLElement>("[data-expander-stage]");
+  const source = lens?.dataset["beadSrc"];
+  if (!dialog || !lens || !stage || !source) return () => undefined;
+  let wired: null | WiredBead = null;
+  let closing = false;
+
+  const onOpen = (): void => {
+    closing = false;
+    wired ??= wireBead({
+      blocked: () => closing || !dialog.open || isMorphing(stage),
+      host: lens,
+      radiusPx: dialogBeadRadiusPx,
+      root: lens,
+      source,
+    });
+  };
+
+  const onClosing = (): void => {
+    closing = true;
+    wired?.hide();
+  };
+
+  const onClose = (): void => {
+    wired?.dispose();
+    wired = null;
+  };
+
   root.addEventListener("portrait:open", onOpen);
+  root.addEventListener("portrait:close", onClosing);
+  dialog.addEventListener("close", onClose);
+  if (dialog.open) onOpen();
 
   return () => {
-    root.removeEventListener("pointerenter", onEnter);
-    root.removeEventListener("pointerleave", onLeave);
-    root.removeEventListener("pointerdown", onDown);
-    root.removeEventListener("pointermove", onMove);
-    root.removeEventListener("pointerup", onUp);
-    root.removeEventListener("pointercancel", onUp);
-    root.removeEventListener("touchmove", onTouchMove);
-    root.removeEventListener("contextmenu", onContextMenu);
-    root.removeEventListener("click", onClick, { capture: true });
     root.removeEventListener("portrait:open", onOpen);
-    cancelPress();
-    if (frame !== 0) globalThis.cancelAnimationFrame(frame);
-    bead.dispose();
+    root.removeEventListener("portrait:close", onClosing);
+    dialog.removeEventListener("close", onClose);
+    onClose();
+  };
+};
+
+const startBead = (root: HTMLElement): (() => void) => {
+  if (prefersLightLoad()) return () => undefined;
+  const disposers = [startCardBead(root), startDialogBead(root)];
+  return () => {
+    for (const dispose of disposers) dispose();
   };
 };
 

@@ -11,6 +11,11 @@ export const en = {
     portraitClose: "Close portrait",
     portraitDialog: "Portrait of Stevan Pavlović",
     portraitExpand: "Expand portrait",
+    resume: "Résumé",
+    resumeFacts: "PDF, {pages}, {size}",
+    resumePagesOne: "{count}\u{A0}page",
+    resumePagesOther: "{count}\u{A0}pages",
+    resumeSize: "{size}\u{A0}KB",
   },
   city: {
     armsLabel: "Coat of arms of {city}: a white cross on a red shield",

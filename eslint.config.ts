@@ -32,6 +32,15 @@ const eslintConfig = defineConfig([
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
   {
+    files: ["worker/**/*.ts"],
+    rules: {
+      "import-x/no-unresolved": [
+        "error",
+        { ignore: ["^@modelcontextprotocol/sdk/"] },
+      ],
+    },
+  },
+  {
     ...(regexpPlugin.configs["flat/recommended"] as Linter.Config),
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
@@ -66,6 +75,7 @@ const eslintConfig = defineConfig([
     ".profile-out/**",
     ".superpowers/**",
     "dist/**",
+    "worker-configuration.d.ts",
   ]),
   ...[
     ...tseslint.configs.strictTypeChecked,
