@@ -1,4 +1,5 @@
-import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
+import { finePointerQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 
 const edgeGap = 8;
 const tipGap = 10;
@@ -81,7 +82,7 @@ const placeTip = (
 
 export const initContactLinks = (list: HTMLElement): (() => void) => {
   const fine = globalThis.matchMedia(finePointerQuery);
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   const row = list.parentElement ?? list;
   const items: ContactItem[] = [];
   for (const root of row.querySelectorAll<HTMLElement>(

@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 import { createNameTear } from "@/lib/name-tear";
 
 const introEndMs = 5600;
@@ -9,7 +9,7 @@ const burstMs = 1900;
 const wakeEvents = ["pointermove", "pointerdown", "keydown", "wheel", "scroll"];
 
 export const initNameGlitch = (name: HTMLElement): (() => void) => {
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   const tear = createNameTear(name);
   let lastInput = performance.now();
   let tick: ReturnType<typeof setTimeout> | undefined;

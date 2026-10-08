@@ -20,7 +20,7 @@ import {
 import { createFramePacer } from "@/lib/frame-pacer";
 import { globeData } from "@/lib/globe-data";
 import { type LabelBox, placeLabels } from "@/lib/globe-labels";
-import { reducedMotionQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 import { subsolarPoint } from "@/lib/sun";
 import { globePalette } from "@/lib/theme";
 import { isSoftwareRenderer } from "@/lib/webgl";
@@ -441,7 +441,7 @@ export const createCityGlobe = (
     throw new SoftwareRendererError("software renderer");
   }
   renderer.debug.checkShaderErrors = process.env.NODE_ENV !== "production";
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   let pixelRatio = Math.min(globalThis.devicePixelRatio || 1, maxPixelRatio);
   renderer.setPixelRatio(pixelRatio);
   const scene = new Scene();

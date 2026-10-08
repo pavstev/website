@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "@/lib/media";
+import { type StillQuery, stillQuery } from "@/lib/motion-pause";
 
 export interface ScrollMotion {
   progress: number;
@@ -24,7 +24,7 @@ let rafId = 0;
 let last = 0;
 let measureTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 let observer: ResizeObserver | undefined;
-let reduceMotion: MediaQueryList | undefined;
+let reduceMotion: StillQuery | undefined;
 
 const clampToOne = (value: number, min: number): number =>
   Math.min(1, Math.max(min, value));
@@ -102,7 +102,7 @@ const onReduceChange = (): void => {
 };
 
 const attach = (): void => {
-  reduceMotion = globalThis.matchMedia(reducedMotionQuery);
+  reduceMotion = stillQuery();
   measure();
   current = target;
   motion.progress = target;
