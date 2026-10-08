@@ -3,7 +3,7 @@
 import type { ReactElement } from "react";
 
 import { en } from "@/lib/i18n";
-import { privacyAckAttribute, privacyAckKey } from "@/lib/privacy-ack";
+import { privacyAckKey, privacyClosedAttribute } from "@/lib/privacy-ack";
 
 interface PrivacyAckProps {
   panelId: string;
@@ -13,11 +13,9 @@ export const PrivacyAck = ({ panelId }: PrivacyAckProps): ReactElement => {
   const acknowledge = (): void => {
     try {
       globalThis.localStorage.setItem(privacyAckKey, "1");
-    } catch {
-      document.documentElement.toggleAttribute(privacyAckAttribute, true);
-    }
+    } catch {}
     document.querySelector<HTMLElement>(`#${panelId}`)?.hidePopover();
-    document.documentElement.toggleAttribute(privacyAckAttribute, true);
+    document.documentElement.toggleAttribute(privacyClosedAttribute, true);
   };
   return (
     <button

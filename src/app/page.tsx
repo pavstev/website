@@ -8,6 +8,7 @@ import { ContactLinks } from "@/components/contact-links";
 import { CursorGlow } from "@/components/cursor-glow";
 import { DownloadButton } from "@/components/download-button";
 import { EffectsInit } from "@/components/effects-init";
+import { MotionToggle } from "@/components/motion-toggle";
 import { PageDock } from "@/components/page-dock";
 import { Profile } from "@/components/profile";
 import { ResumeTip } from "@/components/resume-tip";
@@ -57,6 +58,7 @@ export default async function Page(): Promise<ReactElement> {
       <SpaceBackground />
       <CloudsCanvas />
       <CursorGlow />
+      <MotionToggle />
       <main
         className="relative grid min-h-dvh grid-cols-1 place-items-center overflow-x-clip safe-area"
         id="main-content"

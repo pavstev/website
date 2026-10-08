@@ -170,6 +170,10 @@
     color-scheme: dark;
   }
 
+  :root[data-privacy-ack] {
+    --privacy-zone: 0px;
+  }
+
   @media (min-width: 48em) {
     :root {
       --container-px: 2rem;
@@ -446,8 +450,10 @@ html {
 #main-content {
   min-height: calc(100dvh - var(--privacy-zone));
   padding-bottom: 1.25rem;
+}
 
-  @variant no-scroll {
+@media (min-width: 48em) and (min-height: 45em) {
+  #main-content {
     min-height: 100dvh;
     padding-bottom: max(
       var(--safe-y, 2.5rem),
@@ -3398,28 +3404,35 @@ html:has(.globe-dialog[open]) {
   position: relative;
   z-index: 20;
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   width: fit-content;
   max-width: calc(100% - 2rem);
   margin: 0 auto var(--privacy-y);
+}
 
-  @variant no-scroll {
+@media (min-width: 48em) and (min-height: 45em) {
+  .page-dock {
     position: fixed;
     inset: auto 0 var(--privacy-y);
     margin-block: 0;
   }
 }
 
-@media (max-width: 22.4375em) {
-  .page-dock {
-    max-width: calc(100% - 1rem);
-  }
+:root[data-privacy-ack] .page-dock,
+:root[data-privacy-closed] .page-dock {
+  display: none;
 }
 
 .motion-item {
-  display: inline-flex;
+  position: absolute;
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: max(0.75rem, env(safe-area-inset-right));
+  z-index: 20;
+  display: flex;
+
+  @variant no-scroll {
+    position: fixed;
+  }
 }
 
 :root:not([data-js]) .motion-item {
@@ -3430,19 +3443,14 @@ html:has(.globe-dialog[open]) {
   .motion-item {
     display: none;
   }
-
-  :root[data-privacy-ack] .page-dock {
-    display: none;
-  }
 }
 
 .motion-toggle {
-  display: inline-grid;
+  display: grid;
   place-items: center;
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 9999px;
-  color: var(--foreground-soft);
   cursor: pointer;
 }
 
@@ -3450,49 +3458,71 @@ html:has(.globe-dialog[open]) {
   outline: none;
 }
 
-.motion-toggle-face {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid var(--border-strong);
+.motion-orbit {
+  position: relative;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--foreground-soft);
   border-radius: 9999px;
-  background: color-mix(in oklab, var(--background) 82%, transparent);
-  box-shadow: 0 10px 28px -16px
-    color-mix(in oklab, var(--primary) 45%, transparent);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  backdrop-filter: blur(12px) saturate(1.2);
-  transition:
-    border-color var(--duration-normal) var(--ease-smooth),
-    color var(--duration-normal) var(--ease-smooth);
+  box-shadow:
+    0 0 3px 1px color-mix(in oklab, var(--background) 60%, transparent),
+    inset 0 0 3px 1px color-mix(in oklab, var(--background) 60%, transparent);
+  transition: border-color var(--duration-normal) var(--ease-smooth);
 }
 
-.motion-toggle:focus-visible > .motion-toggle-face {
-  outline: 2px solid var(--primary);
-  outline-offset: 3px;
+.motion-moon {
+  --orbit-period: 9s;
+  position: absolute;
+  inset: -1px;
+  border-radius: 9999px;
+  animation: motion-orbit var(--orbit-period) linear infinite;
 }
 
-.motion-toggle[aria-pressed="true"] > .motion-toggle-face {
-  border-color: color-mix(in oklab, var(--primary) 55%, transparent);
-  color: var(--foreground);
+.motion-moon::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: calc(50% - 2.5px);
+  width: 5px;
+  height: 5px;
+  border: 2.5px solid
+    color-mix(in oklab, var(--sky-gold) 60%, var(--foreground));
+  border-radius: 9999px;
+  box-shadow:
+    0 0 6px 1px color-mix(in oklab, var(--sky-gold) 80%, transparent),
+    0 0 12px 2px color-mix(in oklab, var(--sky-rose) 25%, transparent);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .motion-toggle:hover > .motion-toggle-face {
-    border-color: color-mix(in oklab, var(--primary) 55%, transparent);
-    color: var(--foreground);
+@keyframes motion-orbit {
+  to {
+    rotate: 1turn;
   }
 }
 
-.motion-icon-play,
-.motion-tip-play,
-:root[data-motion-paused] .motion-icon-pause,
-:root[data-motion-paused] .motion-tip-pause {
-  display: none;
+:root[data-motion-paused] .motion-moon {
+  animation-duration: var(--orbit-period) !important;
+  animation-iteration-count: infinite !important;
+  animation-play-state: paused;
 }
 
-:root[data-motion-paused] .motion-icon-play {
-  display: block;
+.motion-toggle:focus-visible > .motion-orbit {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .motion-toggle:hover > .motion-orbit {
+    border-color: var(--foreground);
+  }
+}
+
+:root[data-motion-paused] .motion-orbit {
+  border-color: color-mix(in oklab, var(--primary) 75%, var(--foreground));
+}
+
+.motion-tip-play,
+:root[data-motion-paused] .motion-tip-pause {
+  display: none;
 }
 
 :root[data-motion-paused] .motion-tip-play {
@@ -3501,23 +3531,71 @@ html:has(.globe-dialog[open]) {
 
 .motion-tip {
   --tone: var(--primary);
+  --tip-rise: -4px;
+  top: calc(100% - 0.125rem);
+  right: 0.75rem;
+  bottom: auto;
+  left: auto;
   width: max-content;
   max-width: calc(100vw - 2rem);
+  padding-inline: 0.75rem;
+  border-radius: 0.875rem;
   white-space: normal;
   text-align: center;
+  translate: none;
+}
+
+.motion-tip::before {
+  top: auto;
+  bottom: 100%;
+}
+
+.motion-item[data-flash]:not([data-dismissed]) > .contact-tip {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--duration-normal) var(--ease-entrance),
+    transform var(--duration-slow) var(--ease-entrance),
+    visibility 0s;
+}
+
+@media (hover: none) {
+  .motion-tip {
+    max-width: calc(50vw - 7.75rem);
+  }
+}
+
+@media (hover: none) and (max-width: 33.9375em) {
+  .motion-tip {
+    --tip-rise: 4px;
+    position: fixed;
+    top: auto;
+    right: auto;
+    bottom: max(var(--privacy-y), calc(var(--privacy-zone) + 0.25rem));
+    left: 50%;
+    max-width: calc(100vw - 2rem);
+    translate: -50% 0;
+  }
 }
 
 @media (forced-colors: active) {
-  .motion-toggle-face {
-    border-color: ButtonText;
+  .motion-toggle {
     background: ButtonFace;
-    color: ButtonText;
   }
 
-  .motion-toggle[aria-pressed="true"] > .motion-toggle-face {
+  .motion-toggle:focus-visible > .motion-orbit {
+    outline-color: Highlight;
+  }
+
+  .motion-orbit,
+  .motion-moon::before {
+    border-color: ButtonText;
+  }
+
+  :root[data-motion-paused] .motion-orbit,
+  :root[data-motion-paused] .motion-moon::before {
     border-color: Highlight;
-    background: Highlight;
-    color: HighlightText;
   }
 }
 
@@ -3666,6 +3744,7 @@ html:has(.globe-dialog[open]) {
   .privacy-panel {
     position-anchor: --privacy-chip;
     position-area: top;
+    justify-self: center;
     inset: 0;
     max-height: calc(100% - max(1rem, env(safe-area-inset-top)) - 0.6875rem);
     margin: auto auto 0.6875rem;
@@ -3683,10 +3762,6 @@ html:has(.globe-dialog[open]) {
       transparent
     )
     1;
-}
-
-:root[data-privacy-ack] .privacy-note {
-  display: none;
 }
 
 .privacy-actions {
@@ -3810,6 +3885,7 @@ html:has(.globe-dialog[open]) {
   }
 
   .page-dock,
+  .motion-item,
   .privacy-panel,
   .topic-panel,
   .repo-planets {
