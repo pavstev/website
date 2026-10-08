@@ -1,9 +1,10 @@
 import type { Graph, ImageObject } from "schema-dts";
 
-import type { Contact, Repo } from "@/lib/github";
+import type { Contact, Repo } from "./github.ts";
+import type { Product } from "./products.ts";
 
-import { en } from "@/lib/i18n";
-import { personalData, plainName } from "@/lib/personal";
+import { en } from "./i18n.ts";
+import { personalData, plainName } from "./personal.ts";
 
 const site = `${personalData.website}/`;
 const personId = `${site}#person`;
@@ -21,7 +22,8 @@ const portrait: ImageObject = {
 export const structuredData = (
   repos: Repo[],
   contact: Contact,
-  modified: Date
+  modified: Date,
+  items: readonly Product[]
 ): Graph => ({
   "@context": "https://schema.org",
   "@graph": [
@@ -90,8 +92,20 @@ export const structuredData = (
           ...(repo.language && { programmingLanguage: repo.language }),
         }) as const
     ),
+    ...items.map(
+      (product) =>
+        ({
+          "@id": `${site}#product-${product.key}`,
+          "@type": product.schemaType,
+          applicationCategory: product.applicationCategory,
+          creator: { "@id": personId },
+          description: product.line,
+          name: product.name,
+          url: product.url,
+        }) as const
+    ),
   ],
 });
 
 export const serializeJsonLd = (data: Graph): string =>
-  JSON.stringify(data).replaceAll("<", "<");
+  JSON.stringify(data).replaceAll("<", String.raw`\u003c`);

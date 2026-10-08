@@ -15,6 +15,7 @@ import { SpaceBackground } from "@/components/space-background";
 import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
+import { products } from "@/lib/products";
 import { getResumeFacts } from "@/lib/resume-facts";
 import { serializeJsonLd, structuredData } from "@/lib/structured-data";
 
@@ -47,7 +48,9 @@ export default async function Page(): Promise<ReactElement> {
     <>
       <script
         dangerouslySetInnerHTML={{
-          __html: serializeJsonLd(structuredData(repos, contact, new Date())),
+          __html: serializeJsonLd(
+            structuredData(repos, contact, new Date(), products)
+          ),
         }}
         type="application/ld+json"
       />
