@@ -6,8 +6,6 @@ on:
     paths:
       - .github/workflows/profile.yml
       - .nvmrc
-      - package.json
-      - pnpm-lock.yaml
       - public/fonts/inter-*
       - public/fonts/parkinsans-*
       - src/lib/github.ts
