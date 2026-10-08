@@ -10,7 +10,7 @@ interface PrivacyNoteProps {
 }
 
 export const PrivacyNote = ({ email }: PrivacyNoteProps): ReactElement => (
-  <footer className="privacy-note">
+  <div className="privacy-note">
     <button className="privacy-chip" popoverTarget={panelId} type="button">
       <span className="privacy-chip-face fade-up type-chip delay-4">
         <span aria-hidden="true" className="privacy-dot" />
@@ -32,5 +32,5 @@ export const PrivacyNote = ({ email }: PrivacyNoteProps): ReactElement => (
         <PrivacyAck panelId={panelId} />
       </div>
     </div>
-  </footer>
+  </div>
 );

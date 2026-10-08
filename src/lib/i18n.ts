@@ -120,6 +120,11 @@ export const en = {
     shortName: "Stevan",
     title: "Stevan Pavlović · Backend & distributed-systems engineer",
   },
+  motion: {
+    label: "Pause motion",
+    tipPause: "Stills the sky, clouds and planets.",
+    tipPlay: "Motion is paused. Press again to play.",
+  },
   notFound: {
     home: "Back to home",
     title: "Page not found",
