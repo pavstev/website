@@ -1,10 +1,10 @@
 export const logoMotionConfig = {
-  hotAmplitude: 0.5,
+  hotAmplitude: 0.28,
   hotSpeed: 3.4,
   hotTauMs: 140,
-  sunriseFrom: -1.9,
-  sunriseMs: 2400,
-  wobbleAmplitude: 0.35,
+  sunriseFrom: -0.9,
+  sunriseMs: 1600,
+  wobbleAmplitude: 0.18,
   wobblePeriodMs: 9000,
 } as const;
 

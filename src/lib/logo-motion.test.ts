@@ -42,32 +42,32 @@ const near = (actual: number, expected: number, tolerance: number): void => {
 describe("logo motion", () => {
   it("keeps the spec numbers", () => {
     assert.deepEqual(logoMotionConfig, {
-      hotAmplitude: 0.5,
+      hotAmplitude: 0.28,
       hotSpeed: 3.4,
       hotTauMs: 140,
-      sunriseFrom: -1.9,
-      sunriseMs: 2400,
-      wobbleAmplitude: 0.35,
+      sunriseFrom: -0.9,
+      sunriseMs: 1600,
+      wobbleAmplitude: 0.18,
       wobblePeriodMs: 9000,
     });
   });
 
-  it("starts on the night side", () => {
-    assert.equal(logoSpin(createLogoMotion()), -1.9);
+  it("starts turned 0.9 rad away from the front", () => {
+    assert.equal(logoSpin(createLogoMotion()), -0.9);
   });
 
-  it("stays on the night side until it is seen", () => {
-    assert.equal(logoSpin(run(1000, frameMs, unseen)), -1.9);
+  it("stays turned away until it is seen", () => {
+    assert.equal(logoSpin(run(1000, frameMs, unseen)), -0.9);
   });
 
-  it("turns in by at most 0.15 rad per 33 ms frame", () => {
+  it("turns in by at most 0.06 rad per 33 ms frame", () => {
     let state = createLogoMotion();
     let spin = logoSpin(state);
     for (let time = 0; time < 2900; time += frameMs) {
       state = stepLogoMotion(state, frameMs, seen);
       const next = logoSpin(state);
       assert.ok(
-        Math.abs(next - spin) <= 0.15,
+        Math.abs(next - spin) <= 0.06,
         `${String(spin)} to ${String(next)}`
       );
       spin = next;
@@ -75,45 +75,45 @@ describe("logo motion", () => {
   });
 
   it("follows the ease-out cubic halfway through the sunrise", () => {
-    near(logoSpin(run(1200, 100, seen)), -0.2375, 1e-9);
+    near(logoSpin(run(800, 100, seen)), -0.1125, 1e-9);
   });
 
   it("rests at exactly 0 rad when the sunrise ends", () => {
-    assert.equal(logoSpin(run(2400, 100, seen)), 0);
+    assert.equal(logoSpin(run(1600, 100, seen)), 0);
   });
 
   it("finishes the sunrise after it leaves the view", () => {
     const begun = stepLogoMotion(createLogoMotion(), 1000, seen);
     const state = stepLogoMotion(begun, 2000, unseen);
-    assert.equal(state.elapsedMs, 2400);
-    near(logoSpin(state), 0.35 * Math.sin((2 * Math.PI * 600) / 9000), 1e-9);
+    assert.equal(state.elapsedMs, 1600);
+    near(logoSpin(state), 0.18 * Math.sin((2 * Math.PI * 1400) / 9000), 1e-9);
   });
 
-  it("swings to 0.35 rad a quarter period after the sunrise", () => {
-    const state = stepLogoMotion(run(2400, 100, seen), 2250, seen);
-    near(logoSpin(state), 0.35, 1e-6);
+  it("swings to 0.18 rad a quarter period after the sunrise", () => {
+    const state = stepLogoMotion(run(1600, 100, seen), 2250, seen);
+    near(logoSpin(state), 0.18, 1e-6);
   });
 
-  it("swings 3.4 times as fast and up to 0.5 rad while hovered", () => {
+  it("swings 3.4 times as fast and up to 0.28 rad while hovered", () => {
     const glowing = settleLogoMotion(run(5000, 100, hover));
     const state = stepLogoMotion(glowing, 9000 / 3.4 / 4, hover);
-    near(logoSpin(state), 0.5, 1e-3);
+    near(logoSpin(state), 0.28, 1e-3);
   });
 
-  it("wobbles within 0.5 rad after the sunrise, hovered or not", () => {
+  it("wobbles within 0.28 rad after the sunrise, hovered or not", () => {
     const random = lcg(7);
-    let state = run(2400, 100, seen);
+    let state = run(1600, 100, seen);
     for (let index = 0; index < 2000; index += 1) {
       const input = { hotGoal: random() < 0.5 ? 0 : 1, started: true };
       state = stepLogoMotion(state, random() * 100, input);
       const spin = logoSpin(state);
-      assert.ok(Math.abs(spin) <= 0.5 + 1e-12, String(spin));
+      assert.ok(Math.abs(spin) <= 0.28 + 1e-12, String(spin));
     }
   });
 
   it("settles to the rest pose", () => {
     const fresh = settleLogoMotion(createLogoMotion());
-    const midway = settleLogoMotion(run(1200, frameMs, seen));
+    const midway = settleLogoMotion(run(800, frameMs, seen));
     assert.equal(logoSpin(fresh), 0);
     assert.equal(logoSpin(midway), 0);
   });
@@ -121,12 +121,12 @@ describe("logo motion", () => {
   it("changes nothing without time", () => {
     const fresh = createLogoMotion();
     assert.deepEqual(stepLogoMotion(fresh, 0, hover), fresh);
-    const midway = run(1200, frameMs, seen);
+    const midway = run(800, frameMs, seen);
     assert.deepEqual(stepLogoMotion(midway, 0, hover), midway);
   });
 
   it("ignores a time step that is not a finite number", () => {
-    const midway = run(1200, frameMs, seen);
+    const midway = run(800, frameMs, seen);
     for (const dtMs of [NaN, Infinity]) {
       assert.deepEqual(stepLogoMotion(midway, dtMs, hover), midway);
     }
