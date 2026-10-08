@@ -40,8 +40,12 @@ export const products: readonly Product[] = [
   ),
 ];
 
+export const productMetaParts = (
+  product: Product
+): readonly [string, string] => [`${product.role} ·`, product.period];
+
 export const productMeta = (product: Product): string =>
-  `${product.role} · ${product.period}`;
+  productMetaParts(product).join(" ");
 
 export const productLlmsLines = (items: readonly Product[]): string[] =>
   items.map(

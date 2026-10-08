@@ -48,7 +48,8 @@ describe("structuredData", () => {
         "@type": "WebApplication",
         applicationCategory: "BusinessApplication",
         creator: { "@id": person },
-        description: "Scores your saved jobs and writes the résumé for each.",
+        description:
+          "Every saved job scored, every application prepared. You press send.",
         name: "hirista",
         url: "https://hirista.app",
       },
@@ -58,7 +59,7 @@ describe("structuredData", () => {
         applicationCategory: "BusinessApplication",
         creator: { "@id": person },
         description:
-          "Fleet software for trucking: pre-trip checks, live dashboards.",
+          "Keeps trucking fleets inspected, compliant and visible in real time.",
         name: "Safety Real Time",
         url: "https://safetyrealtime.com",
       },

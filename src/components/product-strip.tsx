@@ -2,7 +2,7 @@ import type { CSSProperties, ReactElement } from "react";
 
 import { ProductMark } from "@/components/product-mark";
 import { en } from "@/lib/i18n";
-import { type Product, productMeta } from "@/lib/products";
+import { type Product, productMetaParts } from "@/lib/products";
 
 const plural = new Intl.PluralRules("en");
 
@@ -35,37 +35,43 @@ export const ProductStrip = ({
         <span aria-hidden="true" className="repo-rule" />
       </div>
       <ul className="product-grid">
-        {products.map((product) => (
-          <li className="min-w-0" key={product.key}>
-            <div
-              className="repo-tile product-tile"
-              data-pointer-light=""
-              style={{ "--lang": product.palette.tint } as CSSProperties}
-            >
-              <ProductMark productKey={product.key} />
-              <div className="repo-body">
-                <div className="product-top">
-                  <a
-                    aria-describedby={`${newTabId} product-line-${product.key}`}
-                    className="repo-name repo-link"
-                    href={product.url}
-                    rel="noopener noreferrer"
-                    target="_blank"
+        {products.map((product) => {
+          const [role, period] = productMetaParts(product);
+          return (
+            <li className="min-w-0" key={product.key}>
+              <div
+                className="repo-tile product-tile"
+                data-pointer-light=""
+                style={{ "--lang": product.palette.tint } as CSSProperties}
+              >
+                <ProductMark productKey={product.key} />
+                <div className="repo-body">
+                  <div className="product-top">
+                    <a
+                      aria-describedby={`${newTabId} product-line-${product.key}`}
+                      className="repo-name repo-link"
+                      href={product.url}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {product.name}
+                    </a>
+                    <span className="product-meta">
+                      <span className="whitespace-nowrap">{role}</span>{" "}
+                      <span className="whitespace-nowrap">{period}</span>
+                    </span>
+                  </div>
+                  <p
+                    className="repo-desc product-line"
+                    id={`product-line-${product.key}`}
                   >
-                    {product.name}
-                  </a>
-                  <span className="product-meta">{productMeta(product)}</span>
+                    {product.line}
+                  </p>
                 </div>
-                <p
-                  className="repo-desc product-line"
-                  id={`product-line-${product.key}`}
-                >
-                  {product.line}
-                </p>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
