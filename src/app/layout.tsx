@@ -3,11 +3,9 @@ import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
 import type { ReactElement, ReactNode } from "react";
 
-import Script from "next/script";
-
 import { en } from "@/lib/i18n";
+import { headScript } from "@/lib/motion-pause";
 import { personalData } from "@/lib/personal";
-import { privacyAckScript } from "@/lib/privacy-ack";
 import { designTokens } from "@/lib/theme";
 
 export const viewport: Viewport = {
@@ -67,14 +65,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: headScript }} />
         <link href="/sitemap.xml" rel="sitemap" />
       </head>
-      <body>
-        {children}
-        <Script id="privacy-ack" strategy="beforeInteractive">
-          {privacyAckScript}
-        </Script>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

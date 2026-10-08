@@ -1,4 +1,5 @@
 import { reducedMotionQuery } from "./media.ts";
+import { privacyAckAttribute, privacyAckKey } from "./privacy-ack.ts";
 import { motionPausedAttribute, sceneHoldEvent } from "./scene-hold.ts";
 
 export interface StillQuery {
@@ -10,6 +11,14 @@ export interface StillQuery {
 export const motionPauseKey = "motion-paused";
 
 export const motionPauseEvent = "motion:pause";
+
+const markRoot = (name: string): string =>
+  `document.documentElement.setAttribute("${name}","")`;
+
+const markStored = (key: string, name: string): string =>
+  `if(localStorage.getItem("${key}"))${markRoot(name)}`;
+
+export const headScript = `${markRoot("data-js")};try{${markStored(privacyAckKey, privacyAckAttribute)};${markStored(motionPauseKey, motionPausedAttribute)}}catch{}`;
 
 const announce = (): void => {
   globalThis.dispatchEvent(new Event(sceneHoldEvent));

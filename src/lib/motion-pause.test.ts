@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
+import { runInNewContext } from "node:vm";
 
 import { reducedMotionQuery } from "./media.ts";
 import {
+  headScript,
   isMotionPaused,
   motionPauseEvent,
   motionPauseKey,
@@ -11,6 +13,7 @@ import {
   stillQuery,
   subscribeMotionPause,
 } from "./motion-pause.ts";
+import { privacyAckKey } from "./privacy-ack.ts";
 import { holdScene, isSceneHeld, sceneHoldEvent } from "./scene-hold.ts";
 
 const stubs = [
@@ -159,5 +162,45 @@ describe("motion pause", () => {
     setMotionPaused(true);
     fake.media.dispatchEvent(new Event("change"));
     assert.equal(changes, 3);
+  });
+});
+
+const runHeadScript = (
+  stored: ReadonlyMap<string, string>,
+  storageWorks = true
+): string[] => {
+  const attributes = new Set<string>();
+  runInNewContext(headScript, {
+    document: { documentElement: fakeRoot(attributes) },
+    localStorage: {
+      getItem: (key: string): null | string =>
+        storageWorks ? (stored.get(key) ?? null) : blocked(),
+    },
+  });
+  return [...attributes];
+};
+
+describe("headScript", () => {
+  it("marks JS, then the privacy OK and the pause found in storage", () => {
+    const both = new Map([
+      [motionPauseKey, "1"],
+      [privacyAckKey, "1"],
+    ]);
+    assert.deepEqual(runHeadScript(both), [
+      "data-js",
+      "data-privacy-ack",
+      "data-motion-paused",
+    ]);
+    assert.deepEqual(runHeadScript(new Map([[motionPauseKey, "1"]])), [
+      "data-js",
+      "data-motion-paused",
+    ]);
+    assert.deepEqual(runHeadScript(new Map()), ["data-js"]);
+  });
+
+  it("marks JS and does not throw when storage throws", () => {
+    assert.deepEqual(runHeadScript(new Map([[motionPauseKey, "1"]]), false), [
+      "data-js",
+    ]);
   });
 });
