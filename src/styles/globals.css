@@ -134,6 +134,7 @@
     --arms-red: #c8102e;
     --arms-white: #f3efe6;
     --city-red: color-mix(in oklab, var(--arms-red) 74%, white);
+    --city-coral: color-mix(in oklab, var(--arms-red) 52%, #ff9c8f);
     --github-accent: #4493f8;
     --github-accent-muted: #388bfd1a;
     --border: rgba(255, 255, 255, 0.1);
@@ -2355,7 +2356,20 @@ html:has(.portrait-dialog[open]) {
   --topic-a: var(--primary);
   --topic-b: var(--sky-violet);
   --topic-stroke: linear-gradient(135deg, var(--topic-a), var(--topic-b));
+  --topic-fill: linear-gradient(
+    100deg,
+    color-mix(in oklab, var(--topic-a) 88%, var(--background)),
+    color-mix(in oklab, var(--topic-b) 88%, var(--background))
+  );
   --topic-glow: var(--topic-a);
+  --topic-glow-b: var(--topic-b);
+  --topic-halo: drop-shadow(
+      0 1px 1px color-mix(in oklab, var(--background) 70%, transparent)
+    )
+    drop-shadow(0 0 5px color-mix(in oklab, var(--topic-glow) 55%, transparent))
+    drop-shadow(
+      0 0 11px color-mix(in oklab, var(--topic-glow-b) 40%, transparent)
+    );
 }
 
 [data-topic="city"] {
@@ -2367,7 +2381,9 @@ html:has(.portrait-dialog[open]) {
     color-mix(in oklab, var(--arms-white) 40%, transparent) 43% 57%,
     var(--city-red) 63% 100%
   );
+  --topic-fill: linear-gradient(var(--city-coral), var(--city-coral));
   --topic-glow: var(--arms-red);
+  --topic-glow-b: var(--city-coral);
 }
 
 [data-topic="fintech"] {
@@ -2408,14 +2424,22 @@ html:has(.portrait-dialog[open]) {
 .topic-word {
   -webkit-background-clip: text;
   background-clip: text;
-  background-image: var(--topic-stroke);
-  color: var(--foreground);
+  background-image: var(--topic-fill);
+  color: transparent;
   font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
   text-shadow: none;
-  -webkit-text-stroke: 2px transparent;
-  filter: drop-shadow(0 1px 1px var(--background))
-    drop-shadow(0 0 0 transparent);
-  transition: filter var(--duration-slow) var(--ease-smooth);
+  text-underline-offset: 0.22em;
+  filter: drop-shadow(
+      0 1px 1px color-mix(in oklab, var(--background) 70%, transparent)
+    )
+    drop-shadow(0 0 5px transparent) drop-shadow(0 0 11px transparent);
+  transition:
+    filter var(--duration-slow) var(--ease-smooth),
+    text-decoration-color var(--duration-slow) var(--ease-smooth);
 }
 
 .arms-field-light {
@@ -2461,8 +2485,8 @@ html:has(.portrait-dialog[open]) {
 
 .topic-trigger:focus-visible .topic-word,
 .topic-trigger[data-open] .topic-word {
-  filter: drop-shadow(0 1px 1px var(--background))
-    drop-shadow(0 0 6px color-mix(in oklab, var(--topic-glow) 50%, transparent));
+  filter: var(--topic-halo);
+  text-decoration-color: color-mix(in oklab, var(--topic-a) 40%, transparent);
 }
 
 @keyframes arms-glint {
@@ -2656,9 +2680,19 @@ html:has(.portrait-dialog[open]) {
 }
 
 .topic-panel .topic-close {
-  width: 2.25rem;
-  height: 2.25rem;
-  margin: -0.375rem -0.375rem -0.375rem auto;
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0 0 0 auto;
+  border-radius: var(--radius-lg);
+}
+
+@media (pointer: coarse) {
+  .topic-panel .topic-close::after {
+    position: absolute;
+    inset: -0.625rem;
+    content: "";
+  }
 }
 
 .topic-panel .city-launch {
@@ -3014,10 +3048,8 @@ html:has(.globe-dialog[open]) {
 
 @media (hover: hover) and (pointer: fine) {
   .topic-trigger:hover .topic-word {
-    filter: drop-shadow(0 1px 1px var(--background))
-      drop-shadow(
-        0 0 6px color-mix(in oklab, var(--topic-glow) 50%, transparent)
-      );
+    filter: var(--topic-halo);
+    text-decoration-color: color-mix(in oklab, var(--topic-a) 40%, transparent);
   }
 
   .city-launch:hover {
@@ -3043,9 +3075,23 @@ html:has(.globe-dialog[open]) {
   .topic-word {
     background: none;
     color: LinkText;
-    text-decoration: underline;
-    -webkit-text-stroke: 0;
+    text-decoration-color: LinkText;
     filter: none;
+  }
+}
+
+@media print {
+  .topic-word {
+    background: none;
+    color: inherit;
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topic-panel,
+  .topic-panel:popover-open {
+    transform: none;
   }
 }
 

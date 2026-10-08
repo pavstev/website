@@ -34,11 +34,12 @@ export const TopicPanel = ({
       <button
         aria-label={en.card.close}
         className="topic-close focus-ring"
+        data-initial-focus=""
         popoverTarget={id}
         popoverTargetAction="hide"
         type="button"
       >
-        <Icon aria-hidden name="lucide:x" size="1rem" />
+        <Icon aria-hidden name="lucide:x" size="0.875rem" />
       </button>
     </header>
     <p className="topic-text">{text}</p>

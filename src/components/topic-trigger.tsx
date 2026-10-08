@@ -14,9 +14,12 @@ export const TopicTrigger = ({
   word,
 }: TopicTriggerProps): ReactElement => (
   <button
+    aria-controls={panelId}
+    aria-expanded="false"
     aria-haspopup="dialog"
     aria-label={label}
     className="topic-trigger focus-ring"
+    data-hover-open="pin"
     data-topic={topic}
     popoverTarget={panelId}
     type="button"
