@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { CSSProperties, ReactElement } from "react";
 
 import type { Repo } from "@/lib/github";
 import type { Product } from "@/lib/products";
@@ -9,6 +9,14 @@ import { RepoStrip } from "@/components/repo-strip";
 import { en } from "@/lib/i18n";
 
 const newTabId = "strips-new-tab";
+
+const stripRows = (repos: number, products: number): CSSProperties =>
+  ({
+    "--pair-rows": Math.max(1, Math.ceil(products / 2)),
+    "--product-rows": Math.max(1, products),
+    "--repo-rows": Math.max(1, repos),
+    "--rows": Math.max(1, repos, products),
+  }) as CSSProperties;
 
 interface CardStripsProps {
   products: readonly Product[];
@@ -22,6 +30,7 @@ export const CardStrips = ({
   <div
     className="card-strips fade-up mt-(--card-gap-repos) w-full min-w-0 text-left delay-3"
     data-strips=""
+    style={stripRows(repos.length, products.length)}
   >
     <span hidden id={newTabId}>
       {en.repos.newTab}

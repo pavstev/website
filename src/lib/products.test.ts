@@ -7,6 +7,7 @@ import {
   isProductUrl,
   productLlmsLines,
   productMeta,
+  productMetaParts,
   products,
 } from "./products.ts";
 
@@ -49,10 +50,22 @@ describe("products", () => {
       ["Solo founder · 2026", "Co-founder & CTO · since 2022"]
     );
   });
+  it("splits the meta after the dot, so a tile wraps it only there", () => {
+    assert.deepEqual(
+      products.map((product) => productMetaParts(product)),
+      [
+        ["Solo founder ·", "2026"],
+        ["Co-founder & CTO ·", "since 2022"],
+      ]
+    );
+    for (const product of products) {
+      assert.equal(productMetaParts(product).join(" "), productMeta(product));
+    }
+  });
   it("writes one llms.txt line per product", () => {
     assert.deepEqual(productLlmsLines(products), [
-      "- [hirista](https://hirista.app): Solo founder · 2026. Scores your saved jobs and writes the résumé for each.",
-      "- [Safety Real Time](https://safetyrealtime.com): Co-founder & CTO · since 2022. Fleet software for trucking: pre-trip checks, live dashboards.",
+      "- [hirista](https://hirista.app): Solo founder · 2026. Every saved job scored, every application prepared. You press send.",
+      "- [Safety Real Time](https://safetyrealtime.com): Co-founder & CTO · since 2022. Keeps trucking fleets inspected, compliant and visible in real time.",
     ]);
   });
   it("matches a product host with or without www", () => {
