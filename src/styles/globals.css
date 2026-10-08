@@ -1360,7 +1360,8 @@ html:has(.portrait-dialog[open]) {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .contact-item:hover > .contact-tip {
+  .contact-item:hover > .contact-tip,
+  .motion-item:hover > .contact-tip {
     pointer-events: auto;
     visibility: visible;
     opacity: 1;
@@ -1373,7 +1374,8 @@ html:has(.portrait-dialog[open]) {
 }
 
 @media (any-hover: hover) {
-  .contact-link:focus-visible + .contact-tip {
+  .contact-link:focus-visible + .contact-tip,
+  .motion-toggle:focus-visible + .contact-tip {
     pointer-events: auto;
     visibility: visible;
     opacity: 1;
@@ -1385,7 +1387,8 @@ html:has(.portrait-dialog[open]) {
   }
 }
 
-.contact-item[data-dismissed] > .contact-tip {
+.contact-item[data-dismissed] > .contact-tip,
+.motion-item[data-dismissed] > .contact-tip {
   pointer-events: none;
   visibility: hidden;
   opacity: 0;
@@ -3252,19 +3255,122 @@ html:has(.globe-dialog[open]) {
   animation: none;
 }
 
-.privacy-note {
+.page-dock {
   position: relative;
   z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   width: fit-content;
   max-width: calc(100% - 2rem);
   margin: 0 auto var(--privacy-y);
 }
 
 @media (min-width: 48em) and (min-height: 45em) {
-  .privacy-note {
+  .page-dock {
     position: fixed;
     inset: auto 0 var(--privacy-y);
     margin-block: 0;
+  }
+}
+
+.motion-item {
+  display: inline-flex;
+}
+
+:root:not([data-js]) .motion-item {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-item {
+    display: none;
+  }
+}
+
+.motion-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  color: var(--foreground-soft);
+  cursor: pointer;
+}
+
+.motion-toggle:focus-visible {
+  outline: none;
+}
+
+.motion-toggle-face {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--background) 82%, transparent);
+  box-shadow: 0 10px 28px -16px
+    color-mix(in oklab, var(--primary) 45%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  backdrop-filter: blur(12px) saturate(1.2);
+  transition:
+    border-color var(--duration-normal) var(--ease-smooth),
+    color var(--duration-normal) var(--ease-smooth);
+}
+
+.motion-toggle:focus-visible > .motion-toggle-face {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.motion-toggle[aria-pressed="true"] > .motion-toggle-face {
+  border-color: color-mix(in oklab, var(--primary) 55%, transparent);
+  color: var(--foreground);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .motion-toggle:hover > .motion-toggle-face {
+    border-color: color-mix(in oklab, var(--primary) 55%, transparent);
+    color: var(--foreground);
+  }
+}
+
+.motion-icon-play,
+.motion-tip-play,
+:root[data-motion-paused] .motion-icon-pause,
+:root[data-motion-paused] .motion-tip-pause {
+  display: none;
+}
+
+:root[data-motion-paused] .motion-icon-play {
+  display: block;
+}
+
+:root[data-motion-paused] .motion-tip-play {
+  display: inline;
+}
+
+.motion-tip {
+  --tone: var(--primary);
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  white-space: normal;
+  text-align: center;
+}
+
+@media (forced-colors: active) {
+  .motion-toggle-face {
+    border-color: ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+
+  .motion-toggle[aria-pressed="true"] > .motion-toggle-face {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
   }
 }
 
@@ -3556,7 +3662,7 @@ html:has(.globe-dialog[open]) {
     animation: none !important;
   }
 
-  .privacy-note,
+  .page-dock,
   .privacy-panel,
   .topic-panel,
   .repo-planets {

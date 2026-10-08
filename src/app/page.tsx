@@ -7,7 +7,7 @@ import { ContactLinks } from "@/components/contact-links";
 import { CursorGlow } from "@/components/cursor-glow";
 import { DownloadButton } from "@/components/download-button";
 import { EffectsInit } from "@/components/effects-init";
-import { PrivacyNote } from "@/components/privacy-note";
+import { PageDock } from "@/components/page-dock";
 import { Profile } from "@/components/profile";
 import { RepoStrip } from "@/components/repo-strip";
 import { ResumeTip } from "@/components/resume-tip";
@@ -77,7 +77,7 @@ export default async function Page(): Promise<ReactElement> {
         </div>
         <EffectsInit />
       </main>
-      <PrivacyNote email={contact.email} />
+      <PageDock email={contact.email} />
     </>
   );
 }
