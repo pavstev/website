@@ -27,6 +27,7 @@ const person = "https://stevanpavlovic.com/#person";
 const graph = z
   .array(z.looseObject({ "@id": z.string().optional(), "@type": z.string() }))
   .parse(structuredData([repo], contact, new Date(0), products)["@graph"]);
+const credited = z.object({ creator: z.object({ "@id": z.string() }) });
 
 describe("structuredData", () => {
   it("adds one node per product after the repos", () => {
@@ -64,7 +65,14 @@ describe("structuredData", () => {
     ]);
   });
   it("credits the person node as the creator", () => {
-    assert.equal(graph[2]?.["@id"], person);
+    const personNode = graph.find((node) => node["@type"] === "Person");
+    assert.ok(personNode);
+    assert.equal(personNode["@id"], person);
+    const made = graph.filter((node) => node["@id"]?.includes("#product-"));
+    assert.equal(made.length, products.length);
+    for (const node of made) {
+      assert.equal(credited.parse(node).creator["@id"], personNode["@id"]);
+    }
   });
   it("never claims an employer", () => {
     assert.doesNotMatch(JSON.stringify(graph), /worksFor/);

@@ -54,17 +54,15 @@ const educationLines = (cv: Cv): string[] =>
 
 const projectLines = (cv: Cv): string[] =>
   cv.projects.items
-    .filter(
-      (project) => oneLine(project.name) && !isProductUrl(project.websiteUrl)
-    )
-    .map((project) => {
-      const name = oneLine(project.name);
-      const link = project.websiteUrl.trim();
-      return withOverview(
-        link ? `- [${name}](${link})` : `- ${name}`,
-        project.overview
-      );
-    });
+    .map((project) => ({
+      link: project.websiteUrl.trim(),
+      name: oneLine(project.name),
+      overview: project.overview,
+    }))
+    .filter(({ link, name }) => name && !isProductUrl(link))
+    .map(({ link, name, overview }) =>
+      withOverview(link ? `- [${name}](${link})` : `- ${name}`, overview)
+    );
 
 export const cvLlmsSections = (cv: Cv): string[] => [
   ...section(en.llms.experience, experienceLines(cv)),
