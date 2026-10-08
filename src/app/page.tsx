@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactElement } from "react";
 
 import { CardFooter } from "@/components/card-footer";
+import { CardStrips } from "@/components/card-strips";
 import { CloudsCanvas } from "@/components/clouds-canvas";
 import { ContactLinks } from "@/components/contact-links";
 import { CursorGlow } from "@/components/cursor-glow";
@@ -9,7 +10,6 @@ import { DownloadButton } from "@/components/download-button";
 import { EffectsInit } from "@/components/effects-init";
 import { PrivacyNote } from "@/components/privacy-note";
 import { Profile } from "@/components/profile";
-import { RepoStrip } from "@/components/repo-strip";
 import { ResumeTip } from "@/components/resume-tip";
 import { SpaceBackground } from "@/components/space-background";
 import { getContact, getRepos } from "@/lib/github";
@@ -75,7 +75,7 @@ export default async function Page(): Promise<ReactElement> {
             </DownloadButton>
             <ContactLinks contact={contact} />
           </div>
-          <RepoStrip repos={repos} />
+          <CardStrips products={products} repos={repos} />
           <CardFooter />
         </div>
         <EffectsInit />

@@ -304,7 +304,6 @@ export const initRepoPlanets = (
   let lost = false;
   let ready = false;
   let compiled = false;
-  const section = stage.closest<HTMLElement>("[data-repos]");
 
   const resize = (): void => {
     width = Math.max(1, stage.clientWidth);
@@ -343,7 +342,7 @@ export const initRepoPlanets = (
 
     ready = true;
     canvas.dataset["ready"] = "";
-    section?.setAttribute("data-planets", "gl");
+    stage.dataset["planets"] = "gl";
   };
 
   const advance = (dt: number): void => {
@@ -486,7 +485,7 @@ export const initRepoPlanets = (
     lost = true;
     stop();
     delete canvas.dataset["ready"];
-    section?.removeAttribute("data-planets");
+    delete stage.dataset["planets"];
   });
 
   let disposed = false;
@@ -515,7 +514,7 @@ export const initRepoPlanets = (
       renderer.dispose();
       renderer.forceContextLoss();
       delete canvas.dataset["ready"];
-      section?.removeAttribute("data-planets");
+      delete stage.dataset["planets"];
     },
   };
 };

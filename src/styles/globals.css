@@ -77,6 +77,13 @@
     U+0106-0107, U+010C-010D, U+0110-0111, U+0160-0161, U+017D-017E;
 }
 
+@custom-variant no-scroll {
+  @media (min-width: 64em) and (min-height: 45em),
+    (min-width: 48em) and (min-height: 75em) {
+    @slot;
+  }
+}
+
 @theme inline {
   --color-foreground: var(--foreground);
   --color-foreground-soft: var(--foreground-soft);
@@ -405,8 +412,8 @@
   }
 }
 
-@media (min-width: 48em) and (min-height: 45em) {
-  html {
+html {
+  @variant no-scroll {
     overflow: hidden;
   }
 }
@@ -420,13 +427,17 @@
   --card-gap-footer: 1.25rem;
 }
 
+@media (min-width: 64em) {
+  [data-card] {
+    --container-page-max: 68rem;
+  }
+}
+
 #main-content {
   min-height: calc(100dvh - var(--privacy-zone));
   padding-bottom: 1.25rem;
-}
 
-@media (min-width: 48em) and (min-height: 45em) {
-  #main-content {
+  @variant no-scroll {
     min-height: 100dvh;
     padding-bottom: max(
       var(--safe-y, 2.5rem),
@@ -1800,8 +1811,17 @@ html:has(.portrait-dialog[open]) {
   );
 }
 
-.repo-stage {
+.card-strips {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap-repos);
+}
+
+.strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap-strip);
   min-width: 0;
 }
 
@@ -1825,6 +1845,13 @@ html:has(.portrait-dialog[open]) {
 }
 
 .repo-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--repo-row-gap, 0.625rem);
+  min-width: 0;
+}
+
+.product-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--repo-row-gap, 0.625rem);
@@ -2278,7 +2305,8 @@ html:has(.portrait-dialog[open]) {
 }
 
 @media (min-width: 48em) and (max-height: 62.4375em) {
-  .repo-grid {
+  .repo-grid,
+  .product-grid {
     --repo-row-gap: 0.5rem;
   }
 
@@ -2348,6 +2376,111 @@ html:has(.portrait-dialog[open]) {
   .repo-planet,
   .repo-planets {
     display: none;
+  }
+}
+
+.product-tile {
+  --repo-planet-size: 2.75rem;
+}
+
+.logo-planet {
+  display: block;
+  grid-area: 1 / 1;
+  width: var(--repo-planet-size);
+  height: var(--repo-planet-size);
+  forced-color-adjust: none;
+}
+
+.logo-planet svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--lang) 40%, transparent),
+    0 0 1.25rem color-mix(in oklab, var(--lang) 16%, transparent);
+  transition: opacity 300ms var(--ease-smooth);
+}
+
+.logo-planet circle {
+  fill: var(--logo-disc);
+}
+
+.logo-planet [data-ink="mark"] {
+  fill: var(--logo-mark);
+}
+
+.logo-planet [data-ink="accent"] {
+  fill: var(--logo-accent);
+}
+
+.product-top {
+  display: contents;
+}
+
+.product-meta {
+  grid-column: 1 / -1;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  text-wrap: balance;
+}
+
+@media (min-width: 40rem) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .product-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.75rem;
+    min-width: 0;
+  }
+
+  .product-meta {
+    grid-column: auto;
+  }
+
+  .product-line {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: none;
+    line-clamp: none;
+  }
+}
+
+@media (min-width: 48em) and (max-height: 51.4375em) {
+  .product-tile {
+    --repo-planet-size: 2.5rem;
+  }
+}
+
+@media (min-width: 64em) {
+  .card-strips {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto 1fr;
+    gap: var(--card-gap-strip) 1.5rem;
+  }
+
+  .strip {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+  }
+
+  .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: 1fr;
+  }
+
+  .product-line {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 }
 
@@ -3195,10 +3328,8 @@ html:has(.globe-dialog[open]) {
   width: fit-content;
   max-width: calc(100% - 2rem);
   margin: 0 auto var(--privacy-y);
-}
 
-@media (min-width: 48em) and (min-height: 45em) {
-  .privacy-note {
+  @variant no-scroll {
     position: fixed;
     inset: auto 0 var(--privacy-y);
     margin-block: 0;
