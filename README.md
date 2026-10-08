@@ -13,22 +13,23 @@ My personal site: one contact card floating over a live WebGL sky, plus a small 
 - **A glass bead.** It follows the cursor over the portrait (a finger after a press and hold) and magnifies the photo with chromatic edges, in the card and in the portrait dialog.
 - **A name that tunes in.** A CSS signal intro, then every 8 s a WebGL tear and a weight-morph wave across the letters.
 - **A planet per project.** Each open-source repo gets its own three.js planet, with language chips in GitHub's colors.
+- **Two products beside the code.** hirista and Safety Real Time sit in a second column next to the repos. Each logo is a planet that turns in from its night side once, then wobbles gently.
 - **Vienna on a globe.** Click "Vienna" in the bio for the coat of arms, a few facts and a three.js globe that loads only then.
-- **Kind to your device.** Every loop drops to 30 fps when idle, pauses when hidden, degrades on slow frames and draws one still frame under reduced motion or a software renderer.
+- **Kind to your device.** Every loop drops to 30 fps when idle, pauses when hidden, degrades on slow frames and draws one still frame under reduced motion or a software renderer. A pause button beside the privacy chip stills everything and remembers it.
 - **No cookies.** Cloudflare Web Analytics counts visits without them, and a small chip says so once.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  data["personal.ts, i18n.ts, GitHub API, CV feed"] --> build["pnpm build"] --> dist["dist/: page, sitemap, llms.txt, cv.json, resume.pdf"]
+  data["personal.ts, products.ts, i18n.ts, GitHub API, CV feed"] --> build["pnpm build"] --> dist["dist/: page, sitemap, llms.txt, cv.json, resume.pdf"]
   visitor["Visitor"] --> cf["Cloudflare"]
   cf -- "other paths" --> dist
   cf -- "/mcp" --> worker["worker/"]
   worker -. "cv.json, llms.txt" .-> dist
 ```
 
-The page is a Next.js 16 static export. The Worker in `worker/` runs only for `/mcp`: `POST /mcp` is a read-only MCP server with five tools (`profile`, `experience`, `skills`, `projects`, `contact`) behind a per-IP rate limit. It reads `/cv.json` and `/llms.txt` from the static assets. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
+The page is a Next.js 16 static export. The Worker in `worker/` runs only for `/mcp`: `POST /mcp` is a read-only MCP server with six tools (`profile`, `experience`, `skills`, `projects`, `products`, `contact`) behind a per-IP rate limit. It reads `/cv.json` and `/llms.txt` from the static assets. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
 
 ## Getting started
 
