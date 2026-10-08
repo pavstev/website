@@ -5,6 +5,7 @@ import {
   BufferGeometry,
   CanvasTexture,
   Color,
+  DoubleSide,
   Group,
   LinearMipmapLinearFilter,
   Mesh,
@@ -19,7 +20,13 @@ import {
 
 import { createFramePacer } from "@/lib/frame-pacer";
 import { globeData } from "@/lib/globe-data";
-import { type LabelBox, placeLabels } from "@/lib/globe-labels";
+import {
+  type LabelAnchor,
+  type LabelRect,
+  type LabelSide,
+  type PlacedLabel,
+  placeLabels,
+} from "@/lib/globe-labels";
 import { stillQuery } from "@/lib/motion-pause";
 import { subsolarPoint } from "@/lib/sun";
 import { globePalette } from "@/lib/theme";
@@ -34,25 +41,31 @@ export interface GlobeControls {
 }
 
 interface GlobeOptions {
-  home: GlobePlace;
-  hubs: readonly GlobePlace[];
+  avoid: readonly HTMLElement[];
+  cities: readonly GlobePlace[];
+  home: GlobePoint;
+  homeLabel: HTMLElement;
   labels: HTMLElement;
   onInteract: () => void;
   onReady: () => void;
 }
 
-interface GlobePlace {
-  latitude: number;
-  longitude: number;
+interface GlobePlace extends GlobePoint {
   name: string;
 }
 
+interface GlobePoint {
+  latitude: number;
+  longitude: number;
+}
+
 interface Label {
-  element: HTMLSpanElement;
-  gap: number;
+  element: HTMLElement;
   height: number;
   key: string;
+  offset: number;
   position: Vector3;
+  radius: number;
   shown: string;
   width: number;
 }
@@ -76,7 +89,7 @@ const fov = 30;
 const fitRatio = 0.86;
 const minZoom = 1;
 const maxZoom = 9;
-const homeZoom = 2;
+const homeZoom = 3.2;
 const maxLatitude = 80;
 const worldWidth = 2048;
 const worldHeight = 1024;
@@ -86,11 +99,20 @@ const europeFadeEnd = 1.9;
 const homeTau = 300;
 const introLongitude = 42;
 const introLatitude = 16;
-const introZoom = 1.45;
+const introZoom = 1.3;
+const tiltStart = 1.3;
+const tiltEnd = 3.4;
+const maxTilt = 26;
 const sunRefreshMs = 60_000;
 const markerRadius = 1.003;
-const labelGap = 4;
-const labelFacing = 0.22;
+const citySize = 9;
+const beaconSize = 60;
+const pillarReach = 0.36;
+const pillarHalfWidth = 7;
+const labelGap = 3;
+const labelFacing = 0.15;
+const homeMark = { offset: 14, radius: 7 };
+const cityMark = { offset: 6, radius: 3 };
 const maxPixelRatio = 1.75;
 
 const maskColors = {
@@ -381,47 +403,91 @@ void main() {
 }
 `;
 
-const markerVertex = `
+const pointVertex = `
 uniform float pixelRatio;
-attribute float kind;
-attribute float phase;
-varying float vKind;
-varying float vPhase;
+uniform float size;
 varying float vFacing;
 void main() {
   vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
   vec3 n = normalize(normalMatrix * normalize(position));
   vFacing = smoothstep(0.0, 0.3, dot(n, normalize(-viewPosition.xyz)));
-  vKind = kind;
-  vPhase = phase;
-  gl_PointSize = mix(24.0, 40.0, kind) * pixelRatio;
+  gl_PointSize = size * pixelRatio;
   gl_Position = projectionMatrix * viewPosition;
 }
 `;
 
-const markerFragment = `
+const cityFragment = `
+uniform vec3 color;
+varying float vFacing;
+void main() {
+  float r = length(gl_PointCoord * 2.0 - 1.0);
+  float body = 1.0 - smoothstep(0.3, 0.48, r);
+  float glow = (1.0 - smoothstep(0.4, 1.0, r)) * 0.22;
+  gl_FragColor = vec4(color, max(body, glow) * vFacing);
+  #include <colorspace_fragment>
+}
+`;
+
+const beaconFragment = `
 uniform float time;
 uniform float motion;
-uniform vec3 hubColor;
-uniform vec3 homeColor;
-varying float vKind;
-varying float vPhase;
+uniform vec3 color;
+uniform vec3 core;
 varying float vFacing;
 void main() {
   vec2 p = gl_PointCoord * 2.0 - 1.0;
   float r = length(p);
-  float core = mix(0.22, 0.18, vKind);
-  float body = 1.0 - smoothstep(core - 0.07, core, r);
-  float light = clamp(1.0 - length(p / core + vec2(0.4)), 0.0, 1.0);
-  float period = mix(3.5, 4.6, vKind);
-  float t = motion > 0.5 ? fract(time / period + vPhase) : 0.42;
-  float spread = core + t * (0.94 - core);
-  float ring = 1.0 - smoothstep(0.0, 0.06, abs(r - spread));
-  float fade = motion > 0.5 ? pow(1.0 - t, 1.6) * mix(0.5, 0.65, vKind) : 0.5 * vKind;
-  vec3 color = mix(hubColor, homeColor, vKind);
-  vec3 shaded = color * mix(0.72, 1.18, light);
-  float alpha = max(body, ring * fade) * vFacing;
-  gl_FragColor = vec4(mix(color, shaded, body), alpha);
+  float radius = 0.17;
+  float body = 1.0 - smoothstep(radius - 0.05, radius, r);
+  float light = clamp(1.0 - length(p / radius + vec2(0.35)), 0.0, 1.0);
+  float glow = exp(-pow(r / 0.38, 2.0)) * 0.5;
+  float t = motion > 0.5 ? fract(time / 3.4) : 0.42;
+  float spread = radius + t * (0.95 - radius);
+  float ring = 1.0 - smoothstep(0.0, 0.08, abs(r - spread));
+  float fade = motion > 0.5 ? pow(1.0 - t, 1.2) * 0.9 : 0.6;
+  vec3 tint = mix(color, core, body * (0.4 + 0.6 * light));
+  float alpha = max(max(body, glow), ring * fade) * vFacing;
+  gl_FragColor = vec4(tint, alpha);
+  #include <colorspace_fragment>
+}
+`;
+
+const pillarVertex = `
+uniform float viewHeight;
+uniform float reach;
+uniform float halfWidth;
+attribute vec2 corner;
+varying vec2 vCorner;
+varying float vStrength;
+void main() {
+  vec3 base = (modelViewMatrix * vec4(position, 1.0)).xyz;
+  vec3 axis = normalize(normalMatrix * normalize(position));
+  vec3 toEye = normalize(-base);
+  vec3 across = cross(axis, toEye);
+  float side = length(across);
+  across = side > 0.0001 ? across / side : vec3(1.0, 0.0, 0.0);
+  vec3 point = base + axis * (corner.y * reach);
+  float perPixel = 2.0 * max(-point.z, 0.001) / (projectionMatrix[1][1] * viewHeight);
+  point += across * (corner.x * halfWidth * perPixel);
+  vCorner = corner;
+  vStrength = smoothstep(0.04, 0.22, side) * smoothstep(-0.12, 0.18, dot(axis, toEye));
+  gl_Position = projectionMatrix * vec4(point, 1.0);
+}
+`;
+
+const pillarFragment = `
+uniform float time;
+uniform float motion;
+uniform vec3 color;
+varying vec2 vCorner;
+varying float vStrength;
+void main() {
+  float x = abs(vCorner.x);
+  float rise = vCorner.y;
+  float beam = exp(-pow(x / 0.16, 2.0)) + exp(-pow(x / 0.55, 2.0)) * 0.3;
+  float fade = pow(1.0 - rise, 1.8) * smoothstep(0.0, 0.05, rise);
+  float wave = motion > 0.5 ? exp(-pow((rise - fract(time / 2.8)) / 0.09, 2.0)) * 0.55 : 0.0;
+  gl_FragColor = vec4(color, beam * fade * (0.8 + wave) * vStrength);
   #include <colorspace_fragment>
 }
 `;
@@ -527,53 +593,117 @@ export const createCityGlobe = (
   const haloGeometry = new SphereGeometry(1.16, 40, 28);
   scene.add(new Mesh(haloGeometry, haloMaterial));
 
-  const places = [options.home, ...options.hubs];
-  const markerPositions = places.map((place) =>
-    vectorOf(place.longitude, place.latitude).multiplyScalar(markerRadius)
-  );
-  const markerGeometry = new BufferGeometry();
-  const coordinates = markerPositions.flatMap((point) => point.toArray());
-  const kinds = places.map((_, index) => (index === 0 ? 1 : 0));
-  const phases = places.map((_, index) => (index * 0.618034) % 1);
-  markerGeometry.setAttribute("position", attribute(coordinates, 3));
-  markerGeometry.setAttribute("kind", attribute(kinds, 1));
-  markerGeometry.setAttribute("phase", attribute(phases, 1));
+  const pointAt = (place: GlobePoint): Vector3 =>
+    vectorOf(place.longitude, place.latitude).multiplyScalar(markerRadius);
+  const homePosition = pointAt(options.home);
+  const cityPositions = options.cities.map((city) => pointAt(city));
   const timeUniform = { value: 0 };
   const motionUniform = { value: reduce.matches ? 0 : 1 };
   const pixelRatioUniform = { value: pixelRatio };
-  const markerMaterial = new ShaderMaterial({
+  const viewHeightUniform = { value: 1 };
+  const goldUniform = { value: new Color(globePalette.marker) };
+
+  const cityGeometry = new BufferGeometry();
+  cityGeometry.setAttribute(
+    "position",
+    attribute(
+      cityPositions.flatMap((point) => point.toArray()),
+      3
+    )
+  );
+  const cityMaterial = new ShaderMaterial({
     depthWrite: false,
-    fragmentShader: markerFragment,
+    fragmentShader: cityFragment,
     transparent: true,
     uniforms: {
-      homeColor: { value: new Color(globePalette.marker) },
-      hubColor: { value: new Color(globePalette.hub) },
+      color: { value: new Color(globePalette.city) },
+      pixelRatio: pixelRatioUniform,
+      size: { value: citySize },
+    },
+    vertexShader: pointVertex,
+  });
+  const cityDots = new Points(cityGeometry, cityMaterial);
+  cityDots.renderOrder = 2;
+  globe.add(cityDots);
+
+  const pillarGeometry = new BufferGeometry();
+  pillarGeometry.setAttribute(
+    "position",
+    attribute(Array.from({ length: 4 }, () => homePosition.toArray()).flat(), 3)
+  );
+  pillarGeometry.setAttribute(
+    "corner",
+    attribute([-1, 0, 1, 0, -1, 1, 1, 1], 2)
+  );
+  pillarGeometry.setIndex([0, 1, 2, 2, 1, 3]);
+  const pillarMaterial = new ShaderMaterial({
+    blending: AdditiveBlending,
+    depthWrite: false,
+    fragmentShader: pillarFragment,
+    side: DoubleSide,
+    transparent: true,
+    uniforms: {
+      color: goldUniform,
+      halfWidth: { value: pillarHalfWidth },
+      motion: motionUniform,
+      reach: { value: pillarReach },
+      time: timeUniform,
+      viewHeight: viewHeightUniform,
+    },
+    vertexShader: pillarVertex,
+  });
+  const pillar = new Mesh(pillarGeometry, pillarMaterial);
+  pillar.frustumCulled = false;
+  pillar.renderOrder = 1;
+  globe.add(pillar);
+
+  const beaconGeometry = new BufferGeometry();
+  beaconGeometry.setAttribute("position", attribute(homePosition.toArray(), 3));
+  const beaconMaterial = new ShaderMaterial({
+    depthWrite: false,
+    fragmentShader: beaconFragment,
+    transparent: true,
+    uniforms: {
+      color: goldUniform,
+      core: { value: new Color(globePalette.markerCore) },
       motion: motionUniform,
       pixelRatio: pixelRatioUniform,
+      size: { value: beaconSize },
       time: timeUniform,
     },
-    vertexShader: markerVertex,
+    vertexShader: pointVertex,
   });
-  const markers = new Points(markerGeometry, markerMaterial);
-  markers.renderOrder = 2;
-  globe.add(markers);
+  const beacon = new Points(beaconGeometry, beaconMaterial);
+  beacon.renderOrder = 3;
+  globe.add(beacon);
 
-  const labels: Label[] = places.map((place, index) => {
+  const cityLabels: Label[] = options.cities.map((city, index) => {
     const element = document.createElement("span");
     element.className = "city-label";
-    element.dataset["kind"] = index === 0 ? "home" : "hub";
-    element.textContent = place.name;
+    element.textContent = city.name;
     options.labels.append(element);
     return {
+      ...cityMark,
       element,
-      gap: index === 0 ? 10 : 7,
       height: 0,
-      key: String(index),
-      position: markerPositions[index] ?? new Vector3(),
+      key: `city-${String(index)}`,
+      position: cityPositions[index] ?? new Vector3(),
       shown: "",
       width: 0,
     };
   });
+  const labels: Label[] = [
+    {
+      ...homeMark,
+      element: options.homeLabel,
+      height: 0,
+      key: "home",
+      position: homePosition,
+      shown: "",
+      width: 0,
+    },
+    ...cityLabels,
+  ];
 
   const home: View = {
     lat: options.home.latitude,
@@ -613,60 +743,99 @@ export const createCityGlobe = (
 
   const apply = (): void => {
     globe.rotation.set(view.lat * deg, -view.lon * deg, 0);
-    camera.position.set(0, 0, distance());
+    const lift = distance() - 1;
+    const tilt = maxTilt * deg * smoothstep(tiltStart, tiltEnd, view.zoom);
+    camera.position.set(0, -lift * Math.sin(tilt), 1 + lift * Math.cos(tilt));
+    camera.lookAt(0, 0, 1);
+    camera.updateMatrixWorld();
     const fade = smoothstep(europeFadeStart, europeFadeEnd, view.zoom);
     europeOpacity.value = fade;
     europe.visible = fade > 0.01;
-    sunView.copy(sunObject).applyQuaternion(globe.quaternion);
+    sunView
+      .copy(sunObject)
+      .applyQuaternion(globe.quaternion)
+      .transformDirection(camera.matrixWorldInverse);
   };
+
+  let laidOut = "";
+  let blocked: LabelRect[] = [];
 
   const measureLabels = (): void => {
     for (const label of labels) {
       label.width = label.element.offsetWidth;
       label.height = label.element.offsetHeight;
     }
+    blocked = options.avoid.map((element) => ({
+      height: element.offsetHeight,
+      width: element.offsetWidth,
+      x: element.offsetLeft,
+      y: element.offsetTop,
+    }));
+    laidOut = "";
   };
 
   const world = new Vector3();
+  const toCamera = new Vector3();
   const screen = new Vector3();
+  const sides = new Map<string, LabelSide>();
 
   const layoutLabels = (): void => {
-    const boxes: LabelBox[] = [];
-    const placed = new Map<string, [number, number, number]>();
+    const state = [view.lat, view.lon, view.zoom, width, height]
+      .map(String)
+      .join(" ");
+    if (state === laidOut) return;
+    laidOut = state;
+    const anchors: LabelAnchor[] = [];
+    const alphas = new Map<string, number>();
     for (const label of labels) {
+      if (label.width === 0) continue;
       world.copy(label.position).applyQuaternion(globe.quaternion);
-      screen.copy(camera.position).sub(world).normalize();
-      const facing = screen.dot(world) / world.length();
-      if (facing < labelFacing || label.width === 0) continue;
+      toCamera.copy(camera.position).sub(world).normalize();
+      const facing = toCamera.dot(world) / world.length();
+      if (facing < labelFacing) continue;
       screen.copy(world).project(camera);
       const x = ((screen.x + 1) / 2) * width;
       const y = ((1 - screen.y) / 2) * height;
-      const right = x + label.gap;
-      const left =
-        right + label.width > width ? x - label.gap - label.width : right;
-      const top = y - label.height / 2;
-      const alpha = smoothstep(labelFacing, labelFacing + 0.25, facing);
-      boxes.push({
+      if (x < 0 || x > width || y < 0 || y > height) continue;
+      anchors.push({
         height: label.height,
         key: label.key,
+        offset: label.offset,
+        radius: label.radius,
         width: label.width,
-        x: left,
-        y: top,
+        x,
+        y,
       });
-      placed.set(label.key, [left, top, alpha]);
+      alphas.set(
+        label.key,
+        0.3 + 0.7 * smoothstep(labelFacing, labelFacing + 0.25, facing)
+      );
     }
-    const kept = placeLabels(boxes, width, height, labelGap);
+    const placed = placeLabels(
+      anchors,
+      width,
+      height,
+      labelGap,
+      sides,
+      blocked
+    );
+    const spots = new Map<string, PlacedLabel>();
+    sides.clear();
+    for (const spot of placed) {
+      spots.set(spot.key, spot);
+      sides.set(spot.key, spot.side);
+    }
     for (const label of labels) {
-      const spot = placed.get(label.key);
-      const shown =
-        spot && kept.has(label.key)
-          ? `${String(Math.round(spot[0]))},${String(Math.round(spot[1]))},${spot[2].toFixed(2)}`
-          : "";
+      const spot = spots.get(label.key);
+      const x = String(Math.round(spot?.x ?? 0));
+      const y = String(Math.round(spot?.y ?? 0));
+      const alpha = (alphas.get(label.key) ?? 0).toFixed(2);
+      const shown = spot ? `${x},${y},${alpha}` : "";
       if (shown === label.shown) continue;
       label.shown = shown;
-      if (spot && shown) {
-        label.element.style.transform = `translate3d(${String(Math.round(spot[0]))}px, ${String(Math.round(spot[1]))}px, 0)`;
-        label.element.style.opacity = spot[2].toFixed(2);
+      if (spot) {
+        label.element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        label.element.style.opacity = alpha;
       } else {
         label.element.style.opacity = "0";
       }
@@ -674,12 +843,12 @@ export const createCityGlobe = (
   };
 
   const resize = (): void => {
-    const rect = canvas.getBoundingClientRect();
-    width = Math.max(1, Math.round(rect.width));
-    height = Math.max(1, Math.round(rect.height));
+    width = Math.max(1, canvas.clientWidth);
+    height = Math.max(1, canvas.clientHeight);
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height, false);
     pixelRatioUniform.value = pixelRatio;
+    viewHeightUniform.value = height;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     const fit = Math.tan((fov * deg) / 2) * Math.min(1, camera.aspect);
@@ -946,20 +1115,29 @@ export const createCityGlobe = (
       canvas.removeEventListener("pointercancel", onUp);
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("webglcontextlost", onLost);
-      for (const label of labels) label.element.remove();
+      for (const label of cityLabels) label.element.remove();
+      options.homeLabel.removeAttribute("style");
       for (const texture of textures) texture.dispose();
       for (const geometry of [
         baseGeometry,
         europeGeometry,
         haloGeometry,
-        markerGeometry,
+        cityGeometry,
+        pillarGeometry,
+        beaconGeometry,
       ]) {
         geometry.dispose();
       }
-      baseMaterial.dispose();
-      europeMaterial.dispose();
-      haloMaterial.dispose();
-      markerMaterial.dispose();
+      for (const material of [
+        baseMaterial,
+        europeMaterial,
+        haloMaterial,
+        cityMaterial,
+        pillarMaterial,
+        beaconMaterial,
+      ]) {
+        material.dispose();
+      }
       renderer.dispose();
       renderer.forceContextLoss();
     },

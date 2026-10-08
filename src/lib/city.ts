@@ -10,13 +10,14 @@ const cityText = (template: string): string =>
 
 export const cityStrings = {
   armsLabel: cityText(en.city.armsLabel),
+  citiesLabel: en.city.citiesLabel,
+  citiesSource: en.city.citiesSource,
   close: en.card.close,
   facts: cityText(en.city.facts),
   failed: en.city.failed,
   globeLabel: cityText(en.city.globeLabel),
   hint: en.city.hint,
-  hubsLabel: en.city.hubsLabel,
-  hubsSource: en.city.hubsSource,
+  hintTouch: en.city.hintTouch,
   launch: en.city.launch,
   loading: en.city.loading,
   percent: en.city.percent,

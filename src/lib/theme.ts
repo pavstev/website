@@ -14,11 +14,12 @@ type SkyTokenName = keyof typeof skyTokens;
 
 export const globePalette = {
   austria: "#6F8DE8",
+  city: "#DCE4FF",
   coast: "#C3CEFF",
   dayLand: "#36446E",
   dayOcean: "#0F1631",
-  hub: "#FFD966",
   marker: skyTokens.gold,
+  markerCore: "#FFF3DC",
   nightLand: "#0E1324",
   nightOcean: "#04060E",
   rim: skyTokens.blue,
