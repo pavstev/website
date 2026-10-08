@@ -33,6 +33,10 @@ export const industryCompanies = {
   healthtech: "Evermed",
 } as const satisfies Record<IndustryKey, string>;
 
+const industryFallbackSites: Partial<Record<IndustryKey, string>> = {
+  betting: "https://www.linkedin.com/company/167pluto/",
+};
+
 const industryKeys = [
   "fintech",
   "betting",
@@ -114,6 +118,8 @@ export const industryJob = (cv: Cv, key: IndustryKey): IndustryJob => {
     site:
       stints
         .map((stint) => webLink(stint.websiteUrl))
-        .find((link) => link !== "") ?? "",
+        .find((link) => link !== "") ??
+      industryFallbackSites[key] ??
+      "",
   };
 };

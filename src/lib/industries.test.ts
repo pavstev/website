@@ -93,7 +93,7 @@ describe("industryJob", () => {
     assert.deepEqual(industryJob(liveFeed, "betting"), {
       company: "167Pluto",
       period: "2024 to 2025",
-      site: "",
+      site: "https://www.linkedin.com/company/167pluto/",
     });
     assert.deepEqual(industryJob(liveFeed, "healthtech"), {
       company: "Evermed",
@@ -166,6 +166,28 @@ describe("industryJob", () => {
       const cv = cvOf([stint("Pannovate", "Jan 2020", "Dec 2020", websiteUrl)]);
       assert.equal(industryJob(cv, "fintech").site, "", websiteUrl);
     }
+  });
+
+  it("links 167Pluto to its LinkedIn page until the feed has a link", () => {
+    const empty = cvOf([stint("167Pluto", "Feb 2024", "Jun 2025", "")]);
+    assert.equal(
+      industryJob(empty, "betting").site,
+      "https://www.linkedin.com/company/167pluto/"
+    );
+    const unsafe = cvOf([
+      stint("167Pluto", "Feb 2024", "Jun 2025", "javascript:alert(1)"),
+    ]);
+    assert.equal(
+      industryJob(unsafe, "betting").site,
+      "https://www.linkedin.com/company/167pluto/"
+    );
+    const fromFeed = cvOf([
+      stint("167Pluto", "Feb 2024", "Jun 2025", "https://167pluto.example/"),
+    ]);
+    assert.equal(
+      industryJob(fromFeed, "betting").site,
+      "https://167pluto.example/"
+    );
   });
 
   it("takes the first usable link across stints", () => {
