@@ -1,4 +1,5 @@
-import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
+import { finePointerQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 
 const loopMs = 7200;
 const samples = 120;
@@ -40,7 +41,7 @@ export const initPillAurora = (
   field: HTMLElement
 ): (() => void) => {
   const fine = globalThis.matchMedia(finePointerQuery);
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   let animation: Animation | null = null;
   let hovered = false;
   let focused = false;

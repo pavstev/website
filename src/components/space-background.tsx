@@ -2,6 +2,7 @@
 
 import { type ReactElement, useEffect, useRef } from "react";
 
+import { createFrameClock } from "@/lib/frame-clock";
 import { createFramePacer, pacerIdleMs } from "@/lib/frame-pacer";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
 import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
@@ -331,6 +332,7 @@ const startSky = (
   const pointerTarget = { x: 0, y: 0.3 };
   const ripple = { age: rippleSeconds, x: 0, y: 0 };
   const meteor = { angle: 0, at: 0, x: 0, y: 0 };
+  const clock = createFrameClock();
   const launch = (now: number): void => {
     meteor.at = now + nextGap();
     const aspect = canvas.width / Math.max(1, canvas.height);
@@ -340,7 +342,7 @@ const startSky = (
     meteor.y = 0.25 + Math.random() * 0.2;
     meteor.angle = side < 0 ? -tilt : Math.PI + tilt;
   };
-  launch(performance.now());
+  launch(0);
   const hoverPointer = globalThis.matchMedia(finePointerQuery);
   const scroll: ScrollMotion = { progress: 0, velocity: 0 };
   let resizeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
@@ -370,19 +372,20 @@ const startSky = (
   const frame = (now: number, dt = frameDt): void => {
     const current = LEVELS[level] ?? LEVELS[0];
     if (!current) return;
+    const skyMs = clock.tick(now);
     const follow = 1 - Math.exp((-followRate * dt) / 1000);
     pointer.x += (pointerTarget.x - pointer.x) * follow;
     pointer.y += (pointerTarget.y - pointer.y) * follow;
     gl.uniform2f(uRes, canvas.width, canvas.height);
-    gl.uniform1f(uTime, (now / 1000) % timeWrap);
+    gl.uniform1f(uTime, (skyMs / 1000) % timeWrap);
     gl.uniform2f(uScroll, scroll.progress, scroll.velocity);
     gl.uniform2f(uPointer, pointer.x, pointer.y);
     if (ripple.age < rippleSeconds) ripple.age += dt / 1000;
     gl.uniform3f(uRipple, ripple.x, ripple.y, ripple.age);
     gl.uniform1f(uAurora, current.aurora ? 1 : 0);
     gl.uniform1f(uPlanet, current.planet ? 1 : 0);
-    const flight = rafId ? (now - meteor.at) / meteorMs : -1;
-    if (flight >= 1) launch(now);
+    const flight = rafId ? (skyMs - meteor.at) / meteorMs : -1;
+    if (flight >= 1) launch(skyMs);
     if (flight >= 0 && flight < 1) markActive();
     gl.uniform4f(
       uMeteor,
@@ -398,6 +401,7 @@ const startSky = (
     if (rafId) globalThis.cancelAnimationFrame(rafId);
     rafId = 0;
     pacer.reset();
+    clock.pause();
   };
   const freeze = (now: number): void => {
     frozen = true;
@@ -451,7 +455,9 @@ const startSky = (
     resizeTimer = undefined;
     markActive();
     resize();
-    if (!rafId) frame(performance.now());
+    if (rafId) return;
+    clock.pause();
+    frame(performance.now());
   };
   const onResize = (): void => {
     if (resizeTimer !== undefined) globalThis.clearTimeout(resizeTimer);
@@ -461,7 +467,9 @@ const startSky = (
     scroll.progress = motion.progress;
     scroll.velocity = motion.velocity;
     markActive();
-    if (settled && !rafId) frame(performance.now());
+    if (!settled || rafId) return;
+    clock.pause();
+    frame(performance.now());
   };
   const onBlur = (): void => {
     stop();

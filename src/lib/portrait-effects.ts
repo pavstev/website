@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 import { createPortraitBead } from "@/lib/portrait-bead";
 import { prefersLightLoad } from "@/lib/save-data";
 
@@ -356,7 +356,7 @@ const startEffects = (root: HTMLElement): (() => void) => {
 };
 
 export const initPortraitEffects = (root: HTMLElement): (() => void) => {
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   let stop: (() => void) | undefined;
 
   const sync = (): void => {

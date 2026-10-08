@@ -1,4 +1,5 @@
-import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
+import { finePointerQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 
 const proximitySelector = "[data-proximity] :is(.contact-link, .download-pill)";
 const glowSelector = "[data-cursor-glow]";
@@ -134,7 +135,7 @@ const startCursorEffects = (): (() => void) => {
 
 export const initCursorEffects = (): (() => void) => {
   const fine = globalThis.matchMedia(finePointerQuery);
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   let stop: (() => void) | undefined;
 
   const sync = (): void => {
@@ -160,7 +161,7 @@ export const initCursorEffects = (): (() => void) => {
 
 export const initPointerLight = (scope: HTMLElement): (() => void) => {
   const fine = globalThis.matchMedia(finePointerQuery);
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   const elements = [
     ...scope.querySelectorAll<HTMLElement>("[data-pointer-light]"),
   ];

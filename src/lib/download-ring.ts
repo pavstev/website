@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 
 interface DownloadLabels {
   downloaded: string;
@@ -35,7 +35,7 @@ export const initDownloadRing = (
     return () => undefined;
   }
 
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   let busy = false;
   let animations: Animation[] = [];
   let timers: Array<ReturnType<typeof setTimeout>> = [];

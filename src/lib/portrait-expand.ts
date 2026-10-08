@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 
 const openMs = 560;
 const closeMs = 300;
@@ -37,7 +37,7 @@ export const createPortraitExpander = (
   parts: ExpanderParts
 ): PortraitExpanderControls => {
   const { button, dialog, frame, high, largeUrl, low } = parts;
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   const photo =
     button.querySelector<HTMLElement>("[data-portrait-photo]") ?? button;
   const scrim = dialog.querySelector<HTMLElement>("[data-expander-scrim]");
