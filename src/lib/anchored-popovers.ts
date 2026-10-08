@@ -3,6 +3,7 @@ import {
   computePosition,
   flip,
   offset,
+  type Padding,
   type Placement,
   shift,
   size,
@@ -11,6 +12,21 @@ import {
 import { finePointerQuery } from "./media.ts";
 
 const edge = 12;
+
+const floatingQuery = "(min-width: 40rem) and (min-height: 34rem)";
+
+const safePadding = (panel: HTMLElement): Padding => {
+  const style = getComputedStyle(panel);
+  const side = (name: string): number =>
+    edge +
+    (Number(style.getPropertyValue(`--safe-${name}`).replace("px", "")) || 0);
+  return {
+    bottom: side("bottom"),
+    left: side("left"),
+    right: side("right"),
+    top: side("top"),
+  };
+};
 
 interface HoverTiming {
   closeMs: number;
@@ -43,16 +59,17 @@ const attach = (
     panel.style.removeProperty("max-height");
   };
   const place = (): void => {
+    const padding = safePadding(panel);
     void computePosition(trigger, panel, {
       middleware: [
         offset(10),
-        flip({ padding: edge }),
-        shift({ padding: edge }),
+        flip({ padding }),
+        shift({ padding }),
         size({
           apply: ({ availableHeight }) => {
             panel.style.maxHeight = `${String(Math.max(160, Math.floor(availableHeight)))}px`;
           },
-          padding: edge,
+          padding,
         }),
       ],
       placement: placementOf(panel),
@@ -177,7 +194,7 @@ const focusOnActivate = (
 };
 
 export const initAnchoredPopovers = (root: ParentNode): (() => void) => {
-  const wide = globalThis.matchMedia("(min-width: 40rem)");
+  const wide = globalThis.matchMedia(floatingQuery);
   const fine = globalThis.matchMedia(finePointerQuery);
   const disposers: Array<() => void> = [];
   for (const panel of root.querySelectorAll<HTMLElement>(

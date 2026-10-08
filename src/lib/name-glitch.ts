@@ -8,15 +8,29 @@ const restAfterMs = 30_000;
 const burstMs = 1900;
 const wakeEvents = ["pointermove", "pointerdown", "keydown", "wheel", "scroll"];
 
+const holdWords = (name: HTMLElement): void => {
+  for (const word of name.querySelectorAll<HTMLElement>(".name-word")) {
+    word.style.setProperty("--word-width", getComputedStyle(word).width);
+  }
+};
+
 export const initNameGlitch = (name: HTMLElement): (() => void) => {
   const reduce = stillQuery();
   const tear = createNameTear(name);
   let lastInput = performance.now();
+  let viewportWidth = globalThis.innerWidth;
   let tick: ReturnType<typeof setTimeout> | undefined;
   let settle: ReturnType<typeof setTimeout> | undefined;
 
   const wake = (): void => {
     lastInput = performance.now();
+  };
+
+  const onResize = (): void => {
+    if (globalThis.innerWidth === viewportWidth) return;
+    viewportWidth = globalThis.innerWidth;
+    globalThis.clearTimeout(settle);
+    delete name.dataset["glitch"];
   };
 
   const fire = (): void => {
@@ -28,6 +42,7 @@ export const initNameGlitch = (name: HTMLElement): (() => void) => {
     )
       return;
     name.dataset["tuned"] = "";
+    holdWords(name);
     name.dataset["glitch"] = "";
     tear.play();
     globalThis.clearTimeout(settle);
@@ -39,6 +54,7 @@ export const initNameGlitch = (name: HTMLElement): (() => void) => {
   for (const type of wakeEvents) {
     globalThis.addEventListener(type, wake, { passive: true });
   }
+  globalThis.addEventListener("resize", onResize, { passive: true });
   tick = globalThis.setTimeout(
     fire,
     Math.max(firstGapMs, introEndMs + firstGapMs - performance.now())
@@ -48,6 +64,7 @@ export const initNameGlitch = (name: HTMLElement): (() => void) => {
     for (const type of wakeEvents) {
       globalThis.removeEventListener(type, wake);
     }
+    globalThis.removeEventListener("resize", onResize);
     globalThis.clearTimeout(tick);
     globalThis.clearTimeout(settle);
     tear.dispose();
