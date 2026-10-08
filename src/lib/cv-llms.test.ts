@@ -48,6 +48,14 @@ const full = cvSchema.parse({
   updatedAt: "2026-10-08T00:00:00.000Z",
 });
 
+const withProjects = (items: unknown[]): string[] =>
+  cvLlmsSections(
+    cvSchema.parse({
+      projects: { items },
+      updatedAt: "2026-10-08T00:00:00.000Z",
+    })
+  );
+
 describe("cvLlmsSections", () => {
   it("lists experience, skills, education and résumé projects in order", () => {
     assert.deepEqual(cvLlmsSections(full), [
@@ -85,6 +93,30 @@ describe("cvLlmsSections", () => {
       "- Dev at Bare (2019 to 2020)",
       "",
     ]);
+  });
+  it("leaves out résumé projects that link to a product", () => {
+    assert.deepEqual(
+      withProjects([
+        {
+          name: "hirista",
+          overview: "Job search.",
+          websiteUrl: "https://www.hirista.app/",
+        },
+        { name: "Ledger", websiteUrl: "https://example.com/ledger" },
+      ]),
+      [
+        "## Projects from the résumé",
+        "",
+        "- [Ledger](https://example.com/ledger)",
+        "",
+      ]
+    );
+    assert.deepEqual(
+      withProjects([
+        { name: "Fleet", websiteUrl: "https://safetyrealtime.com" },
+      ]),
+      []
+    );
   });
   it("drops rows without a name or a heading", () => {
     const gaps = cvSchema.parse({

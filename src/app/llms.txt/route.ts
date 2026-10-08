@@ -3,6 +3,7 @@ import { cvLlmsSections } from "@/lib/cv-llms";
 import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
 import { personalData, plainName } from "@/lib/personal";
+import { productLlmsLines, products } from "@/lib/products";
 
 export const dynamic = "force-static";
 
@@ -30,6 +31,10 @@ export const GET = async (): Promise<Response> => {
     ...repos.map(
       (repo) => `- [${repo.name}](${repo.url}): ${repo.description}`
     ),
+    "",
+    `## ${en.products.llmsHeading}`,
+    "",
+    ...productLlmsLines(products),
     "",
     ...cvLlmsSections(cv),
     `## ${en.llms.links}`,

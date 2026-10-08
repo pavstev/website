@@ -1,5 +1,6 @@
 import { type Cv } from "./cv.ts";
 import { en } from "./i18n.ts";
+import { isProductUrl } from "./products.ts";
 
 const oneLine = (value: string): string => value.replaceAll(/\s+/g, " ").trim();
 
@@ -53,7 +54,9 @@ const educationLines = (cv: Cv): string[] =>
 
 const projectLines = (cv: Cv): string[] =>
   cv.projects.items
-    .filter((project) => oneLine(project.name))
+    .filter(
+      (project) => oneLine(project.name) && !isProductUrl(project.websiteUrl)
+    )
     .map((project) => {
       const name = oneLine(project.name);
       const link = project.websiteUrl.trim();
