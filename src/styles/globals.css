@@ -77,6 +77,16 @@
     U+0106-0107, U+010C-010D, U+0110-0111, U+0160-0161, U+017D-017E;
 }
 
+@custom-variant still {
+  @media (prefers-reduced-motion: reduce) {
+    @slot;
+  }
+
+  :root[data-motion-paused] & {
+    @slot;
+  }
+}
+
 @theme inline {
   --color-foreground: var(--foreground);
   --color-foreground-soft: var(--foreground-soft);
@@ -504,6 +514,15 @@
   }
 }
 
+:root[data-motion-paused] *,
+:root[data-motion-paused] *::before,
+:root[data-motion-paused] *::after {
+  animation-delay: 0ms !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
 .name-signal {
   position: relative;
   font-family: "Parkinsans", var(--font-sans);
@@ -793,6 +812,13 @@
   }
 }
 
+:root[data-motion-paused] .name-signal::before,
+:root[data-motion-paused] .name-signal::after,
+:root[data-motion-paused] .name-scan,
+:root[data-motion-paused] .name-tear {
+  display: none;
+}
+
 @media (forced-colors: active) {
   .name-signal::before,
   .name-signal::after,
@@ -1053,8 +1079,15 @@ html:has(.portrait-dialog[open]) {
   .orbit > .orbit-whisper {
     display: none;
   }
+}
 
-  .orbit > .orbit-track {
+:root[data-motion-paused] .orbit > .orbit-comet,
+:root[data-motion-paused] .orbit > .orbit-whisper {
+  display: none;
+}
+
+.orbit > .orbit-track {
+  @variant still {
     opacity: 0.6;
   }
 }
@@ -1249,6 +1282,10 @@ html:has(.portrait-dialog[open]) {
   .contact-link::before {
     display: none;
   }
+}
+
+:root[data-motion-paused] .contact-link::before {
+  display: none;
 }
 
 .contact-tip {
@@ -1586,13 +1623,15 @@ html:has(.portrait-dialog[open]) {
     clip-path 0s linear var(--duration-fast);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .resume-sheet {
+.resume-sheet {
+  @variant still {
     translate: none;
     clip-path: none;
   }
+}
 
-  .resume-line {
+.resume-line {
+  @variant still {
     scale: 1;
   }
 }
@@ -1724,6 +1763,10 @@ html:has(.portrait-dialog[open]) {
   .download-pill::after {
     display: none;
   }
+}
+
+:root[data-motion-paused] .download-pill::after {
+  display: none;
 }
 
 .download-aurora {
@@ -2342,6 +2385,15 @@ html:has(.portrait-dialog[open]) {
   .repo-tile:has(.repo-link:focus-visible) .repo-planet {
     transform: none;
   }
+}
+
+:root[data-motion-paused] .repo-tile:hover,
+:root[data-motion-paused] .repo-tile:has(.repo-link:focus-visible),
+:root[data-motion-paused] .repo-tile:hover .repo-planet,
+:root[data-motion-paused]
+  .repo-tile:has(.repo-link:focus-visible)
+  .repo-planet {
+  transform: none;
 }
 
 @media (forced-colors: active) {
@@ -3181,12 +3233,23 @@ html:has(.globe-dialog[open]) {
   }
 }
 
+:root[data-motion-paused] .topic-panel,
+:root[data-motion-paused] .topic-panel:popover-open {
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arms-glint,
   .globe-orb,
   .globe-fill::after {
     animation: none;
   }
+}
+
+:root[data-motion-paused] .arms-glint,
+:root[data-motion-paused] .globe-orb,
+:root[data-motion-paused] .globe-fill::after {
+  animation: none;
 }
 
 .privacy-note {
@@ -3441,8 +3504,8 @@ html:has(.globe-dialog[open]) {
   inset: -0.875rem -0.25rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .privacy-chip:active > .privacy-chip-face {
+.privacy-chip:active > .privacy-chip-face {
+  @variant still {
     scale: none;
   }
 }
