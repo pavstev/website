@@ -481,6 +481,7 @@ export const initClouds = (
       return;
     }
     if (!visible || document.hidden || isSceneHeld()) {
+      pulseAge = pulseSeconds;
       setState("paused");
       return;
     }
@@ -508,7 +509,7 @@ export const initClouds = (
     globalThis.window,
     "pointermove",
     (event: Event) => {
-      if (reduced || !hoverPointer.matches) return;
+      if (reduced || !hoverPointer.matches || isSceneHeld()) return;
       const { clientX, clientY } = event as PointerEvent;
       pointerTarget.x = (clientX / window.innerWidth) * 2 - 1;
       pointerTarget.y = 1 - (clientY / window.innerHeight) * 2;
@@ -524,7 +525,7 @@ export const initClouds = (
   });
   listen(globalThis.window, "sky:pulse", () => {
     const now = performance.now();
-    if (reduced || now - lastPulse < pulseGapMs) return;
+    if (reduced || isSceneHeld() || now - lastPulse < pulseGapMs) return;
     lastPulse = now;
     pulseAge = 0;
     markActive(pulseSeconds * 1000 - pacerIdleMs);

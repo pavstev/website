@@ -426,7 +426,7 @@ export const initRepoPlanets = (
     for (const logo of logos) {
       logo.motion = stepLogoMotion(logo.motion, dt, {
         hotGoal: logo.hotGoal,
-        started: logo.inView,
+        started: ready && logo.inView,
       });
       logo.planet.uniforms.uSpin.value = logoSpin(logo.motion);
       logo.planet.uniforms.uHot.value = logo.motion.hot;

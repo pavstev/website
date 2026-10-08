@@ -3412,6 +3412,12 @@ html:has(.globe-dialog[open]) {
   }
 }
 
+@media (max-width: 22.4375em) {
+  .page-dock {
+    max-width: calc(100% - 1rem);
+  }
+}
+
 .motion-item {
   display: inline-flex;
 }
@@ -3422,6 +3428,10 @@ html:has(.globe-dialog[open]) {
 
 @media (prefers-reduced-motion: reduce) {
   .motion-item {
+    display: none;
+  }
+
+  :root[data-privacy-ack] .page-dock {
     display: none;
   }
 }

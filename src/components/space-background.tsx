@@ -424,6 +424,7 @@ const startSky = (
       return;
     }
     if (document.hidden || isSceneHeld()) {
+      ripple.age = rippleSeconds;
       setState("paused");
       return;
     }
@@ -438,13 +439,13 @@ const startSky = (
 
   const onPointer = (event: PointerEvent): void => {
     markActive();
-    if (reduceMotion.matches || !hoverPointer.matches) return;
+    if (reduceMotion.matches || !hoverPointer.matches || isSceneHeld()) return;
     const aspect = window.innerWidth / Math.max(1, window.innerHeight);
     pointerTarget.x = (event.clientX / window.innerWidth - 0.5) * aspect;
     pointerTarget.y = 0.5 - event.clientY / window.innerHeight;
   };
   const onDown = (event: PointerEvent): void => {
-    if (reduceMotion.matches) return;
+    if (reduceMotion.matches || isSceneHeld()) return;
     markActive(rippleHoldMs);
     const aspect = window.innerWidth / Math.max(1, window.innerHeight);
     ripple.x = (event.clientX / window.innerWidth - 0.5) * aspect;
