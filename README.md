@@ -13,9 +13,9 @@ My personal site: one contact card floating over a live WebGL sky, plus a small 
 - **A glass bead.** It follows the cursor over the portrait (a finger after a press and hold) and magnifies the photo with chromatic edges, in the card and in the portrait dialog.
 - **A name that tunes in.** A CSS signal intro, then every 8 s a WebGL tear and a weight-morph wave across the letters.
 - **A planet per project.** Each open-source repo gets its own three.js planet, with language chips in GitHub's colors.
-- **Two products beside the code.** hirista and Safety Real Time sit in a second column next to the repos. Each logo is a planet that turns in from its night side once, then wobbles gently.
+- **Two products beside the code.** hirista and Safety Real Time sit in a second column next to the repos. Each logo is a planet that starts near the terminator, turns into the light once, then wobbles gently.
 - **Vienna on a globe.** Click "Vienna" in the bio for the coat of arms, a few facts and a three.js globe that loads only then.
-- **Kind to your device.** Every loop drops to 30 fps when idle, pauses when hidden, degrades on slow frames and draws one still frame under reduced motion or a software renderer. A pause button beside the privacy chip stills everything and remembers it.
+- **Kind to your device.** Every loop drops to 30 fps when idle, pauses when hidden, degrades on slow frames and draws one still frame under reduced motion or a software renderer. A pause button in the top-right corner stills everything and remembers it.
 - **No cookies.** Cloudflare Web Analytics counts visits without them, and a small chip says so once.
 
 ## How it works

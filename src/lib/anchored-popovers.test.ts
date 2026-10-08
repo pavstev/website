@@ -32,12 +32,18 @@ interface Fixture {
 const toggleEvent = (type: string, open: boolean): Event =>
   Object.assign(new Event(type), { newState: open ? "open" : "closed" });
 
-const build = (hoverOpen: string): Fixture => {
+let wide = true;
+
+const stopTracking = (): void => undefined;
+
+const untracked = (): (() => void) => stopTracking;
+
+const build = (hoverOpen: string, anchored = ""): Fixture => {
   let open = false;
   let inside = false;
   let moves = 0;
   const panel = Object.assign(new EventTarget(), {
-    dataset: { anchored: "" },
+    dataset: { anchored },
     hidePopover: (): void => {
       panel.dispatchEvent(toggleEvent("beforetoggle", false));
       open = false;
@@ -75,7 +81,10 @@ const build = (hoverOpen: string): Fixture => {
     querySelector: (): FakeTrigger => trigger,
     querySelectorAll: (): FakePanel[] => [panel],
   };
-  const dispose = initAnchoredPopovers(root as unknown as ParentNode);
+  const dispose = initAnchoredPopovers(
+    root as unknown as ParentNode,
+    untracked
+  );
   return {
     clickTrigger: (detail: number, pointerType?: string): boolean => {
       const click = Object.assign(new Event("click", { cancelable: true }), {
@@ -104,10 +113,13 @@ const isOpen = (fixture: Fixture): boolean =>
 
 describe("initAnchoredPopovers hover cards", () => {
   beforeEach(() => {
+    wide = true;
     Object.assign(globalThis, {
       CSS: { escape: (value: string) => value },
       matchMedia: (query: string) => ({
-        matches: !query.includes("min-width"),
+        get matches(): boolean {
+          return !query.includes("min-width") || wide;
+        },
       }),
     });
     mock.timers.enable({ apis: ["setTimeout"] });
@@ -217,6 +229,32 @@ describe("initAnchoredPopovers hover cards", () => {
     fixture.trigger.dispatchEvent(new Event("pointerleave"));
     mock.timers.tick(1000);
     assert.equal(isOpen(fixture), true);
+    fixture.dispose();
+  });
+
+  it("leaves a card that opens as a bottom sheet to the click", () => {
+    wide = false;
+    const fixture = build("pin");
+    fixture.trigger.dispatchEvent(new Event("pointerenter"));
+    mock.timers.tick(1000);
+    assert.equal(isOpen(fixture), false);
+    assert.equal(fixture.clickTrigger(1), false);
+    assert.equal(isOpen(fixture), true);
+    fixture.trigger.dispatchEvent(new Event("pointerleave"));
+    mock.timers.tick(1000);
+    assert.equal(isOpen(fixture), true);
+    fixture.dispose();
+  });
+
+  it("keeps hover for a popover anchored on every screen", () => {
+    wide = false;
+    const fixture = build("", "always");
+    fixture.trigger.dispatchEvent(new Event("pointerenter"));
+    mock.timers.tick(120);
+    assert.equal(isOpen(fixture), true);
+    fixture.trigger.dispatchEvent(new Event("pointerleave"));
+    mock.timers.tick(220);
+    assert.equal(isOpen(fixture), false);
     fixture.dispose();
   });
 

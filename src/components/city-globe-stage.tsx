@@ -51,7 +51,7 @@ export const CityGlobeStage = ({
     const labels = labelLayer.current;
     const home = homeLabel.current;
     if (!frame || !labels || !home) return;
-    const avoid = [tools.current, credit.current, hint.current].filter(
+    const avoid = [tools.current, credit.current].filter(
       (element) => element !== null
     );
     const canvas = document.createElement("canvas");
@@ -62,6 +62,7 @@ export const CityGlobeStage = ({
       live = createCityGlobe(canvas, {
         avoid,
         cities: worldCities,
+        hint: hint.current,
         home: personalData.cityCoordinates,
         homeLabel: home,
         labels,

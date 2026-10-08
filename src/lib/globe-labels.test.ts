@@ -204,6 +204,13 @@ describe("placeLabels", () => {
     assert.equal(sideOf(placed, "a"), "left");
   });
 
+  it("slides a label clear of a blocked area that covers its dot", () => {
+    const [spot] = placeLabels([anchor("k", 262, 80)], 300, 100, 4, new Map(), [
+      { height: 60, width: 50, x: 250, y: 40 },
+    ]);
+    assert.deepEqual(spot, { key: "k", side: "left", x: 206, y: 75 });
+  });
+
   it("still places a label when every spot is blocked", () => {
     const placed = placeLabels([anchor("a", 100, 50)], 300, 100, 4, new Map(), [
       { height: 100, width: 300, x: 0, y: 0 },

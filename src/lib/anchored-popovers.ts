@@ -39,6 +39,11 @@ const timingOf = (trigger: HTMLElement): HoverTiming =>
     ? { closeMs: 300, openMs: 300, pin: true }
     : { closeMs: 220, openMs: 120, pin: false };
 
+type Track = typeof autoUpdate;
+
+const floats = (panel: HTMLElement, wide: MediaQueryList): boolean =>
+  wide.matches || panel.dataset["anchored"] === "always";
+
 const placementOf = (panel: HTMLElement): Placement => {
   const value = panel.dataset["placement"];
   return value === "top" || value === "bottom-start" ? value : "bottom";
@@ -47,7 +52,8 @@ const placementOf = (panel: HTMLElement): Placement => {
 const attach = (
   trigger: HTMLElement,
   panel: HTMLElement,
-  wide: MediaQueryList
+  wide: MediaQueryList,
+  track: Track
 ): (() => void) => {
   let stop: (() => void) | undefined;
   const release = (): void => {
@@ -82,9 +88,9 @@ const attach = (
   };
   const onToggle = (event: Event): void => {
     const open = (event as ToggleEvent).newState === "open";
-    if (open && (wide.matches || panel.dataset["anchored"] === "always")) {
+    if (open && floats(panel, wide)) {
       panel.dataset["floating"] = "";
-      stop = autoUpdate(trigger, panel, place);
+      stop = track(trigger, panel, place);
     } else {
       release();
     }
@@ -112,9 +118,11 @@ const fromMouse = (event: MouseEvent): boolean => {
 const hoverOpen = (
   trigger: HTMLElement,
   panel: HTMLElement,
-  fine: MediaQueryList
+  fine: MediaQueryList,
+  wide: MediaQueryList
 ): (() => void) => {
   const { closeMs, openMs, pin } = timingOf(trigger);
+  const active = (): boolean => fine.matches && floats(panel, wide);
   let timer: ReturnType<typeof globalThis.setTimeout> | undefined;
   let pinned = false;
   const clear = (): void => {
@@ -123,21 +131,21 @@ const hoverOpen = (
   };
   const isOpen = (): boolean => panel.matches(":popover-open");
   const open = (): void => {
-    if (!fine.matches) return;
+    if (!active()) return;
     clear();
     timer = globalThis.setTimeout(() => {
       if (!isOpen()) panel.showPopover();
     }, openMs);
   };
   const close = (): void => {
-    if (pinned || !fine.matches || panel.matches(":focus-within")) return;
+    if (pinned || !active() || panel.matches(":focus-within")) return;
     clear();
     timer = globalThis.setTimeout(() => {
       if (isOpen()) panel.hidePopover();
     }, closeMs);
   };
   const onClick = (event: MouseEvent): void => {
-    if (!pin || !fine.matches || !fromMouse(event)) return;
+    if (!pin || !active() || !fromMouse(event)) return;
     event.preventDefault();
     clear();
     if (pinned && isOpen()) {
@@ -193,7 +201,10 @@ const focusOnActivate = (
   };
 };
 
-export const initAnchoredPopovers = (root: ParentNode): (() => void) => {
+export const initAnchoredPopovers = (
+  root: ParentNode,
+  track: Track = autoUpdate
+): (() => void) => {
   const wide = globalThis.matchMedia(floatingQuery);
   const fine = globalThis.matchMedia(finePointerQuery);
   const disposers: Array<() => void> = [];
@@ -204,9 +215,9 @@ export const initAnchoredPopovers = (root: ParentNode): (() => void) => {
       `[popovertarget="${CSS.escape(panel.id)}"]:not([popovertargetaction="hide"])`
     );
     if (!trigger) continue;
-    disposers.push(attach(trigger, panel, wide));
+    disposers.push(attach(trigger, panel, wide, track));
     if (Object.hasOwn(trigger.dataset, "hoverOpen")) {
-      disposers.push(hoverOpen(trigger, panel, fine));
+      disposers.push(hoverOpen(trigger, panel, fine, wide));
     }
     if (trigger.dataset["hoverOpen"] === "pin") {
       disposers.push(focusOnActivate(trigger, panel));

@@ -43,6 +43,7 @@ export interface GlobeControls {
 interface GlobeOptions {
   avoid: readonly HTMLElement[];
   cities: readonly GlobePlace[];
+  hint: HTMLElement | null;
   home: GlobePoint;
   homeLabel: HTMLElement;
   labels: HTMLElement;
@@ -111,6 +112,8 @@ const pillarReach = 0.36;
 const pillarHalfWidth = 7;
 const labelGap = 3;
 const labelFacing = 0.15;
+const edgeReach = 24;
+const pillarShown = 0.05;
 const homeMark = { offset: 14, radius: 7 };
 const cityMark = { offset: 6, radius: 3 };
 const maxPixelRatio = 1.75;
@@ -660,6 +663,7 @@ export const createCityGlobe = (
   const beaconGeometry = new BufferGeometry();
   beaconGeometry.setAttribute("position", attribute(homePosition.toArray(), 3));
   const beaconMaterial = new ShaderMaterial({
+    depthTest: false,
     depthWrite: false,
     fragmentShader: beaconFragment,
     transparent: true,
@@ -725,6 +729,7 @@ export const createCityGlobe = (
   let dragging = false;
   let velocity: Point = [0, 0];
   let touched = false;
+  let opened = false;
   let disposed = false;
   let frozen = false;
   let compiled = false;
@@ -758,26 +763,72 @@ export const createCityGlobe = (
   };
 
   let laidOut = "";
-  let blocked: LabelRect[] = [];
+  let chrome: LabelRect[] = [];
+  let hintArea: LabelRect | undefined;
+
+  const toEdges = (element: HTMLElement): LabelRect => {
+    const left = element.offsetLeft;
+    const top = element.offsetTop;
+    const right = left + element.offsetWidth;
+    const bottom = top + element.offsetHeight;
+    const x = left < edgeReach ? 0 : left;
+    const y = top < edgeReach ? 0 : top;
+    return {
+      height: (height - bottom < edgeReach ? height : bottom) - y,
+      width: (width - right < edgeReach ? width : right) - x,
+      x,
+      y,
+    };
+  };
 
   const measureLabels = (): void => {
     for (const label of labels) {
       label.width = label.element.offsetWidth;
       label.height = label.element.offsetHeight;
     }
-    blocked = options.avoid.map((element) => ({
-      height: element.offsetHeight,
-      width: element.offsetWidth,
-      x: element.offsetLeft,
-      y: element.offsetTop,
-    }));
+    chrome = options.avoid.map((element) => toEdges(element));
+    hintArea = options.hint ? toEdges(options.hint) : undefined;
     laidOut = "";
   };
 
   const world = new Vector3();
   const toCamera = new Vector3();
   const screen = new Vector3();
+  const pillarBase = new Vector3();
+  const pillarAxis = new Vector3();
+  const pillarEye = new Vector3();
   const sides = new Map<string, LabelSide>();
+  const fresh = new Map<string, LabelSide>();
+
+  const toScreen = (point: Vector3): Point => {
+    screen.copy(point).project(camera);
+    return [((screen.x + 1) / 2) * width, ((1 - screen.y) / 2) * height];
+  };
+
+  const pillarArea = (): LabelRect[] => {
+    pillarBase.copy(homePosition).applyQuaternion(globe.quaternion);
+    pillarAxis.copy(pillarBase).normalize();
+    pillarEye.copy(camera.position).sub(pillarBase).normalize();
+    const facing = pillarAxis.dot(pillarEye);
+    const strength =
+      smoothstep(0.04, 0.22, Math.sqrt(Math.max(0, 1 - facing * facing))) *
+      smoothstep(-0.12, 0.18, facing);
+    if (strength < pillarShown) return [];
+    const [baseX, baseY] = toScreen(pillarBase);
+    const [tipX, tipY] = toScreen(
+      pillarAxis.multiplyScalar(pillarReach).add(pillarBase)
+    );
+    const steps = Math.max(
+      1,
+      Math.ceil(Math.hypot(tipX - baseX, tipY - baseY) / (2 * pillarHalfWidth))
+    );
+    return Array.from({ length: steps + 1 }, (_, index) => ({
+      height: 2 * pillarHalfWidth,
+      width: 2 * pillarHalfWidth,
+      x: baseX + ((tipX - baseX) * index) / steps - pillarHalfWidth,
+      y: baseY + ((tipY - baseY) * index) / steps - pillarHalfWidth,
+    }));
+  };
 
   const layoutLabels = (): void => {
     const state = [view.lat, view.lon, view.zoom, width, height]
@@ -793,9 +844,7 @@ export const createCityGlobe = (
       toCamera.copy(camera.position).sub(world).normalize();
       const facing = toCamera.dot(world) / world.length();
       if (facing < labelFacing) continue;
-      screen.copy(world).project(camera);
-      const x = ((screen.x + 1) / 2) * width;
-      const y = ((1 - screen.y) / 2) * height;
+      const [x, y] = toScreen(world);
       if (x < 0 || x > width || y < 0 || y > height) continue;
       anchors.push({
         height: label.height,
@@ -816,8 +865,8 @@ export const createCityGlobe = (
       width,
       height,
       labelGap,
-      sides,
-      blocked
+      opened && !touched ? fresh : sides,
+      [...chrome, ...(hintArea && !touched ? [hintArea] : []), ...pillarArea()]
     );
     const spots = new Map<string, PlacedLabel>();
     sides.clear();
@@ -874,6 +923,13 @@ export const createCityGlobe = (
 
   const pointers = new Map<number, Point>();
 
+  const settleIntro = (): void => {
+    if (opened || touched) return;
+    opened = true;
+    Object.assign(view, goal);
+    laidOut = "";
+  };
+
   const settled = (): boolean =>
     !dragging &&
     pointers.size === 0 &&
@@ -923,6 +979,7 @@ export const createCityGlobe = (
         frozen = true;
         Object.assign(view, goal);
         velocity = [0, 0];
+        settleIntro();
         render();
       } else {
         schedule();
@@ -932,6 +989,7 @@ export const createCityGlobe = (
     const elapsed = lastDraw > 0 ? clamp(now - lastDraw, 1, 800) : step.dt;
     lastDraw = now;
     update(elapsed);
+    if (settled()) settleIntro();
     render();
     if (!settled() || !reduce.matches) schedule();
     else lastDraw = 0;
@@ -950,6 +1008,7 @@ export const createCityGlobe = (
   const interact = (): void => {
     if (!touched) {
       touched = true;
+      laidOut = "";
       options.onInteract();
     }
     tau = 150;

@@ -1,15 +1,11 @@
-import {
-  type CSSProperties,
-  Fragment,
-  type ReactElement,
-  type ReactNode,
-} from "react";
+import { type CSSProperties, Fragment, type ReactElement } from "react";
 
 import { CityPanel } from "@/components/city-panel";
+import { CompoundText } from "@/components/compound-text";
 import { IndustryPanel } from "@/components/industry-panel";
 import { Portrait } from "@/components/portrait";
 import { TopicTrigger } from "@/components/topic-trigger";
-import { splitBio, splitCompounds } from "@/lib/bio";
+import { splitBio } from "@/lib/bio";
 import { cityPanelId, cityStrings } from "@/lib/city";
 import { en } from "@/lib/i18n";
 import { industries } from "@/lib/industries";
@@ -57,17 +53,6 @@ const groupWords = (name: string): NameLetter[][] => {
 
 const nameWords = groupWords(personalData.name);
 
-const keepCompounds = (text: string): ReactNode[] =>
-  splitCompounds(text).map(({ compound, text: piece }, index) =>
-    compound ? (
-      <span className="whitespace-nowrap" key={`${String(index)}-${piece}`}>
-        {piece}
-      </span>
-    ) : (
-      piece
-    )
-  );
-
 export const Profile = (): ReactElement => (
   <>
     <div className="relative z-10">
@@ -108,14 +93,17 @@ export const Profile = (): ReactElement => (
       className="bio mt-(--card-gap-bio) max-w-xl type-body text-pretty text-foreground-soft text-halo-soft"
       data-blur-in=""
     >
-      {bio.map((part) =>
+      {bio.map((part, index) =>
         "term" in part ? (
           <span className="whitespace-nowrap" key={part.term.topic}>
             <TopicTrigger {...part.term} />
             {part.tail}
           </span>
         ) : (
-          <Fragment key={part.text}>{keepCompounds(part.text)}</Fragment>
+          <CompoundText
+            key={`${String(index)}-${part.text}`}
+            text={part.text}
+          />
         )
       )}
     </p>

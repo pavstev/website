@@ -29,6 +29,18 @@ interface Span {
 }
 
 const offscreenCost = 4;
+const shiftReach = 0.35;
+
+interface Blocker {
+  box: DOMRect;
+  weight: number;
+}
+
+interface Placement {
+  flip: boolean;
+  score: number;
+  shift: number;
+}
 
 const overlaps = (a: Span, b: DOMRect): boolean =>
   a.left < b.right &&
@@ -36,12 +48,12 @@ const overlaps = (a: Span, b: DOMRect): boolean =>
   a.top - edgeGap < b.bottom &&
   a.bottom + edgeGap > b.top;
 
-const costOf = (span: Span, room: number, avoid: Obstacle[]): number =>
+const costOf = (span: Span, room: number, blockers: Blocker[]): number =>
   (room < 0 ? offscreenCost : 0) +
   Math.max(
     0,
-    ...avoid
-      .filter(({ element }) => overlaps(span, element.getBoundingClientRect()))
+    ...blockers
+      .filter(({ box }) => overlaps(span, box))
       .map(({ weight }) => weight)
   );
 
@@ -55,29 +67,50 @@ const placeTip = (
   const rect = tip.getBoundingClientRect();
   const root = document.documentElement;
   const limit = root.clientWidth - edgeGap;
-  let shift = 0;
-  if (rect.left < edgeGap) shift = edgeGap - rect.left;
-  else if (rect.right > limit) shift = limit - rect.right;
-  tip.style.setProperty("--tip-shift", `${String(Math.round(shift))}px`);
-  const left = rect.left + shift;
-  const right = rect.right + shift;
+  let base = 0;
+  if (rect.left < edgeGap) base = edgeGap - rect.left;
+  else if (rect.right > limit) base = limit - rect.right;
+  const reach = rect.width * shiftReach;
+  const fits = (shift: number): boolean =>
+    Math.abs(shift) <= reach &&
+    rect.left + shift >= edgeGap &&
+    rect.right + shift <= limit;
+  const blockers: Blocker[] = avoid.map(({ element, weight }) => ({
+    box: element.getBoundingClientRect(),
+    weight,
+  }));
   const belowTop = anchor.getBoundingClientRect().bottom + tipGap;
   const roomAbove = rect.top - edgeGap;
   const roomBelow = root.clientHeight - edgeGap - (belowTop + rect.height);
-  const above = costOf(
-    { bottom: rect.bottom, left, right, top: rect.top },
-    roomAbove,
-    avoid
-  );
-  const below = costOf(
-    { bottom: belowTop + rect.height, left, right, top: belowTop },
-    roomBelow,
-    avoid
-  );
-  const flip =
-    below < above ||
-    (below === above && roomAbove < 0 && roomBelow > roomAbove);
-  if (flip) tip.dataset["flip"] = "";
+  const preferBelow = roomAbove < 0 && roomBelow > roomAbove;
+  let best: Placement = { flip: false, score: Infinity, shift: base };
+  for (const flip of [false, true]) {
+    const top = flip ? belowTop : rect.top;
+    const bottom = top + rect.height;
+    const shifts = [base];
+    for (const { box } of blockers) {
+      if (top - edgeGap >= box.bottom || bottom + edgeGap <= box.top) continue;
+      shifts.push(
+        box.right + edgeGap - rect.left,
+        box.left - edgeGap - rect.right
+      );
+    }
+    for (const shift of shifts) {
+      if (shift !== base && !fits(shift)) continue;
+      const cost = costOf(
+        { bottom, left: rect.left + shift, right: rect.right + shift, top },
+        flip ? roomBelow : roomAbove,
+        blockers
+      );
+      const score =
+        cost * rect.width +
+        Math.abs(shift - base) +
+        (flip === preferBelow ? 0 : 0.5);
+      if (score < best.score) best = { flip, score, shift };
+    }
+  }
+  tip.style.setProperty("--tip-shift", `${String(Math.round(best.shift))}px`);
+  if (best.flip) tip.dataset["flip"] = "";
 };
 
 export const initContactLinks = (list: HTMLElement): (() => void) => {
@@ -102,7 +135,7 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
     ...[
       ...(list
         .closest("[data-card]")
-        ?.querySelectorAll(":scope > [data-blur-in], .repo-head") ?? []),
+        ?.querySelectorAll(":scope > [data-blur-in], .repo-heading") ?? []),
     ].map((element) => ({ element, weight: 1 })),
   ];
   const disposers: Array<() => void> = [];

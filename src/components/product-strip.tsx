@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactElement } from "react";
 
+import { CompoundText } from "@/components/compound-text";
 import { ProductMark } from "@/components/product-mark";
 import { en } from "@/lib/i18n";
 import { type Product, productMetaParts } from "@/lib/products";
@@ -65,7 +66,7 @@ export const ProductStrip = ({
                     className="repo-desc product-line"
                     id={`product-line-${product.key}`}
                   >
-                    {product.line}
+                    <CompoundText text={product.line} />
                   </p>
                 </div>
               </div>

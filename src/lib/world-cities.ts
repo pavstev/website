@@ -683,7 +683,7 @@ export const worldCities: readonly WorldCity[] = [
     countryCode: "TR",
     latitude: 38.42,
     longitude: 27.13,
-    name: "İzmir",
+    name: "Izmir",
     population: 3_152_092,
   },
   {

@@ -2,6 +2,7 @@ import type { CSSProperties, ReactElement } from "react";
 
 import type { Repo } from "@/lib/github";
 
+import { CompoundText } from "@/components/compound-text";
 import { Icon } from "@/components/icon";
 import { RepoTags } from "@/components/repo-tags";
 import { en } from "@/lib/i18n";
@@ -107,7 +108,9 @@ export const RepoStrip = ({
                     </span>
                   ) : null}
                 </div>
-                <p className="repo-desc">{repo.description}</p>
+                <p className="repo-desc">
+                  <CompoundText text={repo.description} />
+                </p>
               </div>
             </div>
           </li>
