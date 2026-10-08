@@ -27,13 +27,9 @@ const sideOf = (placed: readonly PlacedLabel[], key: string): LabelSide => {
 const boxesOverlap = (a: PlacedLabel, b: PlacedLabel): boolean =>
   a.x < b.x + 40 && b.x < a.x + 40 && a.y < b.y + 10 && b.y < a.y + 10;
 
-const cluster = [
-  anchor("a", 100, 50),
-  anchor("b", 102, 50),
-  anchor("c", 104, 52),
-  anchor("d", 100, 54),
-  anchor("e", 98, 49),
-];
+const cluster = Array.from({ length: 10 }, (_, index) =>
+  anchor(`c${String(index)}`, 100 + (index % 4), 50 + (index % 3))
+);
 
 describe("placeLabels", () => {
   it("puts a label right of its dot when that side is free", () => {
@@ -46,7 +42,7 @@ describe("placeLabels", () => {
     const placed = placeLabels(cluster, 300, 100, 4);
     assert.deepEqual(
       placed.map((spot) => spot.key),
-      ["a", "b", "c", "d", "e"]
+      cluster.map((spot) => spot.key)
     );
     const crowded = placed.some((spot, index) =>
       placed.slice(index + 1).some((other) => boxesOverlap(spot, other))
@@ -94,6 +90,40 @@ describe("placeLabels", () => {
         4
       );
       assert.equal(sideOf(placed, "b"), side, `b at ${String(x)},${String(y)}`);
+    }
+  });
+
+  it("uses a corner when all four sides are taken", () => {
+    const sideBlocks = [
+      anchor("r", 226, 50),
+      anchor("l", 174, 50),
+      anchor("a", 200, 39),
+      anchor("b", 200, 61),
+    ];
+    const corners: Array<{
+      dot: [number, number];
+      side: LabelSide;
+      spot: [number, number];
+    }> = [
+      { dot: [223.6, 41.4], side: "aboveRight", spot: [203.6, 36.4] },
+      { dot: [223.6, 58.6], side: "belowRight", spot: [203.6, 53.6] },
+      { dot: [176.4, 41.4], side: "aboveLeft", spot: [156.4, 36.4] },
+      { dot: [176.4, 58.6], side: "belowLeft", spot: [156.4, 53.6] },
+    ];
+    for (const corner of corners) {
+      const cornerBlocks = corners
+        .filter((other) => other.side !== corner.side)
+        .map((other) => anchor(other.side, ...other.dot));
+      const [spot] = placeLabels(
+        [anchor("t", 200, 50), ...sideBlocks, ...cornerBlocks],
+        400,
+        100,
+        4
+      );
+      const [x, y] = corner.spot;
+      assert.equal(spot?.side, corner.side);
+      assert.ok(spot && Math.abs(spot.x - x) < 1e-9, `${corner.side} x`);
+      assert.ok(spot && Math.abs(spot.y - y) < 1e-9, `${corner.side} y`);
     }
   });
 
@@ -158,16 +188,27 @@ describe("placeLabels", () => {
   });
 
   it("keeps the previous side when another side is only slightly freer", () => {
-    const crowd = [
-      anchor("a", 100, 50),
-      anchor("b", 100, 62),
-      anchor("d1", 60, 62),
-      anchor("d2", 70, 62),
-    ];
-    const fresh = placeLabels(crowd, 300, 70, 4);
-    const sticky = placeLabels(crowd, 300, 70, 4, new Map([["b", "right"]]));
-    assert.equal(sideOf(fresh, "b"), "left");
-    assert.equal(sideOf(sticky, "b"), "right");
+    const tight = [anchor("s", 20, 8)];
+    const fresh = placeLabels(tight, 40, 10, 4);
+    const sticky = placeLabels(tight, 40, 10, 4, new Map([["s", "below"]]));
+    const far = placeLabels(tight, 40, 10, 4, new Map([["s", "right"]]));
+    assert.equal(sideOf(fresh, "s"), "above");
+    assert.equal(sideOf(sticky, "s"), "below");
+    assert.equal(sideOf(far, "s"), "above");
+  });
+
+  it("keeps labels off blocked areas when another spot is free", () => {
+    const placed = placeLabels([anchor("a", 100, 50)], 300, 100, 4, new Map(), [
+      { height: 20, width: 60, x: 100, y: 40 },
+    ]);
+    assert.equal(sideOf(placed, "a"), "left");
+  });
+
+  it("still places a label when every spot is blocked", () => {
+    const placed = placeLabels([anchor("a", 100, 50)], 300, 100, 4, new Map(), [
+      { height: 100, width: 300, x: 0, y: 0 },
+    ]);
+    assert.deepEqual(placed, [{ key: "a", side: "right", x: 106, y: 45 }]);
   });
 
   it("is deterministic", () => {

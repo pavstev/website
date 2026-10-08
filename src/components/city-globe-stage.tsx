@@ -16,7 +16,7 @@ import {
   SoftwareRendererError,
 } from "@/lib/city-globe";
 import { personalData } from "@/lib/personal";
-import { techHubs } from "@/lib/tech-hubs";
+import { worldCities } from "@/lib/world-cities";
 
 export interface CityGlobeStageProps {
   onBuilt: () => void;
@@ -34,6 +34,9 @@ export const CityGlobeStage = ({
   const viewport = useRef<HTMLDivElement>(null);
   const labelLayer = useRef<HTMLDivElement>(null);
   const homeLabel = useRef<HTMLSpanElement>(null);
+  const tools = useRef<HTMLDivElement>(null);
+  const credit = useRef<HTMLParagraphElement>(null);
+  const hint = useRef<HTMLParagraphElement>(null);
   const controls = useRef<GlobeControls | null>(null);
   const handlers = useRef({ onBuilt, onFail, onReady, onUnsupported });
   const [ready, setReady] = useState(false);
@@ -48,13 +51,17 @@ export const CityGlobeStage = ({
     const labels = labelLayer.current;
     const home = homeLabel.current;
     if (!frame || !labels || !home) return;
+    const avoid = [tools.current, credit.current, hint.current].filter(
+      (element) => element !== null
+    );
     const canvas = document.createElement("canvas");
     canvas.className = "city-canvas";
     frame.append(canvas);
     let live: GlobeControls | undefined;
     try {
       live = createCityGlobe(canvas, {
-        cities: techHubs,
+        avoid,
+        cities: worldCities,
         home: personalData.cityCoordinates,
         homeLabel: home,
         labels,
@@ -113,17 +120,19 @@ export const CityGlobeStage = ({
           {personalData.city}
         </span>
       </div>
-      <ul aria-label={cityStrings.hubsLabel} className="sr-only">
-        {techHubs.map((hub) => (
-          <li key={hub.key}>{hub.name}</li>
+      <ul aria-label={cityStrings.citiesLabel} className="sr-only">
+        {worldCities.map((city) => (
+          <li key={city.name}>{city.name}</li>
         ))}
       </ul>
-      <p className="city-credit">{cityStrings.hubsSource}</p>
-      <p aria-hidden="true" className="city-hint">
+      <p className="city-credit" ref={credit}>
+        {cityStrings.citiesSource}
+      </p>
+      <p aria-hidden="true" className="city-hint" ref={hint}>
         <span className="city-hint-fine">{cityStrings.hint}</span>
         <span className="city-hint-touch">{cityStrings.hintTouch}</span>
       </p>
-      <div className="city-tools">
+      <div className="city-tools" ref={tools}>
         <button
           aria-label={cityStrings.zoomIn}
           className="city-tool focus-ring"

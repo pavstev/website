@@ -22,6 +22,7 @@ import { createFramePacer } from "@/lib/frame-pacer";
 import { globeData } from "@/lib/globe-data";
 import {
   type LabelAnchor,
+  type LabelRect,
   type LabelSide,
   type PlacedLabel,
   placeLabels,
@@ -40,6 +41,7 @@ export interface GlobeControls {
 }
 
 interface GlobeOptions {
+  avoid: readonly HTMLElement[];
   cities: readonly GlobePlace[];
   home: GlobePoint;
   homeLabel: HTMLElement;
@@ -108,7 +110,7 @@ const beaconSize = 60;
 const pillarReach = 0.36;
 const pillarHalfWidth = 7;
 const labelGap = 3;
-const labelFacing = 0.22;
+const labelFacing = 0.15;
 const homeMark = { offset: 14, radius: 7 };
 const cityMark = { offset: 6, radius: 3 };
 const maxPixelRatio = 1.75;
@@ -756,12 +758,19 @@ export const createCityGlobe = (
   };
 
   let laidOut = "";
+  let blocked: LabelRect[] = [];
 
   const measureLabels = (): void => {
     for (const label of labels) {
       label.width = label.element.offsetWidth;
       label.height = label.element.offsetHeight;
     }
+    blocked = options.avoid.map((element) => ({
+      height: element.offsetHeight,
+      width: element.offsetWidth,
+      x: element.offsetLeft,
+      y: element.offsetTop,
+    }));
     laidOut = "";
   };
 
@@ -799,12 +808,20 @@ export const createCityGlobe = (
       });
       alphas.set(
         label.key,
-        smoothstep(labelFacing, labelFacing + 0.25, facing)
+        0.3 + 0.7 * smoothstep(labelFacing, labelFacing + 0.25, facing)
       );
     }
+    const placed = placeLabels(
+      anchors,
+      width,
+      height,
+      labelGap,
+      sides,
+      blocked
+    );
     const spots = new Map<string, PlacedLabel>();
     sides.clear();
-    for (const spot of placeLabels(anchors, width, height, labelGap, sides)) {
+    for (const spot of placed) {
       spots.set(spot.key, spot);
       sides.set(spot.key, spot.side);
     }

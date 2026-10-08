@@ -20,6 +20,10 @@ export const en = {
   },
   city: {
     armsLabel: "Coat of arms of {city}: a white cross on a red shield",
+    citiesLabel:
+      "Cities on the globe, the largest metro areas with at most three per country",
+    citiesSource:
+      "Cities: UN World Urbanization Prospects 2018, 2025 projection",
     facts:
       "{city} is the capital of {country}, a city of about two million people on the Danube. It keeps landing near the top of the world’s most liveable city rankings, and about half of it is green: parks, the Vienna Woods and vineyards inside the city limits. Mozart and Beethoven made music here, the coffee houses are listed as cultural heritage, and the UN runs one of its four main offices from here.",
     failed: "The globe could not load.",
@@ -27,27 +31,6 @@ export const en = {
       "Interactive globe centered on {city}, lit where it is daytime right now. Arrow keys rotate, plus and minus zoom.",
     hint: "Drag to rotate. Scroll or pinch to zoom.",
     hintTouch: "Drag to rotate. Pinch to zoom.",
-    hubs: {
-      beijing: "Beijing",
-      bengaluru: "Bengaluru",
-      boston: "Boston",
-      london: "London",
-      losAngeles: "Los Angeles",
-      newYork: "New York",
-      paris: "Paris",
-      seattle: "Seattle",
-      seoul: "Seoul",
-      shanghai: "Shanghai",
-      siliconValley: "Silicon Valley",
-      singapore: "Singapore",
-      telAviv: "Tel Aviv",
-      tokyo: "Tokyo",
-      toronto: "Toronto-Waterloo",
-      washington: "Washington DC",
-    },
-    hubsLabel: "Tech hubs on the globe, the top 16 startup ecosystems",
-    hubsSource:
-      "Tech hubs: Startup Genome, Global Startup Ecosystem Report 2026",
     launch: "Show on the globe",
     loading: "Loading the globe",
     percent: "{value}%",
