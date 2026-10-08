@@ -16,6 +16,7 @@ import {
   SoftwareRendererError,
 } from "@/lib/city-globe";
 import { personalData } from "@/lib/personal";
+import { techHubs } from "@/lib/tech-hubs";
 
 export interface CityGlobeStageProps {
   onBuilt: () => void;
@@ -31,6 +32,7 @@ export const CityGlobeStage = ({
   onUnsupported,
 }: CityGlobeStageProps): ReactElement => {
   const viewport = useRef<HTMLDivElement>(null);
+  const labelLayer = useRef<HTMLDivElement>(null);
   const controls = useRef<GlobeControls | null>(null);
   const handlers = useRef({ onBuilt, onFail, onReady, onUnsupported });
   const [ready, setReady] = useState(false);
@@ -42,15 +44,21 @@ export const CityGlobeStage = ({
 
   useEffect(() => {
     const frame = viewport.current;
-    if (!frame) return;
+    const labels = labelLayer.current;
+    if (!frame || !labels) return;
     const canvas = document.createElement("canvas");
     canvas.className = "city-canvas";
     frame.append(canvas);
     let live: GlobeControls | undefined;
     try {
       live = createCityGlobe(canvas, {
-        latitude: personalData.cityCoordinates.latitude,
-        longitude: personalData.cityCoordinates.longitude,
+        home: {
+          latitude: personalData.cityCoordinates.latitude,
+          longitude: personalData.cityCoordinates.longitude,
+          name: personalData.city,
+        },
+        hubs: techHubs,
+        labels,
         onInteract: () => {
           setTouched(true);
         },
@@ -95,6 +103,13 @@ export const CityGlobeStage = ({
         role="group"
         tabIndex={0}
       />
+      <div aria-hidden="true" className="city-labels" ref={labelLayer} />
+      <ul aria-label={cityStrings.hubsLabel} className="sr-only">
+        {techHubs.map((hub) => (
+          <li key={hub.key}>{hub.name}</li>
+        ))}
+      </ul>
+      <p className="city-credit">{cityStrings.hubsSource}</p>
       <p aria-hidden="true" className="city-hint">
         {cityStrings.hint}
       </p>

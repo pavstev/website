@@ -2679,6 +2679,30 @@ html:has(.portrait-dialog[open]) {
   font-size: 0.75rem;
 }
 
+.topic-company {
+  border-radius: var(--radius-sm);
+  color: var(--foreground-soft);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--topic-a) 55%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition:
+    color var(--duration-normal) var(--ease-smooth),
+    text-decoration-color var(--duration-normal) var(--ease-smooth);
+}
+
+.topic-company:hover {
+  color: var(--foreground);
+  text-decoration-color: var(--topic-a);
+}
+
+@media (forced-colors: active) {
+  .topic-company {
+    color: LinkText;
+    text-decoration-color: LinkText;
+  }
+}
+
 .topic-panel .topic-close {
   position: relative;
   width: 1.5rem;
@@ -3005,6 +3029,65 @@ html:has(.globe-dialog[open]) {
 .city-stage[data-touched] .city-hint,
 .city-stage:not([data-state="ready"]) .city-hint {
   opacity: 0;
+}
+
+.city-labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity var(--duration-slower) var(--ease-smooth);
+}
+
+.city-stage:not([data-state="ready"]) .city-labels,
+.city-stage:not([data-state="ready"]) .city-credit {
+  opacity: 0;
+}
+
+.city-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--foreground);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-shadow:
+    0 0 1px var(--background),
+    0 0 2px var(--background),
+    0 0 2px var(--background),
+    0 1px 6px var(--background);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-smooth);
+  will-change: transform, opacity;
+}
+
+.city-label[data-kind="home"] {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.city-credit {
+  position: absolute;
+  top: 0.625rem;
+  left: 1rem;
+  max-width: calc(100% - 2rem);
+  color: var(--muted-foreground);
+  font-size: 0.625rem;
+  line-height: 1.35;
+  text-shadow: 0 1px 6px var(--background);
+  pointer-events: none;
+  transition: opacity var(--duration-slower) var(--ease-smooth);
+}
+
+@media (forced-colors: active) {
+  .city-label,
+  .city-credit {
+    color: CanvasText;
+    text-shadow: none;
+  }
 }
 
 .city-tools {

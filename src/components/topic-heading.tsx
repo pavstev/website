@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from "react";
 
 interface TopicHeadingProps {
   emblem: ReactNode;
-  subtitle: string;
+  subtitle: ReactNode;
   title: string;
   titleId: string;
 }

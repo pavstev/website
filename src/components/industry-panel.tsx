@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { Icon } from "@/components/icon";
 import { TopicHeading } from "@/components/topic-heading";
 import { TopicPanel } from "@/components/topic-panel";
+import { en } from "@/lib/i18n";
 import { type Industry } from "@/lib/industries";
 
 interface IndustryPanelProps {
@@ -13,6 +14,17 @@ export const IndustryPanel = ({
   industry,
 }: IndustryPanelProps): ReactElement => {
   const titleId = `${industry.panelId}-title`;
+  const company = (
+    <a
+      className="topic-company focus-ring"
+      href={industry.site}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      {industry.company}
+      <span className="sr-only"> {en.industries.newTab}</span>
+    </a>
+  );
   return (
     <TopicPanel
       heading={
@@ -22,7 +34,13 @@ export const IndustryPanel = ({
               <Icon aria-hidden name={industry.icon} size="0.875rem" />
             </span>
           }
-          subtitle={industry.subtitle}
+          subtitle={
+            <>
+              {company}
+              {en.industries.separator}
+              {industry.period}
+            </>
+          }
           title={industry.title}
           titleId={titleId}
         />

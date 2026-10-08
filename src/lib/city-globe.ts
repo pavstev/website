@@ -5,26 +5,23 @@ import {
   BufferGeometry,
   CanvasTexture,
   Color,
-  DoubleSide,
   Group,
   LinearMipmapLinearFilter,
   Mesh,
-  MeshBasicMaterial,
   PerspectiveCamera,
-  PlaneGeometry,
-  Quaternion,
-  RingGeometry,
+  Points,
   Scene,
   ShaderMaterial,
   SphereGeometry,
-  SRGBColorSpace,
   Vector3,
   WebGLRenderer,
 } from "three";
 
 import { createFramePacer } from "@/lib/frame-pacer";
 import { globeData } from "@/lib/globe-data";
+import { type LabelBox, placeLabels } from "@/lib/globe-labels";
 import { reducedMotionQuery } from "@/lib/media";
+import { subsolarPoint } from "@/lib/sun";
 import { globePalette } from "@/lib/theme";
 import { isSoftwareRenderer } from "@/lib/webgl";
 
@@ -35,11 +32,29 @@ export interface GlobeControls {
   zoomIn: () => void;
   zoomOut: () => void;
 }
+
 interface GlobeOptions {
-  latitude: number;
-  longitude: number;
+  home: GlobePlace;
+  hubs: readonly GlobePlace[];
+  labels: HTMLElement;
   onInteract: () => void;
   onReady: () => void;
+}
+
+interface GlobePlace {
+  latitude: number;
+  longitude: number;
+  name: string;
+}
+
+interface Label {
+  element: HTMLSpanElement;
+  gap: number;
+  height: number;
+  key: string;
+  position: Vector3;
+  shown: string;
+  width: number;
 }
 
 type Point = [number, number];
@@ -68,11 +83,21 @@ const worldHeight = 1024;
 const europePixelsPerDegree = 32;
 const europeFadeStart = 1.4;
 const europeFadeEnd = 1.9;
-const maskPixelsPerDegree = 12;
-const homeTau = 380;
-const pulseSeconds = 2.2;
-const pulseRunMs = 6600;
+const homeTau = 300;
+const introLongitude = 42;
+const introLatitude = 16;
+const introZoom = 1.45;
+const sunRefreshMs = 60_000;
+const markerRadius = 1.003;
+const labelGap = 4;
+const labelFacing = 0.22;
 const maxPixelRatio = 1.75;
+
+const maskColors = {
+  austria: "rgb(255,255,0)",
+  land: "rgb(255,0,0)",
+  none: "rgb(0,0,0)",
+} as const;
 
 const clamp = (value: number, low: number, high: number): number =>
   Math.min(high, Math.max(low, value));
@@ -100,6 +125,20 @@ const decode = (text: string, step: number): Point[] => {
   return points;
 };
 
+const unwrap = (points: Point[]): Point[] => {
+  let shift = 0;
+  let previous: number | undefined;
+  return points.map(([lon, lat]) => {
+    if (previous !== undefined) {
+      const jump = lon + shift - previous;
+      if (jump > 180) shift -= 360;
+      else if (jump < -180) shift += 360;
+    }
+    previous = lon + shift;
+    return [previous, lat];
+  });
+};
+
 const vectorOf = (lon: number, lat: number): Vector3 =>
   new Vector3(
     Math.cos(lat * deg) * Math.sin(lon * deg),
@@ -119,89 +158,53 @@ const createCanvas = (
   return [canvas, context];
 };
 
-const traceRings = (
+const fillRings = (
   context: CanvasRenderingContext2D,
   rings: string[],
   step: number,
   project: Project,
-  close: boolean
+  offsets: readonly number[],
+  color: string
 ): void => {
   context.beginPath();
   for (const text of rings) {
-    const points = decode(text, step);
-    for (const [index, [lon, lat]] of points.entries()) {
-      const [x, y] = project(lon, lat);
-      if (index === 0) context.moveTo(x, y);
-      else context.lineTo(x, y);
+    const points = unwrap(decode(text, step));
+    for (const offset of offsets) {
+      for (const [index, [lon, lat]] of points.entries()) {
+        const [x, y] = project(lon + offset, lat);
+        if (index === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      context.closePath();
     }
-    if (close) context.closePath();
   }
+  context.fillStyle = color;
+  context.fill("evenodd");
 };
 
-const drawWorld = (): HTMLCanvasElement => {
+const drawWorldMask = (): HTMLCanvasElement => {
   const [canvas, context] = createCanvas(worldWidth, worldHeight);
   const { world } = globeData;
   const project: Project = (lon, lat) => [
     ((lon + 180) / 360) * worldWidth,
     ((90 - lat) / 180) * worldHeight,
   ];
-  context.fillStyle = globePalette.ocean;
+  const offsets = [-360, 0, 360];
+  context.fillStyle = maskColors.none;
   context.fillRect(0, 0, worldWidth, worldHeight);
-  context.strokeStyle = globePalette.graticule;
-  context.globalAlpha = 0.09;
-  context.lineWidth = 1;
-  context.beginPath();
-  for (let lon = -180; lon <= 180; lon += 15) {
-    const [x] = project(lon, 0);
-    context.moveTo(x, 0);
-    context.lineTo(x, worldHeight);
-  }
-  for (let lat = -75; lat <= 75; lat += 15) {
-    const [, y] = project(0, lat);
-    context.moveTo(0, y);
-    context.lineTo(worldWidth, y);
-  }
-  context.stroke();
-  context.globalAlpha = 1;
-  traceRings(context, world.land, world.step, project, true);
-  context.fillStyle = globePalette.land;
-  context.fill("evenodd");
-  context.strokeStyle = globePalette.coast;
-  context.globalAlpha = 0.7;
-  context.lineWidth = 1.6;
-  context.stroke();
-  context.globalAlpha = 1;
-  traceRings(context, world.austria, world.step, project, true);
-  context.fillStyle = globePalette.austria;
-  context.fill("evenodd");
+  fillRings(context, world.land, world.step, project, offsets, maskColors.land);
+  fillRings(
+    context,
+    world.austria,
+    world.step,
+    project,
+    offsets,
+    maskColors.austria
+  );
   return canvas;
 };
 
-const feather = (
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number
-): void => {
-  const edge = 0.1;
-  context.globalCompositeOperation = "destination-in";
-  const horizontal = context.createLinearGradient(0, 0, width, 0);
-  horizontal.addColorStop(0, "rgba(0,0,0,0)");
-  horizontal.addColorStop(edge, "rgba(0,0,0,1)");
-  horizontal.addColorStop(1 - edge, "rgba(0,0,0,1)");
-  horizontal.addColorStop(1, "rgba(0,0,0,0)");
-  context.fillStyle = horizontal;
-  context.fillRect(0, 0, width, height);
-  const vertical = context.createLinearGradient(0, 0, 0, height);
-  vertical.addColorStop(0, "rgba(0,0,0,0)");
-  vertical.addColorStop(edge, "rgba(0,0,0,1)");
-  vertical.addColorStop(1 - edge, "rgba(0,0,0,1)");
-  vertical.addColorStop(1, "rgba(0,0,0,0)");
-  context.fillStyle = vertical;
-  context.fillRect(0, 0, width, height);
-  context.globalCompositeOperation = "source-over";
-};
-
-const drawEurope = (): HTMLCanvasElement => {
+const drawEuropeMask = (): HTMLCanvasElement => {
   const { east, north, south, west } = globeData.europe.bounds;
   const width = Math.round((east - west) * europePixelsPerDegree);
   const height = Math.round((north - south) * europePixelsPerDegree);
@@ -211,75 +214,30 @@ const drawEurope = (): HTMLCanvasElement => {
     (lon - west) * europePixelsPerDegree,
     (north - lat) * europePixelsPerDegree,
   ];
-  context.fillStyle = globePalette.ocean;
+  context.fillStyle = maskColors.none;
   context.fillRect(0, 0, width, height);
-  context.lineJoin = "round";
-  traceRings(context, europe.land, europe.step, project, true);
-  context.fillStyle = globePalette.land;
-  context.fill("evenodd");
-  traceRings(context, europe.austria, europe.step, project, true);
-  context.fillStyle = globePalette.austria;
-  context.fill("evenodd");
-  traceRings(context, europe.land, europe.step, project, true);
-  context.strokeStyle = globePalette.coast;
-  context.globalAlpha = 0.8;
-  context.lineWidth = 1.8;
-  context.stroke();
-  traceRings(context, europe.borders, europe.step, project, false);
-  context.strokeStyle = globePalette.border;
-  context.globalAlpha = 1;
-  context.lineWidth = 1.3;
-  context.stroke();
-  traceRings(context, europe.austria, europe.step, project, true);
-  context.strokeStyle = globePalette.graticule;
-  context.globalAlpha = 0.9;
-  context.lineWidth = 2.2;
-  context.stroke();
-  context.globalAlpha = 1;
-  feather(context, width, height);
+  fillRings(context, europe.land, europe.step, project, [0], maskColors.land);
+  fillRings(
+    context,
+    europe.austria,
+    europe.step,
+    project,
+    [0],
+    maskColors.austria
+  );
   return canvas;
 };
 
 let worldCache: HTMLCanvasElement | undefined;
 let europeCache: HTMLCanvasElement | undefined;
 
-const worldCanvas = (): HTMLCanvasElement => {
-  worldCache ??= drawWorld();
+const worldMask = (): HTMLCanvasElement => {
+  worldCache ??= drawWorldMask();
   return worldCache;
 };
 
-let maskCache: HTMLCanvasElement | undefined;
-
-const drawMask = (): HTMLCanvasElement => {
-  const { east, north, south, west } = globeData.europe.bounds;
-  const width = Math.round((east - west) * maskPixelsPerDegree);
-  const height = Math.round((north - south) * maskPixelsPerDegree);
-  const [canvas, context] = createCanvas(width, height);
-  const { europe } = globeData;
-  const project: Project = (lon, lat) => [
-    (lon - west) * maskPixelsPerDegree,
-    (north - lat) * maskPixelsPerDegree,
-  ];
-  context.fillStyle = "rgb(0,0,0)";
-  context.fillRect(0, 0, width, height);
-  traceRings(context, europe.austria, europe.step, project, true);
-  context.shadowColor = "rgb(255,255,255)";
-  context.shadowBlur = 14;
-  context.fillStyle = "rgb(110,110,110)";
-  context.fill("evenodd");
-  context.shadowBlur = 0;
-  context.fillStyle = "rgb(255,255,255)";
-  context.fill("evenodd");
-  return canvas;
-};
-
-const maskCanvas = (): HTMLCanvasElement => {
-  maskCache ??= drawMask();
-  return maskCache;
-};
-
-const europeCanvas = (): HTMLCanvasElement => {
-  europeCache ??= drawEurope();
+const europeMask = (): HTMLCanvasElement => {
+  europeCache ??= drawEuropeMask();
   return europeCache;
 };
 
@@ -331,12 +289,17 @@ const patchGeometry = (
   return geometry;
 };
 
+const attribute = (values: number[], size: number): BufferAttribute =>
+  new BufferAttribute(new Float32Array(values), size);
+
 const surfaceVertex = `
 varying vec2 vUv;
+varying vec3 vSurface;
 varying vec3 vNormal;
 varying vec3 vView;
 void main() {
   vUv = uv;
+  vSurface = normal;
   vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
   vNormal = normalize(normalMatrix * normal);
   vView = normalize(-viewPosition.xyz);
@@ -345,62 +308,49 @@ void main() {
 `;
 
 const surfaceFragment = `
-uniform sampler2D map;
-uniform float opacity;
-uniform vec3 rim;
-uniform vec3 sheen;
-uniform float pulse;
-#ifdef USE_MASK
 uniform sampler2D mask;
-uniform vec3 highlight;
-#endif
+uniform vec3 sun;
+uniform float opacity;
+uniform vec3 dayOcean;
+uniform vec3 dayLand;
+uniform vec3 nightOcean;
+uniform vec3 nightLand;
+uniform vec3 austria;
+uniform vec3 coast;
+uniform vec3 twilight;
+uniform vec3 sunlight;
+uniform vec3 rim;
 varying vec2 vUv;
+varying vec3 vSurface;
 varying vec3 vNormal;
 varying vec3 vView;
-const vec3 sun = vec3(-0.42, 0.52, 0.74);
 void main() {
-  vec4 texel = texture2D(map, vUv);
-  vec3 n = normalize(vNormal);
-  vec3 v = normalize(vView);
-  float facing = clamp(dot(n, v), 0.0, 1.0);
-  float lit = dot(n, normalize(sun)) * 0.5 + 0.5;
-  float gain = 0.95 + 0.55 * smoothstep(0.12, 1.0, lit);
-  float edge = pow(1.0 - facing, 2.4);
-  float shine = max(dot(reflect(-normalize(sun), n), v), 0.0);
-  float luma = dot(texel.rgb, vec3(0.2126, 0.7152, 0.0722));
-  float water = 1.0 - smoothstep(0.02, 0.06, luma);
-  float gloss = water * (pow(shine, 220.0) * 0.55 + pow(shine, 28.0) * 0.07)
-    + (1.0 - water) * pow(shine, 22.0) * 0.12;
-  vec3 color = texel.rgb * gain + rim * edge * 0.85 + sheen * gloss;
-  #ifdef USE_MASK
-  float m = texture2D(mask, vUv).r;
-  float core = smoothstep(0.75, 1.0, m);
-  color += highlight * m * (0.32 + 0.2 * pulse);
-  color += sheen * core * (pow(shine, 14.0) * 0.6 + 0.08);
+  vec4 texel = texture2D(mask, vUv);
+  float aa = max(fwidth(texel.r), 0.0005);
+  float land = smoothstep(0.5 - aa, 0.5 + aa, texel.r);
+  float home = smoothstep(0.5 - aa, 0.5 + aa, texel.g);
+  float shore = clamp(1.0 - abs(texel.r - 0.5) / (aa * 1.2), 0.0, 1.0);
+  float height = dot(normalize(vSurface), sun);
+  float day = smoothstep(-0.12, 0.16, height);
+  vec3 color = mix(
+    mix(nightOcean, nightLand, land),
+    mix(dayOcean, dayLand, land),
+    day
+  );
+  color = mix(color, austria, home * (0.1 + 0.28 * day));
+  color = mix(color, coast, shore * (0.05 + 0.17 * day));
+  color += twilight * exp(-pow(height / 0.09, 2.0)) * 0.06;
+  color += sunlight * pow(max(height, 0.0), 2.0) * 0.025 * (0.4 + 0.6 * land);
+  float facing = clamp(dot(normalize(vNormal), normalize(vView)), 0.0, 1.0);
+  float edgeLight = smoothstep(-0.25, 0.65, height);
+  color += rim * pow(1.0 - facing, 3.0) * (0.005 + 0.1 * edgeLight);
+  #ifdef PATCH
+  vec2 edge = smoothstep(vec2(0.0), vec2(0.08), vUv)
+    * smoothstep(vec2(0.0), vec2(0.08), 1.0 - vUv);
+  gl_FragColor = vec4(color, opacity * edge.x * edge.y);
+  #else
+  gl_FragColor = vec4(color, 1.0);
   #endif
-  gl_FragColor = vec4(color, texel.a * opacity);
-  #include <colorspace_fragment>
-}
-`;
-
-const glowVertex = `
-varying vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}
-`;
-
-const glowFragment = `
-uniform vec3 glow;
-uniform float pulse;
-varying vec2 vUv;
-void main() {
-  float d = length(vUv - 0.5) * 2.0;
-  float core = smoothstep(0.32, 0.0, d);
-  float halo = pow(max(1.0 - d, 0.0), 2.2);
-  float alpha = core * 0.9 + halo * (0.45 + 0.25 * pulse);
-  gl_FragColor = vec4(glow * alpha * 1.4, alpha);
   #include <colorspace_fragment>
 }
 `;
@@ -418,12 +368,60 @@ void main() {
 
 const haloFragment = `
 uniform vec3 glow;
+uniform vec3 sun;
 varying vec3 vNormal;
 varying vec3 vView;
 void main() {
   float facing = abs(dot(vNormal, vView));
   float strength = pow(smoothstep(0.0, 0.5, facing), 1.5);
-  gl_FragColor = vec4(glow * strength * 1.25, strength);
+  float lit = smoothstep(-0.35, 0.65, dot(normalize(vNormal), sun));
+  float alpha = strength * lit * 0.1;
+  gl_FragColor = vec4(glow * alpha, alpha);
+  #include <colorspace_fragment>
+}
+`;
+
+const markerVertex = `
+uniform float pixelRatio;
+attribute float kind;
+attribute float phase;
+varying float vKind;
+varying float vPhase;
+varying float vFacing;
+void main() {
+  vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+  vec3 n = normalize(normalMatrix * normalize(position));
+  vFacing = smoothstep(0.0, 0.3, dot(n, normalize(-viewPosition.xyz)));
+  vKind = kind;
+  vPhase = phase;
+  gl_PointSize = mix(24.0, 40.0, kind) * pixelRatio;
+  gl_Position = projectionMatrix * viewPosition;
+}
+`;
+
+const markerFragment = `
+uniform float time;
+uniform float motion;
+uniform vec3 hubColor;
+uniform vec3 homeColor;
+varying float vKind;
+varying float vPhase;
+varying float vFacing;
+void main() {
+  vec2 p = gl_PointCoord * 2.0 - 1.0;
+  float r = length(p);
+  float core = mix(0.22, 0.18, vKind);
+  float body = 1.0 - smoothstep(core - 0.07, core, r);
+  float light = clamp(1.0 - length(p / core + vec2(0.4)), 0.0, 1.0);
+  float period = mix(3.5, 4.6, vKind);
+  float t = motion > 0.5 ? fract(time / period + vPhase) : 0.42;
+  float spread = core + t * (0.94 - core);
+  float ring = 1.0 - smoothstep(0.0, 0.06, abs(r - spread));
+  float fade = motion > 0.5 ? pow(1.0 - t, 1.6) * mix(0.5, 0.65, vKind) : 0.5 * vKind;
+  vec3 color = mix(hubColor, homeColor, vKind);
+  vec3 shaded = color * mix(0.72, 1.18, light);
+  float alpha = max(body, ring * fade) * vFacing;
+  gl_FragColor = vec4(mix(color, shaded, body), alpha);
   #include <colorspace_fragment>
 }
 `;
@@ -455,46 +453,46 @@ export const createCityGlobe = (
   const textures: CanvasTexture[] = [];
   const makeTexture = (source: HTMLCanvasElement): CanvasTexture => {
     const texture = new CanvasTexture(source);
-    texture.colorSpace = SRGBColorSpace;
     texture.anisotropy = anisotropy;
     texture.minFilter = LinearMipmapLinearFilter;
     textures.push(texture);
     return texture;
   };
 
-  const rimColor = new Color(globePalette.rim);
-  const sheenColor = new Color(globePalette.sheen);
-  const pulseUniform = { value: 0 };
+  const sunObject = new Vector3(0, 0, 1);
+  const sunView = new Vector3(0, 0, 1);
+  const palette = {
+    austria: { value: new Color(globePalette.austria) },
+    coast: { value: new Color(globePalette.coast) },
+    dayLand: { value: new Color(globePalette.dayLand) },
+    dayOcean: { value: new Color(globePalette.dayOcean) },
+    nightLand: { value: new Color(globePalette.nightLand) },
+    nightOcean: { value: new Color(globePalette.nightOcean) },
+    rim: { value: new Color(globePalette.rim) },
+    sun: { value: sunObject },
+    sunlight: { value: new Color(globePalette.sunlight) },
+    twilight: { value: new Color(globePalette.twilight) },
+  };
   const surface = (
-    map: CanvasTexture,
-    transparent: boolean,
-    opacity: { value: number },
-    mask?: CanvasTexture
+    mask: CanvasTexture,
+    opacity: undefined | { value: number }
   ): ShaderMaterial =>
     new ShaderMaterial({
-      defines: mask ? { USE_MASK: "" } : {},
-      depthWrite: !transparent,
+      defines: opacity ? { PATCH: "" } : {},
+      depthWrite: !opacity,
       fragmentShader: surfaceFragment,
-      polygonOffset: transparent,
-      polygonOffsetFactor: transparent ? -2 : 0,
-      transparent,
+      polygonOffset: Boolean(opacity),
+      polygonOffsetFactor: opacity ? -2 : 0,
+      transparent: Boolean(opacity),
       uniforms: {
-        map: { value: map },
-        opacity,
-        pulse: pulseUniform,
-        ...(mask && {
-          highlight: { value: new Color(globePalette.austria) },
-          mask: { value: mask },
-        }),
-        rim: { value: rimColor },
-        sheen: { value: sheenColor },
+        ...palette,
+        mask: { value: mask },
+        opacity: opacity ?? { value: 1 },
       },
       vertexShader: surfaceVertex,
     });
 
-  const baseMaterial = surface(makeTexture(worldCanvas()), false, {
-    value: 1,
-  });
+  const baseMaterial = surface(makeTexture(worldMask()), undefined);
   const baseGeometry = patchGeometry(-180, 180, -90, 90, 96, 48, 1);
   globe.add(new Mesh(baseGeometry, baseMaterial));
 
@@ -509,12 +507,7 @@ export const createCityGlobe = (
     1.0012
   );
   const europeOpacity = { value: 0 };
-  const europeMaterial = surface(
-    makeTexture(europeCanvas()),
-    true,
-    europeOpacity,
-    makeTexture(maskCanvas())
-  );
+  const europeMaterial = surface(makeTexture(europeMask()), europeOpacity);
   const europe = new Mesh(europeGeometry, europeMaterial);
   europe.visible = false;
   globe.add(europe);
@@ -525,106 +518,173 @@ export const createCityGlobe = (
     fragmentShader: haloFragment,
     side: BackSide,
     transparent: true,
-    uniforms: { glow: { value: rimColor } },
+    uniforms: {
+      glow: { value: new Color(globePalette.rim) },
+      sun: { value: sunView },
+    },
     vertexShader: haloVertex,
   });
   const haloGeometry = new SphereGeometry(1.16, 40, 28);
   scene.add(new Mesh(haloGeometry, haloMaterial));
 
-  const marker = new Group();
-  const markerNormal = vectorOf(options.longitude, options.latitude);
-  marker.position.copy(markerNormal).multiplyScalar(1.004);
-  marker.quaternion.copy(
-    new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), markerNormal)
+  const places = [options.home, ...options.hubs];
+  const markerPositions = places.map((place) =>
+    vectorOf(place.longitude, place.latitude).multiplyScalar(markerRadius)
   );
-  const dotGeometry = new SphereGeometry(0.012, 14, 10);
-  const dotMaterial = new MeshBasicMaterial({ color: globePalette.marker });
-  marker.add(new Mesh(dotGeometry, dotMaterial));
-  const glowGeometry = new PlaneGeometry(0.16, 0.16);
-  const glowMaterial = new ShaderMaterial({
-    blending: AdditiveBlending,
+  const markerGeometry = new BufferGeometry();
+  const coordinates = markerPositions.flatMap((point) => point.toArray());
+  const kinds = places.map((_, index) => (index === 0 ? 1 : 0));
+  const phases = places.map((_, index) => (index * 0.618034) % 1);
+  markerGeometry.setAttribute("position", attribute(coordinates, 3));
+  markerGeometry.setAttribute("kind", attribute(kinds, 1));
+  markerGeometry.setAttribute("phase", attribute(phases, 1));
+  const timeUniform = { value: 0 };
+  const motionUniform = { value: reduce.matches ? 0 : 1 };
+  const pixelRatioUniform = { value: pixelRatio };
+  const markerMaterial = new ShaderMaterial({
     depthWrite: false,
-    fragmentShader: glowFragment,
+    fragmentShader: markerFragment,
     transparent: true,
     uniforms: {
-      glow: { value: new Color(globePalette.marker) },
-      pulse: pulseUniform,
+      homeColor: { value: new Color(globePalette.marker) },
+      hubColor: { value: new Color(globePalette.hub) },
+      motion: motionUniform,
+      pixelRatio: pixelRatioUniform,
+      time: timeUniform,
     },
-    vertexShader: glowVertex,
+    vertexShader: markerVertex,
   });
-  const glow = new Mesh(glowGeometry, glowMaterial);
-  glow.position.z = 0.002;
-  marker.add(glow);
-  const ringGeometry = new RingGeometry(0.018, 0.0235, 40);
-  const rings = [0, 0.5].map((phase) => {
-    const material = new MeshBasicMaterial({
-      color: globePalette.marker,
-      depthWrite: false,
-      opacity: 0.9,
-      side: DoubleSide,
-      transparent: true,
-    });
-    const mesh = new Mesh(ringGeometry, material);
-    marker.add(mesh);
-    return { material, mesh, phase };
+  const markers = new Points(markerGeometry, markerMaterial);
+  markers.renderOrder = 2;
+  globe.add(markers);
+
+  const labels: Label[] = places.map((place, index) => {
+    const element = document.createElement("span");
+    element.className = "city-label";
+    element.dataset["kind"] = index === 0 ? "home" : "hub";
+    element.textContent = place.name;
+    options.labels.append(element);
+    return {
+      element,
+      gap: index === 0 ? 10 : 7,
+      height: 0,
+      key: String(index),
+      position: markerPositions[index] ?? new Vector3(),
+      shown: "",
+      width: 0,
+    };
   });
-  globe.add(marker);
 
   const home: View = {
-    lat: options.latitude,
-    lon: options.longitude,
+    lat: options.home.latitude,
+    lon: options.home.longitude,
     zoom: homeZoom,
   };
   const view: View = reduce.matches
     ? { ...home }
-    : { lat: 14, lon: wrap180(home.lon + 105), zoom: 1.1 };
+    : {
+        lat: home.lat - introLatitude,
+        lon: wrap180(home.lon + introLongitude),
+        zoom: introZoom,
+      };
   const goal: View = { ...home };
+  let width = 1;
   let height = 1;
   let baseDistance = 4;
   let tau = homeTau;
   let dragging = false;
   let velocity: Point = [0, 0];
-  let pulseClock = 0;
-  let pulseUntil = performance.now() + pulseRunMs;
   let touched = false;
   let disposed = false;
   let frozen = false;
   let compiled = false;
   let handle = 0;
   let lastDraw = 0;
+  let sunAt = 0;
 
   const distance = (): number => 1 + (baseDistance - 1) / view.zoom;
 
-  const paintRings = (): void => {
-    const live = !reduce.matches && performance.now() < pulseUntil;
-    for (const ring of rings) {
-      const phase = live ? (pulseClock / pulseSeconds + ring.phase) % 1 : 0.45;
-      ring.mesh.scale.setScalar(1 + phase * 2.6);
-      ring.material.opacity = live ? 0.95 * (1 - phase) ** 1.5 : 0.7;
-    }
+  const refreshSun = (): void => {
+    const { latitude, longitude } = subsolarPoint(new Date());
+    sunObject.copy(vectorOf(longitude, latitude));
+    sunAt = performance.now();
   };
+  refreshSun();
 
   const apply = (): void => {
     globe.rotation.set(view.lat * deg, -view.lon * deg, 0);
-    const d = distance();
-    camera.position.set(0, 0, d);
+    camera.position.set(0, 0, distance());
     const fade = smoothstep(europeFadeStart, europeFadeEnd, view.zoom);
     europeOpacity.value = fade;
     europe.visible = fade > 0.01;
-    marker.scale.setScalar(clamp((d - 1) / (baseDistance - 1), 0.18, 1));
-    paintRings();
+    sunView.copy(sunObject).applyQuaternion(globe.quaternion);
+  };
+
+  const measureLabels = (): void => {
+    for (const label of labels) {
+      label.width = label.element.offsetWidth;
+      label.height = label.element.offsetHeight;
+    }
+  };
+
+  const world = new Vector3();
+  const screen = new Vector3();
+
+  const layoutLabels = (): void => {
+    const boxes: LabelBox[] = [];
+    const placed = new Map<string, [number, number, number]>();
+    for (const label of labels) {
+      world.copy(label.position).applyQuaternion(globe.quaternion);
+      screen.copy(camera.position).sub(world).normalize();
+      const facing = screen.dot(world) / world.length();
+      if (facing < labelFacing || label.width === 0) continue;
+      screen.copy(world).project(camera);
+      const x = ((screen.x + 1) / 2) * width;
+      const y = ((1 - screen.y) / 2) * height;
+      const right = x + label.gap;
+      const left =
+        right + label.width > width ? x - label.gap - label.width : right;
+      const top = y - label.height / 2;
+      const alpha = smoothstep(labelFacing, labelFacing + 0.25, facing);
+      boxes.push({
+        height: label.height,
+        key: label.key,
+        width: label.width,
+        x: left,
+        y: top,
+      });
+      placed.set(label.key, [left, top, alpha]);
+    }
+    const kept = placeLabels(boxes, width, height, labelGap);
+    for (const label of labels) {
+      const spot = placed.get(label.key);
+      const shown =
+        spot && kept.has(label.key)
+          ? `${String(Math.round(spot[0]))},${String(Math.round(spot[1]))},${spot[2].toFixed(2)}`
+          : "";
+      if (shown === label.shown) continue;
+      label.shown = shown;
+      if (spot && shown) {
+        label.element.style.transform = `translate3d(${String(Math.round(spot[0]))}px, ${String(Math.round(spot[1]))}px, 0)`;
+        label.element.style.opacity = spot[2].toFixed(2);
+      } else {
+        label.element.style.opacity = "0";
+      }
+    }
   };
 
   const resize = (): void => {
     const rect = canvas.getBoundingClientRect();
-    const width = Math.max(1, Math.round(rect.width));
+    width = Math.max(1, Math.round(rect.width));
     height = Math.max(1, Math.round(rect.height));
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height, false);
+    pixelRatioUniform.value = pixelRatio;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     const fit = Math.tan((fov * deg) / 2) * Math.min(1, camera.aspect);
     baseDistance = Math.sqrt(1 + (1 / (fitRatio * fit)) ** 2);
+    measureLabels();
   };
 
   const pacer = createFramePacer({
@@ -640,6 +700,7 @@ export const createCityGlobe = (
     if (!compiled) return;
     apply();
     renderer.render(scene, camera);
+    layoutLabels();
   };
 
   const pointers = new Map<number, Point>();
@@ -674,10 +735,9 @@ export const createCityGlobe = (
       }
       view.zoom *= (goal.zoom / view.zoom) ** follow;
     }
-    pulseClock += dt / 1000;
-    pulseUniform.value = reduce.matches
-      ? 0.5
-      : 0.5 + 0.5 * Math.sin((pulseClock / pulseSeconds) * Math.PI * 2);
+    motionUniform.value = reduce.matches ? 0 : 1;
+    timeUniform.value += reduce.matches ? 0 : dt / 1000;
+    if (performance.now() - sunAt > sunRefreshMs) refreshSun();
   };
 
   const schedule = (): void => {
@@ -704,7 +764,7 @@ export const createCityGlobe = (
     lastDraw = now;
     update(elapsed);
     render();
-    if (!settled() || now < pulseUntil) schedule();
+    if (!settled() || !reduce.matches) schedule();
     else lastDraw = 0;
   };
 
@@ -811,12 +871,17 @@ export const createCityGlobe = (
     canvas.dataset["globeState"] = "lost";
   };
 
+  const onMotion = (): void => {
+    wake();
+  };
+
   canvas.addEventListener("pointerdown", onDown);
   canvas.addEventListener("pointermove", onMove);
   canvas.addEventListener("pointerup", onUp);
   canvas.addEventListener("pointercancel", onUp);
   canvas.addEventListener("wheel", onWheel, { passive: false });
   canvas.addEventListener("webglcontextlost", onLost);
+  reduce.addEventListener("change", onMotion);
 
   const observer = new ResizeObserver(() => {
     resize();
@@ -829,6 +894,7 @@ export const createCityGlobe = (
       if (handle !== 0) cancelAnimationFrame(handle);
       handle = 0;
     } else {
+      refreshSun();
       pacer.reset();
       lastDraw = 0;
       wake();
@@ -836,7 +902,18 @@ export const createCityGlobe = (
   };
   document.addEventListener("visibilitychange", onVisibility);
 
+  const sunTimer = globalThis.setInterval(() => {
+    if (!reduce.matches || document.hidden) return;
+    refreshSun();
+    wake();
+  }, sunRefreshMs);
+
   resize();
+  void document.fonts.ready.then(() => {
+    if (disposed) return;
+    measureLabels();
+    wake();
+  });
   void renderer
     .compileAsync(scene, camera)
     .catch(() => undefined)
@@ -851,7 +928,6 @@ export const createCityGlobe = (
   const go = (action: () => void): void => {
     action();
     tau = 220;
-    pulseUntil = performance.now() + pulseRunMs;
     interact();
   };
 
@@ -860,31 +936,30 @@ export const createCityGlobe = (
       disposed = true;
       if (handle !== 0) cancelAnimationFrame(handle);
       handle = 0;
+      globalThis.clearInterval(sunTimer);
       observer.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
+      reduce.removeEventListener("change", onMotion);
       canvas.removeEventListener("pointerdown", onDown);
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointercancel", onUp);
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("webglcontextlost", onLost);
+      for (const label of labels) label.element.remove();
       for (const texture of textures) texture.dispose();
       for (const geometry of [
         baseGeometry,
         europeGeometry,
         haloGeometry,
-        dotGeometry,
-        ringGeometry,
-        glowGeometry,
+        markerGeometry,
       ]) {
         geometry.dispose();
       }
       baseMaterial.dispose();
       europeMaterial.dispose();
       haloMaterial.dispose();
-      dotMaterial.dispose();
-      glowMaterial.dispose();
-      for (const ring of rings) ring.material.dispose();
+      markerMaterial.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
     },

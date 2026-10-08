@@ -15,6 +15,8 @@ export const cityStrings = {
   failed: en.city.failed,
   globeLabel: cityText(en.city.globeLabel),
   hint: en.city.hint,
+  hubsLabel: en.city.hubsLabel,
+  hubsSource: en.city.hubsSource,
   launch: en.city.launch,
   loading: en.city.loading,
   percent: en.city.percent,
