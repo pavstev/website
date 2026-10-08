@@ -18,6 +18,10 @@ const llms = [
   "",
   "- [engine](https://github.com/ada/engine): A fast engine",
   "",
+  "## Products",
+  "",
+  "- [tripkit](https://tripkit.example): Founder · 2026. Plans trips.",
+  "",
   "## Links",
   "",
   "- [Website: contact card](https://ada.example/)",
@@ -163,13 +167,13 @@ const errorOf = async (response: Response): Promise<unknown> => {
 };
 
 describe("createMcpServer", () => {
-  it("lists exactly the five tools", async () => {
+  it("lists exactly the six tools", async () => {
     const client = await connect(sampleFacts);
     const { tools } = await client.listTools();
 
     assert.deepEqual(
       tools.map((tool) => tool.name).toSorted((a, b) => a.localeCompare(b)),
-      ["contact", "experience", "profile", "projects", "skills"]
+      ["contact", "experience", "products", "profile", "projects", "skills"]
     );
   });
   it("profile returns name, headline, location, summary and links", async () => {
@@ -223,6 +227,15 @@ describe("createMcpServer", () => {
     assert.match(text, /\[engine\]\(https:\/\/github\.com\/ada\/engine\)/);
     assert.doesNotMatch(text, /mailto:/);
     assert.doesNotMatch(text, /Systems/);
+    assert.doesNotMatch(text, /tripkit/);
+  });
+  it("products returns the Products section only", async () => {
+    const client = await connect(sampleFacts);
+
+    assert.equal(
+      await textOf(client, "products"),
+      "- [tripkit](https://tripkit.example): Founder · 2026. Plans trips."
+    );
   });
   it("projects adds the projects of the feed after the open-source ones", async () => {
     const client = await connect({
@@ -283,6 +296,7 @@ describe("createMcpServer", () => {
     const client = await connect({ ...sampleFacts, llms: "# Ada" });
 
     assert.match(await textOf(client, "projects"), /not available/i);
+    assert.match(await textOf(client, "products"), /not available/i);
     assert.match(await textOf(client, "contact"), /not available/i);
   });
   it("answers not available when there are no skills", async () => {
@@ -365,6 +379,7 @@ describe("handleMcp", () => {
     for (const name of [
       "contact",
       "experience",
+      "products",
       "profile",
       "projects",
       "skills",

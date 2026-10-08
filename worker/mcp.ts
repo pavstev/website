@@ -14,6 +14,7 @@ import { clientIp, failure } from "./http.ts";
 const serverName = "stevanpavlovic.com";
 const serverVersion = "0.1.0";
 const projectsHeading = "Open-source projects";
+const productsHeading = "Products";
 const resumeProjectsHeading = "Projects from the résumé";
 const linksHeading = "Links";
 const unavailable = "Not available.";
@@ -130,6 +131,15 @@ export const createMcpServer = (facts: Facts): McpServer => {
         "Open-source projects, one per line with a link, then the projects from the résumé.",
     },
     () => textResult(projectsAnswer(facts))
+  );
+  server.registerTool(
+    "products",
+    {
+      annotations: readOnly,
+      description:
+        "Products the site owner founded, one per line: link, role, years and what it does.",
+    },
+    () => textResult(section(llms, productsHeading) ?? unavailable)
   );
   server.registerTool(
     "contact",
