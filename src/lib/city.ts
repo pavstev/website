@@ -10,7 +10,7 @@ const cityText = (template: string): string =>
 
 export const cityStrings = {
   armsLabel: cityText(en.city.armsLabel),
-  close: en.city.close,
+  close: en.card.close,
   facts: cityText(en.city.facts),
   failed: en.city.failed,
   globeLabel: cityText(en.city.globeLabel),

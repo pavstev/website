@@ -56,6 +56,7 @@ const attach = (
   };
   const onToggle = (event: Event): void => {
     const open = (event as ToggleEvent).newState === "open";
+    trigger.toggleAttribute("data-open", open);
     if (open && (wide.matches || panel.dataset["anchored"] === "always")) {
       panel.dataset["floating"] = "";
       stop = autoUpdate(trigger, panel, place);
@@ -66,6 +67,7 @@ const attach = (
   panel.addEventListener("toggle", onToggle);
   return () => {
     panel.removeEventListener("toggle", onToggle);
+    delete trigger.dataset["open"];
     release();
   };
 };

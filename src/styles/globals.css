@@ -2350,7 +2350,47 @@ html:has(.portrait-dialog[open]) {
   }
 }
 
-.city-trigger {
+.topic-trigger,
+.topic-panel {
+  --topic-a: var(--primary);
+  --topic-b: var(--sky-violet);
+  --topic-stroke: linear-gradient(135deg, var(--topic-a), var(--topic-b));
+  --topic-glow: var(--topic-a);
+}
+
+[data-topic="city"] {
+  --topic-a: var(--city-red);
+  --topic-b: var(--arms-white);
+  --topic-stroke: linear-gradient(
+    135deg,
+    var(--city-red) 0 37%,
+    color-mix(in oklab, var(--arms-white) 40%, transparent) 43% 57%,
+    var(--city-red) 63% 100%
+  );
+  --topic-glow: var(--arms-red);
+}
+
+[data-topic="fintech"] {
+  --topic-a: var(--accent-green);
+  --topic-b: var(--sky-teal);
+}
+
+[data-topic="betting"] {
+  --topic-a: var(--sky-gold);
+  --topic-b: var(--sky-rose);
+}
+
+[data-topic="healthtech"] {
+  --topic-a: var(--sky-rose);
+  --topic-b: var(--accent-purple);
+}
+
+[data-topic="fleet"] {
+  --topic-a: var(--sky-teal);
+  --topic-b: var(--sky-blue);
+}
+
+.topic-trigger {
   display: inline;
   margin: 0;
   padding: 0;
@@ -2365,17 +2405,16 @@ html:has(.portrait-dialog[open]) {
   cursor: pointer;
 }
 
-.city-name {
+.topic-word {
   -webkit-background-clip: text;
   background-clip: text;
-  background-image: linear-gradient(
-    135deg,
-    var(--city-red) 0 37%,
-    var(--arms-white) 43% 57%,
-    var(--city-red) 63% 100%
-  );
-  color: transparent;
+  background-image: var(--topic-stroke);
+  color: var(--foreground);
   font-weight: 500;
+  text-shadow: none;
+  -webkit-text-stroke: 2px transparent;
+  filter: drop-shadow(0 1px 1px var(--background))
+    drop-shadow(0 0 0 transparent);
   transition: filter var(--duration-slow) var(--ease-smooth);
 }
 
@@ -2420,11 +2459,10 @@ html:has(.portrait-dialog[open]) {
   animation: arms-glint 7s var(--ease-smooth) 2.5s infinite;
 }
 
-.city-trigger:focus-visible .city-name,
-.bio:has(+ .city-panel:popover-open) .city-name {
-  filter: drop-shadow(
-    0 0 6px color-mix(in oklab, var(--arms-red) 45%, transparent)
-  );
+.topic-trigger:focus-visible .topic-word,
+.topic-trigger[data-open] .topic-word {
+  filter: drop-shadow(0 1px 1px var(--background))
+    drop-shadow(0 0 6px color-mix(in oklab, var(--topic-glow) 50%, transparent));
 }
 
 @keyframes arms-glint {
@@ -2438,7 +2476,7 @@ html:has(.portrait-dialog[open]) {
   }
 }
 
-.city-panel {
+.topic-panel {
   position: fixed;
   inset: 0;
   width: min(26rem, calc(100% - 1.5rem));
@@ -2469,7 +2507,7 @@ html:has(.portrait-dialog[open]) {
     display var(--duration-fast) allow-discrete;
 }
 
-.city-panel:popover-open {
+.topic-panel:popover-open {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
@@ -2483,13 +2521,13 @@ html:has(.portrait-dialog[open]) {
 }
 
 @starting-style {
-  .city-panel:popover-open {
+  .topic-panel:popover-open {
     opacity: 0;
     transform: translateY(10px) scale(0.98);
   }
 }
 
-.city-panel::backdrop {
+.topic-panel::backdrop {
   background: color-mix(in oklab, var(--background) 45%, transparent);
   transition:
     opacity var(--duration-slow) var(--ease-smooth),
@@ -2498,46 +2536,62 @@ html:has(.portrait-dialog[open]) {
 }
 
 @media (min-width: 40rem) {
-  .city-panel {
+  .topic-panel {
     width: 22rem;
     margin: auto;
     transform-origin: 50% 0;
   }
 
-  .city-panel::backdrop {
+  .topic-panel::backdrop {
     background: transparent;
   }
 }
 
-.city-panel[data-floating] {
+.topic-panel[data-floating] {
   inset: auto;
   margin: 0;
 }
 
-.city-panel[data-side="top"] {
+.topic-panel[data-side="top"] {
   transform-origin: 50% 100%;
 }
 
-.city-head {
+.topic-head {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.city-arms {
+.topic-emblem {
   flex-shrink: 0;
   width: 2rem;
   height: 2.4rem;
   filter: drop-shadow(
-    0 4px 10px color-mix(in oklab, var(--arms-red) 45%, transparent)
+    0 4px 10px color-mix(in oklab, var(--topic-glow) 45%, transparent)
   );
 }
 
-.city-titles {
+.industry-emblem {
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background:
+    linear-gradient(
+        160deg,
+        color-mix(in oklab, var(--topic-a) 22%, var(--background)),
+        color-mix(in oklab, var(--topic-b) 12%, var(--background))
+      )
+      padding-box,
+    var(--topic-stroke) border-box;
+  color: color-mix(in oklab, var(--topic-a) 60%, var(--foreground));
+}
+
+.topic-titles {
   min-width: 0;
 }
 
-.city-title {
+.topic-title {
   color: var(--foreground);
   font-size: 1.1875rem;
   font-weight: 600;
@@ -2545,13 +2599,13 @@ html:has(.portrait-dialog[open]) {
   letter-spacing: -0.02em;
 }
 
-.city-country {
+.topic-subtitle {
   color: var(--muted-foreground);
   font-size: 0.8125rem;
   line-height: 1.4;
 }
 
-.city-close {
+.topic-close {
   display: grid;
   flex-shrink: 0;
   place-items: center;
@@ -2565,44 +2619,49 @@ html:has(.portrait-dialog[open]) {
     background-color var(--duration-normal) var(--ease-smooth);
 }
 
-.city-text {
+.topic-text {
   color: var(--foreground-soft);
   text-wrap: pretty;
 }
 
-.city-panel {
+.topic-panel {
   padding: 0.75rem 0.875rem 0.875rem;
   line-height: 1.5;
 }
 
-.city-panel:popover-open {
+.topic-panel:popover-open {
   gap: 0.5rem;
 }
 
-.city-panel .city-head {
+.topic-panel .topic-head {
   gap: 0.625rem;
 }
 
-.city-panel .city-arms {
+.topic-panel .topic-emblem {
   width: 1.5rem;
   height: 1.8rem;
 }
 
-.city-panel .city-title {
+.topic-panel .industry-emblem {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.topic-panel .topic-title {
   font-size: 1rem;
 }
 
-.city-panel .city-country {
+.topic-panel .topic-subtitle {
   font-size: 0.75rem;
 }
 
-.city-panel .city-close {
+.topic-panel .topic-close {
   width: 2.25rem;
   height: 2.25rem;
   margin: -0.375rem -0.375rem -0.375rem auto;
 }
 
-.city-panel .city-launch {
+.topic-panel .city-launch {
   align-self: flex-start;
   min-height: 2.25rem;
   padding: 0.375rem 0.875rem;
@@ -2699,7 +2758,7 @@ html:has(.globe-dialog[open]) {
   border-bottom: 1px solid var(--border);
 }
 
-.globe-head .city-close {
+.globe-head .topic-close {
   margin-right: -0.375rem;
 }
 
@@ -2954,10 +3013,11 @@ html:has(.globe-dialog[open]) {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .city-trigger:hover .city-name {
-    filter: drop-shadow(
-      0 0 6px color-mix(in oklab, var(--arms-red) 45%, transparent)
-    );
+  .topic-trigger:hover .topic-word {
+    filter: drop-shadow(0 1px 1px var(--background))
+      drop-shadow(
+        0 0 6px color-mix(in oklab, var(--topic-glow) 50%, transparent)
+      );
   }
 
   .city-launch:hover {
@@ -2966,7 +3026,7 @@ html:has(.globe-dialog[open]) {
     color: var(--foreground);
   }
 
-  .city-close:hover {
+  .topic-close:hover {
     background: color-mix(in oklab, var(--foreground) 8%, transparent);
     color: var(--foreground);
   }
@@ -2980,10 +3040,12 @@ html:has(.globe-dialog[open]) {
 }
 
 @media (forced-colors: active) {
-  .city-name {
+  .topic-word {
     background: none;
     color: LinkText;
     text-decoration: underline;
+    -webkit-text-stroke: 0;
+    filter: none;
   }
 }
 
@@ -3301,7 +3363,7 @@ html:has(.globe-dialog[open]) {
 
   .privacy-note,
   .privacy-panel,
-  .city-panel,
+  .topic-panel,
   .repo-planets {
     display: none !important;
   }

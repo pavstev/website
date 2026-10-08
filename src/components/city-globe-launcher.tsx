@@ -133,8 +133,12 @@ export const CityGlobeLauncher = ({
   const onClosed = (): void => {
     setOpen(false);
     holdScene(false);
+    const panel = button.current?.closest<HTMLElement>("[popover]");
+    if (!panel) return;
     document
-      .querySelector<HTMLElement>("[data-city-trigger]")
+      .querySelector<HTMLElement>(
+        `[popovertarget="${CSS.escape(panel.id)}"]:not([popovertargetaction="hide"])`
+      )
       ?.focus({ preventScroll: true });
   };
 
@@ -188,12 +192,12 @@ export const CityGlobeLauncher = ({
                 className="globe-scrim"
                 onClick={close}
               />
-              <div className="globe-sheet" data-phase={phase}>
-                <header className="city-head globe-head">
+              <div className="globe-sheet" data-phase={phase} data-topic="city">
+                <header className="topic-head globe-head">
                   {heading}
                   <button
                     aria-label={labels.close}
-                    className="city-close focus-ring"
+                    className="topic-close focus-ring"
                     onClick={close}
                     type="button"
                   >

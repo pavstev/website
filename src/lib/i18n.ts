@@ -1,5 +1,6 @@
 export const en = {
   card: {
+    close: "Close",
     contactLabel: "Contact",
     downloaded: "Downloaded",
     downloading: "Preparing",
@@ -19,7 +20,6 @@ export const en = {
   },
   city: {
     armsLabel: "Coat of arms of {city}: a white cross on a red shield",
-    close: "Close",
     facts:
       "{city} is the capital of {country}, a city of about two million people on the Danube. It keeps landing near the top of the world’s most liveable city rankings, and about half of it is green: parks, the Vienna Woods and vineyards inside the city limits. Mozart and Beethoven made music here, the coffee houses are listed as cultural heritage, and the UN runs one of its four main offices from here.",
     failed: "The globe could not load.",
@@ -37,6 +37,39 @@ export const en = {
       "This browser draws 3D graphics without a graphics chip, so the globe stays off.",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
+  },
+  industries: {
+    label: "My work in {topic}",
+    topics: {
+      betting: {
+        facts:
+          "I led the back-end architecture of a high-concurrency online betting platform: NestJS and Kafka services for the bet lifecycle, odds and settlement. Idempotency keys make the settlement pipeline safe to replay, and staged canary rollouts kept deploys at zero downtime through peak sporting events. Before that, from 2018 to 2020, I worked on AskGamblers, an iGaming review site with more than 150,000 registered users.",
+        subtitle: "167Pluto · 2024 to 2025",
+        title: "Betting",
+        word: "betting",
+      },
+      fintech: {
+        facts:
+          "I led the back end of LaunchPad, a core-banking platform. I kept its Symfony monolith running while I designed Syllo, the rewrite as NestJS microservices with typed gRPC contracts and events over Kafka and Redis. Every service that moves money checks balances double-entry style and handles each command only once, so concurrent load cannot leave accounts out of step.",
+        subtitle: "Pannovate · 2020",
+        title: "Fintech",
+        word: "fintech",
+      },
+      fleet: {
+        facts:
+          "As CTO I lead the architecture of a cloud fleet management platform for enterprise trucking operators, from the driver apps to the live operations dashboards. Vehicle and driver events travel over Redis pub/sub and reach those dashboards in under a second. Safety incidents such as failed pre-trip inspections and accident reports go straight to the people on duty, and compliance modules track renewals, inspections and driver scorecards.",
+        subtitle: "Safety Real Time · since 2022",
+        title: "Fleet logistics",
+        word: "fleet logistics",
+      },
+      healthtech: {
+        facts:
+          "I moved a healthcare education platform from a PHP and Symfony monolith to independently deployable AWS services, without a gap in delivery. I built its video transcoding pipelines with safe retries and a traceable state at every step, and audit logs across the whole media flow for compliance.",
+        subtitle: "Evermed · 2021",
+        title: "Healthtech",
+        word: "healthtech",
+      },
+    },
   },
   llms: {
     about:
