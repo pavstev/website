@@ -21,6 +21,7 @@ interface LogoUniforms {
   [uniform: string]: { value: unknown };
   uAccent: { value: Color };
   uDisc: { value: Color };
+  uEmboss: { value: number };
   uHot: { value: number };
   uMark: { value: Color };
   uMask: { value: CanvasTexture };
@@ -53,12 +54,29 @@ uniform vec3 uDisc;
 uniform vec3 uMark;
 uniform vec3 uAccent;
 uniform vec3 uTint;
+uniform float uEmboss;
 uniform sampler2D uMask;
 uniform float uSpin;
 uniform float uHot;
 uniform float uTime;
 varying vec3 vObj;
 varying vec3 vNormal;
+float hash3(vec3 p) {
+  p = fract(p * 0.3183099 + 0.1);
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+float noise3(vec3 x) {
+  vec3 i = floor(x);
+  vec3 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x),
+        mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
+    mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x),
+        mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y),
+    f.z);
+}
 void main() {
   vec3 p = normalize(vObj);
   float c = cos(uSpin);
@@ -68,21 +86,40 @@ void main() {
   vec3 v = vec3(0.0, 0.0, 1.0);
   vec3 sun = normalize(vec3(-0.6, 0.55, 0.58));
   float ndl = dot(n, sun);
-  float day = smoothstep(-0.18, 0.55, ndl);
-  float terminator = smoothstep(0.22, 0.0, abs(ndl - 0.05));
   float facing = max(dot(n, v), 0.0);
-  float rim = pow(1.0 - facing, 2.6) * (0.82 + 0.18 * sin(uTime * 1.4));
-  float specular = pow(max(dot(reflect(-sun, n), v), 0.0), 34.0);
-  vec4 ink = texture2D(uMask, q.xy * 0.5 + 0.5);
-  float front = smoothstep(0.0, 0.15, q.z);
-  vec3 base = mix(uDisc, uMark, ink.r * front);
-  base = mix(base, uAccent, ink.g * front);
-  vec3 lit = base * (0.85 + 0.25 * max(ndl, 0.0));
-  vec3 col = mix(base * 0.1, lit, day);
-  col += uTint * terminator * 0.12;
-  col += mix(base * 0.1, uTint, day * 0.6 + 0.4) * rim * (1.1 + 0.8 * uHot);
-  col += vec3(1.0) * specular * 0.22 * day;
-  col += uTint * 0.1 * uHot;
+  float shade = mix(0.16, 1.0, smoothstep(-0.35, 0.8, ndl));
+  float front = smoothstep(0.0, 0.2, q.z);
+  vec2 uv = q.xy * 0.5 + 0.5;
+  vec4 ink = texture2D(uMask, uv);
+  vec4 soft = texture2D(uMask, uv, 3.0);
+  float inkAmt = min(ink.r + ink.g, 1.0) * front;
+  float glowAmt = min(soft.r + soft.g, 1.0) * front;
+  vec2 texel = vec2(0.03, 0.0);
+  vec4 east = texture2D(uMask, uv + texel.xy, 1.5);
+  vec4 west = texture2D(uMask, uv - texel.xy, 1.5);
+  vec4 north = texture2D(uMask, uv + texel.yx, 1.5);
+  vec4 south = texture2D(uMask, uv - texel.yx, 1.5);
+  vec2 slope = vec2(
+    (east.r + east.g) - (west.r + west.g),
+    (north.r + north.g) - (south.r + south.g)
+  );
+  float relief = -dot(slope, normalize(sun.xy));
+  float warp = noise3(q * 1.6 + vec3(0.0, uTime * 0.03, 0.0));
+  float band = sin(q.y * 9.0 + warp * 3.0) * 0.5 + 0.5;
+  float pat = mix(band, noise3(q * 2.4 + warp), 0.45);
+  vec3 surface = mix(uDisc, uDisc + uTint * 0.07, pat);
+  vec3 ground = surface * shade;
+  vec3 paint = mix(uMark, uAccent, min(ink.g / max(ink.r + ink.g, 0.001), 1.0));
+  vec3 mark = mix(paint, uTint, 0.22) * (0.6 + 0.4 * shade);
+  mark *= 1.0 + relief * 0.3 * uEmboss;
+  vec3 col = mix(ground, mark, inkAmt);
+  col += mix(uTint, uMark, 0.4) * glowAmt * (1.0 - inkAmt) * 0.06;
+  col += uTint * smoothstep(0.22, 0.0, abs(ndl - 0.05)) * 0.08;
+  float sunSide = smoothstep(-0.3, 0.6, ndl);
+  float rim = pow(1.0 - facing, 4.0) * (0.9 + 0.1 * sin(uTime * 1.4));
+  col += uTint * rim * 0.65 * (0.3 + 0.7 * sunSide) * (1.0 + 0.8 * uHot);
+  col += vec3(1.0) * pow(max(dot(reflect(-sun, n), v), 0.0), 6.0) * 0.035 * sunSide * (1.0 - inkAmt);
+  col += uTint * 0.08 * uHot;
   gl_FragColor = vec4(col, 1.0);
   #include <colorspace_fragment>
 }
@@ -139,6 +176,7 @@ export const createLogoPlanet = (
   const mark = readHex(style, "--logo-mark");
   const accent = readHex(style, "--logo-accent");
   const tint = readHex(style, "--lang");
+  const emboss = Number(style.getPropertyValue("--logo-emboss"));
   const mask = drawLogoMask(svg, maskSize);
   const texture = new CanvasTexture(mask);
   texture.colorSpace = NoColorSpace;
@@ -147,6 +185,7 @@ export const createLogoPlanet = (
   const uniforms: LogoUniforms = {
     uAccent: { value: accent },
     uDisc: { value: disc },
+    uEmboss: { value: Number.isFinite(emboss) ? emboss : 0 },
     uHot: { value: 0 },
     uMark: { value: mark },
     uMask: { value: texture },

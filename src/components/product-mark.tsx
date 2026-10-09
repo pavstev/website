@@ -11,7 +11,7 @@ export const ProductMark = ({
   productKey: ProductKey;
 }): ReactElement => {
   const { layers, transform, viewBox } = productMarks[productKey];
-  const { accent, disc, mark } = productPalette[productKey];
+  const { accent, disc, emboss, mark } = productPalette[productKey];
   return (
     <span
       aria-hidden="true"
@@ -21,6 +21,7 @@ export const ProductMark = ({
         {
           "--logo-accent": accent,
           "--logo-disc": disc,
+          "--logo-emboss": emboss,
           "--logo-mark": mark,
         } as CSSProperties
       }

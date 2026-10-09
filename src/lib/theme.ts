@@ -39,13 +39,15 @@ export const productPalette = {
   hirista: {
     accent: "#f79900",
     disc: "#1c1410",
+    emboss: 0,
     mark: "#efebe2",
     tint: "#f79900",
   },
   "safety-real-time": {
-    accent: "#1f232c",
-    disc: "#32d74b",
-    mark: "#1f232c",
+    accent: "#32d74b",
+    disc: "#070908",
+    emboss: 1,
+    mark: "#32d74b",
     tint: "#32d74b",
   },
 } as const;
