@@ -203,6 +203,8 @@ const drawSky = (input: SkyInput): void => {
   );
   gl.uniform1f(at("u_clouds"), 1);
   gl.uniform1f(at("u_cloudTime"), input.cloudTime);
+  gl.uniform1f(at("u_cloudShift"), input.cloudTime);
+  gl.uniform4f(at("u_quiet"), 0, 0, 0, 0);
   gl.uniform3f(
     at("u_daylight"),
     input.daylight.day,

@@ -20,7 +20,8 @@ uniform vec3 u_ripple;
 uniform vec4 u_meteor;
 uniform float u_clouds;
 uniform float u_cloudTime;
-uniform sampler2D u_flow;
+uniform float u_cloudShift;
+uniform vec4 u_quiet;
 uniform vec3 u_daylight;
 
 const float PI = 3.14159265;
@@ -52,21 +53,19 @@ const float flashPeriod = 13.96;
 const float horizonGlow = 1.0;
 const float glowFalloff = 5.1;
 const float skyTop = 0.5;
-const float cloudHeight = 0.4;
-const float cloudCover = 0.6;
-const float cloudSoft = 0.035;
+const float starTop = 1.7;
+const float quietStars = 0.35;
+const float cloudHeight = 0.34;
 const float cloudScale = 3.13;
 const float cloudDrift = 2.6;
 const float underglow = 1.52;
-const float silver = 1.4;
 const float cloudDark = 0.74;
-const float cloudOpacity = 0.95;
+const float cloudOpacity = 0.92;
 const float cloudReach = 0.62;
-const float cloudLight = 0.6;
+const float cloudLight = 0.45;
 const float cloudDayLight = 0.55;
-const float puff = 1.15;
-const float shapeStep = 0.22;
-const float shapeGain = 2.5;
+const float cloudLightStep = 0.09;
+const float wispLight = 0.49;
 const float variety = 0.65;
 const float wisps = 0.4;
 const float dayLift = 0.52;
@@ -152,10 +151,12 @@ vec3 hueRotate(vec3 c, float a) {
   return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca);
 }
 
-vec3 starField(vec2 p, float scale, float keep, float t) {
-  keep = 1.0 - (1.0 - keep) * starAmount;
+vec3 starField(vec2 p, float scale, float keep, float t, float boost) {
   vec2 g = p * scale;
   vec2 id = floor(g);
+  float ybc = (id.y + 0.5) / scale - u_pointer.y + 0.5 * u_res.y / u_view;
+  float high = smoothstep(0.3, 0.95, ybc * u_view / u_res.y);
+  keep = clamp(1.0 - (1.0 - keep) * starAmount * (1.0 + (starTop - 1.0) * high * boost), 0.0, 1.0);
   vec2 f = fract(g) - 0.5;
   float r = hash(id);
   if (r < keep) return vec3(0.0);
@@ -169,37 +170,64 @@ vec3 starField(vec2 p, float scale, float keep, float t) {
 }
 
 vec3 stars(vec2 p, float t) {
-  return starField(p, 30.0, 0.8, t) + starField(p + 3.7, 70.0, 0.88, t) * 0.75 + starField(p + 9.1, 150.0, 0.93, t) * 0.5;
+  return starField(p, 30.0, 0.8, t, 0.35) + starField(p + 3.7, 70.0, 0.88, t, 0.8) * 0.75 + starField(p + 9.1, 150.0, 0.93, t, 1.0) * 0.5;
 }
 
-vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t, float thin, vec3 warm) {
-  float tt = t * 0.01 * cloudDrift * (1.0 + near * 0.8);
-  float bank = fbm3(vec2(p.x * 0.45 + tt * 0.25 + near * 4.0, near * 7.3)) - 0.5;
-  float top = cloudHeight * mix(1.0, 0.62, near) * (1.0 + bank * variety * 1.1);
-  if (yb - top * 0.35 > top + cloudSoft) return col;
+float stratoCells(vec2 g, float near, float rows) {
+  vec2 gi = floor(g);
+  vec2 gf = fract(g);
+  float best = 9.0;
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 o = vec2(float(i), float(j));
+      vec2 cell = gi + o;
+      float hc = pow(max((cell.y + 0.5 - near * 0.5) / rows, 0.0), 1.33);
+      if (hash(cell + near * 13.0) > mix(1.0, 0.6, clamp(hc, 0.0, 1.0))) continue;
+      vec2 jit = vec2(hash(cell + 3.3), hash(cell + 8.1)) * 0.7 + 0.15;
+      vec2 dv = o + jit - gf;
+      best = min(best, length(dv * vec2(1.0, 1.5)) * (0.8 + 0.4 * hash(cell + 1.9)));
+    }
+  }
+  return best;
+}
+
+float stratoShape(float x, float yb, float near, float tm, float top, float detail) {
+  float h = yb / top;
+  if (h > 1.3 || h < -0.1) return 0.0;
+  float rows = mix(4.0, 3.2, near);
+  vec2 g = vec2(x * mix(6.0, 4.4, near), pow(max(h, 0.0), 0.75) * rows + near * 0.5);
+  vec2 wq = vec2(x * 2.4, yb * 3.0 + near * 3.0);
+  g += (vec2(fbm3(wq + tm * 0.002), fbm3(wq + 5.2 - tm * 0.002)) - 0.5) * 1.1;
+  float cells = stratoCells(g, near, rows);
+  float blob = smoothstep(1.0, 0.2, cells + (detail - 0.5) * 1.0);
+  float fill = smoothstep(0.55, 0.0, h) * smoothstep(0.3, 0.75, detail + 0.15);
+  float env = smoothstep(1.2, 0.7, h + (detail - 0.5) * 0.4);
+  return clamp(max(blob, fill), 0.0, 1.0) * env;
+}
+
+vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float tm, float ts, vec3 warm) {
   float sc = cloudScale * (1.0 + near * 0.6);
-  vec2 q = vec2(p.x * sc + tt + near * 13.7, yb * sc * 1.6 + near * 5.1);
-  vec2 w = vec2(fbm3(q * 0.7 + tt * 0.3), fbm3(q * 0.7 + 3.1 - tt * 0.2));
-  float n = fbm(q + w * 1.2);
-  float y = yb + (n - 0.5) * top * 0.7;
-  float hm = smoothstep(top + cloudSoft, top - cloudSoft, y);
-  if (hm <= 0.0) return col;
-  float cover = cloudCover + bank * variety * 0.55;
-  float dens = hm * smoothstep(1.0 - cover - 0.06, 1.0 - cover + 0.08, n + (1.0 - yb / max(top, 0.001)) * 0.35);
-  dens = clamp(dens, 0.0, 1.0) * (1.0 - thin);
-  if (dens <= 0.0) return col;
-  float billow = fbm3(q * 2.3 + w * 2.0);
-  float face = clamp(0.5 + (n - fbm(q - vec2(0.0, shapeStep) + w * 1.2)) * shapeGain, 0.0, 1.0);
-  float edge = smoothstep(0.0, 0.5, dens) * (1.0 - smoothstep(0.5, 1.0, dens));
+  float x = p.x + ts * 0.01 * cloudDrift * (1.0 + near * 0.8) / sc + near * 5.3;
+  float top = cloudHeight * mix(1.0, 0.6, near) * (1.0 + (noise(vec2(x * 0.6 + near * 4.0, near * 7.3)) - 0.5) * variety);
+  if (yb > top * 1.3) return col;
+  float detail = fbm(vec2(x * 12.0, yb * 18.0) + near * 7.0 + tm * 0.004);
+  float dens = stratoShape(x, yb, near, tm, top, detail);
+  if (dens <= 0.005) return col;
+    float below = stratoShape(x, yb - top * cloudLightStep, near, tm, top, detail);
+  float above = stratoShape(x, yb + top * cloudLightStep, near, tm, top, detail);
+  float toGlow = exp(-below * 2.4);
+  float toSky = exp(-above * 1.6);
   float under = exp(-yb * glowFalloff * 0.8);
-  vec3 body = mix(vec3(0.08, 0.085, 0.12), vec3(0.015, 0.017, 0.03), cloudDark) * (1.0 - near * 0.3);
-  body += vec3(0.15, 0.16, 0.21) * cloudLight + vec3(0.3, 0.34, 0.44) * cloudDayLight * u_daylight.x;
-  body *= (1.0 - puff * 0.5 + puff * billow) * mix(0.6, 1.25, face);
   vec3 glowTint = mix(glowColor, warm, clamp(u_daylight.y * warmth, 0.0, 1.0));
-  vec3 lit = glowTint * under * underglow * 0.9 * horizonGlow * (0.5 + 0.9 * (1.0 - billow)) * (1.0 + u_daylight.y * twilightGlow * 0.6);
-  lit *= mix(0.35, 1.7, face);
-  vec3 cc = body + lit * (1.0 - dens * 0.4) + vec3(0.75, 0.8, 1.0) * edge * mix(0.3, 1.6, face) * silver * 0.22 * (1.0 + u_daylight.x * 0.8);
-  return mix(col, cc, dens * cloudOpacity);
+  vec3 body = mix(vec3(0.08, 0.085, 0.12), vec3(0.015, 0.017, 0.03), cloudDark) * (1.0 - near * 0.3);
+  body += vec3(0.15, 0.16, 0.21) * cloudLight * (0.55 + 0.45 * toSky);
+  body += vec3(0.3, 0.34, 0.44) * cloudDayLight * u_daylight.x * (0.6 + 1.1 * toSky);
+  body *= 0.85 + 0.3 * detail;
+  vec3 lit = glowTint * under * underglow * 0.9 * horizonGlow * (0.15 + 1.05 * toGlow) * (1.0 + u_daylight.y * twilightGlow * 0.6);
+  float thin = dens * (1.0 - dens) * 4.0;
+  vec3 cc = body + lit + glowTint * under * thin * 0.35 + vec3(0.75, 0.8, 1.0) * thin * toSky * 0.05 * (1.0 + u_daylight.x);
+  float alpha = (1.0 - exp(-dens * 3.2)) / (1.0 - exp(-3.2));
+  return mix(col, cc, alpha * cloudOpacity);
 }
 
 void main() {
@@ -220,7 +248,9 @@ void main() {
   vec3 dayTop = mix(vec3(0.05, 0.08, 0.22), vec3(0.1, 0.24, 0.52), dayTint);
   vec3 dayLow = mix(vec3(0.25, 0.3, 0.46), vec3(0.45, 0.6, 0.78), dayTint);
   vec3 col = mix(night, mix(dayLow, dayTop, smoothstep(0.0, 1.2, yb)), day);
-  col += stars(ps, t) * 0.55 * starKeep;
+  float qp = u_view * 0.03;
+  float inQuiet = smoothstep(-qp, 0.0, fc.x - u_quiet.x) * smoothstep(-qp, 0.0, u_quiet.z - fc.x) * smoothstep(-qp, 0.0, fc.y - u_quiet.y) * smoothstep(-qp, 0.0, u_quiet.w - fc.y);
+  col += stars(ps, t) * 0.55 * starKeep * (1.0 - (1.0 - quietStars) * inQuiet);
   col += (glowColor * 0.3 * exp(-yb * glowFalloff) + vec3(0.55, 0.32, 0.6) * 0.1 * exp(-yb * glowFalloff * 0.39)) * horizonGlow * 2.0 * (1.0 - day * 0.6);
   col += (warm * 0.55 * exp(-yb * glowFalloff * 0.55) + vec3(0.6, 0.35, 0.72) * 0.16 * exp(-yb * 1.5)) * twi * twilightGlow;
 
@@ -266,19 +296,20 @@ void main() {
     col += vec3(0.92, 0.96, 1.0) * (trail * 0.9 + head * 1.4) * sin(PI * u_meteor.w) * starKeep;
   }
 
-  float ct = u_cloudTime * speed;
+  float tm = u_cloudTime * speed;
+  float ts = u_cloudShift * speed;
   if (u_clouds > 0.5 && yb > 0.22 && yb < 0.8) {
     float band = smoothstep(0.26, 0.42, yb) * smoothstep(0.8, 0.52, yb);
-    vec2 wq = vec2(p.x * 1.1 + ct * 0.012 * cloudDrift, yb * 9.0 + fbm3(vec2(p.x * 0.8 + ct * 0.004, yb * 2.0)) * 1.6);
+    float wx = p.x + ts * 0.012 * cloudDrift / 1.1;
+    vec2 wq = vec2(wx * 1.1, yb * 9.0 + fbm3(vec2(wx * 0.8, yb * 2.0 + tm * 0.004)) * 1.6);
     float streak = smoothstep(0.55, 0.85, fbm(wq)) * band;
-    vec3 wisp = vec3(0.3, 0.33, 0.42) * (0.4 + cloudLight) + warm * 0.75 * twi + vec3(0.35, 0.4, 0.5) * sunUp * cloudDayLight;
+    vec3 wisp = vec3(0.3, 0.33, 0.42) * (0.4 + wispLight) + warm * 0.75 * twi + vec3(0.35, 0.4, 0.5) * sunUp * cloudDayLight;
     col += wisp * streak * wisps;
   }
 
   if (u_clouds > 0.5 && yb < cloudReach) {
-    vec3 fl = texture2D(u_flow, vec2(fc.x / u_res.x, yb / cloudReach)).xyz;
-    col = cloudLayer(col, ps * 0.6 + p * 0.4 - fl.xy * 0.6, yb - fl.y * 0.6, 0.0, ct, fl.z * 0.6, warm);
-    col = cloudLayer(col, p - fl.xy, yb - fl.y, 1.0, ct, fl.z, warm);
+    col = cloudLayer(col, p, yb, 0.0, tm, ts, warm);
+    col = cloudLayer(col, p, yb, 1.0, tm, ts, warm);
   }
 
   if (u_ripple.z < rippleLife) {

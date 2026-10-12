@@ -2,7 +2,6 @@
 
 import { type ReactElement, useEffect, useRef } from "react";
 
-import { type CloudWind, createCloudWind, windReach } from "@/lib/cloud-wind";
 import { createFrameClock } from "@/lib/frame-clock";
 import { createFramePacer } from "@/lib/frame-pacer";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
@@ -43,7 +42,13 @@ const meteorGapMs: [number, number] = [2000, 14_000];
 const timeWrapHighSeconds = 86_400;
 const timeWrapLowSeconds = 1024;
 const portraitSelector = "[data-card] [data-portrait]";
-const handReach = windReach + 0.08;
+const quietSelector = "[data-card] .bio";
+const cloudZone = 0.8;
+const gustMax = 3.5;
+const gustEaseSeconds = 2.3;
+const gustGain = 1.8;
+const gustActive = 0.01;
+const touchScrollShare = 0.25;
 const daylightEveryMs = 30_000;
 
 const nextGap = (): number =>
@@ -86,7 +91,6 @@ const startSky = (
   gl: WebGLRenderingContext,
   program: WebGLProgram,
   canvas: HTMLCanvasElement,
-  wind: CloudWind | undefined,
   reduceMotion: MediaQueryList,
   still: boolean,
   setState: (state: SpaceState) => void
@@ -110,11 +114,12 @@ const startSky = (
   const uTime = gl.getUniformLocation(program, "u_time");
   const uPointer = gl.getUniformLocation(program, "u_pointer");
   const uPortrait = gl.getUniformLocation(program, "u_portrait");
+  const uQuiet = gl.getUniformLocation(program, "u_quiet");
   const uRipple = gl.getUniformLocation(program, "u_ripple");
   const uMeteor = gl.getUniformLocation(program, "u_meteor");
   const uClouds = gl.getUniformLocation(program, "u_clouds");
   const uCloudTime = gl.getUniformLocation(program, "u_cloudTime");
-  gl.uniform1i(gl.getUniformLocation(program, "u_flow"), 0);
+  const uCloudShift = gl.getUniformLocation(program, "u_cloudShift");
   const uDaylight = gl.getUniformLocation(program, "u_daylight");
   const highPrecision =
     (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
@@ -128,12 +133,14 @@ const startSky = (
   let rafId = 0;
   let frozen = false;
   let portraitNode: Element | null = null;
+  let quietNode: Element | null = null;
   const pointer = { x: 0, y: 0 };
   const pointerTarget = { x: 0, y: 0 };
   const ripple = { age: rippleLife, x: 0, y: 0 };
   const meteor = { angle: 0, at: 0, x: 0, y: 0 };
-  const hand = { inside: false, x: 0, y: 0 };
+  const gust = { dir: -1, energy: 0, inside: false, x: 0, y: 0 };
   let cloudMs = 0;
+  let shiftMs = 0;
   let daylight = skyPhase(new Date());
   let daylightAt = performance.now();
   const clock = createFrameClock();
@@ -180,7 +187,6 @@ const startSky = (
     scale = Math.min(entry.scale, cap) * Math.min(window.devicePixelRatio, 1);
     const width = Math.max(1, Math.floor(cssWidth * scale));
     const height = Math.max(1, Math.floor(cssHeight * scale));
-    wind?.resize(width / viewPixels());
     if (width === canvas.width && height === canvas.height) return;
     canvas.width = width;
     canvas.height = height;
@@ -204,6 +210,24 @@ const startSky = (
     );
   };
 
+  const trackQuiet = (): void => {
+    if (!quietNode?.isConnected)
+      quietNode = document.querySelector(quietSelector);
+    if (!quietNode) {
+      gl.uniform4f(uQuiet, 0, 0, 0, 0);
+      return;
+    }
+    const sky = canvas.getBoundingClientRect();
+    const box = quietNode.getBoundingClientRect();
+    gl.uniform4f(
+      uQuiet,
+      (box.left - sky.left) * scale,
+      (sky.bottom - box.bottom) * scale,
+      (box.right - sky.left) * scale,
+      (sky.bottom - box.top) * scale
+    );
+  };
+
   const frame = (now: number, dt = frameDt): void => {
     const current = currentLevel();
     if (!current) return;
@@ -211,24 +235,27 @@ const startSky = (
     const follow = 1 - Math.exp((-followRate * dt) / 1000);
     pointer.x += (pointerTarget.x - pointer.x) * follow;
     pointer.y += (pointerTarget.y - pointer.y) * follow;
-    if (rafId) cloudMs += Math.min(dt, 100);
-    if (rafId && wind && current.clouds) {
-      if (wind.busy(now)) markActive();
-      wind.step(dt / 1000, now);
-      gl.useProgram(program);
-      gl.viewport(0, 0, canvas.width, canvas.height);
+    if (rafId) {
+      const step = Math.min(dt, 100);
+      gust.energy *= Math.exp(-step / 1000 / (gustEaseSeconds / 3));
+      const energy = Math.min(gust.energy, 1);
+      const boost = (gustMax - 1) * energy * energy * (3 - 2 * energy);
+      cloudMs += step;
+      shiftMs += step * (1 - boost * gust.dir);
+      if (gust.energy > gustActive) markActive();
     }
-    wind?.bind(0);
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uView, viewPixels());
     gl.uniform1f(uLabPx, labPixelsPerCss / scale);
     gl.uniform1f(uTime, (skyMs / 1000) % timeWrap);
     gl.uniform2f(uPointer, pointer.x, pointer.y);
     trackPortrait();
+    trackQuiet();
     if (ripple.age < rippleLife) ripple.age += (dt / 1000) * rippleSpeed;
     gl.uniform3f(uRipple, ripple.x, ripple.y, ripple.age);
     gl.uniform1f(uClouds, current.clouds ? 1 : 0);
     gl.uniform1f(uCloudTime, (cloudMs / 1000) % timeWrap);
+    gl.uniform1f(uCloudShift, (shiftMs / 1000) % timeWrap);
     if (now - daylightAt >= daylightEveryMs) {
       daylight = skyPhase(new Date());
       daylightAt = now;
@@ -253,8 +280,8 @@ const startSky = (
   };
 
   const calmClouds = (): void => {
-    hand.inside = false;
-    wind?.clear();
+    gust.energy = 0;
+    gust.inside = false;
   };
 
   const stop = (): void => {
@@ -298,24 +325,35 @@ const startSky = (
     setState("running");
   };
 
-  const stirClouds = (event: PointerEvent): void => {
-    if (!wind) return;
-    const [x, y] = toSky(event.clientX, event.clientY);
-    const view = viewPixels();
-    const across = x + canvas.width / 2 / view;
-    const bottom = y + canvas.height / 2 / view;
-    const inside = bottom < handReach;
-    if (inside && hand.inside)
-      wind.push([hand.x, hand.y], [across, bottom], event.timeStamp);
-    hand.inside = inside;
-    hand.x = across;
-    hand.y = bottom;
+  const stirClouds = (
+    clientX: number,
+    clientY: number,
+    share: number
+  ): void => {
+    if (!currentLevel()?.clouds) return;
+    const [x, y] = toSky(clientX, clientY);
+    const bottom = y + canvas.height / 2 / viewPixels();
+    const inside = bottom < cloudZone;
+    if (inside && gust.inside) {
+      const dx = x - gust.x;
+      gust.energy = Math.min(
+        1,
+        gust.energy + Math.hypot(dx, (y - gust.y) * share) * gustGain
+      );
+      if (Math.abs(dx) > 0.002)
+        gust.dir += (Math.sign(dx) - gust.dir) * Math.min(1, Math.abs(dx) * 12);
+    }
+    gust.inside = inside;
+    gust.x = x;
+    gust.y = y;
   };
 
   const onPointer = (event: PointerEvent): void => {
     markActive();
-    if (reduceMotion.matches || !hoverPointer.matches || isSceneHeld()) return;
-    stirClouds(event);
+    if (reduceMotion.matches || isSceneHeld()) return;
+    if (event.pointerType !== "touch")
+      stirClouds(event.clientX, event.clientY, 1);
+    if (!hoverPointer.matches) return;
     const aspect = window.innerWidth / Math.max(1, window.innerHeight);
     pointerTarget.x =
       (event.clientX / window.innerWidth - 0.5) * parallaxReach * aspect;
@@ -341,7 +379,16 @@ const startSky = (
     resizeTimer = globalThis.setTimeout(applyResize, resizeDelayMs);
   };
   const onLeave = (event: PointerEvent): void => {
-    if (event.relatedTarget === null) hand.inside = false;
+    if (event.relatedTarget === null) gust.inside = false;
+  };
+  const onTouch = (event: TouchEvent): void => {
+    const touch = event.touches[0];
+    if (!touch || reduceMotion.matches || isSceneHeld()) return;
+    markActive();
+    stirClouds(touch.clientX, touch.clientY, touchScrollShare);
+  };
+  const onLift = (): void => {
+    gust.inside = false;
   };
   const onBlur = (): void => {
     stop();
@@ -361,6 +408,10 @@ const startSky = (
   globalThis.addEventListener("pointermove", onPointer, { passive: true });
   globalThis.addEventListener("pointerdown", onDown, { passive: true });
   globalThis.addEventListener("pointerout", onLeave, { passive: true });
+  globalThis.addEventListener("pointerup", onLift, { passive: true });
+  globalThis.addEventListener("touchmove", onTouch, { passive: true });
+  globalThis.addEventListener("touchend", onLift, { passive: true });
+  globalThis.addEventListener("touchcancel", onLift, { passive: true });
   window.addEventListener("blur", onBlur);
   window.addEventListener("focus", sync);
   globalThis.addEventListener(sceneHoldEvent, sync);
@@ -374,6 +425,10 @@ const startSky = (
     globalThis.removeEventListener("pointermove", onPointer);
     globalThis.removeEventListener("pointerdown", onDown);
     globalThis.removeEventListener("pointerout", onLeave);
+    globalThis.removeEventListener("pointerup", onLift);
+    globalThis.removeEventListener("touchmove", onTouch);
+    globalThis.removeEventListener("touchend", onLift);
+    globalThis.removeEventListener("touchcancel", onLift);
     window.removeEventListener("blur", onBlur);
     window.removeEventListener("focus", sync);
     globalThis.removeEventListener(sceneHoldEvent, sync);
@@ -396,15 +451,13 @@ export const SpaceBackground = (): ReactElement => {
       canvas.hidden = true;
       setState("fallback");
     };
-    const options: WebGLContextAttributes = {
+    const gl = canvas.getContext("webgl", {
       alpha: false,
       antialias: false,
       depth: false,
       powerPreference: "low-power",
       stencil: false,
-    };
-    const gl2 = canvas.getContext("webgl2", options);
-    const gl = gl2 ?? canvas.getContext("webgl", options);
+    });
     const still = gl ? isSoftwareRenderer(gl) : false;
     const vertex = gl ? createShader(gl, gl.VERTEX_SHADER, VERTEX) : undefined;
     const fragment = gl
@@ -425,23 +478,7 @@ export const SpaceBackground = (): ReactElement => {
         fallback();
         return;
       }
-      const wind =
-        gl2 && !still && globalThis.matchMedia(finePointerQuery).matches
-          ? createCloudWind(gl2)
-          : undefined;
-      const stop = startSky(
-        gl,
-        program,
-        canvas,
-        wind,
-        reduceMotion,
-        still,
-        setState
-      );
-      stopSky = () => {
-        stop();
-        wind?.dispose();
-      };
+      stopSky = startSky(gl, program, canvas, reduceMotion, still, setState);
     });
     return () => {
       cancelWait();
