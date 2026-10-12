@@ -3,7 +3,6 @@ import type { ReactElement } from "react";
 
 import { CardFooter } from "@/components/card-footer";
 import { CardStrips } from "@/components/card-strips";
-import { CloudsCanvas } from "@/components/clouds-canvas";
 import { ContactLinks } from "@/components/contact-links";
 import { CursorGlow } from "@/components/cursor-glow";
 import { DownloadButton } from "@/components/download-button";
@@ -56,7 +55,6 @@ export default async function Page(): Promise<ReactElement> {
         type="application/ld+json"
       />
       <SpaceBackground />
-      <CloudsCanvas />
       <CursorGlow />
       <MotionToggle />
       <main

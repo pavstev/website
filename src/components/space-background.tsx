@@ -3,11 +3,9 @@
 import { type ReactElement, useEffect, useRef } from "react";
 
 import { createFrameClock } from "@/lib/frame-clock";
-import { createFramePacer, pacerIdleMs } from "@/lib/frame-pacer";
+import { createFramePacer } from "@/lib/frame-pacer";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
 import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
-import { type ScrollMotion, watchScrollMotion } from "@/lib/scroll-motion";
-import { skyRgb } from "@/lib/theme";
 import { isSoftwareRenderer } from "@/lib/webgl";
 
 const VERTEX = `
@@ -23,221 +21,267 @@ precision highp float;
 precision mediump float;
 #endif
 uniform vec2 u_res;
+uniform float u_view;
+uniform float u_labPx;
 uniform float u_time;
 uniform vec2 u_pointer;
+uniform vec3 u_portrait;
 uniform vec3 u_ripple;
-uniform vec2 u_scroll;
-uniform float u_aurora;
-uniform float u_planet;
-uniform vec3 u_tintA;
-uniform vec3 u_tintB;
-uniform vec3 u_tintC;
-uniform vec3 u_gold;
-uniform vec3 u_rose;
 uniform vec4 u_meteor;
+uniform float u_clouds;
 
-const float nebulaSpeed = 0.025;
-const float churnSpeed = 0.11;
-const float iridSpeed = 0.07;
-const float twinkleDepth = 0.2;
-const float glitterSpeed = 2.6;
-const float auroraSway = 0.13;
-const float auroraRipple = 0.23;
-const float auroraDrift = 0.04;
-const float planetBreath = 0.45;
-const float rimShimmer = 0.1;
-const float nebulaParallax = 0.05;
-const float nearParallax = 0.16;
-const float midParallax = 0.1;
-const float farParallax = 0.06;
-const float planetRise = 0.12;
-const float streakMax = 1.4;
+const float PI = 3.14159265;
+const float TAU = 6.2831853;
+const float speed = 1.82;
+const float brightness = 0.7;
+const float hueShift = -0.2618;
+const float centerDim = 0.39;
+const float starAmount = 0.78;
+const float twinkle = 0.25;
+const float coronaSize = 0.48;
+const float coronaBright = 1.06;
+const float streamers = 1.68;
+const float streamDetail = 5.1;
+const float fineRays = 1.27;
+const float equator = 0.97;
+const float lowerFade = 0.7;
+const float drift = 0.02;
+const float flares = 0.52;
+const float flareSize = 0.123;
+const float flareHue = -0.4363;
+const float rim = 0.5;
+const float flash = 0.44;
+const float flashAngle = 2.3562;
+const float flashPeriod = 13.96;
+const float horizonGlow = 1.0;
+const float glowFalloff = 5.1;
+const float skyTop = 0.5;
+const float cloudHeight = 0.33;
+const float cloudCover = 0.47;
+const float cloudSoft = 0.053;
+const float cloudScale = 3.13;
+const float cloudDrift = 0.6;
+const float underglow = 1.52;
+const float silver = 0.47;
+const float cloudDark = 0.74;
+const float cloudOpacity = 0.69;
+const float cloudReach = 0.52;
+const float coronaReach = 14.0;
+const float coronaFade = 9.0;
+const float coronaTaperStart = 3.0;
+const float coronaTaperEnd = 6.0;
+const float meteorTail = 0.35;
 const float meteorTravel = 0.75;
-const float meteorTail = 0.24;
 const float meteorWidth = 0.0028;
+const float rippleStrength = 0.44;
+const float rippleSharpness = 10.0;
+const float rippleLife = 1.6;
+const vec3 glowColor = vec3(1.0, 0.5, 0.24);
 
 float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
 }
 
 float noise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
-  float a = hash(i);
-  float b = hash(i + vec2(1.0, 0.0));
-  float c = hash(i + vec2(0.0, 1.0));
-  float d = hash(i + vec2(1.0, 1.0));
-  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
 }
 
 float fbm(vec2 p) {
   float v = 0.0;
   float a = 0.5;
+  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
   for (int i = 0; i < 5; i++) {
     v += a * noise(p);
-    p = p * 2.03 + vec2(1.7, 9.2);
+    p = m * p + vec2(1.7, 9.2);
     a *= 0.5;
   }
   return v;
 }
 
-vec3 starLayer(vec2 p, float scale, float thresh, float size, float bright, float t, vec2 off, float streak) {
-  vec2 sp = p * scale + off;
-  vec2 cell = floor(sp);
-  vec2 pos = fract(sp);
-  float h = hash(cell);
-  vec3 glow = vec3(0.0);
-  if (h > thresh) {
-    vec2 center = vec2(0.2 + 0.6 * hash(cell + 1.3), 0.2 + 0.6 * hash(cell + 7.1));
-    vec2 dvec = pos - center;
-    float d = length(dvec * vec2(1.0, 1.0 / streak));
-    float hp = hash(cell + 5.9);
-    float hf = hash(cell + 9.4);
-    float tw = 0.6 + 0.4 * sin(t * (1.0 + hf * 3.0) + hp * 40.0);
-    tw *= 1.0 + twinkleDepth * sin(t * (2.2 + 2.6 * hf) + fract(hp * 7.0) * 6.2832);
-    float core = smoothstep(size, 0.0, d);
-    float glint = 0.0;
-    if (h > 0.993) {
-      vec2 g = abs(dvec);
-      float sx = pow(max(0.0, 1.0 - g.x * 16.0), 3.0) * pow(max(0.0, 1.0 - g.y * 30.0), 1.0);
-      float sy = pow(max(0.0, 1.0 - g.y * 16.0), 3.0) * pow(max(0.0, 1.0 - g.x * 30.0), 1.0);
-      glint = (sx + sy) * (0.55 + 0.45 * sin(t * (0.8 + hf * 1.7) + hp * 17.0));
-    }
-    float temp = hash(cell + 3.3);
-    vec3 tint = vec3(1.0);
-    if (temp < 0.3) {
-      tint = vec3(0.72, 0.83, 1.0);
-    } else if (temp < 0.55) {
-      tint = vec3(1.0);
-    } else if (temp < 0.8) {
-      tint = vec3(1.0, 0.88, 0.68);
-    } else {
-      tint = vec3(1.0, 0.68, 0.42);
-    }
-    glow = tint * (core + glint * 1.1) * tw * bright / sqrt(streak);
+float fbm3(vec2 p) {
+  float v = 0.0;
+  float a = 0.5;
+  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+  for (int i = 0; i < 3; i++) {
+    v += a * noise(p);
+    p = m * p + vec2(1.7, 9.2);
+    a *= 0.5;
   }
-  return glow;
+  return v;
+}
+
+float fbmTaper(vec2 p, float keep) {
+  float v = 0.0;
+  float a = 0.5;
+  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+  for (int i = 0; i < 5; i++) {
+    if (i >= 3) {
+      if (keep <= 0.0) break;
+      a *= keep;
+    }
+    v += a * noise(p);
+    p = m * p + vec2(1.7, 9.2);
+    a *= i >= 3 ? 0.5 / keep : 0.5;
+  }
+  return v;
+}
+
+vec3 hueRotate(vec3 c, float a) {
+  vec3 k = vec3(0.57735);
+  float ca = cos(a);
+  return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca);
+}
+
+vec3 starField(vec2 p, float scale, float keep, float t) {
+  keep = 1.0 - (1.0 - keep) * starAmount;
+  vec2 g = p * scale;
+  vec2 id = floor(g);
+  vec2 f = fract(g) - 0.5;
+  float r = hash(id);
+  if (r < keep) return vec3(0.0);
+  vec2 o = vec2(hash(id + 3.1), hash(id + 7.7)) - 0.5;
+  float d = length(f - o * 0.6) * u_view / scale * u_labPx;
+  float b = pow(hash(id + 1.3), 6.0) * 2.0 + 0.03;
+  float tw = 1.0 - twinkle + twinkle * sin(t * (0.6 + r * 2.0) + r * 40.0);
+  vec3 tint = mix(vec3(0.68, 0.78, 1.0), vec3(1.0, 0.86, 0.66), hash(id + 5.5));
+  float core = smoothstep(max(1.4, u_labPx * 1.1), 0.0, d);
+  return tint * b * tw * (core + exp(-d) * b * 0.18);
+}
+
+vec3 stars(vec2 p, float t) {
+  return starField(p, 30.0, 0.8, t) + starField(p + 3.7, 70.0, 0.88, t) * 0.75 + starField(p + 9.1, 150.0, 0.93, t) * 0.5;
+}
+
+vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t) {
+  float top = cloudHeight * mix(1.0, 0.62, near);
+  if (yb - top * 0.35 > top + cloudSoft) return col;
+  float sc = cloudScale * (1.0 + near * 0.6);
+  float tt = t * 0.01 * cloudDrift * (1.0 + near * 0.8);
+  vec2 q = vec2(p.x * sc + tt + near * 13.7, yb * sc * 1.6 + near * 5.1);
+  vec2 w = vec2(fbm3(q * 0.7 + tt * 0.3), fbm3(q * 0.7 + 3.1 - tt * 0.2));
+  float n = fbm(q + w * 1.2);
+  float y = yb + (n - 0.5) * top * 0.7;
+  float hm = smoothstep(top + cloudSoft, top - cloudSoft, y);
+  if (hm <= 0.0) return col;
+  float dens = hm * smoothstep(1.0 - cloudCover - 0.12, 1.0 - cloudCover + 0.14, n + (1.0 - yb / max(top, 0.001)) * 0.35);
+  dens = clamp(dens, 0.0, 1.0);
+  if (dens <= 0.0) return col;
+  float billow = fbm3(q * 2.3 + w * 2.0);
+  float edge = smoothstep(0.0, 0.35, dens) * (1.0 - smoothstep(0.35, 0.9, dens));
+  float under = exp(-yb * glowFalloff * 0.8);
+  vec3 body = mix(vec3(0.08, 0.085, 0.12), vec3(0.015, 0.017, 0.03), cloudDark) * (1.0 - near * 0.3) * (0.65 + 0.7 * billow);
+  vec3 lit = glowColor * under * underglow * 0.9 * horizonGlow * (0.5 + 0.9 * (1.0 - billow));
+  vec3 cc = body + lit * (1.0 - dens * 0.4) + vec3(0.75, 0.8, 1.0) * edge * silver * 0.22;
+  return mix(col, cc, dens * cloudOpacity);
 }
 
 void main() {
-  vec2 uv = gl_FragCoord.xy / u_res;
-  vec2 p = (gl_FragCoord.xy - 0.5 * u_res) / u_res.y;
-  float sp = u_scroll.x;
-  float speed = abs(u_scroll.y);
-  float streak = 1.0 + streakMax * speed * speed;
-  vec2 np = p - vec2(0.0, sp * nebulaParallax);
-  float t = u_time * nebulaSpeed;
-  vec2 drift = vec2(t * 0.6, -t * 0.35);
-  vec2 churn = 0.07 * vec2(sin(u_time * churnSpeed), cos(u_time * churnSpeed * 0.8));
+  vec2 fc = gl_FragCoord.xy;
+  float yb = fc.y / u_view;
+  float yt = (u_res.y - fc.y) / u_view;
+  vec2 p = (fc - 0.5 * u_res) / u_view;
+  vec2 ps = p + u_pointer;
+  float t = u_time * speed;
 
-  float m1 = smoothstep(0.45, 0.85, fbm(np * 1.6 + drift + churn));
-  float m2 = smoothstep(0.50, 0.90, fbm(np * 2.4 - drift * 1.3 - churn + 5.0));
-  float m3 = smoothstep(0.50, 0.90, fbm(np * 1.1 + drift * 0.7 + churn.yx + 11.0));
-  float m = clamp(m1 + m2 + m3, 0.0, 1.0);
+  vec3 col = vec3(0.02, 0.025, 0.05) + vec3(0.03, 0.05, 0.13) * (1.0 - clamp(yb, 0.0, 1.0)) * skyTop * 2.0;
+  col += stars(ps, t) * 0.55;
+  col += (glowColor * 0.3 * exp(-yb * glowFalloff) + vec3(0.55, 0.32, 0.6) * 0.1 * exp(-yb * glowFalloff * 0.39)) * horizonGlow * 2.0;
 
-  float irid = 0.5 + 0.5 * sin(atan(p.y, p.x + 0.001) * 2.0 + u_time * iridSpeed);
-  vec3 calm = u_tintA * m1 * 0.16 + u_tintB * m2 * 0.13 + u_tintC * m3 * 0.08;
-  vec3 shifted = u_tintB * m1 * 0.14 + u_tintC * m2 * 0.12 + u_tintA * m3 * 0.09;
-  vec3 cloud = mix(calm, shifted, irid) * 0.8;
-
-  cloud = cloud * 0.7 + u_tintB * m * 0.06;
-
-  float pd = length(p - u_pointer);
-  cloud += u_gold * exp(-pd * pd * 6.0) * m * 0.25;
-
-  vec3 col = vec3(0.027, 0.031, 0.059) + cloud;
-
-  vec2 poff = u_pointer * 0.03;
-  vec3 stars = starLayer(p + poff * 3.0 - vec2(0.0, sp * nearParallax), 30.0, 0.966, 0.06, 1.2, u_time, vec2(0.0), streak);
-  stars += starLayer(p + poff * 1.6 - vec2(0.0, sp * midParallax), 55.0, 0.978, 0.048, 0.95, u_time, vec2(4.7), 1.0 + (streak - 1.0) * 0.6);
-  stars += starLayer(p + poff * 0.8 - vec2(0.0, sp * farParallax), 90.0, 0.986, 0.036, 0.72, u_time, vec2(9.2), 1.0 + (streak - 1.0) * 0.3);
-
-  vec2 gcell = floor(np * 220.0);
-  float gh = hash(gcell);
-  float glitter = step(0.9985, gh) * m * (0.5 + 0.5 * sin(u_time * glitterSpeed + hash(gcell + 3.7) * 6.2832));
-  stars += vec3(0.9, 0.95, 1.0) * glitter * 0.7;
-
-  if (u_aurora > 0.5) {
-    float cy = 0.28 + sp * 0.05 + (0.035 + 0.02 * speed) * sin(p.x * 2.0 + u_time * auroraSway + sp * 2.4) + 0.01 * sin(p.x * 5.3 - u_time * auroraRipple - sp * 3.1);
-    float by = (p.y - cy) * 5.0;
-    float band = exp(-by * by);
-    float rays = 0.55 + 0.45 * fbm(vec2(p.x * 7.0 + u_time * auroraDrift, u_time * 0.025));
-    float shape = smoothstep(-0.6, 0.4, p.x) * smoothstep(1.4, 0.5, abs(p.x));
-    float hgt = clamp((p.y - (cy - 0.25)) / 0.5, 0.0, 1.0);
-    vec3 aurCol = mix(u_tintC, u_tintB, smoothstep(0.0, 0.55, hgt));
-    aurCol = mix(aurCol, u_rose, smoothstep(0.55, 1.0, hgt));
-    col += aurCol * band * rays * shape * 0.35;
+  if (u_portrait.z > 0.5) {
+    float r0 = u_portrait.z;
+    vec2 d = (fc - u_portrait.xy) / r0;
+    float r = length(d);
+    if (r < coronaReach) {
+      vec2 dir = d / max(r, 0.0001);
+      float rr = max(1.0 + (r - 1.0) / coronaSize, 1.0);
+      float taper = smoothstep(coronaTaperEnd, coronaTaperStart, r);
+      float str = pow(fbmTaper(dir * streamDetail + vec2(log(rr) * 0.3 - t * drift, t * drift * 0.5), taper), 2.0) * 2.2;
+      float fine = fbmTaper(dir * 16.0 + vec2(log(rr) * 0.2, t * drift * 0.75), taper);
+      float eq = (1.0 - equator * 0.69) + equator * abs(dir.x);
+      float cor = (pow(1.0 / rr, 2.6) * 2.4 + pow(1.0 / rr, 1.25) * 0.32 * (str * 1.8 * streamers + fine * fineRays) * eq) * smoothstep(0.995, 1.01, r);
+      cor *= mix(1.0 - lowerFade, 1.0, smoothstep(-2.6, 0.2, d.y));
+      vec3 inner = mix(vec3(1.0, 0.97, 0.92), vec3(1.0, 0.82, 0.52), 0.5);
+      vec3 outer = mix(vec3(0.92, 0.92, 0.95), vec3(0.6, 0.74, 1.0), 0.5);
+      col += mix(inner, outer, smoothstep(1.0, 3.2, rr)) * cor * 0.8 * coronaBright * smoothstep(coronaReach, coronaFade, r);
+      if (r < 1.0 + flareSize + 0.05) {
+        float pr = smoothstep(0.6, 0.8, fbm(dir * 9.0 + vec2(t * 0.03, 0.0))) * smoothstep(1.0 + flareSize, 1.0, r) * step(1.0, r);
+        col += hueRotate(vec3(1.0, 0.32, 0.55), flareHue) * pr * 1.4 * flares;
+      }
+      col += hueRotate(vec3(1.0, 0.42, 0.62), flareHue) * exp(-abs(r - 1.0) * r0 * u_labPx * 0.45) * rim;
+      float pulse = pow(0.5 + 0.5 * sin(t * TAU / flashPeriod), 10.0) * flash;
+      if (pulse > 0.002) {
+        vec2 bq = (d - vec2(cos(flashAngle), sin(flashAngle)) * 1.01) * r0 * u_labPx;
+        float bl = length(bq);
+        float bead = exp(-bl * 0.22) * 1.6 + exp(-abs(bq.y) * 0.7) * exp(-abs(bq.x) * 0.02) * 0.5 + exp(-abs(bq.x) * 0.7) * exp(-abs(bq.y) * 0.03) * 0.3;
+        col += vec3(1.0, 0.96, 0.88) * bead * pulse;
+      }
+      col *= smoothstep(0.97, 1.0, r) * 0.97 + 0.03;
+    }
   }
-
-  if (u_planet > 0.5) {
-    float rise = 1.0 + sp * planetRise / 0.42;
-    vec2 pc = vec2(0.12, -1.28 + rise * 0.42);
-    vec2 pp = (p - pc) * vec2(1.0, 1.35);
-    float rr = 0.62;
-    float d = length(pp);
-    float vis = smoothstep(0.0, 0.15, rise);
-    float body = smoothstep(rr, rr - 0.02, d);
-    float limb = 1.0 - body * (d / rr);
-    vec3 bodyCol = mix(vec3(0.10, 0.07, 0.16), vec3(0.05, 0.03, 0.09), limb);
-    float ang = atan(pp.y, pp.x);
-    vec3 rimCol = mix(u_rose, u_gold, 0.5 + 0.5 * sin(ang + 0.6 + u_time * rimShimmer));
-    float breath = 1.0 + 0.06 * sin(u_time * planetBreath);
-    float rim = exp(-abs(d - rr) * 22.0);
-    float atmo = exp(-max(d - rr, 0.0) * 7.0);
-    vec3 atmoCol = mix(u_tintB, u_tintC, clamp((d - rr) * 3.0, 0.0, 1.0));
-    col = mix(col, bodyCol, body * vis);
-    col += (rimCol * rim * 0.8 + atmoCol * atmo * 0.35) * vis * breath;
-  }
-
-  float rd = length(p - u_ripple.xy);
-  float rx = (rd - u_ripple.z * 0.55) * 9.0;
-  float ring = exp(-rx * rx) * max(0.0, 1.0 - u_ripple.z / 1.6);
-  col += (u_tintA * 0.6 + vec3(0.4)) * ring * 0.18;
 
   if (u_meteor.w < 1.0) {
-    vec2 dir = vec2(cos(u_meteor.z), sin(u_meteor.z));
-    vec2 rel = p - (u_meteor.xy + dir * u_meteor.w * meteorTravel);
-    float behind = dot(rel, -dir);
-    float across = dot(rel, vec2(-dir.y, dir.x)) / meteorWidth;
+    vec2 md = vec2(cos(u_meteor.z), sin(u_meteor.z));
+    vec2 rel = ps - (u_meteor.xy + md * u_meteor.w * meteorTravel);
+    float behind = dot(rel, -md);
+    float across = dot(rel, vec2(-md.y, md.x)) / meteorWidth;
     float trail = smoothstep(meteorTail, 0.0, behind) * step(-0.003, behind) * exp(-across * across);
     float head = exp(-dot(rel, rel) / 0.00005);
-    float fade = sin(3.14159 * u_meteor.w);
-    stars += vec3(0.92, 0.96, 1.0) * (trail * 0.9 + head * 1.4) * fade;
+    col += vec3(0.92, 0.96, 1.0) * (trail * 0.9 + head * 1.4) * sin(PI * u_meteor.w);
   }
 
-  float vignette = smoothstep(0.1, 0.9, length(uv - 0.5) * 1.3);
-  float dim = mix(0.35, 1.0, vignette);
-  col *= dim;
-  col = min(col, vec3(0.32));
-  col += min(stars * mix(0.5, 1.0, vignette), vec3(0.9));
+  if (u_clouds > 0.5 && yb < cloudReach) {
+    col = cloudLayer(col, ps * 0.6 + p * 0.4, yb, 0.0, t);
+    col = cloudLayer(col, p, yb, 1.0, t);
+  }
+
+  if (u_ripple.z < rippleLife) {
+    float rd = length(p - u_ripple.xy);
+    float rx = (rd - u_ripple.z * 0.55) * rippleSharpness;
+    col += vec3(0.62, 0.73, 1.0) * exp(-rx * rx) * max(0.0, 1.0 - u_ripple.z / rippleLife) * 0.18 * rippleStrength;
+  }
+
+  float vx = fc.x / u_res.x - 0.5;
+  float vy = max(max(0.5 - yt, 0.5 - yb), 0.0);
+  float vignette = smoothstep(0.1, 0.9, length(vec2(vx, vy)) * 1.3);
+  col *= mix(1.0 - centerDim, 1.0, vignette);
+  col = max(hueRotate(col * brightness, hueShift), 0.0);
+  col = 1.0 - exp(-col * 1.15);
+  col += (fract(52.9829189 * fract(dot(fc, vec2(0.06711056, 0.00583715)))) - 0.5) / 255.0;
   gl_FragColor = vec4(col, 1.0);
 }`;
 
 interface QualityLevel {
-  aurora: boolean;
-  planet: boolean;
+  clouds: boolean;
   scale: number;
 }
 
 type SpaceState = "fallback" | "paused" | "running" | "static";
 
 const LEVELS: QualityLevel[] = [
-  { aurora: true, planet: true, scale: 0.5 },
-  { aurora: true, planet: true, scale: 0.35 },
-  { aurora: false, planet: false, scale: 0.3 },
+  { clouds: true, scale: 0.75 },
+  { clouds: true, scale: 0.5 },
+  { clouds: false, scale: 0.35 },
 ];
 
 const frameDt = 1000 / 60;
 const activeFrameMs = 10.8;
 const followRate = 3.7;
-const rippleSeconds = 1.6;
-const rippleHoldMs = rippleSeconds * 1000 - pacerIdleMs;
+const parallaxReach = 0.01175;
+const labPixelsPerCss = 1.2;
+const maxCanvasPixels = 1_400_000;
+const rippleLife = 1.6;
+const rippleSpeed = 2.25;
 const resizeDelayMs = 150;
-const meteorMs = 1100;
-const meteorGapMs: [number, number] = [15_000, 30_000];
+const meteorMs = 1450;
+const meteorGapMs: [number, number] = [2000, 14_000];
 const timeWrapHighSeconds = 86_400;
 const timeWrapLowSeconds = 1024;
+const portraitSelector = "[data-card] [data-portrait]";
 
 const nextGap = (): number =>
   meteorGapMs[0] + Math.random() * (meteorGapMs[1] - meteorGapMs[0]);
@@ -297,55 +341,52 @@ const startSky = (
   gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
 
   const uRes = gl.getUniformLocation(program, "u_res");
+  const uView = gl.getUniformLocation(program, "u_view");
+  const uLabPx = gl.getUniformLocation(program, "u_labPx");
   const uTime = gl.getUniformLocation(program, "u_time");
+  const uPointer = gl.getUniformLocation(program, "u_pointer");
+  const uPortrait = gl.getUniformLocation(program, "u_portrait");
+  const uRipple = gl.getUniformLocation(program, "u_ripple");
+  const uMeteor = gl.getUniformLocation(program, "u_meteor");
+  const uClouds = gl.getUniformLocation(program, "u_clouds");
   const highPrecision =
     (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
       ?.precision ?? 0) > 0;
   const timeWrap = highPrecision ? timeWrapHighSeconds : timeWrapLowSeconds;
-  const uPointer = gl.getUniformLocation(program, "u_pointer");
-  const uRipple = gl.getUniformLocation(program, "u_ripple");
-  const uScroll = gl.getUniformLocation(program, "u_scroll");
-  const uAurora = gl.getUniformLocation(program, "u_aurora");
-  const uPlanet = gl.getUniformLocation(program, "u_planet");
-  const uTintA = gl.getUniformLocation(program, "u_tintA");
-  const uTintB = gl.getUniformLocation(program, "u_tintB");
-  const uTintC = gl.getUniformLocation(program, "u_tintC");
-  const uGold = gl.getUniformLocation(program, "u_gold");
-  const uRose = gl.getUniformLocation(program, "u_rose");
-  const uMeteor = gl.getUniformLocation(program, "u_meteor");
-
-  const tintA = skyRgb("blue");
-  const tintB = skyRgb("violet");
-  const tintC = skyRgb("teal");
-  const gold = skyRgb("gold");
-  const rose = skyRgb("rose");
-  gl.uniform3f(uTintA, tintA[0], tintA[1], tintA[2]);
-  gl.uniform3f(uTintB, tintB[0], tintB[1], tintB[2]);
-  gl.uniform3f(uTintC, tintC[0], tintC[1], tintC[2]);
-  gl.uniform3f(uGold, gold[0], gold[1], gold[2]);
-  gl.uniform3f(uRose, rose[0], rose[1], rose[2]);
 
   let level = 0;
+  let scale = 1;
   let rafId = 0;
   let frozen = false;
-  const pointer = { x: 0, y: 0.3 };
-  const pointerTarget = { x: 0, y: 0.3 };
-  const ripple = { age: rippleSeconds, x: 0, y: 0 };
+  let portraitNode: Element | null = null;
+  const pointer = { x: 0, y: 0 };
+  const pointerTarget = { x: 0, y: 0 };
+  const ripple = { age: rippleLife, x: 0, y: 0 };
   const meteor = { angle: 0, at: 0, x: 0, y: 0 };
   const clock = createFrameClock();
+  const hoverPointer = globalThis.matchMedia(finePointerQuery);
+  let resizeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+
+  const viewPixels = (): number => Math.max(1, window.innerHeight * scale);
+
+  const toSky = (clientX: number, clientY: number): [number, number] => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) * scale;
+    const y = (rect.bottom - clientY) * scale;
+    const view = viewPixels();
+    return [(x - canvas.width / 2) / view, (y - canvas.height / 2) / view];
+  };
+
   const launch = (now: number): void => {
     meteor.at = now + nextGap();
-    const aspect = canvas.width / Math.max(1, canvas.height);
+    const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+    const [, centerY] = toSky(window.innerWidth / 2, window.innerHeight / 2);
     const side = Math.random() < 0.5 ? -1 : 1;
     const tilt = 0.35 + Math.random() * 0.35;
     meteor.x = side * (0.15 + Math.random() * 0.3) * aspect;
-    meteor.y = 0.25 + Math.random() * 0.2;
+    meteor.y = centerY + 0.25 + Math.random() * 0.2;
     meteor.angle = side < 0 ? -tilt : Math.PI + tilt;
   };
-  launch(0);
-  const hoverPointer = globalThis.matchMedia(finePointerQuery);
-  const scroll: ScrollMotion = { progress: 0, velocity: 0 };
-  let resizeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 
   const pacer = createFramePacer({
     activeFrameMs,
@@ -360,13 +401,33 @@ const startSky = (
   const resize = (): void => {
     const entry = LEVELS[level] ?? LEVELS[0];
     if (!entry) return;
-    const scale = entry.scale * Math.min(window.devicePixelRatio, 1);
-    const width = Math.max(1, Math.floor(canvas.clientWidth * scale));
-    const height = Math.max(1, Math.floor(canvas.clientHeight * scale));
+    const cssWidth = Math.max(1, canvas.clientWidth);
+    const cssHeight = Math.max(1, canvas.clientHeight);
+    const cap = Math.sqrt(maxCanvasPixels / (cssWidth * cssHeight));
+    scale = Math.min(entry.scale, cap) * Math.min(window.devicePixelRatio, 1);
+    const width = Math.max(1, Math.floor(cssWidth * scale));
+    const height = Math.max(1, Math.floor(cssHeight * scale));
     if (width === canvas.width && height === canvas.height) return;
     canvas.width = width;
     canvas.height = height;
     gl.viewport(0, 0, width, height);
+  };
+
+  const trackPortrait = (): void => {
+    if (!portraitNode?.isConnected)
+      portraitNode = document.querySelector(portraitSelector);
+    if (!portraitNode) {
+      gl.uniform3f(uPortrait, 0, 0, 0);
+      return;
+    }
+    const sky = canvas.getBoundingClientRect();
+    const face = portraitNode.getBoundingClientRect();
+    gl.uniform3f(
+      uPortrait,
+      (face.left + face.width / 2 - sky.left) * scale,
+      (sky.bottom - face.top - face.height / 2) * scale,
+      (face.width / 2) * scale
+    );
   };
 
   const frame = (now: number, dt = frameDt): void => {
@@ -377,13 +438,14 @@ const startSky = (
     pointer.x += (pointerTarget.x - pointer.x) * follow;
     pointer.y += (pointerTarget.y - pointer.y) * follow;
     gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uView, viewPixels());
+    gl.uniform1f(uLabPx, labPixelsPerCss / scale);
     gl.uniform1f(uTime, (skyMs / 1000) % timeWrap);
-    gl.uniform2f(uScroll, scroll.progress, scroll.velocity);
     gl.uniform2f(uPointer, pointer.x, pointer.y);
-    if (ripple.age < rippleSeconds) ripple.age += dt / 1000;
+    trackPortrait();
+    if (ripple.age < rippleLife) ripple.age += (dt / 1000) * rippleSpeed;
     gl.uniform3f(uRipple, ripple.x, ripple.y, ripple.age);
-    gl.uniform1f(uAurora, current.aurora ? 1 : 0);
-    gl.uniform1f(uPlanet, current.planet ? 1 : 0);
+    gl.uniform1f(uClouds, current.clouds ? 1 : 0);
     const flight = rafId ? (skyMs - meteor.at) / meteorMs : -1;
     if (flight >= 1) launch(skyMs);
     if (flight >= 0 && flight < 1) markActive();
@@ -395,6 +457,11 @@ const startSky = (
       flight >= 0 && flight < 1 ? flight : 2
     );
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
+
+  const drawStill = (): void => {
+    clock.pause();
+    frame(performance.now());
   };
 
   const stop = (): void => {
@@ -424,7 +491,7 @@ const startSky = (
       return;
     }
     if (document.hidden || isSceneHeld()) {
-      ripple.age = rippleSeconds;
+      ripple.age = rippleLife;
       setState("paused");
       return;
     }
@@ -441,36 +508,28 @@ const startSky = (
     markActive();
     if (reduceMotion.matches || !hoverPointer.matches || isSceneHeld()) return;
     const aspect = window.innerWidth / Math.max(1, window.innerHeight);
-    pointerTarget.x = (event.clientX / window.innerWidth - 0.5) * aspect;
-    pointerTarget.y = 0.5 - event.clientY / window.innerHeight;
+    pointerTarget.x =
+      (event.clientX / window.innerWidth - 0.5) * parallaxReach * aspect;
+    pointerTarget.y =
+      (0.5 - event.clientY / window.innerHeight) * parallaxReach;
   };
   const onDown = (event: PointerEvent): void => {
     if (reduceMotion.matches || isSceneHeld()) return;
-    markActive(rippleHoldMs);
-    const aspect = window.innerWidth / Math.max(1, window.innerHeight);
-    ripple.x = (event.clientX / window.innerWidth - 0.5) * aspect;
-    ripple.y = 0.5 - event.clientY / window.innerHeight;
+    markActive();
+    const [x, y] = toSky(event.clientX, event.clientY);
+    ripple.x = x;
+    ripple.y = y;
     ripple.age = 0;
   };
   const applyResize = (): void => {
     resizeTimer = undefined;
     markActive();
     resize();
-    if (rafId) return;
-    clock.pause();
-    frame(performance.now());
+    if (!rafId) drawStill();
   };
   const onResize = (): void => {
     if (resizeTimer !== undefined) globalThis.clearTimeout(resizeTimer);
     resizeTimer = globalThis.setTimeout(applyResize, resizeDelayMs);
-  };
-  const onScroll = (motion: ScrollMotion, settled: boolean): void => {
-    scroll.progress = motion.progress;
-    scroll.velocity = motion.velocity;
-    markActive();
-    if (!settled || rafId) return;
-    clock.pause();
-    frame(performance.now());
   };
   const onBlur = (): void => {
     stop();
@@ -478,11 +537,15 @@ const startSky = (
   };
 
   resize();
+  launch(0);
   frame(performance.now());
   sync();
 
+  const sizeWatch = new ResizeObserver(onResize);
+  sizeWatch.observe(canvas);
+  const card = document.querySelector("[data-card]");
+  if (card) sizeWatch.observe(card);
   window.addEventListener("resize", onResize);
-  const stopScroll = watchScrollMotion(onScroll);
   globalThis.addEventListener("pointermove", onPointer, { passive: true });
   globalThis.addEventListener("pointerdown", onDown, { passive: true });
   window.addEventListener("blur", onBlur);
@@ -493,7 +556,7 @@ const startSky = (
   return () => {
     stop();
     if (resizeTimer !== undefined) globalThis.clearTimeout(resizeTimer);
-    stopScroll();
+    sizeWatch.disconnect();
     window.removeEventListener("resize", onResize);
     globalThis.removeEventListener("pointermove", onPointer);
     globalThis.removeEventListener("pointerdown", onDown);

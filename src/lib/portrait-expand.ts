@@ -79,7 +79,6 @@ export const createPortraitExpander = (
     dialog.showModal();
     button.dataset["expanded"] = "";
     button.dispatchEvent(new CustomEvent("portrait:open"));
-    globalThis.dispatchEvent(new Event("sky:pulse"));
     if (reduce.matches) {
       running = [
         dialog.animate([{ opacity: 0 }, { opacity: 1 }], {

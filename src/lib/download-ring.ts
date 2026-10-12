@@ -139,7 +139,6 @@ export const initDownloadRing = (
     if (busy) return;
     busy = true;
     anchor.dataset["busy"] = "";
-    globalThis.dispatchEvent(new Event("sky:pulse"));
     if (reduce.matches) playReduced();
     else play();
   };
