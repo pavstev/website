@@ -262,6 +262,8 @@ interface QualityLevel {
 
 type SpaceState = "fallback" | "paused" | "running" | "static";
 
+const softwareLevel: QualityLevel = { clouds: false, scale: 0.2 };
+
 const LEVELS: QualityLevel[] = [
   { clouds: true, scale: 0.75 },
   { clouds: true, scale: 0.5 },
@@ -355,6 +357,8 @@ const startSky = (
   const timeWrap = highPrecision ? timeWrapHighSeconds : timeWrapLowSeconds;
 
   let level = 0;
+  const currentLevel = (): QualityLevel | undefined =>
+    still ? softwareLevel : (LEVELS[level] ?? LEVELS[0]);
   let scale = 1;
   let rafId = 0;
   let frozen = false;
@@ -399,7 +403,7 @@ const startSky = (
   const { markActive } = pacer;
 
   const resize = (): void => {
-    const entry = LEVELS[level] ?? LEVELS[0];
+    const entry = currentLevel();
     if (!entry) return;
     const cssWidth = Math.max(1, canvas.clientWidth);
     const cssHeight = Math.max(1, canvas.clientHeight);
@@ -431,7 +435,7 @@ const startSky = (
   };
 
   const frame = (now: number, dt = frameDt): void => {
-    const current = LEVELS[level] ?? LEVELS[0];
+    const current = currentLevel();
     if (!current) return;
     const skyMs = clock.tick(now);
     const follow = 1 - Math.exp((-followRate * dt) / 1000);
