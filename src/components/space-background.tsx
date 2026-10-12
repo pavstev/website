@@ -29,6 +29,9 @@ uniform vec3 u_portrait;
 uniform vec3 u_ripple;
 uniform vec4 u_meteor;
 uniform float u_clouds;
+uniform float u_cloudTime;
+uniform vec3 u_stir;
+uniform vec2 u_wind;
 
 const float PI = 3.14159265;
 const float TAU = 6.2831853;
@@ -46,6 +49,9 @@ const float fineRays = 1.27;
 const float equator = 0.97;
 const float lowerFade = 0.7;
 const float drift = 0.02;
+const float raySpin = 0.09;
+const float fineSpin = -0.05;
+const float flareSpin = 0.03;
 const float flares = 0.52;
 const float flareSize = 0.123;
 const float flareHue = -0.4363;
@@ -60,12 +66,17 @@ const float cloudHeight = 0.33;
 const float cloudCover = 0.47;
 const float cloudSoft = 0.053;
 const float cloudScale = 3.13;
-const float cloudDrift = 0.6;
+const float cloudDrift = 2.6;
 const float underglow = 1.52;
 const float silver = 0.47;
 const float cloudDark = 0.74;
 const float cloudOpacity = 0.69;
 const float cloudReach = 0.52;
+const float stirRadius = 0.24;
+const float stirSwirl = 0.3;
+const float stirPush = 0.32;
+const float stirWarp = 1.8;
+const float stirGlow = 0.7;
 const float coronaReach = 14.0;
 const float coronaFade = 9.0;
 const float coronaTaperStart = 3.0;
@@ -131,6 +142,12 @@ float fbmTaper(vec2 p, float keep) {
   return v;
 }
 
+vec2 spin(vec2 v, float a) {
+  float c = cos(a);
+  float s = sin(a);
+  return vec2(c * v.x - s * v.y, s * v.x + c * v.y);
+}
+
 vec3 hueRotate(vec3 c, float a) {
   vec3 k = vec3(0.57735);
   float ca = cos(a);
@@ -157,14 +174,15 @@ vec3 stars(vec2 p, float t) {
   return starField(p, 30.0, 0.8, t) + starField(p + 3.7, 70.0, 0.88, t) * 0.75 + starField(p + 9.1, 150.0, 0.93, t) * 0.5;
 }
 
-vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t) {
+vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t, float sf, vec2 sd) {
   float top = cloudHeight * mix(1.0, 0.62, near);
   if (yb - top * 0.35 > top + cloudSoft) return col;
   float sc = cloudScale * (1.0 + near * 0.6);
   float tt = t * 0.01 * cloudDrift * (1.0 + near * 0.8);
-  vec2 q = vec2(p.x * sc + tt + near * 13.7, yb * sc * 1.6 + near * 5.1);
+  vec2 push = (u_wind * stirPush + vec2(-sd.y, sd.x) * stirSwirl) * sf * (1.0 + near * 0.5);
+  vec2 q = vec2((p.x - push.x) * sc + tt + near * 13.7, (yb - push.y) * sc * 1.6 + near * 5.1);
   vec2 w = vec2(fbm3(q * 0.7 + tt * 0.3), fbm3(q * 0.7 + 3.1 - tt * 0.2));
-  float n = fbm(q + w * 1.2);
+  float n = fbm(q + w * (1.2 + sf * stirWarp));
   float y = yb + (n - 0.5) * top * 0.7;
   float hm = smoothstep(top + cloudSoft, top - cloudSoft, y);
   if (hm <= 0.0) return col;
@@ -175,7 +193,7 @@ vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t) {
   float edge = smoothstep(0.0, 0.35, dens) * (1.0 - smoothstep(0.35, 0.9, dens));
   float under = exp(-yb * glowFalloff * 0.8);
   vec3 body = mix(vec3(0.08, 0.085, 0.12), vec3(0.015, 0.017, 0.03), cloudDark) * (1.0 - near * 0.3) * (0.65 + 0.7 * billow);
-  vec3 lit = glowColor * under * underglow * 0.9 * horizonGlow * (0.5 + 0.9 * (1.0 - billow));
+  vec3 lit = glowColor * under * underglow * 0.9 * horizonGlow * (0.5 + 0.9 * (1.0 - billow)) * (1.0 + sf * stirGlow);
   vec3 cc = body + lit * (1.0 - dens * 0.4) + vec3(0.75, 0.8, 1.0) * edge * silver * 0.22;
   return mix(col, cc, dens * cloudOpacity);
 }
@@ -200,8 +218,8 @@ void main() {
       vec2 dir = d / max(r, 0.0001);
       float rr = max(1.0 + (r - 1.0) / coronaSize, 1.0);
       float taper = smoothstep(coronaTaperEnd, coronaTaperStart, r);
-      float str = pow(fbmTaper(dir * streamDetail + vec2(log(rr) * 0.3 - t * drift, t * drift * 0.5), taper), 2.0) * 2.2;
-      float fine = fbmTaper(dir * 16.0 + vec2(log(rr) * 0.2, t * drift * 0.75), taper);
+      float str = pow(fbmTaper(spin(dir, t * raySpin) * streamDetail + vec2(log(rr) * 0.3 - t * drift, t * drift * 0.5), taper), 2.0) * 2.2;
+      float fine = fbmTaper(spin(dir, t * fineSpin) * 16.0 + vec2(log(rr) * 0.2, t * drift * 0.75), taper);
       float eq = (1.0 - equator * 0.69) + equator * abs(dir.x);
       float cor = (pow(1.0 / rr, 2.6) * 2.4 + pow(1.0 / rr, 1.25) * 0.32 * (str * 1.8 * streamers + fine * fineRays) * eq) * smoothstep(0.995, 1.01, r);
       cor *= mix(1.0 - lowerFade, 1.0, smoothstep(-2.6, 0.2, d.y));
@@ -209,7 +227,7 @@ void main() {
       vec3 outer = mix(vec3(0.92, 0.92, 0.95), vec3(0.6, 0.74, 1.0), 0.5);
       col += mix(inner, outer, smoothstep(1.0, 3.2, rr)) * cor * 0.8 * coronaBright * smoothstep(coronaReach, coronaFade, r);
       if (r < 1.0 + flareSize + 0.05) {
-        float pr = smoothstep(0.6, 0.8, fbm(dir * 9.0 + vec2(t * 0.03, 0.0))) * smoothstep(1.0 + flareSize, 1.0, r) * step(1.0, r);
+        float pr = smoothstep(0.6, 0.8, fbm(spin(dir, t * flareSpin) * 9.0 + vec2(t * 0.03, 0.0))) * smoothstep(1.0 + flareSize, 1.0, r) * step(1.0, r);
         col += hueRotate(vec3(1.0, 0.32, 0.55), flareHue) * pr * 1.4 * flares;
       }
       col += hueRotate(vec3(1.0, 0.42, 0.62), flareHue) * exp(-abs(r - 1.0) * r0 * u_labPx * 0.45) * rim;
@@ -235,8 +253,11 @@ void main() {
   }
 
   if (u_clouds > 0.5 && yb < cloudReach) {
-    col = cloudLayer(col, ps * 0.6 + p * 0.4, yb, 0.0, t);
-    col = cloudLayer(col, p, yb, 1.0, t);
+    vec2 sd = (p - u_stir.xy) / stirRadius;
+    float sf = u_stir.z * exp(-dot(sd, sd));
+    float ct = u_cloudTime * speed;
+    col = cloudLayer(col, ps * 0.6 + p * 0.4, yb, 0.0, ct, sf, sd);
+    col = cloudLayer(col, p, yb, 1.0, ct, sf, sd);
   }
 
   if (u_ripple.z < rippleLife) {
@@ -284,6 +305,13 @@ const meteorGapMs: [number, number] = [2000, 14_000];
 const timeWrapHighSeconds = 86_400;
 const timeWrapLowSeconds = 1024;
 const portraitSelector = "[data-card] [data-portrait]";
+const cloudZone = 0.42;
+const stirHover = 0.35;
+const stirGain = 2.4;
+const stirDecay = 1.3;
+const stirBoost = 3.5;
+const windDecay = 2.2;
+const windMax = 1.2;
 
 const nextGap = (): number =>
   meteorGapMs[0] + Math.random() * (meteorGapMs[1] - meteorGapMs[0]);
@@ -351,6 +379,9 @@ const startSky = (
   const uRipple = gl.getUniformLocation(program, "u_ripple");
   const uMeteor = gl.getUniformLocation(program, "u_meteor");
   const uClouds = gl.getUniformLocation(program, "u_clouds");
+  const uCloudTime = gl.getUniformLocation(program, "u_cloudTime");
+  const uStir = gl.getUniformLocation(program, "u_stir");
+  const uWind = gl.getUniformLocation(program, "u_wind");
   const highPrecision =
     (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
       ?.precision ?? 0) > 0;
@@ -367,6 +398,8 @@ const startSky = (
   const pointerTarget = { x: 0, y: 0 };
   const ripple = { age: rippleLife, x: 0, y: 0 };
   const meteor = { angle: 0, at: 0, x: 0, y: 0 };
+  const stir = { at: 0, energy: 0, inside: false, vx: 0, vy: 0, x: 0, y: 0 };
+  let cloudMs = 0;
   const clock = createFrameClock();
   const hoverPointer = globalThis.matchMedia(finePointerQuery);
   let resizeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
@@ -441,6 +474,14 @@ const startSky = (
     const follow = 1 - Math.exp((-followRate * dt) / 1000);
     pointer.x += (pointerTarget.x - pointer.x) * follow;
     pointer.y += (pointerTarget.y - pointer.y) * follow;
+    const settle = Math.exp((-stirDecay * dt) / 1000);
+    stir.energy =
+      stir.energy * settle + (stir.inside ? (1 - settle) * stirHover : 0);
+    const calm = Math.exp((-windDecay * dt) / 1000);
+    stir.vx *= calm;
+    stir.vy *= calm;
+    if (rafId) cloudMs += Math.min(dt, 100) * (1 + stir.energy * stirBoost);
+    if (stir.energy > 0.05) markActive();
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uView, viewPixels());
     gl.uniform1f(uLabPx, labPixelsPerCss / scale);
@@ -450,6 +491,9 @@ const startSky = (
     if (ripple.age < rippleLife) ripple.age += (dt / 1000) * rippleSpeed;
     gl.uniform3f(uRipple, ripple.x, ripple.y, ripple.age);
     gl.uniform1f(uClouds, current.clouds ? 1 : 0);
+    gl.uniform1f(uCloudTime, (cloudMs / 1000) % timeWrap);
+    gl.uniform3f(uStir, stir.x, stir.y, Math.min(stir.energy, 1));
+    gl.uniform2f(uWind, stir.vx, stir.vy);
     const flight = rafId ? (skyMs - meteor.at) / meteorMs : -1;
     if (flight >= 1) launch(skyMs);
     if (flight >= 0 && flight < 1) markActive();
@@ -466,6 +510,13 @@ const startSky = (
   const drawStill = (): void => {
     clock.pause();
     frame(performance.now());
+  };
+
+  const calmClouds = (): void => {
+    stir.energy = 0;
+    stir.inside = false;
+    stir.vx = 0;
+    stir.vy = 0;
   };
 
   const stop = (): void => {
@@ -496,6 +547,7 @@ const startSky = (
     }
     if (document.hidden || isSceneHeld()) {
       ripple.age = rippleLife;
+      calmClouds();
       setState("paused");
       return;
     }
@@ -508,9 +560,32 @@ const startSky = (
     setState("running");
   };
 
+  const stirClouds = (event: PointerEvent): void => {
+    const [x, y] = toSky(event.clientX, event.clientY);
+    const bottom = y + canvas.height / 2 / viewPixels();
+    const seconds = Math.max((event.timeStamp - stir.at) / 1000, 1 / 240);
+    const dx = stir.inside ? x - stir.x : 0;
+    const dy = stir.inside ? y - stir.y : 0;
+    stir.at = event.timeStamp;
+    stir.x = x;
+    stir.y = y;
+    stir.inside = bottom < cloudZone;
+    if (!stir.inside) return;
+    const step = Math.min(Math.hypot(dx, dy), 0.2);
+    stir.energy = Math.min(1, stir.energy + step * stirGain);
+    const blend = Math.min(1, seconds * 12);
+    stir.vx += (dx / seconds - stir.vx) * blend;
+    stir.vy += (dy / seconds - stir.vy) * blend;
+    const speed = Math.hypot(stir.vx, stir.vy);
+    if (speed <= windMax) return;
+    stir.vx *= windMax / speed;
+    stir.vy *= windMax / speed;
+  };
+
   const onPointer = (event: PointerEvent): void => {
     markActive();
     if (reduceMotion.matches || !hoverPointer.matches || isSceneHeld()) return;
+    stirClouds(event);
     const aspect = window.innerWidth / Math.max(1, window.innerHeight);
     pointerTarget.x =
       (event.clientX / window.innerWidth - 0.5) * parallaxReach * aspect;
@@ -535,6 +610,9 @@ const startSky = (
     if (resizeTimer !== undefined) globalThis.clearTimeout(resizeTimer);
     resizeTimer = globalThis.setTimeout(applyResize, resizeDelayMs);
   };
+  const onLeave = (event: PointerEvent): void => {
+    if (event.relatedTarget === null) stir.inside = false;
+  };
   const onBlur = (): void => {
     stop();
     setState("paused");
@@ -552,6 +630,7 @@ const startSky = (
   window.addEventListener("resize", onResize);
   globalThis.addEventListener("pointermove", onPointer, { passive: true });
   globalThis.addEventListener("pointerdown", onDown, { passive: true });
+  globalThis.addEventListener("pointerout", onLeave, { passive: true });
   window.addEventListener("blur", onBlur);
   window.addEventListener("focus", sync);
   globalThis.addEventListener(sceneHoldEvent, sync);
@@ -564,6 +643,7 @@ const startSky = (
     window.removeEventListener("resize", onResize);
     globalThis.removeEventListener("pointermove", onPointer);
     globalThis.removeEventListener("pointerdown", onDown);
+    globalThis.removeEventListener("pointerout", onLeave);
     window.removeEventListener("blur", onBlur);
     window.removeEventListener("focus", sync);
     globalThis.removeEventListener(sceneHoldEvent, sync);
