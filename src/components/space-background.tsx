@@ -50,6 +50,8 @@ const stirDecay = 1.3;
 const stirBoost = 3.5;
 const windDecay = 2.2;
 const windMax = 1.2;
+const stirActive = stirHover + 0.05;
+const windActive = 0.05;
 
 const nextGap = (): number =>
   meteorGapMs[0] + Math.random() * (meteorGapMs[1] - meteorGapMs[0]);
@@ -222,7 +224,8 @@ const startSky = (
     stir.vx *= calm;
     stir.vy *= calm;
     if (rafId) cloudMs += Math.min(dt, 100) * (1 + stir.energy * stirBoost);
-    if (stir.energy > 0.05) markActive();
+    if (stir.energy > stirActive || Math.hypot(stir.vx, stir.vy) > windActive)
+      markActive();
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uView, viewPixels());
     gl.uniform1f(uLabPx, labPixelsPerCss / scale);

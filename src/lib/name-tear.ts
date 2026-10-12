@@ -149,18 +149,42 @@ const finishEngine = (host: HTMLElement, pending: Pending): Engine | null => {
   return { canvas, gl, locations, program, texture };
 };
 
+interface Painted {
+  height: number;
+  key: string;
+  source: HTMLCanvasElement | null;
+  width: number;
+}
+
+const paintKey = (
+  box: DOMRect,
+  style: CSSStyleDeclaration,
+  ratio: number
+): string =>
+  document.fonts.status === "loaded"
+    ? [
+        box.width,
+        box.height,
+        ratio,
+        style.fontWeight,
+        style.fontSize,
+        style.fontFamily,
+        style.color,
+      ].join("|")
+    : "";
+
 const paintText = (
   host: HTMLElement,
-  canvas: HTMLCanvasElement,
-  ratio: number
+  box: DOMRect,
+  style: CSSStyleDeclaration,
+  ratio: number,
+  reuse: HTMLCanvasElement | null
 ): HTMLCanvasElement | null => {
-  const box = canvas.getBoundingClientRect();
-  const source = document.createElement("canvas");
+  const source = reuse ?? document.createElement("canvas");
   source.width = Math.max(1, Math.round(box.width * ratio));
   source.height = Math.max(1, Math.round(box.height * ratio));
   const context = source.getContext("2d");
   if (!context) return null;
-  const style = getComputedStyle(host);
   context.scale(ratio, ratio);
   context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
   context.fillStyle = style.color;
@@ -186,6 +210,34 @@ export const createNameTear = (host: HTMLElement): NameTear => {
   let started = 0;
   let poll: ReturnType<typeof globalThis.setTimeout> | undefined;
   let idle: number | undefined;
+  const painted: Painted = { height: 0, key: "", source: null, width: 0 };
+
+  const upload = (current: Engine, ratio: number): boolean => {
+    const { canvas, gl, locations, texture } = current;
+    const box = canvas.getBoundingClientRect();
+    const style = getComputedStyle(host);
+    const key = paintKey(box, style, ratio);
+    if (key !== "" && key === painted.key) return true;
+    const source = paintText(host, box, style, ratio, painted.source);
+    if (!source) return false;
+    painted.source = source;
+    painted.key = key;
+    if (source.width !== painted.width || source.height !== painted.height) {
+      painted.width = source.width;
+      painted.height = source.height;
+      canvas.width = source.width;
+      canvas.height = source.height;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform2f(
+        locations["resolution"] ?? null,
+        canvas.width,
+        canvas.height
+      );
+    }
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    return true;
+  };
 
   const check = (): void => {
     poll = undefined;
@@ -248,30 +300,14 @@ export const createNameTear = (host: HTMLElement): NameTear => {
       engine?.canvas.remove();
       engine?.gl.getExtension("WEBGL_lose_context")?.loseContext();
       engine = null;
+      painted.source = null;
+      painted.key = "";
     },
     play: (): void => {
       if (frame || !engine || isSceneHeld()) return;
       const ratio = Math.min(globalThis.devicePixelRatio || 1, maxPixelRatio);
-      const { canvas, gl, locations, texture } = engine;
-      const source = paintText(host, canvas, ratio);
-      if (!source) return;
-      canvas.width = source.width;
-      canvas.height = source.height;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        source
-      );
-      gl.uniform2f(
-        locations["resolution"] ?? null,
-        canvas.width,
-        canvas.height
-      );
+      if (!upload(engine, ratio)) return;
+      const { gl, locations } = engine;
       gl.uniform1f(locations["seed"] ?? null, Math.random() * 100);
       started = performance.now();
       frame = requestAnimationFrame(draw);
