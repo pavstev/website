@@ -51,6 +51,11 @@
   ! Content-Security-Policy
   ! X-Frame-Options
 
+/linkedin-cover.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
 /stevan-pavlovic.jpeg
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
   ! Content-Security-Policy

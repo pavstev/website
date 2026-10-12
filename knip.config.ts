@@ -5,6 +5,7 @@ const config: KnipConfig = {
     "scripts/cv-fetch.ts",
     "scripts/cv-guard.ts",
     "scripts/generate-globe-data.ts",
+    "scripts/generate-images.ts",
     "src/profile/**/*.test.ts",
   ],
   ignoreDependencies: ["@fontsource/inter", "wrangler"],

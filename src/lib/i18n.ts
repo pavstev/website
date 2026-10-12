@@ -183,4 +183,7 @@ export const en = {
     year: "year",
     years: "years",
   },
+  socialImages: {
+    place: "{city}, {country}",
+  },
 } as const;
