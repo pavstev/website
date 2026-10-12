@@ -2,10 +2,10 @@
   "basics": {
     "email": "pavlovicmstevan@gmail.com",
     "githubHandle": "pavstev",
-    "headline": "Technical Lead & Senior Software Engineer",
+    "headline": "Backend & Distributed-Systems Engineer · Tech Lead",
     "linkedinHandle": "stevanpavlovic",
-    "location": "Belgrade, Serbia",
-    "name": "Stevan Pavlovic",
+    "location": "Vienna, Austria",
+    "name": "Stevan Pavlović",
     "phone": "",
     "pictureUrl": "https://stevanpavlovic.com/stevan-pavlovic.jpeg",
     "websiteUrl": "https://stevanpavlovic.com"
@@ -44,7 +44,7 @@
         "company": "Safety Real Time",
         "contributions": [
           {
-            "description": "Defined the full-stack cloud architecture for a fleet management SaaS — from mobile driver apps through backend ingestion services to live operations dashboards used by enterprise fleet managers.",
+            "description": "Defined the full-stack cloud architecture for a fleet management SaaS, from mobile driver apps through backend ingestion services to live operations dashboards used by enterprise fleet managers.",
             "title": "Fleet management platform architecture"
           },
           {
@@ -52,7 +52,7 @@
             "title": "Real-time event pipeline"
           },
           {
-            "description": "Designed time-sensitive routing for safety-critical incidents — pre-trip failures, accident reports, and driver threshold breaches — reaching frontline operators with minimal propagation delay.",
+            "description": "Designed time-sensitive routing for safety-critical incidents: pre-trip failures, accident reports, and driver threshold breaches, reaching frontline operators with minimal propagation delay.",
             "title": "Safety event routing"
           },
           {
@@ -66,9 +66,21 @@
         ],
         "from": "Apr 2022",
         "location": "Remote",
-        "overview": "Directed technical strategy for a cloud-based fleet management platform serving enterprise trucking operators. Owned full-stack architecture — Node.js, NestJS, and Redis — covering pre-trip inspection workflows, accident and damage reporting, driver scorecards, live operational visibility, and compliance document management for logistics clients.",
+        "overview": "Directed technical strategy for a cloud-based fleet management platform serving enterprise trucking operators. Owned full-stack architecture: Node.js, NestJS, and Redis, covering pre-trip inspection workflows, accident and damage reporting, driver scorecards, live operational visibility, and compliance document management for logistics clients.",
         "position": "Chief Technology Officer",
-        "skills": ["Node.js", "NestJS", "TypeScript", "Redis"],
+        "skills": [
+          "Node.js",
+          "NestJS",
+          "TypeScript",
+          "Redis",
+          "React",
+          "PostgreSQL",
+          "ElasticSearch",
+          "Docker",
+          "Kubernetes",
+          "AWS",
+          "GitHub Actions"
+        ],
         "to": "Present",
         "websiteUrl": "https://safetyrealtime.com/"
       },
@@ -100,7 +112,19 @@
         "location": "Belgrade, Serbia",
         "overview": "Led backend architecture for a high-concurrency online betting platform. Delivered fault-tolerant, event-driven microservices on Node.js and NestJS with zero-downtime deployments through peak sporting events.",
         "position": "Senior Software Engineer",
-        "skills": ["Node.js", "NestJS", "TypeScript", "Apache Kafka", "Redis"],
+        "skills": [
+          "Node.js",
+          "NestJS",
+          "TypeScript",
+          "Apache Kafka",
+          "Redis",
+          "PostgreSQL",
+          "ElasticSearch",
+          "Docker",
+          "Kubernetes",
+          "GitHub Actions",
+          "GraphQL"
+        ],
         "to": "Jun 2025",
         "websiteUrl": ""
       },
@@ -128,11 +152,21 @@
             "title": "Serialization profiling"
           }
         ],
-        "from": "Aug 2021",
+        "from": "Jan 2021",
         "location": "Remote",
-        "overview": "Designed and delivered the BFF layer for Humanity.com — an enterprise workforce management platform with hundreds of thousands of users. Aggregated multi-service calls into lean, UI-optimized payloads via Node.js and NestJS, with Redis caching and OpenAPI contracts decoupling frontend and backend release cycles.",
+        "overview": "Designed and delivered the BFF layer for Humanity.com, an enterprise workforce management platform with hundreds of thousands of users. Aggregated multi-service calls into lean, UI-optimized payloads via Node.js and NestJS, with Redis caching and OpenAPI contracts decoupling frontend and backend release cycles.",
         "position": "Software Engineer",
-        "skills": ["Node.js", "NestJS", "TypeScript", "Redis"],
+        "skills": [
+          "Node.js",
+          "NestJS",
+          "TypeScript",
+          "Redis",
+          "PostgreSQL",
+          "GraphQL",
+          "OpenAPI",
+          "Docker",
+          "AWS"
+        ],
         "to": "Mar 2022",
         "websiteUrl": "https://apoddo.com/"
       },
@@ -202,9 +236,22 @@
         ],
         "from": "Jan 2020",
         "location": "Remote",
-        "overview": "Led backend across two generations of LaunchPad — maintaining the Symfony 4 core-banking monolith while architecting Syllo, a full NestJS microservice rewrite. Mentored the team through the migration and established engineering standards as the platform scaled.",
+        "overview": "Led backend across two generations of LaunchPad, maintaining the Symfony 4 core-banking monolith while architecting Syllo, a full NestJS microservice rewrite. Mentored the team through the migration and established engineering standards as the platform scaled.",
         "position": "Lead Back-end Developer",
-        "skills": ["Node.js", "NestJS", "TypeScript", "PostgreSQL"],
+        "skills": [
+          "Node.js",
+          "NestJS",
+          "TypeScript",
+          "PostgreSQL",
+          "Redis",
+          "Apache Kafka",
+          "gRPC",
+          "Symfony",
+          "Docker",
+          "Kubernetes",
+          "AWS",
+          "GitHub Actions"
+        ],
         "to": "Dec 2020",
         "websiteUrl": "https://www.pannovate.com/"
       },
@@ -234,9 +281,19 @@
         ],
         "from": "Nov 2018",
         "location": "Belgrade, Serbia",
-        "overview": "Backend engineer outsourced through Quantox to Catena Media on AskGamblers.com — an iGaming affiliate platform with 150,000+ registered users. Refactored legacy Symfony modules achieving resource usage reductions of up to 90%, and hardened performance of SEO-critical content delivery pipelines under sustained traffic load.",
+        "overview": "Backend engineer outsourced through Quantox to Catena Media on AskGamblers.com, an iGaming affiliate platform with 150,000+ registered users. Refactored legacy Symfony modules achieving resource usage reductions of up to 90%, and hardened performance of SEO-critical content delivery pipelines under sustained traffic load.",
         "position": "Back-end Developer",
-        "skills": ["PHP", "Symfony", "MongoDB", "Redis"],
+        "skills": [
+          "PHP",
+          "Symfony",
+          "MongoDB",
+          "Redis",
+          "MySQL",
+          "ElasticSearch",
+          "JavaScript",
+          "HTML",
+          "CSS"
+        ],
         "to": "Jan 2020",
         "websiteUrl": "https://www.quantox.com/"
       },
@@ -244,7 +301,7 @@
         "company": "Spark451",
         "contributions": [
           {
-            "description": "Modelled and implemented the Intelligent Admissions module inside Decision451 — auto-evaluating admissions by processing hundreds of per-application properties, generating scores, and applying configured enrollment workflows automatically.",
+            "description": "Modelled and implemented the Intelligent Admissions module inside Decision451, auto-evaluating admissions by processing hundreds of per-application properties, generating scores, and applying configured enrollment workflows automatically.",
             "title": "Intelligent Admissions engine"
           },
           {
@@ -266,9 +323,9 @@
         ],
         "from": "Sep 2017",
         "location": "Remote",
-        "overview": "Built modules and features on Element451 — a higher-education CRM handling hundreds of thousands of student admissions. Most notable contribution: architecting Intelligent Admissions inside Decision451, which auto-evaluated each application by processing hundreds of candidate properties to generate scores and trigger the appropriate enrollment workflows.",
+        "overview": "Built modules and features on Element451, a higher-education CRM handling hundreds of thousands of student admissions. Most notable contribution: architecting Intelligent Admissions inside Decision451, which auto-evaluated each application by processing hundreds of candidate properties to generate scores and trigger the appropriate enrollment workflows.",
         "position": "Back-end Developer",
-        "skills": ["PHP", "Laravel", "MongoDB", "JavaScript"],
+        "skills": ["PHP", "Laravel", "MongoDB", "JavaScript", "AWS", "Docker"],
         "to": "Jun 2018",
         "websiteUrl": "https://www.spark451.com/"
       },
@@ -280,7 +337,7 @@
             "title": "Multi-stack backend delivery"
           },
           {
-            "description": "Built shared libraries covering recurring agency patterns — form handling, CMS scaffolding, API clients — eliminating duplicate effort across projects.",
+            "description": "Built shared libraries covering recurring agency patterns: form handling, CMS scaffolding, API clients, eliminating duplicate effort across projects.",
             "title": "Reusable backend modules"
           },
           {
@@ -300,7 +357,16 @@
         "location": "Belgrade, Serbia",
         "overview": "Developed and maintained multiple backends for websites, web applications, APIs, and e-commerce systems across concurrent agency client projects. Contributed to an in-house deployment workflow and helped mentor colleagues, while delivering PHP (Laravel and Symfony), Node.js, and JavaScript implementations across a range of client engagements.",
         "position": "Back-end Developer",
-        "skills": ["PHP", "Laravel", "Symfony", "Node.js"],
+        "skills": [
+          "PHP",
+          "Laravel",
+          "Symfony",
+          "Node.js",
+          "JavaScript",
+          "MySQL",
+          "HTML",
+          "CSS"
+        ],
         "to": "Sep 2017",
         "websiteUrl": "https://www.creitive.com/"
       },
@@ -312,11 +378,11 @@
             "title": "Bespoke CMS from scratch"
           },
           {
-            "description": "Handled database design through frontend UI across every engagement — no handoffs or external dependencies at any layer.",
+            "description": "Handled database design through frontend UI across every engagement, with no handoffs or external dependencies at any layer.",
             "title": "Full-stack delivery"
           },
           {
-            "description": "Scoped backend designs to the actual problem — purposeful, maintainable, and built with room to grow without pre-emptive complexity.",
+            "description": "Scoped backend designs to the actual problem: purposeful, maintainable, and built with room to grow without pre-emptive complexity.",
             "title": "Lean architecture decisions"
           },
           {
@@ -330,7 +396,7 @@
         ],
         "from": "Feb 2015",
         "location": "Belgrade, Serbia",
-        "overview": "Delivered full-stack web solutions for clients in Serbia, including a bespoke CMS built from scratch in raw object-oriented PHP with AJAX-driven JavaScript — designed to give multiple clients a centralized content management surface without off-the-shelf overhead.",
+        "overview": "Delivered full-stack web solutions for clients in Serbia, including a bespoke CMS built from scratch in raw object-oriented PHP with AJAX-driven JavaScript, designed to give multiple clients a centralized content management surface without off-the-shelf overhead.",
         "position": "Full Stack Web Developer",
         "skills": ["PHP", "Laravel", "JavaScript", "MySQL", "HTML", "CSS"],
         "to": "Apr 2016",
@@ -340,20 +406,32 @@
   },
   "languages": {
     "items": [
-      { "fluency": "Full professional proficiency", "language": "English" },
-      { "fluency": "Native speaker", "language": "Serbian" }
+      {
+        "fluency": "Full professional proficiency",
+        "language": "English"
+      },
+      {
+        "fluency": "Native speaker",
+        "language": "Serbian"
+      }
     ]
   },
-  "projects": { "items": [] },
+  "projects": {
+    "items": []
+  },
   "skills": {
     "items": [
+      {
+        "keywords": ["Laravel", "NestJS", "Node.js", "Symfony"],
+        "name": "Backend"
+      },
       {
         "keywords": [
           "Apache Kafka",
           "ElasticSearch",
-          "PostgreSQL",
           "MongoDB",
           "MySQL",
+          "PostgreSQL",
           "Redis"
         ],
         "name": "Data"
@@ -362,15 +440,20 @@
         "keywords": ["AWS", "Docker", "GitHub Actions", "Kubernetes"],
         "name": "Infrastructure"
       },
-      { "keywords": ["CSS", "HTML", "React"], "name": "Frontend" },
-      { "keywords": ["GraphQL", "gRPC", "OpenAPI"], "name": "API" },
-      { "keywords": ["JavaScript", "PHP", "TypeScript"], "name": "Language" },
       {
-        "keywords": ["Laravel", "Symfony", "NestJS", "Node.js"],
-        "name": "Backend"
+        "keywords": ["GraphQL", "gRPC", "OpenAPI"],
+        "name": "API"
+      },
+      {
+        "keywords": ["JavaScript", "PHP", "Swift", "TypeScript"],
+        "name": "Language"
+      },
+      {
+        "keywords": ["CSS", "HTML", "React", "Tailwind CSS"],
+        "name": "Frontend"
       }
     ]
   },
-  "summary": "Technical Lead and Senior Software Engineer with 11+ years building distributed backend systems across fintech, betting, and fleet logistics. Drawn to event-driven architecture and async-first design — making systems that hold up under real pressure and give teams the confidence to keep shipping.",
-  "updatedAt": "2026-10-08T08:05:04.357Z"
+  "summary": "Backend and distributed-systems engineer in Vienna. Eleven years of building event-driven services on Node.js, NestJS, Kafka, PostgreSQL and Redis across fintech, betting, healthtech and fleet logistics. I lead small teams from the first commit to zero-downtime production, and I care about correctness, clear interfaces and tools that stay out of the way.",
+  "updatedAt": "2026-10-12T09:03:17.113Z"
 }
