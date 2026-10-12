@@ -27,5 +27,6 @@ jobs:
         env:
           CV_FEED_TOKEN: ${{ secrets.CV_FEED_TOKEN }}
           CV_FEED_URL: ${{ secrets.CV_FEED_URL }}
+          CV_SNAPSHOT: ${{ vars.CV_SNAPSHOT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: git diff --exit-code
