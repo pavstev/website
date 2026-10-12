@@ -1,33 +1,20 @@
-import {
-  CanvasTexture,
-  Color,
-  Group,
-  LinearMipmapLinearFilter,
-  Mesh,
-  NoColorSpace,
-  ShaderMaterial,
-  type SphereGeometry,
-  type WebGLRenderer,
-} from "three";
+import { type Color3, parseHex } from "@/lib/planet-gl";
 
 export interface LogoPlanet {
   dispose: () => void;
-  group: Group;
   node: HTMLElement;
+  texture: WebGLTexture;
   uniforms: LogoUniforms;
 }
 
 interface LogoUniforms {
-  [uniform: string]: { value: unknown };
-  uAccent: { value: Color };
-  uDisc: { value: Color };
-  uEmboss: { value: number };
-  uHot: { value: number };
-  uMark: { value: Color };
-  uMask: { value: CanvasTexture };
-  uSpin: { value: number };
-  uTime: { value: number };
-  uTint: { value: Color };
+  uAccent: Color3;
+  uDisc: Color3;
+  uEmboss: number;
+  uHot: number;
+  uMark: Color3;
+  uSpin: number;
+  uTint: Color3;
 }
 
 const maskSize = 256;
@@ -38,7 +25,7 @@ const maskInk = {
   none: "rgb(0,0,0)",
 } as const;
 
-const logoVertex = `
+export const logoVertex = `
 varying vec3 vObj;
 varying vec3 vNormal;
 void main() {
@@ -49,7 +36,7 @@ void main() {
 }
 `;
 
-const logoFragment = `
+export const logoFragment = `
 uniform vec3 uDisc;
 uniform vec3 uMark;
 uniform vec3 uAccent;
@@ -157,17 +144,55 @@ const drawLogoMask = (svg: SVGSVGElement, size: number): HTMLCanvasElement => {
   return canvas;
 };
 
-const readHex = (style: CSSStyleDeclaration, name: string): Color => {
+const readHex = (style: CSSStyleDeclaration, name: string): Color3 => {
   const value = style.getPropertyValue(name).trim();
-  if (!value.startsWith("#")) throw new Error(`logo without ${name}`);
-  return new Color(value);
+  const color = value.startsWith("#") ? parseHex(value) : undefined;
+  if (!color) throw new Error(`logo without ${name}`);
+  return color;
+};
+
+const uploadMask = (
+  gl: WebGL2RenderingContext,
+  mask: HTMLCanvasElement
+): WebGLTexture => {
+  const texture = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+  gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, mask);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(
+    gl.TEXTURE_2D,
+    gl.TEXTURE_MIN_FILTER,
+    gl.LINEAR_MIPMAP_LINEAR
+  );
+  const anisotropic = gl.getExtension("EXT_texture_filter_anisotropic");
+  if (anisotropic) {
+    const max = gl.getParameter(
+      anisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT
+    ) as number;
+    const level = Math.min(4, max);
+    if (level > 1) {
+      gl.texParameterf(
+        gl.TEXTURE_2D,
+        anisotropic.TEXTURE_MAX_ANISOTROPY_EXT,
+        level
+      );
+    }
+  }
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  return texture;
 };
 
 export const createLogoPlanet = (
   node: HTMLElement,
-  sphere: SphereGeometry,
-  renderer: WebGLRenderer,
-  time: { value: number }
+  gl: WebGL2RenderingContext
 ): LogoPlanet => {
   const svg = node.querySelector("svg");
   if (!svg) throw new Error("logo without svg");
@@ -177,36 +202,21 @@ export const createLogoPlanet = (
   const accent = readHex(style, "--logo-accent");
   const tint = readHex(style, "--lang");
   const emboss = Number(style.getPropertyValue("--logo-emboss"));
-  const mask = drawLogoMask(svg, maskSize);
-  const texture = new CanvasTexture(mask);
-  texture.colorSpace = NoColorSpace;
-  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-  texture.minFilter = LinearMipmapLinearFilter;
-  const uniforms: LogoUniforms = {
-    uAccent: { value: accent },
-    uDisc: { value: disc },
-    uEmboss: { value: Number.isFinite(emboss) ? emboss : 0 },
-    uHot: { value: 0 },
-    uMark: { value: mark },
-    uMask: { value: texture },
-    uSpin: { value: 0 },
-    uTime: time,
-    uTint: { value: tint },
-  };
-  const material = new ShaderMaterial({
-    fragmentShader: logoFragment,
-    uniforms,
-    vertexShader: logoVertex,
-  });
-  const group = new Group();
-  group.add(new Mesh(sphere, material));
+  const texture = uploadMask(gl, drawLogoMask(svg, maskSize));
   return {
     dispose: (): void => {
-      texture.dispose();
-      material.dispose();
+      gl.deleteTexture(texture);
     },
-    group,
     node,
-    uniforms,
+    texture,
+    uniforms: {
+      uAccent: accent,
+      uDisc: disc,
+      uEmboss: Number.isFinite(emboss) ? emboss : 0,
+      uHot: 0,
+      uMark: mark,
+      uSpin: 0,
+      uTint: tint,
+    },
   };
 };

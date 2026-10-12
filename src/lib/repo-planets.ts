@@ -1,16 +1,3 @@
-import {
-  Color,
-  DoubleSide,
-  Group,
-  Mesh,
-  OrthographicCamera,
-  RingGeometry,
-  Scene,
-  ShaderMaterial,
-  SphereGeometry,
-  WebGLRenderer,
-} from "three";
-
 import { createFramePacer } from "@/lib/frame-pacer";
 import {
   createLogoMotion,
@@ -19,8 +6,29 @@ import {
   settleLogoMotion,
   stepLogoMotion,
 } from "@/lib/logo-motion";
-import { createLogoPlanet, type LogoPlanet } from "@/lib/logo-planet";
+import {
+  createLogoPlanet,
+  logoFragment,
+  type LogoPlanet,
+  logoVertex,
+} from "@/lib/logo-planet";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
+import {
+  type Color3,
+  compose,
+  createProgram,
+  createRing,
+  createSphere,
+  type Geometry,
+  type GlProgram,
+  type Mat4,
+  multiply,
+  normalMatrix,
+  offsetHsl,
+  orthographic,
+  parseHex,
+  whenLinked,
+} from "@/lib/planet-gl";
 import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
 import { globePalette } from "@/lib/theme";
 import { isSoftwareRenderer } from "@/lib/webgl";
@@ -29,7 +37,17 @@ export interface PlanetsControls {
   dispose: () => void;
 }
 
-interface LogoState {
+interface BodyUniforms {
+  uColor: Color3;
+  uHot: number;
+  uKind: number;
+  uNight: Color3;
+  uSeed: number;
+  uSpin: number;
+  uWarm: Color3;
+}
+
+interface LogoState extends Placed {
   hotGoal: number;
   inView: boolean;
   motion: LogoMotion;
@@ -37,29 +55,25 @@ interface LogoState {
   planet: LogoPlanet;
 }
 
-interface Planet {
-  group: Group;
-  hot: number;
-  hotGoal: number;
-  moon?: Mesh;
-  moonAngle: number;
-  node: HTMLElement;
-  ringMaterial?: ShaderMaterial;
-  speed: number;
-  spin: number;
-  uniforms: PlanetUniforms;
+interface Placed {
+  position: Color3;
+  scale: number;
+  visible: boolean;
 }
 
-interface PlanetUniforms {
-  [uniform: string]: { value: Color | number };
-  uColor: { value: Color };
-  uHot: { value: number };
-  uKind: { value: number };
-  uNight: { value: Color };
-  uSeed: { value: number };
-  uSpin: { value: number };
-  uTime: { value: number };
-  uWarm: { value: Color };
+interface Planet extends Placed {
+  body: BodyUniforms;
+  color: Color3;
+  hot: number;
+  hotGoal: number;
+  moon?: BodyUniforms;
+  moonAngle: number;
+  moonPosition: Color3;
+  node: HTMLElement;
+  ring: boolean;
+  speed: number;
+  spin: number;
+  tilt: number;
 }
 
 const kinds = new Map<string, number>([
@@ -72,12 +86,16 @@ const kinds = new Map<string, number>([
 const maxPixelRatio = 1.5;
 const ringInner = 1.32;
 const ringOuter = 1.74;
+const ringTilt: Color3 = [1.18, -0.28, 0];
 const moonOrbit = 1.56;
 const moonSize = 0.2;
 const bodyScale = 0.42;
 const logoScale = 0.5;
 const sunriseVisibility = 0.6;
 const frameMs = 1000 / 30;
+const near = -400;
+const far = 400;
+const origin3: Color3 = [0, 0, 0];
 
 const commonNoise = `
 float hash3(vec3 p) {
@@ -192,11 +210,10 @@ void main() {
 }
 `;
 
-const readColor = (node: HTMLElement): Color => {
-  const color = new Color(globePalette.coast);
+const readColor = (node: HTMLElement): Color3 => {
   const value = getComputedStyle(node).getPropertyValue("--lang").trim();
-  if (value.startsWith("#")) color.set(value);
-  return color;
+  const fallback = parseHex(globePalette.coast) ?? [1, 1, 1];
+  return value.startsWith("#") ? (parseHex(value) ?? fallback) : fallback;
 };
 
 const readTilt = (node: HTMLElement): number => {
@@ -210,126 +227,113 @@ export const initRepoPlanets = (
   canvas: HTMLCanvasElement,
   stage: HTMLElement
 ): PlanetsControls => {
-  const renderer = new WebGLRenderer({
+  const gl = canvas.getContext("webgl2", {
     alpha: true,
     antialias: true,
-    canvas,
+    depth: true,
     powerPreference: "low-power",
+    premultipliedAlpha: true,
+    preserveDrawingBuffer: false,
+    stencil: false,
   });
-  if (isSoftwareRenderer(renderer.getContext())) {
-    renderer.dispose();
+  if (!gl) throw new Error("webgl2 unavailable");
+  const loseContext = (): void => {
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+  };
+  if (isSoftwareRenderer(gl)) {
+    loseContext();
     throw new Error("software renderer");
   }
   const nodes = [...stage.querySelectorAll<HTMLElement>(".repo-planet")];
   const logoNodes = [...stage.querySelectorAll<HTMLElement>(".logo-planet")];
   if (nodes.length === 0 && logoNodes.length === 0) {
-    renderer.dispose();
+    loseContext();
     throw new Error("no planets");
   }
-  renderer.debug.checkShaderErrors = process.env.NODE_ENV !== "production";
+  const checkErrors = process.env.NODE_ENV !== "production";
   const fine = globalThis.matchMedia(finePointerQuery);
   const reduce = globalThis.matchMedia(reducedMotionQuery);
   let pixelRatio = Math.min(globalThis.devicePixelRatio || 1, maxPixelRatio);
-  renderer.setPixelRatio(pixelRatio);
-  const scene = new Scene();
-  const camera = new OrthographicCamera(0, 1, 0, -1, -400, 400);
-  const sphere = new SphereGeometry(1, 40, 28);
-  const ring = new RingGeometry(ringInner, ringOuter, 72, 1);
-  const materials: ShaderMaterial[] = [];
-  const timeUniform = { value: 0 };
+  const sphere = createSphere(gl, 40, 28);
+  const ring = createRing(gl, ringInner, ringOuter, 72);
+  const planetProgram = createProgram(gl, planetVertex, planetFragment);
+  const ringProgram = createProgram(gl, ringVertex, ringFragment);
+  const logoProgram = createProgram(gl, logoVertex, logoFragment);
+  const programs = [planetProgram, ringProgram, logoProgram];
+  const geometries = [sphere, ring];
+  const ringFrame = compose(origin3, ringTilt, 1);
+  let time = 0;
   const logos: LogoState[] = [];
+  const releaseGl = (): void => {
+    for (const logo of logos) logo.planet.dispose();
+    for (const geometry of geometries) geometry.dispose();
+    for (const program of programs) program.dispose();
+    loseContext();
+  };
   try {
     for (const node of logoNodes) {
-      const planet = createLogoPlanet(node, sphere, renderer, timeUniform);
-      scene.add(planet.group);
       logos.push({
         hotGoal: 0,
         inView: false,
         motion: createLogoMotion(),
         node,
-        planet,
+        planet: createLogoPlanet(node, gl),
+        position: origin3,
+        scale: 1,
+        visible: true,
       });
     }
   } catch (error) {
-    renderer.dispose();
+    releaseGl();
     throw error;
   }
 
-  const makePlanetMaterial = (
-    color: Color,
-    kind: number
-  ): [ShaderMaterial, PlanetUniforms] => {
-    const uniforms: PlanetUniforms = {
-      uColor: { value: color },
-      uHot: { value: 0 },
-      uKind: { value: kind },
-      uNight: { value: color.clone().offsetHSL(-0.08, -0.1, -0.32) },
-      uSeed: { value: (materials.length * 0.37) % 1 },
-      uSpin: { value: 0 },
-      uTime: timeUniform,
-      uWarm: { value: color.clone().offsetHSL(0.07, 0.18, 0.12) },
+  let materialCount = 0;
+  const makeBody = (color: Color3, kind: number): BodyUniforms => {
+    const uniforms: BodyUniforms = {
+      uColor: color,
+      uHot: 0,
+      uKind: kind,
+      uNight: offsetHsl(color, -0.08, -0.1, -0.32),
+      uSeed: (materialCount * 0.37) % 1,
+      uSpin: 0,
+      uWarm: offsetHsl(color, 0.07, 0.18, 0.12),
     };
-    const material = new ShaderMaterial({
-      fragmentShader: planetFragment,
-      uniforms,
-      vertexShader: planetVertex,
-    });
-    materials.push(material);
-    return [material, uniforms];
+    materialCount += 1;
+    return uniforms;
   };
 
   const planets: Planet[] = nodes.map((node, index) => {
     const color = readColor(node);
     const kindName = node.dataset["kind"] ?? "ring";
     const kind = kinds.get(kindName) ?? 0;
-    const group = new Group();
-    group.rotation.z = (-readTilt(node) * Math.PI) / 180;
-    const [bodyMaterial, uniforms] = makePlanetMaterial(color, kind);
-    group.add(new Mesh(sphere, bodyMaterial));
     const planet: Planet = {
-      group,
+      body: makeBody(color, kind),
+      color,
       hot: 0,
       hotGoal: 0,
       moonAngle: index * 2.1,
+      moonPosition: origin3,
       node,
+      position: origin3,
+      ring: kindName === "ring",
+      scale: 1,
       speed: 0.55 + index * 0.12,
       spin: index * 1.7,
-      uniforms,
+      tilt: (-readTilt(node) * Math.PI) / 180,
+      visible: true,
     };
-    if (kindName === "ring") {
-      const material = new ShaderMaterial({
-        depthWrite: false,
-        fragmentShader: ringFragment,
-        side: DoubleSide,
-        transparent: true,
-        uniforms: {
-          uColor: { value: color },
-          uHot: { value: 0 },
-          uInner: { value: ringInner },
-          uOuter: { value: ringOuter },
-          uTime: timeUniform,
-        },
-        vertexShader: ringVertex,
-      });
-      materials.push(material);
-      planet.ringMaterial = material;
-      const mesh = new Mesh(ring, material);
-      mesh.rotation.x = 1.18;
-      mesh.rotation.y = -0.28;
-      group.add(mesh);
+    if (planet.ring) {
+      materialCount += 1;
     } else if (kindName === "moon") {
-      const [moonMaterial] = makePlanetMaterial(color, 2);
-      const moon = new Mesh(sphere, moonMaterial);
-      moon.scale.setScalar(moonSize);
-      group.add(moon);
-      planet.moon = moon;
+      planet.moon = makeBody(color, 2);
     }
-    scene.add(group);
     return planet;
   });
 
   let width = 1;
   let height = 1;
+  let projection = orthographic(1, 1, near, far);
   let handle = 0;
   let last = 0;
   let visible = true;
@@ -341,45 +345,36 @@ export const initRepoPlanets = (
   const resize = (): void => {
     width = Math.max(1, stage.clientWidth);
     height = Math.max(1, stage.clientHeight);
-    renderer.setPixelRatio(pixelRatio);
-    renderer.setSize(width, height, false);
-    camera.left = 0;
-    camera.right = width;
-    camera.top = 0;
-    camera.bottom = -height;
-    camera.updateProjectionMatrix();
+    canvas.width = Math.floor(width * pixelRatio);
+    canvas.height = Math.floor(height * pixelRatio);
+    projection = orthographic(width, height, near, far);
   };
 
   const placeAt = (
-    group: Group,
+    target: Placed,
     node: HTMLElement,
     scale: number,
     origin: DOMRect
   ): void => {
     const size = node.offsetWidth;
     const box = node.getBoundingClientRect();
-    group.visible = size > 0;
-    group.position.set(
+    target.visible = size > 0;
+    target.position = [
       box.left - origin.left + box.width / 2,
       -(box.top - origin.top + box.height / 2),
-      0
-    );
-    group.scale.setScalar(size * scale);
+      0,
+    ];
+    target.scale = size * scale;
   };
 
   const place = (): void => {
     const origin = stage.getBoundingClientRect();
     for (const planet of planets) {
-      placeAt(
-        planet.group,
-        planet.node,
-        bodyScale * (1 + planet.hot * 0.07),
-        origin
-      );
+      placeAt(planet, planet.node, bodyScale * (1 + planet.hot * 0.07), origin);
     }
     for (const logo of logos) {
       placeAt(
-        logo.planet.group,
+        logo,
         logo.node,
         logoScale * (1 + logo.motion.hot * 0.07),
         origin
@@ -387,10 +382,128 @@ export const initRepoPlanets = (
     }
   };
 
+  const bindProgram = ({ program, uniform }: GlProgram): void => {
+    gl.useProgram(program);
+    gl.uniformMatrix4fv(uniform("projectionMatrix"), false, projection);
+    gl.uniform1f(uniform("uTime"), time);
+  };
+
+  const setModel = ({ uniform }: GlProgram, model: Mat4): void => {
+    gl.uniformMatrix4fv(uniform("modelViewMatrix"), false, model);
+    gl.uniformMatrix3fv(uniform("normalMatrix"), false, normalMatrix(model));
+  };
+
+  const drawGeometry = (geometry: Geometry): void => {
+    gl.bindVertexArray(geometry.vao);
+    gl.drawElements(gl.TRIANGLES, geometry.count, gl.UNSIGNED_SHORT, 0);
+  };
+
+  const drawBody = (uniforms: BodyUniforms, model: Mat4): void => {
+    const { uniform } = planetProgram;
+    setModel(planetProgram, model);
+    gl.uniform3fv(uniform("uColor"), uniforms.uColor);
+    gl.uniform3fv(uniform("uWarm"), uniforms.uWarm);
+    gl.uniform3fv(uniform("uNight"), uniforms.uNight);
+    gl.uniform1f(uniform("uSpin"), uniforms.uSpin);
+    gl.uniform1f(uniform("uKind"), uniforms.uKind);
+    gl.uniform1f(uniform("uHot"), uniforms.uHot);
+    gl.uniform1f(uniform("uSeed"), uniforms.uSeed);
+    drawGeometry(sphere);
+  };
+
+  const drawLogo = (logo: LogoState): void => {
+    const { uniform } = logoProgram;
+    const { texture, uniforms } = logo.planet;
+    setModel(logoProgram, compose(logo.position, origin3, logo.scale));
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.uniform3fv(uniform("uDisc"), uniforms.uDisc);
+    gl.uniform3fv(uniform("uMark"), uniforms.uMark);
+    gl.uniform3fv(uniform("uAccent"), uniforms.uAccent);
+    gl.uniform3fv(uniform("uTint"), uniforms.uTint);
+    gl.uniform1f(uniform("uEmboss"), uniforms.uEmboss);
+    gl.uniform1f(uniform("uSpin"), uniforms.uSpin);
+    gl.uniform1f(uniform("uHot"), uniforms.uHot);
+    drawGeometry(sphere);
+  };
+
+  const drawRing = (planet: Planet, frame: Mat4): void => {
+    const { uniform } = ringProgram;
+    setModel(ringProgram, multiply(frame, ringFrame));
+    gl.uniform3fv(uniform("uColor"), planet.color);
+    gl.uniform1f(uniform("uHot"), planet.hot);
+    drawGeometry(ring);
+  };
+
+  const prepare = (): void => {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(
+      0,
+      0,
+      Math.round(width * pixelRatio),
+      Math.round(height * pixelRatio)
+    );
+    gl.clearColor(0, 0, 0, 0);
+    gl.clearDepth(1);
+    gl.depthMask(true);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.frontFace(gl.CCW);
+    gl.cullFace(gl.BACK);
+    gl.enable(gl.CULL_FACE);
+    gl.disable(gl.BLEND);
+  };
+
+  const render = (): void => {
+    prepare();
+    const shown = planets.filter((planet) => planet.visible);
+    const frames = shown.map((planet) =>
+      compose(planet.position, [0, 0, planet.tilt], planet.scale)
+    );
+    bindProgram(planetProgram);
+    for (const [index, planet] of shown.entries()) {
+      const frame = frames[index];
+      if (!frame) continue;
+      drawBody(planet.body, frame);
+      if (!planet.moon) continue;
+      drawBody(
+        planet.moon,
+        multiply(frame, compose(planet.moonPosition, origin3, moonSize))
+      );
+    }
+    const shownLogos = logos.filter((logo) => logo.visible);
+    if (shownLogos.length > 0) {
+      bindProgram(logoProgram);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.uniform1i(logoProgram.uniform("uMask"), 0);
+      for (const logo of shownLogos) drawLogo(logo);
+    }
+    if (shown.some((planet) => planet.ring)) {
+      bindProgram(ringProgram);
+      gl.uniform1f(ringProgram.uniform("uInner"), ringInner);
+      gl.uniform1f(ringProgram.uniform("uOuter"), ringOuter);
+      gl.disable(gl.CULL_FACE);
+      gl.depthMask(false);
+      gl.enable(gl.BLEND);
+      gl.blendEquation(gl.FUNC_ADD);
+      gl.blendFuncSeparate(
+        gl.SRC_ALPHA,
+        gl.ONE_MINUS_SRC_ALPHA,
+        gl.ONE,
+        gl.ONE_MINUS_SRC_ALPHA
+      );
+      for (const [index, planet] of shown.entries()) {
+        const frame = frames[index];
+        if (frame && planet.ring) drawRing(planet, frame);
+      }
+    }
+    gl.bindVertexArray(null);
+  };
+
   const draw = (): void => {
-    if (!compiled) return;
+    if (!compiled || lost) return;
     place();
-    renderer.render(scene, camera);
+    render();
     if (ready) {
       return;
     }
@@ -402,34 +515,30 @@ export const initRepoPlanets = (
 
   const advance = (dt: number): void => {
     const seconds = dt / 1000;
-    timeUniform.value += seconds;
+    time += seconds;
     for (const planet of planets) {
       planet.hot += (planet.hotGoal - planet.hot) * (1 - Math.exp(-dt / 140));
       planet.spin += seconds * planet.speed * (1 + planet.hot * 2.4);
-      planet.uniforms.uSpin.value = planet.spin;
-      planet.uniforms.uHot.value = planet.hot;
-      if (planet.ringMaterial) {
-        const hot = planet.ringMaterial.uniforms["uHot"];
-        if (hot) hot.value = planet.hot;
-      }
+      planet.body.uSpin = planet.spin;
+      planet.body.uHot = planet.hot;
       if (!planet.moon) {
         continue;
       }
 
       planet.moonAngle += seconds * (0.95 + planet.hot);
-      planet.moon.position.set(
+      planet.moonPosition = [
         Math.cos(planet.moonAngle) * moonOrbit,
         Math.sin(planet.moonAngle) * moonOrbit * 0.28,
-        Math.sin(planet.moonAngle) * moonOrbit * 0.9
-      );
+        Math.sin(planet.moonAngle) * moonOrbit * 0.9,
+      ];
     }
     for (const logo of logos) {
       logo.motion = stepLogoMotion(logo.motion, dt, {
         hotGoal: logo.hotGoal,
         started: ready && logo.inView,
       });
-      logo.planet.uniforms.uSpin.value = logoSpin(logo.motion);
-      logo.planet.uniforms.uHot.value = logo.motion.hot;
+      logo.planet.uniforms.uSpin = logoSpin(logo.motion);
+      logo.planet.uniforms.uHot = logo.motion.hot;
     }
   };
 
@@ -580,14 +689,16 @@ export const initRepoPlanets = (
   let disposed = false;
   resize();
   advance(0);
-  void renderer
-    .compileAsync(scene, camera)
-    .catch(() => undefined)
+  void whenLinked(gl, programs, checkErrors)
     .then(() => {
-      if (disposed) return;
+      if (disposed || lost) return;
       compiled = true;
       draw();
       sync();
+    })
+    .catch(() => {
+      lost = true;
+      stop();
     });
 
   return {
@@ -597,12 +708,7 @@ export const initRepoPlanets = (
       observer.disconnect();
       visibility.disconnect();
       for (const dispose of disposers) dispose();
-      sphere.dispose();
-      ring.dispose();
-      for (const material of materials) material.dispose();
-      for (const logo of logos) logo.planet.dispose();
-      renderer.dispose();
-      renderer.forceContextLoss();
+      releaseGl();
       delete canvas.dataset["ready"];
       delete stage.dataset["planets"];
     },
