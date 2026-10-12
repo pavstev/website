@@ -6,6 +6,7 @@ import { createFrameClock } from "@/lib/frame-clock";
 import { createFramePacer } from "@/lib/frame-pacer";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
 import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
+import { skyPhase } from "@/lib/sky-clock";
 import { isSoftwareRenderer } from "@/lib/webgl";
 
 const VERTEX = `
@@ -32,6 +33,7 @@ uniform float u_clouds;
 uniform float u_cloudTime;
 uniform vec3 u_stir;
 uniform vec2 u_wind;
+uniform vec3 u_daylight;
 
 const float PI = 3.14159265;
 const float TAU = 6.2831853;
@@ -62,16 +64,27 @@ const float flashPeriod = 13.96;
 const float horizonGlow = 1.0;
 const float glowFalloff = 5.1;
 const float skyTop = 0.5;
-const float cloudHeight = 0.33;
-const float cloudCover = 0.47;
+const float cloudHeight = 0.36;
+const float cloudCover = 0.5;
 const float cloudSoft = 0.053;
 const float cloudScale = 3.13;
 const float cloudDrift = 2.6;
 const float underglow = 1.52;
-const float silver = 0.47;
+const float silver = 0.9;
 const float cloudDark = 0.74;
-const float cloudOpacity = 0.69;
-const float cloudReach = 0.52;
+const float cloudOpacity = 0.82;
+const float cloudReach = 0.62;
+const float cloudLight = 0.49;
+const float cloudDayLight = 0.55;
+const float puff = 0.85;
+const float variety = 0.65;
+const float wisps = 0.4;
+const float dayLift = 0.52;
+const float dayTint = 0.8;
+const float starFade = 0.75;
+const float coronaDay = 0.75;
+const float twilightGlow = 1.0;
+const float warmth = 0.65;
 const float stirRadius = 0.24;
 const float stirSwirl = 0.3;
 const float stirPush = 0.32;
@@ -174,11 +187,12 @@ vec3 stars(vec2 p, float t) {
   return starField(p, 30.0, 0.8, t) + starField(p + 3.7, 70.0, 0.88, t) * 0.75 + starField(p + 9.1, 150.0, 0.93, t) * 0.5;
 }
 
-vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t, float sf, vec2 sd) {
-  float top = cloudHeight * mix(1.0, 0.62, near);
+vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t, float sf, vec2 sd, vec3 warm) {
+  float tt = t * 0.01 * cloudDrift * (1.0 + near * 0.8);
+  float bank = fbm3(vec2(p.x * 0.45 + tt * 0.25 + near * 4.0, near * 7.3)) - 0.5;
+  float top = cloudHeight * mix(1.0, 0.62, near) * (1.0 + bank * variety * 1.1);
   if (yb - top * 0.35 > top + cloudSoft) return col;
   float sc = cloudScale * (1.0 + near * 0.6);
-  float tt = t * 0.01 * cloudDrift * (1.0 + near * 0.8);
   vec2 push = (u_wind * stirPush + vec2(-sd.y, sd.x) * stirSwirl) * sf * (1.0 + near * 0.5);
   vec2 q = vec2((p.x - push.x) * sc + tt + near * 13.7, (yb - push.y) * sc * 1.6 + near * 5.1);
   vec2 w = vec2(fbm3(q * 0.7 + tt * 0.3), fbm3(q * 0.7 + 3.1 - tt * 0.2));
@@ -186,15 +200,19 @@ vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t, float sf, vec2 
   float y = yb + (n - 0.5) * top * 0.7;
   float hm = smoothstep(top + cloudSoft, top - cloudSoft, y);
   if (hm <= 0.0) return col;
-  float dens = hm * smoothstep(1.0 - cloudCover - 0.12, 1.0 - cloudCover + 0.14, n + (1.0 - yb / max(top, 0.001)) * 0.35);
+  float cover = cloudCover + bank * variety * 0.55;
+  float dens = hm * smoothstep(1.0 - cover - 0.12, 1.0 - cover + 0.14, n + (1.0 - yb / max(top, 0.001)) * 0.35);
   dens = clamp(dens, 0.0, 1.0);
   if (dens <= 0.0) return col;
   float billow = fbm3(q * 2.3 + w * 2.0);
   float edge = smoothstep(0.0, 0.35, dens) * (1.0 - smoothstep(0.35, 0.9, dens));
   float under = exp(-yb * glowFalloff * 0.8);
-  vec3 body = mix(vec3(0.08, 0.085, 0.12), vec3(0.015, 0.017, 0.03), cloudDark) * (1.0 - near * 0.3) * (0.65 + 0.7 * billow);
-  vec3 lit = glowColor * under * underglow * 0.9 * horizonGlow * (0.5 + 0.9 * (1.0 - billow)) * (1.0 + sf * stirGlow);
-  vec3 cc = body + lit * (1.0 - dens * 0.4) + vec3(0.75, 0.8, 1.0) * edge * silver * 0.22;
+  vec3 body = mix(vec3(0.08, 0.085, 0.12), vec3(0.015, 0.017, 0.03), cloudDark) * (1.0 - near * 0.3);
+  body += vec3(0.15, 0.16, 0.21) * cloudLight + vec3(0.3, 0.34, 0.44) * cloudDayLight * u_daylight.x;
+  body *= 1.0 - puff * 0.5 + puff * billow;
+  vec3 glowTint = mix(glowColor, warm, clamp(u_daylight.y * warmth, 0.0, 1.0));
+  vec3 lit = glowTint * under * underglow * 0.9 * horizonGlow * (0.5 + 0.9 * (1.0 - billow)) * (1.0 + sf * stirGlow) * (1.0 + u_daylight.y * twilightGlow * 0.6);
+  vec3 cc = body + lit * (1.0 - dens * 0.4) + vec3(0.75, 0.8, 1.0) * edge * silver * 0.22 * (1.0 + u_daylight.x * 0.8);
   return mix(col, cc, dens * cloudOpacity);
 }
 
@@ -205,10 +223,20 @@ void main() {
   vec2 p = (fc - 0.5 * u_res) / u_view;
   vec2 ps = p + u_pointer;
   float t = u_time * speed;
+  float sunUp = u_daylight.x;
+  float twi = u_daylight.y;
+  float day = sunUp * dayLift;
+  vec3 warm = mix(vec3(1.0, 0.5, 0.6), vec3(1.0, 0.42, 0.16), u_daylight.z);
+  float starKeep = 1.0 - sunUp * starFade;
+  float coronaKeep = mix(1.0, coronaDay, sunUp);
 
-  vec3 col = vec3(0.02, 0.025, 0.05) + vec3(0.03, 0.05, 0.13) * (1.0 - clamp(yb, 0.0, 1.0)) * skyTop * 2.0;
-  col += stars(ps, t) * 0.55;
-  col += (glowColor * 0.3 * exp(-yb * glowFalloff) + vec3(0.55, 0.32, 0.6) * 0.1 * exp(-yb * glowFalloff * 0.39)) * horizonGlow * 2.0;
+  vec3 night = vec3(0.02, 0.025, 0.05) + vec3(0.03, 0.05, 0.13) * (1.0 - clamp(yb, 0.0, 1.0)) * skyTop * 2.0;
+  vec3 dayTop = mix(vec3(0.05, 0.08, 0.22), vec3(0.1, 0.24, 0.52), dayTint);
+  vec3 dayLow = mix(vec3(0.25, 0.3, 0.46), vec3(0.45, 0.6, 0.78), dayTint);
+  vec3 col = mix(night, mix(dayLow, dayTop, smoothstep(0.0, 1.2, yb)), day);
+  col += stars(ps, t) * 0.55 * starKeep;
+  col += (glowColor * 0.3 * exp(-yb * glowFalloff) + vec3(0.55, 0.32, 0.6) * 0.1 * exp(-yb * glowFalloff * 0.39)) * horizonGlow * 2.0 * (1.0 - day * 0.6);
+  col += (warm * 0.55 * exp(-yb * glowFalloff * 0.55) + vec3(0.6, 0.35, 0.72) * 0.16 * exp(-yb * 1.5)) * twi * twilightGlow;
 
   if (u_portrait.z > 0.5) {
     float r0 = u_portrait.z;
@@ -225,13 +253,13 @@ void main() {
       cor *= mix(1.0 - lowerFade, 1.0, smoothstep(-2.6, 0.2, d.y));
       vec3 inner = mix(vec3(1.0, 0.97, 0.92), vec3(1.0, 0.82, 0.52), 0.5);
       vec3 outer = mix(vec3(0.92, 0.92, 0.95), vec3(0.6, 0.74, 1.0), 0.5);
-      col += mix(inner, outer, smoothstep(1.0, 3.2, rr)) * cor * 0.8 * coronaBright * smoothstep(coronaReach, coronaFade, r);
+      col += mix(inner, outer, smoothstep(1.0, 3.2, rr)) * cor * 0.8 * coronaBright * smoothstep(coronaReach, coronaFade, r) * coronaKeep;
       if (r < 1.0 + flareSize + 0.05) {
         float pr = smoothstep(0.6, 0.8, fbm(spin(dir, t * flareSpin) * 9.0 + vec2(t * 0.03, 0.0))) * smoothstep(1.0 + flareSize, 1.0, r) * step(1.0, r);
-        col += hueRotate(vec3(1.0, 0.32, 0.55), flareHue) * pr * 1.4 * flares;
+        col += hueRotate(vec3(1.0, 0.32, 0.55), flareHue) * pr * 1.4 * flares * coronaKeep;
       }
       col += hueRotate(vec3(1.0, 0.42, 0.62), flareHue) * exp(-abs(r - 1.0) * r0 * u_labPx * 0.45) * rim;
-      float pulse = pow(0.5 + 0.5 * sin(t * TAU / flashPeriod), 10.0) * flash;
+      float pulse = pow(0.5 + 0.5 * sin(t * TAU / flashPeriod), 10.0) * flash * coronaKeep;
       if (pulse > 0.002) {
         vec2 bq = (d - vec2(cos(flashAngle), sin(flashAngle)) * 1.01) * r0 * u_labPx;
         float bl = length(bq);
@@ -249,15 +277,23 @@ void main() {
     float across = dot(rel, vec2(-md.y, md.x)) / meteorWidth;
     float trail = smoothstep(meteorTail, 0.0, behind) * step(-0.003, behind) * exp(-across * across);
     float head = exp(-dot(rel, rel) / 0.00005);
-    col += vec3(0.92, 0.96, 1.0) * (trail * 0.9 + head * 1.4) * sin(PI * u_meteor.w);
+    col += vec3(0.92, 0.96, 1.0) * (trail * 0.9 + head * 1.4) * sin(PI * u_meteor.w) * starKeep;
+  }
+
+  float ct = u_cloudTime * speed;
+  if (u_clouds > 0.5 && yb > 0.22 && yb < 0.8) {
+    float band = smoothstep(0.26, 0.42, yb) * smoothstep(0.8, 0.52, yb);
+    vec2 wq = vec2(p.x * 1.1 + ct * 0.012 * cloudDrift, yb * 9.0 + fbm3(vec2(p.x * 0.8 + ct * 0.004, yb * 2.0)) * 1.6);
+    float streak = smoothstep(0.55, 0.85, fbm(wq)) * band;
+    vec3 wisp = vec3(0.3, 0.33, 0.42) * (0.4 + cloudLight) + warm * 0.75 * twi + vec3(0.35, 0.4, 0.5) * sunUp * cloudDayLight;
+    col += wisp * streak * wisps;
   }
 
   if (u_clouds > 0.5 && yb < cloudReach) {
     vec2 sd = (p - u_stir.xy) / stirRadius;
     float sf = u_stir.z * exp(-dot(sd, sd));
-    float ct = u_cloudTime * speed;
-    col = cloudLayer(col, ps * 0.6 + p * 0.4, yb, 0.0, ct, sf, sd);
-    col = cloudLayer(col, p, yb, 1.0, ct, sf, sd);
+    col = cloudLayer(col, ps * 0.6 + p * 0.4, yb, 0.0, ct, sf, sd, warm);
+    col = cloudLayer(col, p, yb, 1.0, ct, sf, sd, warm);
   }
 
   if (u_ripple.z < rippleLife) {
@@ -269,7 +305,7 @@ void main() {
   float vx = fc.x / u_res.x - 0.5;
   float vy = max(max(0.5 - yt, 0.5 - yb), 0.0);
   float vignette = smoothstep(0.1, 0.9, length(vec2(vx, vy)) * 1.3);
-  col *= mix(1.0 - centerDim, 1.0, vignette);
+  col *= mix(1.0 - centerDim * (1.0 - day * 0.5), 1.0, vignette);
   col = max(hueRotate(col * brightness, hueShift), 0.0);
   col = 1.0 - exp(-col * 1.15);
   col += (fract(52.9829189 * fract(dot(fc, vec2(0.06711056, 0.00583715)))) - 0.5) / 255.0;
@@ -305,7 +341,8 @@ const meteorGapMs: [number, number] = [2000, 14_000];
 const timeWrapHighSeconds = 86_400;
 const timeWrapLowSeconds = 1024;
 const portraitSelector = "[data-card] [data-portrait]";
-const cloudZone = 0.42;
+const cloudZone = 0.5;
+const daylightEveryMs = 30_000;
 const stirHover = 0.35;
 const stirGain = 2.4;
 const stirDecay = 1.3;
@@ -382,6 +419,7 @@ const startSky = (
   const uCloudTime = gl.getUniformLocation(program, "u_cloudTime");
   const uStir = gl.getUniformLocation(program, "u_stir");
   const uWind = gl.getUniformLocation(program, "u_wind");
+  const uDaylight = gl.getUniformLocation(program, "u_daylight");
   const highPrecision =
     (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
       ?.precision ?? 0) > 0;
@@ -400,6 +438,8 @@ const startSky = (
   const meteor = { angle: 0, at: 0, x: 0, y: 0 };
   const stir = { at: 0, energy: 0, inside: false, vx: 0, vy: 0, x: 0, y: 0 };
   let cloudMs = 0;
+  let daylight = skyPhase(new Date());
+  let daylightAt = performance.now();
   const clock = createFrameClock();
   const hoverPointer = globalThis.matchMedia(finePointerQuery);
   let resizeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
@@ -494,6 +534,11 @@ const startSky = (
     gl.uniform1f(uCloudTime, (cloudMs / 1000) % timeWrap);
     gl.uniform3f(uStir, stir.x, stir.y, Math.min(stir.energy, 1));
     gl.uniform2f(uWind, stir.vx, stir.vy);
+    if (now - daylightAt >= daylightEveryMs) {
+      daylight = skyPhase(new Date());
+      daylightAt = now;
+    }
+    gl.uniform3f(uDaylight, daylight.day, daylight.twilight, daylight.dusk);
     const flight = rafId ? (skyMs - meteor.at) / meteorMs : -1;
     if (flight >= 1) launch(skyMs);
     if (flight >= 0 && flight < 1) markActive();
