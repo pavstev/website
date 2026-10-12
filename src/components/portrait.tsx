@@ -41,13 +41,5 @@ export const Portrait = ({ alt }: PortraitProps): ReactElement => (
         srcSet={portrait.srcSet}
       />
     </span>
-    <span aria-hidden="true" className="orbit" data-orbit="">
-      <span className="orbit-track" data-orbit-track="" />
-      <span className="orbit-whisper" data-orbit-whisper="" />
-      <span className="orbit-comet" data-orbit-comet="">
-        <span className="orbit-arc" />
-        <span className="orbit-head" />
-      </span>
-    </span>
   </PortraitExpander>
 );

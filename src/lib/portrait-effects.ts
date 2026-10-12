@@ -2,102 +2,10 @@ import { stillQuery } from "@/lib/motion-pause";
 import { createPortraitBead } from "@/lib/portrait-bead";
 import { prefersLightLoad } from "@/lib/save-data";
 
-const cometMs = 16_000;
-const whisperMs = 44_000;
-const breathMs = 7000;
-const hoverRate = 4;
-const openRate = 14;
-const rampMs = 700;
-const openHoldMs = 520;
 const pressMs = 320;
 const slopPx = 10;
 const clickGuardMs = 450;
 const dialogBeadRadiusPx = 64;
-
-const isMouse = (event: Event): boolean =>
-  event instanceof PointerEvent && event.pointerType === "mouse";
-
-const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3);
-
-const startOrbit = (root: HTMLElement): (() => void) => {
-  const comet = root.querySelector<HTMLElement>("[data-orbit-comet]");
-  const whisper = root.querySelector<HTMLElement>("[data-orbit-whisper]");
-  const track = root.querySelector<HTMLElement>("[data-orbit-track]");
-  const loop = { iterations: Infinity };
-  const spin = comet?.animate([{ rotate: "0deg" }, { rotate: "360deg" }], {
-    ...loop,
-    duration: cometMs,
-  });
-  const drift = whisper?.animate([{ rotate: "0deg" }, { rotate: "-360deg" }], {
-    ...loop,
-    duration: whisperMs,
-  });
-  const breath = track?.animate(
-    [{ opacity: 0.45 }, { opacity: 1 }, { opacity: 0.45 }],
-    { ...loop, duration: breathMs, easing: "ease-in-out" }
-  );
-
-  let rate = 1;
-  let frame = 0;
-  let hovering = false;
-  let hold: ReturnType<typeof setTimeout> | undefined;
-
-  const applyRate = (value: number): void => {
-    rate = value;
-    spin?.updatePlaybackRate(value);
-    drift?.updatePlaybackRate(1 + (value - 1) * 0.35);
-  };
-
-  const rampTo = (target: number, ms: number): void => {
-    if (frame !== 0) globalThis.cancelAnimationFrame(frame);
-    const from = rate;
-    const started = performance.now();
-    const step = (now: number): void => {
-      const k = Math.min(1, (now - started) / ms);
-      applyRate(from + (target - from) * easeOutCubic(k));
-      frame = k < 1 ? globalThis.requestAnimationFrame(step) : 0;
-    };
-    frame = globalThis.requestAnimationFrame(step);
-  };
-
-  const resting = (): number => (hovering ? hoverRate : 1);
-
-  const onEnter = (event: Event): void => {
-    if (!isMouse(event)) return;
-    hovering = true;
-    if (hold === undefined) rampTo(hoverRate, rampMs);
-  };
-
-  const onLeave = (event: Event): void => {
-    if (!isMouse(event)) return;
-    hovering = false;
-    if (hold === undefined) rampTo(1, rampMs * 1.6);
-  };
-
-  const onOpen = (): void => {
-    globalThis.clearTimeout(hold);
-    rampTo(openRate, 220);
-    hold = globalThis.setTimeout(() => {
-      hold = undefined;
-      rampTo(resting(), rampMs * 2);
-    }, openHoldMs);
-  };
-
-  root.addEventListener("pointerenter", onEnter);
-  root.addEventListener("pointerleave", onLeave);
-  root.addEventListener("portrait:open", onOpen);
-
-  return () => {
-    root.removeEventListener("pointerenter", onEnter);
-    root.removeEventListener("pointerleave", onLeave);
-    root.removeEventListener("portrait:open", onOpen);
-    globalThis.clearTimeout(hold);
-    if (frame !== 0) globalThis.cancelAnimationFrame(frame);
-    spin?.cancel();
-    drift?.cancel();
-    breath?.cancel();
-  };
-};
 
 interface BeadWiring {
   blocked?: () => boolean;
@@ -348,12 +256,7 @@ const startBead = (root: HTMLElement): (() => void) => {
   };
 };
 
-const startEffects = (root: HTMLElement): (() => void) => {
-  const disposers = [startOrbit(root), startBead(root)];
-  return () => {
-    for (const dispose of disposers) dispose();
-  };
-};
+const startEffects = (root: HTMLElement): (() => void) => startBead(root);
 
 export const initPortraitEffects = (root: HTMLElement): (() => void) => {
   const reduce = stillQuery();

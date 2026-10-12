@@ -86,7 +86,7 @@ describe("renderProfile", () => {
     assert.ok(header.includes("base64,BAUG"));
     assert.ok(header.includes("base64,BwgJ"));
     assert.ok(header.includes("base64,CgsM"));
-    assert.ok(header.includes("Parkinsans"));
+    assert.ok(header.includes("Geist,"));
   });
 
   it("passes its own validation", () => {

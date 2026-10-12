@@ -94,7 +94,7 @@ const fontFaces = async (): Promise<string> => {
   const css = await readFile("src/styles/globals.css", "utf8");
   const faces = css.match(/@font-face\s*\{[^}]*\}/g) ?? [];
   const wanted = faces.filter(
-    (face) => face.includes('"Inter Variable"') || face.includes('"Parkinsans"')
+    (face) => face.includes('"Inter Variable"') || face.includes('"Geist"')
   );
   const inlined = await Promise.all(
     wanted.map(async (face) => {
@@ -131,7 +131,7 @@ const ogBody = (portrait: string): string => `
     <img id="portrait" src="${portrait}" style="display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;object-position:top">
   </div>
   <div style="display:flex;flex-direction:column;gap:18px;max-width:760px">
-    <div style="font-family:Parkinsans;font-size:76px;font-weight:700;letter-spacing:-0.03em;line-height:1;padding-block:0.08em;color:${profilePalette.ring};text-shadow:0 0 30px ${shade(0.9)}">${name}</div>
+    <div style="font-family:Geist;font-size:76px;font-weight:600;letter-spacing:0.02em;line-height:1;padding-block:0.08em;color:${profilePalette.ring};text-shadow:0 0 30px ${shade(0.9)}">${name}</div>
     <div style="font-size:27px;font-weight:400;white-space:nowrap;color:${profilePalette.glyph};text-shadow:0 0 18px ${shade(0.9)}">${title}</div>
     <div style="display:flex;align-items:center;gap:12px;font-size:28px;font-weight:300;color:${profilePalette.glyph};text-shadow:0 0 18px ${shade(0.9)}">${place} ${flagSvg(28)}</div>
   </div>
@@ -203,8 +203,6 @@ const drawSky = (input: SkyInput): void => {
   );
   gl.uniform1f(at("u_clouds"), 1);
   gl.uniform1f(at("u_cloudTime"), input.cloudTime);
-  gl.uniform3f(at("u_stir"), 0, 0, 0);
-  gl.uniform2f(at("u_wind"), 0, 0);
   gl.uniform3f(
     at("u_daylight"),
     input.daylight.day,

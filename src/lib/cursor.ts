@@ -2,7 +2,6 @@ import { finePointerQuery } from "@/lib/media";
 import { stillQuery } from "@/lib/motion-pause";
 
 const proximitySelector = "[data-proximity] :is(.contact-link, .download-pill)";
-const glowSelector = "[data-cursor-glow]";
 const proximityRadius = 80;
 const proximityGain = 0.18;
 
@@ -16,7 +15,6 @@ interface ProximityTarget {
 }
 
 const startCursorEffects = (): (() => void) => {
-  const glow = document.querySelector<HTMLElement>(glowSelector);
   const targets: ProximityTarget[] = [
     ...document.querySelectorAll<HTMLElement>(proximitySelector),
   ].map((element) => ({ core: 0, cx: 0, cy: 0, element, limit: 1, value: "" }));
@@ -91,12 +89,8 @@ const startCursorEffects = (): (() => void) => {
   };
 
   const onPointerMove = (event: Event): void => {
-    const pointer = event as PointerEvent;
-    if (glow) {
-      glow.style.opacity = "1";
-      glow.style.transform = `translate3d(${String(pointer.clientX - 160)}px, ${String(pointer.clientY - 160)}px, 0)`;
-    }
     if (targets.length === 0) return;
+    const pointer = event as PointerEvent;
     pointerX = pointer.clientX;
     pointerY = pointer.clientY;
     seen = true;
@@ -104,7 +98,6 @@ const startCursorEffects = (): (() => void) => {
   };
 
   const onLeave = (): void => {
-    if (glow) glow.style.opacity = "0";
     seen = false;
     resetProximity();
   };

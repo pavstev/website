@@ -2,6 +2,7 @@
 
 import { type ReactElement, useEffect, useRef } from "react";
 
+import { type CloudWind, createCloudWind, windReach } from "@/lib/cloud-wind";
 import { createFrameClock } from "@/lib/frame-clock";
 import { createFramePacer } from "@/lib/frame-pacer";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
@@ -42,16 +43,8 @@ const meteorGapMs: [number, number] = [2000, 14_000];
 const timeWrapHighSeconds = 86_400;
 const timeWrapLowSeconds = 1024;
 const portraitSelector = "[data-card] [data-portrait]";
-const cloudZone = 0.5;
+const handReach = windReach + 0.08;
 const daylightEveryMs = 30_000;
-const stirHover = 0.35;
-const stirGain = 2.4;
-const stirDecay = 1.3;
-const stirBoost = 3.5;
-const windDecay = 2.2;
-const windMax = 1.2;
-const stirActive = stirHover + 0.05;
-const windActive = 0.05;
 
 const nextGap = (): number =>
   meteorGapMs[0] + Math.random() * (meteorGapMs[1] - meteorGapMs[0]);
@@ -93,6 +86,7 @@ const startSky = (
   gl: WebGLRenderingContext,
   program: WebGLProgram,
   canvas: HTMLCanvasElement,
+  wind: CloudWind | undefined,
   reduceMotion: MediaQueryList,
   still: boolean,
   setState: (state: SpaceState) => void
@@ -120,8 +114,7 @@ const startSky = (
   const uMeteor = gl.getUniformLocation(program, "u_meteor");
   const uClouds = gl.getUniformLocation(program, "u_clouds");
   const uCloudTime = gl.getUniformLocation(program, "u_cloudTime");
-  const uStir = gl.getUniformLocation(program, "u_stir");
-  const uWind = gl.getUniformLocation(program, "u_wind");
+  gl.uniform1i(gl.getUniformLocation(program, "u_flow"), 0);
   const uDaylight = gl.getUniformLocation(program, "u_daylight");
   const highPrecision =
     (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
@@ -139,7 +132,7 @@ const startSky = (
   const pointerTarget = { x: 0, y: 0 };
   const ripple = { age: rippleLife, x: 0, y: 0 };
   const meteor = { angle: 0, at: 0, x: 0, y: 0 };
-  const stir = { at: 0, energy: 0, inside: false, vx: 0, vy: 0, x: 0, y: 0 };
+  const hand = { inside: false, x: 0, y: 0 };
   let cloudMs = 0;
   let daylight = skyPhase(new Date());
   let daylightAt = performance.now();
@@ -187,6 +180,7 @@ const startSky = (
     scale = Math.min(entry.scale, cap) * Math.min(window.devicePixelRatio, 1);
     const width = Math.max(1, Math.floor(cssWidth * scale));
     const height = Math.max(1, Math.floor(cssHeight * scale));
+    wind?.resize(width / viewPixels());
     if (width === canvas.width && height === canvas.height) return;
     canvas.width = width;
     canvas.height = height;
@@ -217,15 +211,14 @@ const startSky = (
     const follow = 1 - Math.exp((-followRate * dt) / 1000);
     pointer.x += (pointerTarget.x - pointer.x) * follow;
     pointer.y += (pointerTarget.y - pointer.y) * follow;
-    const settle = Math.exp((-stirDecay * dt) / 1000);
-    stir.energy =
-      stir.energy * settle + (stir.inside ? (1 - settle) * stirHover : 0);
-    const calm = Math.exp((-windDecay * dt) / 1000);
-    stir.vx *= calm;
-    stir.vy *= calm;
-    if (rafId) cloudMs += Math.min(dt, 100) * (1 + stir.energy * stirBoost);
-    if (stir.energy > stirActive || Math.hypot(stir.vx, stir.vy) > windActive)
-      markActive();
+    if (rafId) cloudMs += Math.min(dt, 100);
+    if (rafId && wind && current.clouds) {
+      if (wind.busy(now)) markActive();
+      wind.step(dt / 1000, now);
+      gl.useProgram(program);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    wind?.bind(0);
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uView, viewPixels());
     gl.uniform1f(uLabPx, labPixelsPerCss / scale);
@@ -236,8 +229,6 @@ const startSky = (
     gl.uniform3f(uRipple, ripple.x, ripple.y, ripple.age);
     gl.uniform1f(uClouds, current.clouds ? 1 : 0);
     gl.uniform1f(uCloudTime, (cloudMs / 1000) % timeWrap);
-    gl.uniform3f(uStir, stir.x, stir.y, Math.min(stir.energy, 1));
-    gl.uniform2f(uWind, stir.vx, stir.vy);
     if (now - daylightAt >= daylightEveryMs) {
       daylight = skyPhase(new Date());
       daylightAt = now;
@@ -262,10 +253,8 @@ const startSky = (
   };
 
   const calmClouds = (): void => {
-    stir.energy = 0;
-    stir.inside = false;
-    stir.vx = 0;
-    stir.vy = 0;
+    hand.inside = false;
+    wind?.clear();
   };
 
   const stop = (): void => {
@@ -310,25 +299,17 @@ const startSky = (
   };
 
   const stirClouds = (event: PointerEvent): void => {
+    if (!wind) return;
     const [x, y] = toSky(event.clientX, event.clientY);
-    const bottom = y + canvas.height / 2 / viewPixels();
-    const seconds = Math.max((event.timeStamp - stir.at) / 1000, 1 / 240);
-    const dx = stir.inside ? x - stir.x : 0;
-    const dy = stir.inside ? y - stir.y : 0;
-    stir.at = event.timeStamp;
-    stir.x = x;
-    stir.y = y;
-    stir.inside = bottom < cloudZone;
-    if (!stir.inside) return;
-    const step = Math.min(Math.hypot(dx, dy), 0.2);
-    stir.energy = Math.min(1, stir.energy + step * stirGain);
-    const blend = Math.min(1, seconds * 12);
-    stir.vx += (dx / seconds - stir.vx) * blend;
-    stir.vy += (dy / seconds - stir.vy) * blend;
-    const speed = Math.hypot(stir.vx, stir.vy);
-    if (speed <= windMax) return;
-    stir.vx *= windMax / speed;
-    stir.vy *= windMax / speed;
+    const view = viewPixels();
+    const across = x + canvas.width / 2 / view;
+    const bottom = y + canvas.height / 2 / view;
+    const inside = bottom < handReach;
+    if (inside && hand.inside)
+      wind.push([hand.x, hand.y], [across, bottom], event.timeStamp);
+    hand.inside = inside;
+    hand.x = across;
+    hand.y = bottom;
   };
 
   const onPointer = (event: PointerEvent): void => {
@@ -360,7 +341,7 @@ const startSky = (
     resizeTimer = globalThis.setTimeout(applyResize, resizeDelayMs);
   };
   const onLeave = (event: PointerEvent): void => {
-    if (event.relatedTarget === null) stir.inside = false;
+    if (event.relatedTarget === null) hand.inside = false;
   };
   const onBlur = (): void => {
     stop();
@@ -415,13 +396,15 @@ export const SpaceBackground = (): ReactElement => {
       canvas.hidden = true;
       setState("fallback");
     };
-    const gl = canvas.getContext("webgl", {
+    const options: WebGLContextAttributes = {
       alpha: false,
       antialias: false,
       depth: false,
       powerPreference: "low-power",
       stencil: false,
-    });
+    };
+    const gl2 = canvas.getContext("webgl2", options);
+    const gl = gl2 ?? canvas.getContext("webgl", options);
     const still = gl ? isSoftwareRenderer(gl) : false;
     const vertex = gl ? createShader(gl, gl.VERTEX_SHADER, VERTEX) : undefined;
     const fragment = gl
@@ -442,7 +425,23 @@ export const SpaceBackground = (): ReactElement => {
         fallback();
         return;
       }
-      stopSky = startSky(gl, program, canvas, reduceMotion, still, setState);
+      const wind =
+        gl2 && !still && globalThis.matchMedia(finePointerQuery).matches
+          ? createCloudWind(gl2)
+          : undefined;
+      const stop = startSky(
+        gl,
+        program,
+        canvas,
+        wind,
+        reduceMotion,
+        still,
+        setState
+      );
+      stopSky = () => {
+        stop();
+        wind?.dispose();
+      };
     });
     return () => {
       cancelWait();

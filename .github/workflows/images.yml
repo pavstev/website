@@ -6,7 +6,8 @@ on:
     paths:
       - .github/workflows/images.yml
       - public/fonts/inter-*
-      - public/fonts/parkinsans-*
+      - public/fonts/geist-latin-*
+      - public/fonts/geist-extra-*
       - public/portraits/portrait-800.webp
       - scripts/generate-images.ts
       - src/lib/i18n.ts

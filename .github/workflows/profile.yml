@@ -7,7 +7,8 @@ on:
       - .github/workflows/profile.yml
       - .nvmrc
       - public/fonts/inter-*
-      - public/fonts/parkinsans-*
+      - public/fonts/geist-latin-*
+      - public/fonts/geist-extra-*
       - src/lib/github.ts
       - src/lib/i18n.ts
       - src/lib/icon-data.ts

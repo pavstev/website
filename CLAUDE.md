@@ -46,11 +46,11 @@ TypeScript strict, explicit return types on exports, `import { type Foo }`, keba
 ## Layout
 
 ```text
-src/app/          layout.tsx (metadata, Open Graph `profile`), page.tsx (JSON-LD, sky, cursor glow, the card), not-found.tsx, robots.ts, sitemap.ts, manifest.ts, llms.txt/route.ts, cv.json/route.ts, resume.pdf/route.ts
+src/app/          layout.tsx (metadata, Open Graph `profile`), page.tsx (JSON-LD, sky, the card), not-found.tsx, robots.ts, sitemap.ts, manifest.ts, llms.txt/route.ts, cv.json/route.ts, resume.pdf/route.ts
 src/components/   profile + portrait + portrait-expander, compound-text, download-button, resume-tip, contact-links, card-strips, repo-strip, product-strip, product-mark, card-footer,
-                  page-dock, motion-toggle, privacy-note, space-background, cursor-glow, effects-init, icon,
+                  page-dock, motion-toggle, privacy-note, space-background, effects-init, icon,
                   topic-trigger, topic-panel, topic-heading, industry-panel, city-panel, city-heading, city-globe-launcher, city-globe-stage, vienna-arms
-src/lib/          personal, products, product-marks, i18n, bio, industries, github (repos, languages, contact, getProject), cv (the CV feed, getCv), cv-feed.fixture.json (hirista's contract fixture), cv-llms, cv-sample (test data), linkedin-fields, resume-pdf, resume-file, readme-html, resume-facts, anchored-popovers, repo-tags-fit, privacy-ack, motion-pause (pause flag, head script, stillQuery), scene-hold, save-data, city, city-globe, globe-data, globe-labels, sun, world-cities, repo-planets, logo-planet, logo-motion, theme (hex for theme-color, sky palette, productPalette), sky-clock, github,
+src/lib/          personal, products, product-marks, i18n, bio, industries, github (repos, languages, contact, getProject), cv (the CV feed, getCv), cv-feed.fixture.json (hirista's contract fixture), cv-llms, cv-sample (test data), linkedin-fields, resume-pdf, resume-file, readme-html, resume-facts, anchored-popovers, repo-tags-fit, privacy-ack, motion-pause (pause flag, head script, stillQuery), scene-hold, save-data, city, city-globe, globe-data, globe-labels, sun, world-cities, repo-planets, logo-planet, logo-motion, theme (hex for theme-color, sky palette, productPalette), sky-clock, cloud-wind, github,
                   frame-clock, intro, portrait-effects, portrait-bead, portrait-expand, contact-links, download-ring,
                   pill-aurora, cursor, webgl, icon-data
 src/styles/       globals.css (tokens, one dark palette + print, type utilities, card styles)

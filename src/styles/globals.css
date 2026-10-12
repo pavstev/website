@@ -23,22 +23,20 @@
 }
 
 @font-face {
-  font-family: "Parkinsans";
+  font-family: "Geist";
   font-style: normal;
   font-display: swap;
-  font-weight: 300 800;
-  src: url("/fonts/parkinsans-latin-wght-v5.3.0.woff2")
-    format("woff2-variations");
+  font-weight: 600;
+  src: url("/fonts/geist-latin-600-v5.woff2") format("woff2");
   unicode-range: U+0020-007E, U+00A0, U+2019;
 }
 
 @font-face {
-  font-family: "Parkinsans";
+  font-family: "Geist";
   font-style: normal;
   font-display: swap;
-  font-weight: 300 800;
-  src: url("/fonts/parkinsans-extra-wght-v5.3.0.woff2")
-    format("woff2-variations");
+  font-weight: 600;
+  src: url("/fonts/geist-extra-600-v5.woff2") format("woff2");
   unicode-range:
     U+0106-0107, U+010C-010D, U+0110-0111, U+0160-0161, U+017D-017E;
 }
@@ -356,27 +354,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .cursor-glow {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 30;
-    width: 20rem;
-    height: 20rem;
-    border-radius: 999px;
-    pointer-events: none;
-    opacity: 0;
-    mix-blend-mode: screen;
-    background: radial-gradient(
-      closest-side,
-      rgba(122, 162, 255, 0.1),
-      transparent
-    );
-    transition:
-      transform 0.18s ease-out,
-      opacity 0.4s ease-out;
-  }
-
   .fade-up {
     opacity: 0;
     transform: translateY(6px);
@@ -537,7 +514,10 @@ html {
 
 .name-signal {
   position: relative;
-  font-family: "Parkinsans", var(--font-sans);
+  font-family: "Geist", var(--font-sans);
+  font-size: calc(var(--text-display-size) * 47 / 44);
+  font-weight: 600;
+  letter-spacing: 0.02em;
   margin-block: calc(var(--card-gap-name) - 0.12em) -0.12em;
   padding-block: 0.12em;
 }
@@ -615,11 +595,6 @@ html {
   white-space: nowrap;
 }
 
-.name-letter {
-  font-variation-settings: "wght" 700;
-  transform-origin: 50% 72%;
-}
-
 .name-tear {
   position: absolute;
   inset: -0.2em -0.6em;
@@ -635,37 +610,6 @@ html {
 
 [data-name][data-tearing] .name-letters {
   opacity: 0;
-}
-
-[data-name][data-glitch] .name-word {
-  display: inline-flex;
-  justify-content: center;
-  width: var(--word-width, auto);
-}
-
-[data-name][data-glitch] .name-letter {
-  display: inline-block;
-  animation: name-morph 900ms var(--ease-smooth)
-    calc(500ms + var(--i, 0) * 32ms) both;
-}
-
-@keyframes name-morph {
-  0% {
-    font-variation-settings: "wght" 700;
-    transform: scaleX(1);
-  }
-  32% {
-    font-variation-settings: "wght" 300;
-    transform: scaleX(0.76);
-  }
-  68% {
-    font-variation-settings: "wght" 800;
-    transform: scaleX(1.22);
-  }
-  100% {
-    font-variation-settings: "wght" 700;
-    transform: scaleX(1);
-  }
 }
 
 @keyframes name-tune {
@@ -872,84 +816,6 @@ html {
   opacity: 0;
 }
 
-.orbit {
-  position: absolute;
-  inset: -8.75px;
-  display: block;
-  border-radius: 9999px;
-  pointer-events: none;
-}
-
-.orbit > span {
-  position: absolute;
-  inset: 0;
-  display: block;
-  border-radius: 9999px;
-}
-
-.orbit > .orbit-track {
-  inset: 0.25px;
-  border: 1px solid var(--border-strong);
-  opacity: 0.7;
-}
-
-.orbit > .orbit-whisper {
-  inset: -4px;
-  opacity: 0.7;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    color-mix(in oklab, var(--sky-violet) 80%, transparent) 3deg,
-    color-mix(in oklab, var(--sky-blue) 35%, transparent) 46deg,
-    transparent 92deg,
-    transparent 360deg
-  );
-  mask-image: radial-gradient(
-    farthest-side,
-    transparent calc(100% - 1.25px),
-    black calc(100% - 0.75px),
-    black calc(100% - 0.25px),
-    transparent 100%
-  );
-}
-
-.orbit-comet > .orbit-arc {
-  position: absolute;
-  inset: 0;
-  display: block;
-  border-radius: 9999px;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    transparent 236deg,
-    color-mix(in oklab, var(--sky-rose) 28%, transparent) 290deg,
-    color-mix(in oklab, var(--sky-rose) 80%, transparent) 332deg,
-    var(--sky-gold) 359.5deg,
-    transparent 360deg
-  );
-  mask-image: radial-gradient(
-    farthest-side,
-    transparent calc(100% - 1.75px),
-    black calc(100% - 1.25px),
-    black calc(100% - 0.25px),
-    transparent 100%
-  );
-}
-
-.orbit-head {
-  position: absolute;
-  top: -1.25px;
-  left: 50%;
-  width: 4px;
-  height: 4px;
-  margin-left: -2px;
-  border-radius: 9999px;
-  background: color-mix(in oklab, var(--sky-gold) 55%, var(--foreground));
-  box-shadow:
-    0 0 6px 1.5px color-mix(in oklab, var(--sky-gold) 90%, transparent),
-    0 0 16px 4px color-mix(in oklab, var(--sky-rose) 30%, transparent);
-}
-
 .portrait-dialog {
   position: fixed;
   inset: 0;
@@ -1010,7 +876,7 @@ html:has(.portrait-dialog[open]) {
   inset: 0;
   display: block;
   overflow: hidden;
-  border-radius: var(--radius-lg);
+  border-radius: 9999px;
   background: var(--background);
   box-shadow:
     0 0 0 1px var(--border-strong),
@@ -1028,48 +894,17 @@ html:has(.portrait-dialog[open]) {
 }
 
 .portrait-halo {
-  --halo-radius: calc(var(--radius-lg) + 14.75px);
   position: absolute;
-  inset: -14.75px;
+  inset: 0;
   display: block;
-  border-radius: var(--halo-radius);
   pointer-events: none;
-}
-
-.portrait-halo::before,
-.portrait-halo::after {
-  content: "";
-  position: absolute;
-  border-radius: inherit;
-}
-
-.portrait-halo::after {
-  inset: 0.25px;
-  border: 1px solid var(--border);
-}
-
-.portrait-halo::before {
-  inset: 0.25px;
-  padding: 1.25px;
-  background: conic-gradient(
-    from 45deg,
-    var(--sky-gold) 0deg,
-    transparent 1deg,
-    transparent 190deg,
-    color-mix(in oklab, var(--sky-rose) 40%, transparent) 300deg,
-    var(--sky-gold) 360deg
-  );
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
 }
 
 .portrait-close {
   position: absolute;
   z-index: 1;
-  top: calc(14.75px + 0.625rem + 22px);
-  left: calc(100% - 14.75px - 0.625rem - 22px);
+  top: 14.64%;
+  left: 85.36%;
   display: grid;
   place-items: center;
   width: 44px;
@@ -1094,24 +929,6 @@ html:has(.portrait-dialog[open]) {
   .portrait-close:hover {
     border-color: var(--sky-gold);
     background: color-mix(in oklab, var(--sky-gold) 14%, var(--background));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .orbit > .orbit-comet,
-  .orbit > .orbit-whisper {
-    display: none;
-  }
-}
-
-:root[data-motion-paused] .orbit > .orbit-comet,
-:root[data-motion-paused] .orbit > .orbit-whisper {
-  display: none;
-}
-
-.orbit > .orbit-track {
-  @variant still {
-    opacity: 0.6;
   }
 }
 

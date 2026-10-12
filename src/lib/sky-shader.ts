@@ -20,8 +20,7 @@ uniform vec3 u_ripple;
 uniform vec4 u_meteor;
 uniform float u_clouds;
 uniform float u_cloudTime;
-uniform vec3 u_stir;
-uniform vec2 u_wind;
+uniform sampler2D u_flow;
 uniform vec3 u_daylight;
 
 const float PI = 3.14159265;
@@ -53,19 +52,21 @@ const float flashPeriod = 13.96;
 const float horizonGlow = 1.0;
 const float glowFalloff = 5.1;
 const float skyTop = 0.5;
-const float cloudHeight = 0.36;
-const float cloudCover = 0.5;
-const float cloudSoft = 0.053;
+const float cloudHeight = 0.4;
+const float cloudCover = 0.6;
+const float cloudSoft = 0.035;
 const float cloudScale = 3.13;
 const float cloudDrift = 2.6;
 const float underglow = 1.52;
-const float silver = 0.9;
+const float silver = 1.4;
 const float cloudDark = 0.74;
-const float cloudOpacity = 0.82;
+const float cloudOpacity = 0.95;
 const float cloudReach = 0.62;
-const float cloudLight = 0.49;
+const float cloudLight = 0.6;
 const float cloudDayLight = 0.55;
-const float puff = 0.85;
+const float puff = 1.15;
+const float shapeStep = 0.22;
+const float shapeGain = 2.5;
 const float variety = 0.65;
 const float wisps = 0.4;
 const float dayLift = 0.52;
@@ -74,11 +75,6 @@ const float starFade = 0.75;
 const float coronaDay = 0.75;
 const float twilightGlow = 1.0;
 const float warmth = 0.65;
-const float stirRadius = 0.24;
-const float stirSwirl = 0.3;
-const float stirPush = 0.32;
-const float stirWarp = 1.8;
-const float stirGlow = 0.7;
 const float coronaReach = 14.0;
 const float coronaFade = 9.0;
 const float coronaTaperStart = 3.0;
@@ -176,32 +172,33 @@ vec3 stars(vec2 p, float t) {
   return starField(p, 30.0, 0.8, t) + starField(p + 3.7, 70.0, 0.88, t) * 0.75 + starField(p + 9.1, 150.0, 0.93, t) * 0.5;
 }
 
-vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t, float sf, vec2 sd, vec3 warm) {
+vec3 cloudLayer(vec3 col, vec2 p, float yb, float near, float t, float thin, vec3 warm) {
   float tt = t * 0.01 * cloudDrift * (1.0 + near * 0.8);
   float bank = fbm3(vec2(p.x * 0.45 + tt * 0.25 + near * 4.0, near * 7.3)) - 0.5;
   float top = cloudHeight * mix(1.0, 0.62, near) * (1.0 + bank * variety * 1.1);
   if (yb - top * 0.35 > top + cloudSoft) return col;
   float sc = cloudScale * (1.0 + near * 0.6);
-  vec2 push = (u_wind * stirPush + vec2(-sd.y, sd.x) * stirSwirl) * sf * (1.0 + near * 0.5);
-  vec2 q = vec2((p.x - push.x) * sc + tt + near * 13.7, (yb - push.y) * sc * 1.6 + near * 5.1);
+  vec2 q = vec2(p.x * sc + tt + near * 13.7, yb * sc * 1.6 + near * 5.1);
   vec2 w = vec2(fbm3(q * 0.7 + tt * 0.3), fbm3(q * 0.7 + 3.1 - tt * 0.2));
-  float n = fbm(q + w * (1.2 + sf * stirWarp));
+  float n = fbm(q + w * 1.2);
   float y = yb + (n - 0.5) * top * 0.7;
   float hm = smoothstep(top + cloudSoft, top - cloudSoft, y);
   if (hm <= 0.0) return col;
   float cover = cloudCover + bank * variety * 0.55;
-  float dens = hm * smoothstep(1.0 - cover - 0.12, 1.0 - cover + 0.14, n + (1.0 - yb / max(top, 0.001)) * 0.35);
-  dens = clamp(dens, 0.0, 1.0);
+  float dens = hm * smoothstep(1.0 - cover - 0.06, 1.0 - cover + 0.08, n + (1.0 - yb / max(top, 0.001)) * 0.35);
+  dens = clamp(dens, 0.0, 1.0) * (1.0 - thin);
   if (dens <= 0.0) return col;
   float billow = fbm3(q * 2.3 + w * 2.0);
-  float edge = smoothstep(0.0, 0.35, dens) * (1.0 - smoothstep(0.35, 0.9, dens));
+  float face = clamp(0.5 + (n - fbm(q - vec2(0.0, shapeStep) + w * 1.2)) * shapeGain, 0.0, 1.0);
+  float edge = smoothstep(0.0, 0.5, dens) * (1.0 - smoothstep(0.5, 1.0, dens));
   float under = exp(-yb * glowFalloff * 0.8);
   vec3 body = mix(vec3(0.08, 0.085, 0.12), vec3(0.015, 0.017, 0.03), cloudDark) * (1.0 - near * 0.3);
   body += vec3(0.15, 0.16, 0.21) * cloudLight + vec3(0.3, 0.34, 0.44) * cloudDayLight * u_daylight.x;
-  body *= 1.0 - puff * 0.5 + puff * billow;
+  body *= (1.0 - puff * 0.5 + puff * billow) * mix(0.6, 1.25, face);
   vec3 glowTint = mix(glowColor, warm, clamp(u_daylight.y * warmth, 0.0, 1.0));
-  vec3 lit = glowTint * under * underglow * 0.9 * horizonGlow * (0.5 + 0.9 * (1.0 - billow)) * (1.0 + sf * stirGlow) * (1.0 + u_daylight.y * twilightGlow * 0.6);
-  vec3 cc = body + lit * (1.0 - dens * 0.4) + vec3(0.75, 0.8, 1.0) * edge * silver * 0.22 * (1.0 + u_daylight.x * 0.8);
+  vec3 lit = glowTint * under * underglow * 0.9 * horizonGlow * (0.5 + 0.9 * (1.0 - billow)) * (1.0 + u_daylight.y * twilightGlow * 0.6);
+  lit *= mix(0.35, 1.7, face);
+  vec3 cc = body + lit * (1.0 - dens * 0.4) + vec3(0.75, 0.8, 1.0) * edge * mix(0.3, 1.6, face) * silver * 0.22 * (1.0 + u_daylight.x * 0.8);
   return mix(col, cc, dens * cloudOpacity);
 }
 
@@ -279,10 +276,9 @@ void main() {
   }
 
   if (u_clouds > 0.5 && yb < cloudReach) {
-    vec2 sd = (p - u_stir.xy) / stirRadius;
-    float sf = u_stir.z * exp(-dot(sd, sd));
-    col = cloudLayer(col, ps * 0.6 + p * 0.4, yb, 0.0, ct, sf, sd, warm);
-    col = cloudLayer(col, p, yb, 1.0, ct, sf, sd, warm);
+    vec3 fl = texture2D(u_flow, vec2(fc.x / u_res.x, yb / cloudReach)).xyz;
+    col = cloudLayer(col, ps * 0.6 + p * 0.4 - fl.xy * 0.6, yb - fl.y * 0.6, 0.0, ct, fl.z * 0.6, warm);
+    col = cloudLayer(col, p - fl.xy, yb - fl.y, 1.0, ct, fl.z, warm);
   }
 
   if (u_ripple.z < rippleLife) {

@@ -41,8 +41,8 @@ const files = renderProfile({
   fonts: {
     extra: readFont("inter-extra-wght-"),
     latin: readFont("inter-latin-wght-"),
-    nameExtra: readFont("parkinsans-extra-wght-"),
-    nameLatin: readFont("parkinsans-latin-wght-"),
+    nameExtra: readFont("geist-extra-600-"),
+    nameLatin: readFont("geist-latin-600-"),
   },
   icons: iconData,
   personal: person,

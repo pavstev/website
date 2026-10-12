@@ -5,14 +5,8 @@ const introEndMs = 5600;
 const firstGapMs = 2400;
 const everyMs = 8000;
 const restAfterMs = 30_000;
-const burstMs = 1900;
+const burstMs = 600;
 const wakeEvents = ["pointermove", "pointerdown", "keydown", "wheel", "scroll"];
-
-const holdWords = (name: HTMLElement): void => {
-  for (const word of name.querySelectorAll<HTMLElement>(".name-word")) {
-    word.style.setProperty("--word-width", getComputedStyle(word).width);
-  }
-};
 
 export const initNameGlitch = (name: HTMLElement): (() => void) => {
   const reduce = stillQuery();
@@ -42,7 +36,6 @@ export const initNameGlitch = (name: HTMLElement): (() => void) => {
     )
       return;
     name.dataset["tuned"] = "";
-    holdWords(name);
     name.dataset["glitch"] = "";
     tear.play();
     globalThis.clearTimeout(settle);

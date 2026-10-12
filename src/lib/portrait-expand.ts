@@ -42,7 +42,6 @@ export const createPortraitExpander = (
     button.querySelector<HTMLElement>("[data-portrait-photo]") ?? button;
   const scrim = dialog.querySelector<HTMLElement>("[data-expander-scrim]");
   const halo = dialog.querySelector<HTMLElement>("[data-expander-halo]");
-  const lens = dialog.querySelector<HTMLElement>("[data-expander-lens]");
   let running: Animation[] = [];
   let closing = false;
 
@@ -98,17 +97,6 @@ export const createPortraitExpander = (
         easing: openEasing,
       }),
     ];
-    if (lens) {
-      running.push(
-        lens.animate(
-          [
-            { borderRadius: "50%" },
-            { borderRadius: getComputedStyle(lens).borderTopLeftRadius },
-          ],
-          { duration: openMs, easing: openEasing }
-        )
-      );
-    }
     if (scrim) {
       running.push(
         scrim.animate([{ opacity: 0 }, { opacity: 1 }], {
@@ -162,7 +150,6 @@ export const createPortraitExpander = (
     const current = getComputedStyle(frame).transform;
     const scrimOpacity = scrim ? getComputedStyle(scrim).opacity : "1";
     const haloOpacity = halo ? getComputedStyle(halo).opacity : "1";
-    const corner = lens ? getComputedStyle(lens).borderTopLeftRadius : "0px";
     stopAll();
     const target = offsetFrom(
       photo.getBoundingClientRect(),
@@ -173,15 +160,6 @@ export const createPortraitExpander = (
       { duration: closeMs, easing: closeEasing, fill: "forwards" }
     );
     running = [shrink];
-    if (lens) {
-      running.push(
-        lens.animate([{ borderRadius: corner }, { borderRadius: "50%" }], {
-          duration: closeMs,
-          easing: closeEasing,
-          fill: "forwards",
-        })
-      );
-    }
     if (scrim) {
       running.push(
         scrim.animate([{ opacity: scrimOpacity }, { opacity: 0 }], {

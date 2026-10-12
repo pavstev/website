@@ -9,7 +9,7 @@ const starCount = 90;
 const extraRange =
   "U+0106-0107,U+010C-010D,U+0110-0111,U+0160-0161,U+017D-017E";
 const fontFamily = `"Inter Variable",Inter,"Helvetica Neue",Arial,sans-serif`;
-const nameFamily = `Parkinsans,${fontFamily}`;
+const nameFamily = `Geist,${fontFamily}`;
 
 const fontFace = (
   family: string,
@@ -60,7 +60,7 @@ export const renderHeader = (input: ProfileInput): string => {
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${String(width)} ${String(height)}" role="img" aria-labelledby="title">`,
     `<title id="title">${escapeXml(label)}</title>`,
     `<defs>`,
-    `<style>${fontFace("Inter Variable", "100 900", fonts.latin)}${fontFace("Inter Variable", "100 900", fonts.extra, extraRange)}${fontFace("Parkinsans", "300 800", fonts.nameLatin)}${fontFace("Parkinsans", "300 800", fonts.nameExtra, extraRange)}.n{font:700 132px ${nameFamily};letter-spacing:-2px;fill:${ring}}.s{font:400 46px ${fontFamily};fill:${glyph}}</style>`,
+    `<style>${fontFace("Inter Variable", "100 900", fonts.latin)}${fontFace("Inter Variable", "100 900", fonts.extra, extraRange)}${fontFace("Geist", "600", fonts.nameLatin)}${fontFace("Geist", "600", fonts.nameExtra, extraRange)}.n{font:600 132px ${nameFamily};letter-spacing:2.64px;fill:${ring}}.s{font:400 46px ${fontFamily};fill:${glyph}}</style>`,
     glow("gv", sky.violet, ".38"),
     glow("gb", sky.blue, ".3"),
     glow("gr", sky.rose, ".4"),
