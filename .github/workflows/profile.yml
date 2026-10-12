@@ -12,6 +12,7 @@ on:
       - src/lib/i18n.ts
       - src/lib/icon-data.ts
       - src/lib/personal.ts
+      - src/lib/products.ts
       - src/lib/theme.ts
       - src/profile/**
       - tsconfig.json
@@ -33,6 +34,10 @@ concurrency:
 
 jobs:
   sync:
+    permissions:
+      actions: write
+      contents: read
+      issues: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -104,3 +109,33 @@ jobs:
           git commit -m "chore: sync profile from pavstev/website@${SOURCE_SHA::7}" -m "Source: https://github.com/pavstev/website/commit/${SOURCE_SHA}"
           git push origin HEAD:main
           echo "Pushed the new profile." >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the schedule alive
+        if: always() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/profile.yml/enable"
+      - name: Report the failure
+        if: failure() && github.ref == 'refs/heads/main'
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create profile-sync --color B60205 --description "The profile sync workflow failed" --force
+          body="The profile sync failed ($GITHUB_EVENT_NAME): $RUN_URL"
+          issue="$(gh issue list --label profile-sync --state open --limit 1 --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "Profile sync failed" --label profile-sync --body "$body"
+          fi
+      - name: Close the failure report
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue list --label profile-sync --state open --json number --jq '.[].number' | while read -r issue; do
+            gh issue close "$issue" --comment "The profile sync works again: $RUN_URL"
+          done
