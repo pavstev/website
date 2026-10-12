@@ -304,7 +304,12 @@ const browser = await chromium.launch({
 try {
   const page = await browser.newPage({ deviceScaleFactor: 1 });
   for (const spec of specs) {
-    const bytes = await render(page, spec, faces);
+    const passes = await Array.fromAsync([1, 2], async () =>
+      render(page, spec, faces)
+    );
+    const [bytes, again] = passes;
+    if (!bytes || !again || !bytes.equals(again))
+      throw new Error(`${spec.file} differs between two renders`);
     const changed = await writeIfChanged(spec.file, bytes);
     console.warn(
       `${changed ? "Updated" : "Unchanged"} ${spec.file} (${String(spec.width)}x${String(spec.height)}, ${String(Math.round(bytes.length / 1024))} KB)`
