@@ -25,9 +25,18 @@ interface ImageSpec {
   corona: Corona | string;
   daylight: Daylight;
   file: string;
+  fragment: string;
   height: number;
+  meteor: Meteor;
   type: "jpeg" | "png";
   width: number;
+}
+
+interface Meteor {
+  angle: number;
+  progress: number;
+  x: number;
+  y: number;
 }
 
 interface SkyInput {
@@ -36,6 +45,7 @@ interface SkyInput {
   daylight: Daylight;
   fragment: string;
   labPx: number;
+  meteor: Meteor;
   ripple: number;
   time: number;
   vertex: string;
@@ -48,20 +58,32 @@ const labPixelsPerCss = 1.2;
 const rippleLife = 1.6;
 const jpegQuality = 88;
 
+const noMeteor: Meteor = { angle: 0, progress: 2, x: 0, y: 0 };
+
+const longRays: Array<[string, string]> = [
+  ["const float coronaSize = 0.48;", "const float coronaSize = 1.60;"],
+  ["const float coronaBright = 1.06;", "const float coronaBright = 1.30;"],
+];
+
+const patchShader = (
+  shader: string,
+  swaps: Array<[string, string]>
+): string => {
+  let source = shader;
+  for (const [from, to] of swaps) {
+    if (!source.includes(from))
+      throw new Error(`The sky shader no longer holds: ${from}`);
+    source = source.replace(from, () => to);
+  }
+  return source;
+};
+
 const rgba = (hex: string, alpha: number): string => {
   const value = Number.parseInt(hex.slice(1), 16);
   return `rgba(${[(value >> 16) & 255, (value >> 8) & 255, value & 255, alpha].join(", ")})`;
 };
 
 const shade = (alpha: number): string => rgba(designTokens.background, alpha);
-
-const halo = (radius: number): string =>
-  [
-    `0 0 2px ${shade(0.55)}`,
-    `0 0 ${String(radius)}px ${shade(0.55)}`,
-    `0 0 ${String(radius * 2.2)}px ${shade(0.45)}`,
-    `0 1px 2px ${shade(0.6)}`,
-  ].join(", ");
 
 const dataUrl = async (file: string, mime: string): Promise<string> => {
   const bytes = await readFile(file);
@@ -113,13 +135,6 @@ const ogBody = (portrait: string): string => `
     <div style="font-size:27px;font-weight:400;white-space:nowrap;color:${profilePalette.glyph};text-shadow:0 0 18px ${shade(0.9)}">${title}</div>
     <div style="display:flex;align-items:center;gap:12px;font-size:28px;font-weight:300;color:${profilePalette.glyph};text-shadow:0 0 18px ${shade(0.9)}">${place} ${flagSvg(28)}</div>
   </div>
-</div>`;
-
-const coverBody = `
-<div style="position:absolute;left:1000px;top:176px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;color:${profilePalette.ring}">
-  <div style="font-family:Parkinsans;font-size:74px;font-weight:700;letter-spacing:-0.03em;line-height:1;padding-block:0.08em;white-space:nowrap;text-shadow:${halo(10)}">${name}</div>
-  <div style="font-size:25px;font-weight:450;letter-spacing:-0.005em;white-space:nowrap;text-shadow:${halo(8)}">${title}</div>
-  <div style="display:flex;align-items:center;gap:10px;font-size:22px;font-weight:400;text-shadow:${halo(8)}">${place} ${flagSvg(24)}</div>
 </div>`;
 
 const waitForAssets = async (): Promise<void> => {
@@ -179,7 +194,13 @@ const drawSky = (input: SkyInput): void => {
   gl.uniform2f(at("u_pointer"), 0, 0);
   gl.uniform3f(at("u_portrait"), corona.x, height - corona.y, corona.radius);
   gl.uniform3f(at("u_ripple"), 0, 0, input.ripple);
-  gl.uniform4f(at("u_meteor"), 0, 0, 0, 2);
+  gl.uniform4f(
+    at("u_meteor"),
+    input.meteor.x,
+    input.meteor.y,
+    input.meteor.angle,
+    input.meteor.progress
+  );
   gl.uniform1f(at("u_clouds"), 1);
   gl.uniform1f(at("u_cloudTime"), input.cloudTime);
   gl.uniform3f(at("u_stir"), 0, 0, 0);
@@ -213,8 +234,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
     cloudTime,
     corona: spec.corona,
     daylight: spec.daylight,
-    fragment: skyFragmentShader,
+    fragment: spec.fragment,
     labPx: labPixelsPerCss,
+    meteor: spec.meteor,
     ripple: rippleLife,
     time: skyTime,
     vertex: skyVertexShader,
@@ -250,16 +272,20 @@ const specs: ImageSpec[] = [
     corona: "#portrait",
     daylight: { day: 0, dusk: 0, twilight: 0 },
     file: path.join(publicDir, "og-image.jpg"),
+    fragment: skyFragmentShader,
     height: 630,
+    meteor: noMeteor,
     type: "jpeg",
     width: 1200,
   },
   {
-    body: coverBody,
-    corona: { radius: 44, x: 1418, y: 92 },
-    daylight: { day: 1, dusk: 1, twilight: 0 },
+    body: "",
+    corona: { radius: 170, x: -170, y: -170 },
+    daylight: { day: 0, dusk: 0, twilight: 0 },
     file: path.join(publicDir, "linkedin-cover.png"),
+    fragment: patchShader(skyFragmentShader, longRays),
     height: 396,
+    meteor: { angle: -0.4, progress: 0.55, x: 0.3, y: 0.38 },
     type: "png",
     width: 1584,
   },
