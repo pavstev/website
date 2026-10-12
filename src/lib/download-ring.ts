@@ -6,7 +6,7 @@ interface DownloadLabels {
   idle: string;
 }
 
-const circumference = 125.66;
+const ringLength = 100;
 const collapsedWidth = 44;
 const ease = "cubic-bezier(0.16, 1, 0.3, 1)";
 const collapseMs = 220;
@@ -26,7 +26,7 @@ export const initDownloadRing = (
 ): (() => void) => {
   const label = anchor.querySelector<HTMLElement>("[data-label]");
   const ring = anchor.querySelector<SVGElement>("[data-ring]");
-  const arc = anchor.querySelector<SVGCircleElement>("[data-ring-arc]");
+  const arc = anchor.querySelector<SVGPathElement>("[data-ring-arc]");
   const downloadIcon = anchor.querySelector<HTMLElement>(
     "[data-icon-download]"
   );
@@ -90,7 +90,7 @@ export const initDownloadRing = (
       delay: ringStartMs,
       duration: ringMs,
     });
-    run(arc, [{ strokeDashoffset: circumference }, { strokeDashoffset: 0 }], {
+    run(arc, [{ strokeDashoffset: ringLength }, { strokeDashoffset: 0 }], {
       delay: ringStartMs,
       duration: ringMs,
       easing: "linear",

@@ -63,10 +63,24 @@ describe("phaseAt", () => {
 });
 
 describe("skyPhase", () => {
-  it("reads the local clock", () => {
-    const night = skyPhase(new Date(2026, 9, 12, 2, 0));
-    const noon = skyPhase(new Date(2026, 9, 12, 13, 0));
+  it("reads the Vienna clock in summer", () => {
+    const night = skyPhase(new Date("2026-07-01T00:00:00Z"));
+    const noon = skyPhase(new Date("2026-07-01T11:00:00Z"));
     assert.equal(night.day, 0);
     assert.ok(noon.day > 0.9);
+  });
+
+  it("reads the Vienna clock in winter", () => {
+    const night = skyPhase(new Date("2026-01-15T22:00:00Z"));
+    const noon = skyPhase(new Date("2026-01-15T11:00:00Z"));
+    assert.equal(night.day, 0);
+    assert.ok(noon.day > 0.9);
+  });
+
+  it("ends the October day around the Vienna sunset", () => {
+    const before = skyPhase(new Date("2026-10-12T15:00:00Z"));
+    const after = skyPhase(new Date("2026-10-12T17:30:00Z"));
+    assert.ok(before.day > 0.5);
+    assert.equal(after.day, 0);
   });
 });

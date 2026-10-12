@@ -1,7 +1,6 @@
 const deg = Math.PI / 180;
 const msPerDay = 86_400_000;
 const horizonDeg = -0.833;
-const defaultLatitude = 47;
 const defaultTwilightHours = 1.1;
 
 export interface SkyPhase {
@@ -61,27 +60,50 @@ export const phaseAt = (
   };
 };
 
-const dayOfYear = (date: Date): number =>
-  Math.floor(
-    (date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / msPerDay
-  );
+const viennaZone = "Europe/Vienna";
+const viennaLatitude = 48.21;
+const viennaStandardHours = 1;
+const msPerHour = 3_600_000;
 
-const summerTimeHours = (date: Date): number => {
-  const year = date.getFullYear();
-  const standard = Math.max(
-    new Date(year, 0, 1).getTimezoneOffset(),
-    new Date(year, 6, 1).getTimezoneOffset()
+const viennaClock = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  hour: "numeric",
+  hourCycle: "h23",
+  minute: "numeric",
+  month: "numeric",
+  second: "numeric",
+  timeZone: viennaZone,
+  year: "numeric",
+});
+
+const viennaParts = (date: Date): Record<string, number> =>
+  Object.fromEntries(
+    viennaClock
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)])
   );
-  return (standard - date.getTimezoneOffset()) / 60;
-};
 
 export const skyPhase = (
   date: Date,
-  latitude = defaultLatitude,
   twilightHours = defaultTwilightHours
 ): SkyPhase => {
-  const hour =
-    date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
-  const sun = sunTimes(dayOfYear(date), latitude, 12 + summerTimeHours(date));
-  return phaseAt(hour, sun, twilightHours);
+  const parts = viennaParts(date);
+  const year = parts["year"] ?? date.getUTCFullYear();
+  const month = (parts["month"] ?? 1) - 1;
+  const day = parts["day"] ?? 1;
+  const hours = parts["hour"] ?? 0;
+  const minutes = parts["minute"] ?? 0;
+  const seconds = parts["second"] ?? 0;
+  const wall = Date.UTC(year, month, day, hours, minutes, seconds);
+  const offset = Math.round((wall - date.getTime()) / msPerHour);
+  const dayOfYear = Math.round(
+    (Date.UTC(year, month, day) - Date.UTC(year, 0, 0)) / msPerDay
+  );
+  const sun = sunTimes(
+    dayOfYear,
+    viennaLatitude,
+    12 + offset - viennaStandardHours
+  );
+  return phaseAt(hours + minutes / 60 + seconds / 3600, sun, twilightHours);
 };

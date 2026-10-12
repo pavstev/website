@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-One static page: a contact card over a WebGL sky, plus a plain 404, and a Worker for `/mcp`.
+One static page: a contact card over a WebGL sky that shows the live Vienna weather, plus a plain 404, and a Worker for `/mcp` and `/weather`.
 
 ## Tech Stack
 
-Next.js 16 App Router (`output: "export"` to `dist/`), Tailwind v4, pnpm 12 on Node 24, one Cloudflare Worker for `/mcp`. The long notes (CV feed, GitHub data, fonts, icons, static files, products, profile mirror, LinkedIn sync, Worker, checks, CI, deploy) are in `docs/architecture.md`: read the bullet for the area you change.
+Next.js 16 App Router (`output: "export"` to `dist/`), Tailwind v4, pnpm 12 on Node 24, one Cloudflare Worker for `/mcp` and `/weather`. The long notes (CV feed, GitHub data, fonts, icons, static files, products, profile mirror, LinkedIn sync, Worker, checks, CI, deploy) are in `docs/architecture.md`: read the bullet for the area you change.
 
 Path rules in `.claude/rules/` load when you touch matching files: `card.md` (card, strips, topics), `motion.md` (pause button, dock, privacy, head script), `globe.md` (Vienna globe), `sky.md` (sky, planets, shaders).
 
@@ -50,13 +50,13 @@ src/app/          layout.tsx (metadata, Open Graph `profile`), page.tsx (JSON-LD
 src/components/   profile + portrait + portrait-expander, compound-text, download-button, resume-tip, contact-links, card-strips, repo-strip, product-strip, product-mark, card-footer,
                   page-dock, motion-toggle, privacy-note, space-background, effects-init, icon,
                   topic-trigger, topic-panel, topic-heading, industry-panel, city-panel, city-heading, city-globe-launcher, city-globe-stage, vienna-arms
-src/lib/          personal, products, product-marks, i18n, bio, industries, github (repos, languages, contact, getProject), cv (the CV feed, getCv), cv-feed.fixture.json (hirista's contract fixture), cv-llms, cv-sample (test data), linkedin-fields, resume-pdf, resume-file, readme-html, resume-facts, anchored-popovers, repo-tags-fit, privacy-ack, motion-pause (pause flag, head script, stillQuery), scene-hold, save-data, city, city-globe, globe-data, globe-labels, sun, world-cities, repo-planets, logo-planet, logo-motion, theme (hex for theme-color, sky palette, productPalette), sky-clock, github,
+src/lib/          personal, products, product-marks, i18n, bio, industries, github (repos, languages, contact, getProject), cv (the CV feed, getCv), cv-feed.fixture.json (hirista's contract fixture), cv-llms, cv-sample (test data), linkedin-fields, resume-pdf, resume-file, readme-html, resume-facts, anchored-popovers, repo-tags-fit, privacy-ack, motion-pause (pause flag, head script, stillQuery), scene-hold, save-data, weather (Vienna weather types, mapping, presets, fetch), city, city-globe, globe-data, globe-labels, sun, world-cities, repo-planets, logo-planet, logo-motion, theme (hex for theme-color, sky palette, productPalette), sky-clock, github,
                   frame-clock, intro, portrait-effects, portrait-bead, portrait-expand, contact-links, download-ring,
                   pill-aurora, cursor, webgl, icon-data
 src/styles/       globals.css (tokens, one dark palette + print, type utilities, card styles)
 public/           stevan-pavlovic.jpeg, portraits/, fonts/, favicons, og-image.jpg and linkedin-cover.png (both generated in CI), manifest.webmanifest, _headers
 src/profile/      types, text, icons, header, readme, render (pure), validate, cli, tests
-worker/           index (router), mcp (/mcp), facts (cv.json + llms.txt reader and text helpers), http, tests, tsconfig.json
+worker/           index (router), mcp (/mcp), weather (/weather, Open-Meteo, edge cache), facts (cv.json + llms.txt reader and text helpers), http, tests, tsconfig.json
 wrangler.jsonc    assets, run_worker_first, MCP_LIMITER; worker-configuration.d.ts is generated from it
 scripts/          cv-fetch.ts and cv-guard.ts (run by `pnpm build`), generate-icon-data.ts (pnpm icons), generate-globe-data.ts, generate-images.ts (images.yml), linkedin-sync.ts (linkedin-sync.yml), all run by Node's type stripping
 .cv/              gitignored: cv.json and source, written by cv-fetch

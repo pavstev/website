@@ -52,19 +52,18 @@ export const DownloadButton = ({
         </span>
         <svg
           aria-hidden="true"
-          className="pointer-events-none absolute top-0 left-0 size-11 -rotate-90 opacity-0"
+          className="pointer-events-none absolute -top-px -left-px size-11 opacity-0"
           data-ring=""
           fill="none"
           viewBox="0 0 44 44"
         >
-          <circle
-            cx="22"
-            cy="22"
+          <path
+            d="M22 2H34A8 8 0 0 1 42 10V34A8 8 0 0 1 34 42H10A8 8 0 0 1 2 34V10A8 8 0 0 1 10 2Z"
             data-ring-arc=""
-            r="20"
+            pathLength="100"
             stroke="currentColor"
-            strokeDasharray="125.66"
-            strokeDashoffset="125.66"
+            strokeDasharray="100"
+            strokeDashoffset="100"
             strokeLinecap="round"
             strokeWidth="2"
           />

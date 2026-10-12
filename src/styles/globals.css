@@ -168,7 +168,8 @@
     color-scheme: dark;
   }
 
-  :root[data-privacy-ack] {
+  :root[data-privacy-ack],
+  :root[data-privacy-closed] {
     --privacy-zone: 0px;
   }
 
@@ -371,11 +372,13 @@
   }
 
   canvas[data-space] {
-    position: absolute;
-    inset: 0;
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: -2;
     width: 100%;
-    height: 100%;
+    height: 100lvh;
     pointer-events: none;
     background: var(--background);
   }
@@ -431,6 +434,7 @@ html {
       var(--safe-y, 2.5rem),
       calc(var(--privacy-zone) + 1rem)
     );
+    transition: padding-bottom var(--duration-slow) var(--ease-smooth);
   }
 }
 
@@ -1139,7 +1143,7 @@ html:has(.portrait-dialog[open]) {
   gap: 0.5rem;
   padding: 0.3125rem 0.75rem 0.3125rem 0.625rem;
   border: 1px solid var(--border-strong);
-  border-radius: 9999px;
+  border-radius: var(--radius-lg);
   background: color-mix(in oklab, var(--background) 88%, transparent);
   box-shadow: 0 12px 32px -14px
     color-mix(in oklab, var(--tone) 40%, transparent);
@@ -2438,8 +2442,8 @@ html:has(.portrait-dialog[open]) {
   --topic-stroke: linear-gradient(135deg, var(--topic-a), var(--topic-b));
   --topic-fill: linear-gradient(
     100deg,
-    color-mix(in oklab, var(--topic-a) 88%, var(--background)),
-    color-mix(in oklab, var(--topic-b) 88%, var(--background))
+    color-mix(in oklab, var(--topic-a) 70%, var(--foreground)),
+    color-mix(in oklab, var(--topic-b) 70%, var(--foreground))
   );
   --topic-glow: var(--topic-a);
   --topic-glow-b: var(--topic-b);
@@ -2461,7 +2465,10 @@ html:has(.portrait-dialog[open]) {
     color-mix(in oklab, var(--arms-white) 40%, transparent) 43% 57%,
     var(--city-red) 63% 100%
   );
-  --topic-fill: linear-gradient(var(--city-coral), var(--city-coral));
+  --topic-fill: linear-gradient(
+    color-mix(in oklab, var(--city-coral) 70%, var(--foreground)),
+    color-mix(in oklab, var(--city-coral) 70%, var(--foreground))
+  );
   --topic-glow: var(--arms-red);
   --topic-glow-b: var(--city-coral);
 }
@@ -2505,11 +2512,16 @@ html:has(.portrait-dialog[open]) {
   -webkit-background-clip: text;
   background-clip: text;
   background-image: var(--topic-fill);
-  color: transparent;
+  color: var(--foreground);
   font-weight: 500;
   letter-spacing: 0.02em;
-  text-decoration-line: none;
-  text-decoration-color: transparent;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: color-mix(
+    in oklab,
+    var(--foreground) 60%,
+    var(--background)
+  );
   text-decoration-thickness: 1px;
   text-shadow: none;
   text-underline-offset: 0.22em;
@@ -2518,6 +2530,7 @@ html:has(.portrait-dialog[open]) {
     )
     drop-shadow(0 0 5px transparent) drop-shadow(0 0 11px transparent);
   transition:
+    color var(--duration-slow) var(--ease-smooth),
     filter var(--duration-slow) var(--ease-smooth),
     text-decoration-color var(--duration-slow) var(--ease-smooth);
 }
@@ -2566,7 +2579,8 @@ html:has(.portrait-dialog[open]) {
 .topic-trigger:focus-visible .topic-word,
 .topic-trigger[data-open] .topic-word {
   filter: var(--topic-halo);
-  text-decoration-line: underline;
+  color: transparent;
+  text-decoration-style: solid;
   text-decoration-color: color-mix(in oklab, var(--topic-a) 40%, transparent);
 }
 
@@ -3325,7 +3339,8 @@ html:has(.globe-dialog[open]) {
 @media (hover: hover) and (pointer: fine) {
   .topic-trigger:hover .topic-word {
     filter: var(--topic-halo);
-    text-decoration-line: underline;
+    color: transparent;
+    text-decoration-style: solid;
     text-decoration-color: color-mix(in oklab, var(--topic-a) 40%, transparent);
   }
 
@@ -3349,7 +3364,7 @@ html:has(.globe-dialog[open]) {
 }
 
 @media (forced-colors: active) {
-  .topic-word {
+  .topic-trigger:is(*, :hover, :focus-visible, [data-open]) .topic-word {
     background: none;
     color: LinkText;
     text-decoration-line: underline;
@@ -3744,7 +3759,11 @@ html:has(.globe-dialog[open]) {
 }
 
 .card-footer {
-  width: min(100%, 20rem);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 1.25rem;
+  width: min(100%, 36rem);
   padding-top: 0.875rem;
   border-top: 1px solid transparent;
   border-image: linear-gradient(
@@ -3754,6 +3773,19 @@ html:has(.globe-dialog[open]) {
       transparent
     )
     1;
+}
+
+.weather-credit a {
+  border-radius: 0.25rem;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--duration-normal) var(--ease-smooth);
+}
+
+.weather-credit a:hover {
+  text-decoration-color: currentColor;
 }
 
 .privacy-actions {

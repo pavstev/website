@@ -70,10 +70,12 @@ const eslintConfig = defineConfig([
     },
   },
   globalIgnores([
+    ".agents/**",
     ".claude/skills/**",
     ".next/**",
     ".profile-out/**",
     ".superpowers/**",
+    ".wrangler/**",
     "dist/**",
     "worker-configuration.d.ts",
   ]),

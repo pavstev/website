@@ -11,7 +11,20 @@ import {
   skyFragmentShader as FRAGMENT,
   skyVertexShader as VERTEX,
 } from "@/lib/sky-shader";
+import {
+  fallbackSky,
+  fetchSkyWeather,
+  type SkyWeather,
+  weatherOverride,
+} from "@/lib/weather";
 import { isSoftwareRenderer } from "@/lib/webgl";
+
+interface Puff {
+  age: number;
+  at: number;
+  x: number;
+  y: number;
+}
 
 interface QualityLevel {
   clouds: boolean;
@@ -50,6 +63,38 @@ const gustGain = 1.8;
 const gustActive = 0.01;
 const touchScrollShare = 0.25;
 const daylightEveryMs = 30_000;
+const puffSlots = 10;
+const puffSpacing = 0.11;
+const puffZone = 0.55;
+const puffTop = 0.3;
+const puffRiseSeconds = 0.7;
+const puffAmount = 0.9;
+const puffSettleSeconds = 4;
+const puffVisible = 0.003;
+const weatherEveryMs = 900_000;
+const weatherEaseSeconds = 3;
+const weatherKeys: Array<keyof SkyWeather> = [
+  "cover",
+  "drift",
+  "fog",
+  "high",
+  "overcast",
+  "rain",
+  "slant",
+  "snow",
+  "storm",
+];
+
+const puffStrength = (puff: Puff): number => {
+  const rise = Math.min(1, puff.age / puffRiseSeconds);
+  return (
+    puffAmount *
+    rise *
+    rise *
+    (3 - 2 * rise) *
+    Math.exp(-Math.max(0, puff.age - puffRiseSeconds) / (puffSettleSeconds / 3))
+  );
+};
 
 const nextGap = (): number =>
   meteorGapMs[0] + Math.random() * (meteorGapMs[1] - meteorGapMs[0]);
@@ -121,6 +166,10 @@ const startSky = (
   const uCloudTime = gl.getUniformLocation(program, "u_cloudTime");
   const uCloudShift = gl.getUniformLocation(program, "u_cloudShift");
   const uDaylight = gl.getUniformLocation(program, "u_daylight");
+  const uWeather = gl.getUniformLocation(program, "u_weather");
+  const uFall = gl.getUniformLocation(program, "u_fall");
+  const uPuffs = gl.getUniformLocation(program, "u_puffs");
+  const uPuffOn = gl.getUniformLocation(program, "u_puffOn");
   const highPrecision =
     (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
       ?.precision ?? 0) > 0;
@@ -143,11 +192,19 @@ const startSky = (
   let shiftMs = 0;
   let daylight = skyPhase(new Date());
   let daylightAt = performance.now();
+  const override = weatherOverride(globalThis.location.search);
+  const weatherTarget: SkyWeather = { ...(override ?? fallbackSky) };
+  const weather: SkyWeather = { ...weatherTarget };
+  const weatherStop = new AbortController();
+  const puffs: Puff[] = [];
+  const puffData = new Float32Array(puffSlots * 4);
+  let lastPuff: [number, number] | undefined;
+  let scrollFrame = 0;
   const clock = createFrameClock();
   const hoverPointer = globalThis.matchMedia(finePointerQuery);
   let resizeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 
-  const viewPixels = (): number => Math.max(1, window.innerHeight * scale);
+  const viewPixels = (): number => Math.max(1, canvas.height);
 
   const toSky = (clientX: number, clientY: number): [number, number] => {
     const rect = canvas.getBoundingClientRect();
@@ -228,6 +285,52 @@ const startSky = (
     );
   };
 
+  const uploadPuffs = (): boolean => {
+    puffData.fill(0);
+    let visible = false;
+    for (const [index, puff] of puffs.entries()) {
+      const strength = puffStrength(puff);
+      puffData.set(
+        [puff.x, puff.y, (shiftMs - puff.at) / 1000, strength],
+        index * 4
+      );
+      if (strength > puffVisible) visible = true;
+    }
+    gl.uniform4fv(uPuffs, puffData);
+    gl.uniform1f(uPuffOn, visible ? 1 : 0);
+    return visible;
+  };
+
+  const addPuff = (x: number, bottom: number): void => {
+    if (
+      lastPuff &&
+      Math.hypot(x - lastPuff[0], bottom - lastPuff[1]) < puffSpacing
+    )
+      return;
+    lastPuff = [x, bottom];
+    const puff = { age: 0, at: shiftMs, x, y: Math.min(bottom, puffTop) };
+    if (puffs.length < puffSlots) {
+      puffs.push(puff);
+      return;
+    }
+    const strengths = puffs.map((other) => puffStrength(other));
+    puffs[strengths.indexOf(Math.min(...strengths))] = puff;
+  };
+
+  const refreshWeather = (): void => {
+    if (override || process.env.NODE_ENV !== "production") return;
+    void fetchSkyWeather(weatherStop.signal).then((next) => {
+      if (!next || weatherStop.signal.aborted) return;
+      Object.assign(weatherTarget, next);
+      if (rafId) {
+        markActive();
+        return;
+      }
+      Object.assign(weather, next);
+      if (!document.hidden) drawStill();
+    });
+  };
+
   const frame = (now: number, dt = frameDt): void => {
     const current = currentLevel();
     if (!current) return;
@@ -240,10 +343,16 @@ const startSky = (
       gust.energy *= Math.exp(-step / 1000 / (gustEaseSeconds / 3));
       const energy = Math.min(gust.energy, 1);
       const boost = (gustMax - 1) * energy * energy * (3 - 2 * energy);
+      const ease = 1 - Math.exp(-step / 1000 / weatherEaseSeconds);
+      for (const key of weatherKeys)
+        weather[key] += (weatherTarget[key] - weather[key]) * ease;
       cloudMs += step;
-      shiftMs += step * (1 - boost * gust.dir);
+      shiftMs += step * (weather.drift - boost * gust.dir);
+      for (const puff of puffs) puff.age += step / 1000;
       if (gust.energy > gustActive) markActive();
     }
+    const puffing = uploadPuffs();
+    if (rafId && puffing) markActive();
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uView, viewPixels());
     gl.uniform1f(uLabPx, labPixelsPerCss / scale);
@@ -261,6 +370,20 @@ const startSky = (
       daylightAt = now;
     }
     gl.uniform3f(uDaylight, daylight.day, daylight.twilight, daylight.dusk);
+    gl.uniform4f(
+      uWeather,
+      weather.cover,
+      weather.overcast,
+      weather.high,
+      weather.fog
+    );
+    gl.uniform4f(
+      uFall,
+      weather.rain,
+      weather.snow,
+      weather.storm,
+      weather.slant
+    );
     const flight = rafId ? (skyMs - meteor.at) / meteorMs : -1;
     if (flight >= 1) launch(skyMs);
     if (flight >= 0 && flight < 1) markActive();
@@ -282,6 +405,8 @@ const startSky = (
   const calmClouds = (): void => {
     gust.energy = 0;
     gust.inside = false;
+    puffs.length = 0;
+    lastPuff = undefined;
   };
 
   const stop = (): void => {
@@ -289,6 +414,7 @@ const startSky = (
     rafId = 0;
     pacer.reset();
     clock.pause();
+    Object.assign(weather, weatherTarget);
   };
   const freeze = (now: number): void => {
     frozen = true;
@@ -330,12 +456,14 @@ const startSky = (
     clientY: number,
     share: number
   ): void => {
-    if (!currentLevel()?.clouds) return;
+    if (!rafId || !currentLevel()?.clouds) return;
     const [x, y] = toSky(clientX, clientY);
     const bottom = y + canvas.height / 2 / viewPixels();
     const inside = bottom < cloudZone;
+    if (bottom < puffZone) addPuff(x, bottom);
     if (inside && gust.inside) {
       const dx = x - gust.x;
+      if (gust.energy < gustActive) gust.dir = weather.drift < 0 ? 1 : -1;
       gust.energy = Math.min(
         1,
         gust.energy + Math.hypot(dx, (y - gust.y) * share) * gustGain
@@ -379,7 +507,9 @@ const startSky = (
     resizeTimer = globalThis.setTimeout(applyResize, resizeDelayMs);
   };
   const onLeave = (event: PointerEvent): void => {
-    if (event.relatedTarget === null) gust.inside = false;
+    if (event.relatedTarget !== null) return;
+    gust.inside = false;
+    lastPuff = undefined;
   };
   const onTouch = (event: TouchEvent): void => {
     const touch = event.touches[0];
@@ -389,6 +519,21 @@ const startSky = (
   };
   const onLift = (): void => {
     gust.inside = false;
+    lastPuff = undefined;
+  };
+  const onScroll = (): void => {
+    if (rafId) {
+      markActive();
+      return;
+    }
+    if (scrollFrame) return;
+    scrollFrame = globalThis.requestAnimationFrame(() => {
+      scrollFrame = 0;
+      drawStill();
+    });
+  };
+  const onShift = (event: TransitionEvent): void => {
+    if (!rafId && event.target === event.currentTarget) drawStill();
   };
   const onBlur = (): void => {
     stop();
@@ -397,14 +542,19 @@ const startSky = (
 
   resize();
   launch(0);
+  refreshWeather();
   frame(performance.now());
   sync();
+  const weatherTimer = globalThis.setInterval(refreshWeather, weatherEveryMs);
 
   const sizeWatch = new ResizeObserver(onResize);
   sizeWatch.observe(canvas);
   const card = document.querySelector("[data-card]");
   if (card) sizeWatch.observe(card);
+  const main = document.querySelector<HTMLElement>("#main-content");
+  main?.addEventListener("transitionend", onShift);
   window.addEventListener("resize", onResize);
+  window.addEventListener("scroll", onScroll, { passive: true });
   globalThis.addEventListener("pointermove", onPointer, { passive: true });
   globalThis.addEventListener("pointerdown", onDown, { passive: true });
   globalThis.addEventListener("pointerout", onLeave, { passive: true });
@@ -419,9 +569,14 @@ const startSky = (
   reduceMotion.addEventListener("change", sync);
   return () => {
     stop();
+    weatherStop.abort();
+    globalThis.clearInterval(weatherTimer);
+    main?.removeEventListener("transitionend", onShift);
+    if (scrollFrame) globalThis.cancelAnimationFrame(scrollFrame);
     if (resizeTimer !== undefined) globalThis.clearTimeout(resizeTimer);
     sizeWatch.disconnect();
     window.removeEventListener("resize", onResize);
+    window.removeEventListener("scroll", onScroll);
     globalThis.removeEventListener("pointermove", onPointer);
     globalThis.removeEventListener("pointerdown", onDown);
     globalThis.removeEventListener("pointerout", onLeave);

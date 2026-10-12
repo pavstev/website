@@ -186,4 +186,8 @@ export const en = {
   socialImages: {
     place: "{city}, {country}",
   },
+  weather: {
+    credit: "Weather data by",
+    source: "Open-Meteo.com",
+  },
 } as const;
