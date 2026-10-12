@@ -247,7 +247,7 @@ const feedFailure = (status: number): CvFeedError => {
 const liveFailure = (status: number): CvFeedError =>
   new CvFeedError("unavailable", `${liveLabel} ${String(status)}`);
 
-const parseCv = (data: unknown, label: string): Cv => {
+export const parseCv = (data: unknown, label: string): Cv => {
   const parsed = cvSchema.safeParse(data);
   if (!parsed.success) {
     const fields = parsed.error.issues

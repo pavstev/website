@@ -735,6 +735,19 @@ describe("the build scripts", () => {
       assert.ok(!result.stderr.includes(wrong));
       await assert.rejects(readFile(".cv/cv.json"));
     });
+    it("writes the committed snapshot without the network when CV_SNAPSHOT is 1", async () => {
+      const result = await runScript("cv-fetch.ts", { CV_SNAPSHOT: "1" });
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stderr, /cv-snapshot\.json/);
+      const written = cvSchema.parse(
+        JSON.parse(await readFile(".cv/cv.json", "utf8"))
+      );
+      assert.equal(written.basics.phone, "");
+      assert.equal(await readFile(".cv/source", "utf8"), "snapshot");
+      const guarded = await runScript("cv-guard.ts", {});
+      assert.equal(guarded.code, 0, guarded.stderr);
+      assert.match(guarded.stderr, /used the snapshot CV/);
+    });
     it("fails when a variable is missing", async () => {
       const result = await runScript("cv-fetch.ts", {});
       assert.equal(result.code, 1);

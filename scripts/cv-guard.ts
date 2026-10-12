@@ -52,9 +52,7 @@ const currentFeed = async (): Promise<Cv | undefined> => {
 
 try {
   const source = await readSource();
-  if (source === "live") {
-    console.warn("CV guard skipped: this build used the live CV.");
-  } else {
+  if (source === "feed") {
     const built = await getCv();
     const current = await currentFeed();
     if (current === undefined) {
@@ -65,6 +63,8 @@ try {
     } else {
       console.warn(`CV guard passed: the build holds ${built.updatedAt}`);
     }
+  } else {
+    console.warn(`CV guard skipped: this build used the ${source} CV.`);
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : "CV guard failed");
