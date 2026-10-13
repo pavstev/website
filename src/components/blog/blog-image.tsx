@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactElement } from "react";
 
-import { BlogPicture } from "@/components/blog/blog-picture";
+import { BlurImage } from "@/components/blog/blur-image";
 import { mediaEntry, mediaPath } from "@/lib/blog/media";
 
 interface BlogImageProps {
@@ -24,7 +24,7 @@ export const BlogImage = ({
 }: BlogImageProps): ReactElement => {
   const entry = mediaEntry(slug, src);
   const loading = priority
-    ? ({ fetchPriority: "high", loading: "eager" } as const)
+    ? ({ loading: "eager" } as const)
     : ({ decoding: "async", loading: "lazy" } as const);
   if (entry === undefined) {
     return (
@@ -37,7 +37,7 @@ export const BlogImage = ({
     );
   }
   return (
-    <BlogPicture>
+    <picture>
       <source
         sizes={sizes}
         srcSet={srcSet(entry.avif, entry.widths)}
@@ -48,7 +48,7 @@ export const BlogImage = ({
         srcSet={srcSet(entry.webp, entry.widths)}
         type="image/webp"
       />
-      <img
+      <BlurImage
         alt={alt}
         className="blog-image"
         height={entry.height}
@@ -57,6 +57,6 @@ export const BlogImage = ({
         width={entry.width}
         {...loading}
       />
-    </BlogPicture>
+    </picture>
   );
 };

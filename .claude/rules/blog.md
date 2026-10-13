@@ -46,7 +46,7 @@ Loads when you touch a post or the blog code. The full design is in the **Blog**
 
 ## Copy rules
 
-- No em dashes or en dashes, no taglines, short plain sentences, first person where the owner speaks.
+- No em dashes or en dashes (`src/lib/blog/content.test.ts` fails on one in any post), no taglines, short plain sentences, first person where the owner speaks.
 - Every claim is a measured number, a quote or a plainly marked opinion. Say what a number counts and over what period.
 - Owner quotes stay under 15 words and are exact. Never quote a secret, an email address, a phone number or a private repo detail.
 - Alt text describes the real picture, not the intent.
@@ -60,8 +60,9 @@ Loads when you touch a post or the blog code. The full design is in the **Blog**
 - Headless Chromium counts as a crawler (`isCrawler`) and always gets the cloudy night sky, which ignores presets. Browser tests of post or index skies need a normal desktop `userAgent`.
 - The post-mode sky must mount inside `header[data-sky-header]` (as the first child, `key={slug}`). Mounting it from a layout shows nothing in the header.
 - Every code path that calls `setSkyPreset(post.sky)` must call `setSkyPreset(null)` on leave and on unmount, or the next index visit starts on the old preset.
-- The index has ink targets for 8 rows (`blogRowSlots`). Raise it, and the slot count in `sky-ink.ts`, when the blog grows past 8 posts.
+- The index has ink targets for 8 rows (`blogRowSlots` in `sky-ink.ts`). `content.test.ts` fails once there are more posts, drafts included; then raise it.
 - New text over the sky needs `text-sky`, one of the registered class names (`.blog-heading`, `.post-row-title`, `.post-row-meta`, `.post-row-text`, `.blog-footer .tabular`, `.weather-credit`, `.post-title`, `.post-meta`) and the matching `--ink` base in `globals.css`.
+- Keep `<picture>` a server element in `BlogImage`; only the `<img>` is a client part (`BlurImage`). React preloads every eager `<img>` that a server component renders outside a `<picture>`, so a client wrapper around the `<picture>` makes AVIF browsers also fetch the WebP fallback. After a change, `dist/blog/<slug>.html` must hold no `rel="preload"` with `as="image"`.
 - `BlogImage` sets `sizes="(min-width: 48em) min(46rem, calc(100vw - 4rem)), min(43.5rem, calc(100vw - 2.5rem))"`; it should match the prose column (46rem wide from 48em up, 43.5rem or the viewport minus 2.5rem below).
 - Never edit `public/blog-media/`, `public/blog/`, `public/build.json` or `.blog/`: the prebuild writes them and they are gitignored.
 - When you touch `serializeJsonLd` or any JSON-LD string, check the raw bytes for `<` (see the SEO note in `CLAUDE.md`).

@@ -63,7 +63,7 @@ const xmlSafe = (text: string): string => {
   return safe;
 };
 
-const escapeXml = (text: string): string =>
+export const escapeXml = (text: string): string =>
   xmlSafe(text).replaceAll(/["&'<>]/g, (char) => xmlEscapes[char] ?? char);
 
 const cdata = (text: string): string =>

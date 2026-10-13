@@ -60,13 +60,13 @@ export default async function Page(): Promise<ReactElement> {
         >
           <Profile />
           <div
-            className="fade-up relative z-1 mt-(--card-gap-actions) flex flex-wrap items-center justify-center gap-3 delay-2"
+            className="fade-up contact-row relative z-1 mt-(--card-gap-actions) flex w-full flex-wrap items-center justify-center gap-3 delay-2"
             data-proximity=""
           >
             <DownloadButton describedBy={resumeDetailId}>
               <ResumeTip detailId={resumeDetailId} facts={resume} />
             </DownloadButton>
-            <div className="flex items-center justify-center gap-3">
+            <div className="contact-group flex items-center justify-center gap-3">
               <ContactLinks contact={contact} />
               <BlogButton count={listPosts({ drafts: showDrafts() }).length} />
             </div>
