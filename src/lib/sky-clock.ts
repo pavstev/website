@@ -1,3 +1,5 @@
+import { clamp, clamp01, smoothstep } from "./math.ts";
+
 const deg = Math.PI / 180;
 const msPerDay = 86_400_000;
 const horizonDeg = -0.833;
@@ -14,12 +16,7 @@ export interface SunTimes {
   set: number;
 }
 
-const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
-
-const smoothstep = (from: number, to: number, value: number): number => {
-  const t = clamp01((value - from) / (to - from));
-  return t * t * (3 - 2 * t);
-};
+export const nightPhase: SkyPhase = { day: 0, dusk: 0, twilight: 0 };
 
 const bell = (value: number): number => Math.exp(-(value * value));
 
@@ -34,7 +31,7 @@ export const sunTimes = (
   const cosHour =
     (Math.sin(horizonDeg * deg) - Math.sin(lat) * Math.sin(declination)) /
     (Math.cos(lat) * Math.cos(declination));
-  const halfDay = Math.acos(Math.min(1, Math.max(-1, cosHour))) / deg / 15;
+  const halfDay = Math.acos(clamp(cosHour, -1, 1)) / deg / 15;
   return { rise: noonHour - halfDay, set: noonHour + halfDay };
 };
 

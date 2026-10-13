@@ -277,7 +277,7 @@ export const fetchFeed = async (
   return parseCv(await exchange(response, "CV feed", feedFailure), "CV feed");
 };
 
-const fetchLive = async (
+export const fetchLive = async (
   liveUrl: string,
   fetchImpl: typeof fetch,
   timeoutMs: number

@@ -9,7 +9,7 @@ import {
   roleBlock,
   skillLines,
 } from "./facts.ts";
-import { clientIp, failure } from "./http.ts";
+import { clientIp, failure, withSecurityHeaders } from "./http.ts";
 
 const serverName = "stevanpavlovic.com";
 const serverVersion = "0.1.0";
@@ -156,7 +156,9 @@ export const createMcpServer = (facts: Facts): McpServer => {
 export const handleMcp = async (
   request: Request,
   env: Env
-): Promise<Response> => {
+): Promise<Response> => withSecurityHeaders(await respond(request, env));
+
+const respond = async (request: Request, env: Env): Promise<Response> => {
   if (request.method !== "POST") {
     return failure(405, "method", { Allow: "POST" });
   }

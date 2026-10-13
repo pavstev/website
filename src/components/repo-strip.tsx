@@ -5,17 +5,11 @@ import type { Repo } from "@/lib/github";
 import { CompoundText } from "@/components/compound-text";
 import { Icon } from "@/components/icon";
 import { RepoTags } from "@/components/repo-tags";
+import { seedOf } from "@/lib/hash";
 import { en } from "@/lib/i18n";
-
-const plural = new Intl.PluralRules("en");
+import { countHeading } from "@/lib/template";
 
 const planetKinds = ["ring", "bands", "moon", "craters"] as const;
-
-const headingFor = (count: number): string =>
-  (plural.select(count) === "one"
-    ? en.repos.headingOne
-    : en.repos.headingOther
-  ).replace("{count}", () => String(count));
 
 const tone = (repo: Repo): CSSProperties | undefined => {
   const color = (
@@ -23,14 +17,6 @@ const tone = (repo: Repo): CSSProperties | undefined => {
     repo.languages[0]
   )?.color;
   return color ? ({ "--lang": color } as CSSProperties) : undefined;
-};
-
-const seedOf = (text: string): number => {
-  let seed = 2_166_136_261;
-  for (const char of text) {
-    seed = Math.imul(seed ^ (char.codePointAt(0) ?? 0), 16_777_619);
-  }
-  return seed >>> 0;
 };
 
 const planetStyle = (name: string): CSSProperties =>
@@ -48,9 +34,9 @@ export const RepoStrip = ({
   if (repos.length === 0) return null;
   return (
     <section aria-labelledby="repos-heading" className="strip" data-repos="">
-      <div className="repo-head text-halo">
-        <h2 className="repo-heading type-eyebrow" id="repos-heading">
-          {headingFor(repos.length)}
+      <div className="repo-head">
+        <h2 className="repo-heading type-eyebrow text-sky" id="repos-heading">
+          {countHeading(repos.length, en.repos)}
         </h2>
         <span aria-hidden="true" className="repo-rule" />
       </div>

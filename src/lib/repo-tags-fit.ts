@@ -1,5 +1,4 @@
-const fill = (template: string, count: number): string =>
-  template.replace("{count}", () => String(count));
+import { fillCount } from "./template.ts";
 
 const fit = (row: HTMLElement, button: HTMLElement): void => {
   const chips = row.querySelectorAll<HTMLElement>(":scope > .repo-chip");
@@ -14,10 +13,10 @@ const fit = (row: HTMLElement, button: HTMLElement): void => {
   }
   if (row.scrollWidth > row.clientWidth + 1) row.dataset["squeeze"] = "";
   button.hidden = hidden === 0;
-  button.textContent = fill(button.dataset["text"] ?? "", hidden);
+  button.textContent = fillCount(button.dataset["text"] ?? "", hidden);
   button.setAttribute(
     "aria-label",
-    fill(button.dataset["label"] ?? "", hidden)
+    fillCount(button.dataset["label"] ?? "", hidden)
   );
 };
 

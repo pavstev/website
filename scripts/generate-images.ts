@@ -5,8 +5,10 @@ import { chromium } from "playwright-core";
 import { en } from "../src/lib/i18n.ts";
 import { iconData } from "../src/lib/icon-data.ts";
 import { personalData } from "../src/lib/personal.ts";
+import { nightPhase } from "../src/lib/sky-clock.ts";
 import { skyFragmentShader, skyVertexShader } from "../src/lib/sky-shader.ts";
-import { designTokens, profilePalette } from "../src/lib/theme.ts";
+import { designTokens, hexBytes, profilePalette } from "../src/lib/theme.ts";
+import { crawlerSky } from "../src/lib/weather.ts";
 
 interface Corona {
   radius: number;
@@ -46,17 +48,22 @@ interface SkyInput {
   fragment: string;
   labPx: number;
   meteor: Meteor;
-  ripple: number;
   time: number;
   vertex: string;
+  weather: [number, number, number, number];
 }
 
 const publicDir = "public";
 const skyTime = 41;
 const cloudTime = 23;
 const labPixelsPerCss = 1.2;
-const rippleLife = 1.6;
 const jpegQuality = 88;
+const crawlerWeather: [number, number, number, number] = [
+  crawlerSky.cover,
+  crawlerSky.overcast,
+  crawlerSky.high,
+  crawlerSky.fog,
+];
 
 const noMeteor: Meteor = { angle: 0, progress: 2, x: 0, y: 0 };
 
@@ -78,10 +85,8 @@ const patchShader = (
   return source;
 };
 
-const rgba = (hex: string, alpha: number): string => {
-  const value = Number.parseInt(hex.slice(1), 16);
-  return `rgba(${[(value >> 16) & 255, (value >> 8) & 255, value & 255, alpha].join(", ")})`;
-};
+const rgba = (hex: string, alpha: number): string =>
+  `rgba(${[...hexBytes(hex), alpha].join(", ")})`;
 
 const shade = (alpha: number): string => rgba(designTokens.background, alpha);
 
@@ -193,7 +198,6 @@ const drawSky = (input: SkyInput): void => {
   gl.uniform1f(at("u_time"), input.time);
   gl.uniform2f(at("u_pointer"), 0, 0);
   gl.uniform3f(at("u_portrait"), corona.x, height - corona.y, corona.radius);
-  gl.uniform3f(at("u_ripple"), 0, 0, input.ripple);
   gl.uniform4f(
     at("u_meteor"),
     input.meteor.x,
@@ -204,8 +208,7 @@ const drawSky = (input: SkyInput): void => {
   gl.uniform1f(at("u_clouds"), 1);
   gl.uniform1f(at("u_cloudTime"), input.cloudTime);
   gl.uniform1f(at("u_cloudShift"), input.cloudTime);
-  gl.uniform4f(at("u_quiet"), 0, 0, 0, 0);
-  gl.uniform4f(at("u_weather"), 0.6, 0, 0.5, 0);
+  gl.uniform4f(at("u_weather"), ...input.weather);
   gl.uniform4f(at("u_fall"), 0, 0, 0, 0);
   gl.uniform1f(at("u_puffOn"), 0);
   gl.uniform3f(
@@ -240,9 +243,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
     fragment: spec.fragment,
     labPx: labPixelsPerCss,
     meteor: spec.meteor,
-    ripple: rippleLife,
     time: skyTime,
     vertex: skyVertexShader,
+    weather: crawlerWeather,
   });
   return spec.type === "jpeg"
     ? page.screenshot({ quality: jpegQuality, type: "jpeg" })
@@ -273,7 +276,7 @@ const specs: ImageSpec[] = [
   {
     body: ogBody(portrait),
     corona: "#portrait",
-    daylight: { day: 0, dusk: 0, twilight: 0 },
+    daylight: nightPhase,
     file: path.join(publicDir, "og-image.jpg"),
     fragment: skyFragmentShader,
     height: 630,
@@ -284,7 +287,7 @@ const specs: ImageSpec[] = [
   {
     body: "",
     corona: { radius: 170, x: -170, y: -170 },
-    daylight: { day: 0, dusk: 0, twilight: 0 },
+    daylight: nightPhase,
     file: path.join(publicDir, "linkedin-cover.png"),
     fragment: patchShader(skyFragmentShader, longRays),
     height: 396,

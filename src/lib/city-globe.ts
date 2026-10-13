@@ -27,6 +27,7 @@ import {
   type PlacedLabel,
   placeLabels,
 } from "@/lib/globe-labels";
+import { clamp, smoothstep } from "@/lib/math";
 import { stillQuery } from "@/lib/motion-pause";
 import { subsolarPoint } from "@/lib/sun";
 import { globePalette } from "@/lib/theme";
@@ -124,16 +125,8 @@ const maskColors = {
   none: "rgb(0,0,0)",
 } as const;
 
-const clamp = (value: number, low: number, high: number): number =>
-  Math.min(high, Math.max(low, value));
-
 const wrap180 = (value: number): number =>
   ((((value + 180) % 360) + 360) % 360) - 180;
-
-const smoothstep = (low: number, high: number, value: number): number => {
-  const t = clamp((value - low) / (high - low), 0, 1);
-  return t * t * (3 - 2 * t);
-};
 
 const unzigzag = (value: number): number => (value >>> 1) ^ -(value & 1);
 

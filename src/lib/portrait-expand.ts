@@ -8,6 +8,9 @@ const extraInMs = 520;
 const extraDelayMs = 200;
 const extraOutMs = 120;
 const fadeMs = 140;
+export const blankPixel =
+  "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+
 const openEasing = "cubic-bezier(0.16, 1, 0.3, 1)";
 const closeEasing = "cubic-bezier(0.3, 0, 0.2, 1)";
 
@@ -51,12 +54,12 @@ export const createPortraitExpander = (
   };
 
   const load = (): void => {
-    if (!low.getAttribute("src")) {
+    if (low.getAttribute("src") === blankPixel) {
       const small = photo.querySelector<HTMLImageElement>("img");
       const placeholder = small?.currentSrc ?? "";
       low.src = placeholder === "" ? (small?.src ?? largeUrl) : placeholder;
     }
-    if (!high.getAttribute("src")) high.src = largeUrl;
+    if (high.getAttribute("src") === blankPixel) high.src = largeUrl;
   };
 
   const root = document.documentElement;

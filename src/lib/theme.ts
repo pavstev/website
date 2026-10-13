@@ -35,6 +35,12 @@ export const profilePalette = {
   sky: skyTokens,
 } as const;
 
+export const inkPalette = {
+  foreground: "#E8EAF2",
+  muted: "#8B91A7",
+  soft: "#C3C7D6",
+} as const;
+
 export const productPalette = {
   hirista: {
     accent: "#f79900",
@@ -52,13 +58,14 @@ export const productPalette = {
   },
 } as const;
 
+export const hexBytes = (hex: string): [number, number, number] => {
+  const value = Number.parseInt(hex.slice(1), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+};
+
 export const skyRgb = (name: SkyTokenName): [number, number, number] => {
-  const value = Number.parseInt(skyTokens[name].slice(1), 16);
-  return [
-    ((value >> 16) & 255) / 255,
-    ((value >> 8) & 255) / 255,
-    (value & 255) / 255,
-  ];
+  const [r, g, b] = hexBytes(skyTokens[name]);
+  return [r / 255, g / 255, b / 255];
 };
 
 export const resumePdfPalette = {

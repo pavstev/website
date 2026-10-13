@@ -59,7 +59,7 @@ export const Profile = (): ReactElement => (
       <Portrait alt={en.card.portraitAlt} />
     </div>
     <h1
-      className="name-signal type-display text-balance text-foreground"
+      className="name-signal type-display text-balance text-sky"
       data-name=""
       data-text={personalData.name}
       id="card-name"
@@ -90,7 +90,7 @@ export const Profile = (): ReactElement => (
       />
     </h1>
     <p
-      className="bio mt-(--card-gap-bio) max-w-xl type-body text-pretty text-foreground-soft text-halo-soft"
+      className="bio mt-(--card-gap-bio) max-w-xl type-body text-pretty text-sky"
       data-blur-in=""
     >
       {bio.map((part, index) =>

@@ -39,7 +39,7 @@ export const GET = async (): Promise<Response> => {
     ...cvLlmsSections(cv),
     `## ${en.llms.links}`,
     "",
-    `- [${en.llms.website}](${personalData.website}/)`,
+    `- [${en.llms.website}](${personalData.website})`,
     `- [${en.llms.resume}](${personalData.website}/resume.pdf)`,
     `- [${en.llms.cvJson}](${personalData.website}/cv.json)`,
     `- [${en.llms.github}](${personalData.github})`,

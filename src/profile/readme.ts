@@ -1,5 +1,6 @@
 import type { ProfileInput, ProfileProduct } from "./types.ts";
 
+import { countHeading } from "../lib/template.ts";
 import { buildBadges } from "./icons.ts";
 import { escapeMarkdown, escapeXml } from "./text.ts";
 
@@ -20,14 +21,6 @@ const summaryLine = (input: ProfileInput): string => {
   const flag = `<img src="assets/flag-at.svg" height="14" alt="${escapeXml(personal.country)}">`;
   return `${escapeXml(before)}${escapeXml(personal.city)} ${flag}${escapeXml(after)}`;
 };
-
-const countHeading = (
-  count: number,
-  forms: { headingOne: string; headingOther: string }
-): string =>
-  (count === 1 ? forms.headingOne : forms.headingOther).replace("{count}", () =>
-    String(count)
-  );
 
 const productLine = (product: ProfileProduct): string =>
   `- **[${escapeMarkdown(product.name)}](${product.url})** · ${escapeMarkdown(product.meta)}. ${escapeMarkdown(product.line)}`;

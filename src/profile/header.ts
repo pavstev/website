@@ -1,7 +1,8 @@
 import type { ProfileInput } from "./types.ts";
 
+import { createRandom, seedOf } from "../lib/hash.ts";
 import { profilePalette } from "../lib/theme.ts";
-import { createRandom, escapeXml, round, seedOf } from "./text.ts";
+import { escapeXml, round } from "./text.ts";
 
 const width = 2400;
 const height = 480;

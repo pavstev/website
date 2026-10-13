@@ -44,7 +44,7 @@ export const RepoTags = ({
   if (tags.length === 0) return null;
   const guess = Math.max(0, tags.length - shownCount);
   return (
-    <span className="repo-tags">
+    <div className="repo-tags">
       <span className="repo-tags-row">
         {tags.map((tag) => (
           <Chip key={`${tag.kind}-${tag.label}`} tag={tag} />
@@ -96,6 +96,6 @@ export const RepoTags = ({
           </div>
         </>
       ) : null}
-    </span>
+    </div>
   );
 };

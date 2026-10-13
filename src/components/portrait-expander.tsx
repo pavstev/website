@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import {
+  blankPixel,
   createPortraitExpander,
   type PortraitExpanderControls,
 } from "@/lib/portrait-expand";
@@ -93,7 +94,10 @@ export const PortraitExpander = ({
   };
 
   const onHighLoad = (): void => {
-    highRef.current?.setAttribute("data-loaded", "");
+    const high = highRef.current;
+    if (high && high.getAttribute("src") !== blankPixel) {
+      high.dataset["loaded"] = "";
+    }
   };
 
   return (
@@ -136,6 +140,7 @@ export const PortraitExpander = ({
               className="absolute inset-0 size-full object-cover object-top"
               decoding="async"
               ref={lowRef}
+              src={blankPixel}
             />
             <img
               alt={alt}
@@ -143,6 +148,7 @@ export const PortraitExpander = ({
               decoding="async"
               onLoad={onHighLoad}
               ref={highRef}
+              src={blankPixel}
             />
           </span>
           <span className="portrait-halo" data-expander-halo="">

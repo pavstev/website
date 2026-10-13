@@ -1,3 +1,5 @@
+import { clamp } from "./math.ts";
+
 export interface FrameClock {
   pause: () => void;
   tick: (now: number) => number;
@@ -14,7 +16,7 @@ export const createFrameClock = (startMs = 0): FrameClock => {
     },
     tick: (now): number => {
       if (last !== undefined) {
-        elapsed += Math.min(Math.max(now - last, 0), maxStepMs);
+        elapsed += clamp(now - last, 0, maxStepMs);
       }
       last = now;
       return elapsed;

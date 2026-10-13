@@ -203,6 +203,30 @@ describe("handleWeather", () => {
     assert.deepEqual(await response.json(), { weather: viennaSample });
   });
 
+  it("sends the security headers on a hit, a miss and a refusal", async () => {
+    const expected = {
+      "permissions-policy": "camera=(), microphone=(), geolocation=()",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000",
+      "x-content-type-options": "nosniff",
+    };
+    const cached = Response.json({ weather: viennaSample });
+    const responses = [
+      await handleWeather(get(), harness(ok).deps),
+      await handleWeather(get(), harness(ok, cached).deps),
+      await handleWeather(
+        new Request("https://example.test/weather", { method: "POST" }),
+        harness(ok).deps
+      ),
+    ];
+
+    for (const response of responses) {
+      for (const [name, value] of Object.entries(expected)) {
+        assert.equal(response.headers.get(name), value, name);
+      }
+    }
+  });
+
   it("rejects other methods", async () => {
     const { deps, fetches } = harness(ok);
     const response = await handleWeather(

@@ -10,10 +10,12 @@ on:
       - public/fonts/geist-latin-*
       - public/fonts/geist-extra-*
       - src/lib/github.ts
+      - src/lib/hash.ts
       - src/lib/i18n.ts
       - src/lib/icon-data.ts
       - src/lib/personal.ts
       - src/lib/products.ts
+      - src/lib/template.ts
       - src/lib/theme.ts
       - src/profile/**
       - tsconfig.json

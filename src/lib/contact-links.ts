@@ -1,3 +1,4 @@
+import { createListeners } from "@/lib/listeners";
 import { finePointerQuery } from "@/lib/media";
 import { stillQuery } from "@/lib/motion-pause";
 
@@ -138,18 +139,7 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
         ?.querySelectorAll(":scope > [data-blur-in], .repo-heading") ?? []),
     ].map((element) => ({ element, weight: 1 })),
   ];
-  const disposers: Array<() => void> = [];
-
-  const on = (
-    target: EventTarget,
-    type: string,
-    listener: (event: Event) => void
-  ): void => {
-    target.addEventListener(type, listener, { passive: true });
-    disposers.push(() => {
-      target.removeEventListener(type, listener);
-    });
-  };
+  const { dispose, on } = createListeners({ passive: true });
 
   for (const item of items) {
     on(item.root, "pointerenter", (event) => {
@@ -177,13 +167,15 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
   const paintAim = (): void => {
     aimFrame = 0;
     for (const item of targets) {
-      if (!item.center) {
-        const box = item.link.getBoundingClientRect();
-        item.center = {
-          x: box.left + box.width / 2,
-          y: box.top + box.height / 2,
-        };
-      }
+      if (item.center) continue;
+      const box = item.link.getBoundingClientRect();
+      item.center = {
+        x: box.left + box.width / 2,
+        y: box.top + box.height / 2,
+      };
+    }
+    for (const item of targets) {
+      if (!item.center) continue;
       const target =
         (Math.atan2(aim.x - item.center.x, item.center.y - aim.y) * 180) /
         Math.PI;
@@ -234,7 +226,7 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
   return () => {
     if (resizeFrame) cancelAnimationFrame(resizeFrame);
     if (aimFrame) cancelAnimationFrame(aimFrame);
-    for (const dispose of disposers) dispose();
+    dispose();
     for (const item of items) delete item.root.dataset["dismissed"];
     for (const item of targets) item.link.style.removeProperty("--ma");
   };

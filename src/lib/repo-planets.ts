@@ -1,4 +1,5 @@
 import { createFramePacer } from "@/lib/frame-pacer";
+import { createListeners } from "@/lib/listeners";
 import {
   createLogoMotion,
   type LogoMotion,
@@ -335,7 +336,6 @@ export const initRepoPlanets = (
   let height = 1;
   let projection = orthographic(1, 1, near, far);
   let handle = 0;
-  let last = 0;
   let visible = true;
   let frozen = false;
   let lost = false;
@@ -554,7 +554,6 @@ export const initRepoPlanets = (
   const stop = (): void => {
     if (handle !== 0) cancelAnimationFrame(handle);
     handle = 0;
-    last = 0;
     pacer.reset();
   };
 
@@ -567,9 +566,7 @@ export const initRepoPlanets = (
       return;
     }
     if (step.kind !== "draw") return;
-    const dt = last > 0 ? Math.min(now - last, 100) : step.dt;
-    last = now;
-    advance(dt);
+    advance(step.dt);
     draw();
   };
 
@@ -611,15 +608,8 @@ export const initRepoPlanets = (
     sync();
   };
 
-  const disposers: Array<() => void> = [];
-  const listen = (
-    target: Document | EventTarget | MediaQueryList | Window,
-    type: string,
-    listener: EventListener
-  ): void => {
-    target.addEventListener(type, listener);
-    disposers.push(() => target.removeEventListener(type, listener));
-  };
+  const listeners = createListeners();
+  const listen = listeners.on;
 
   for (const logo of logos) {
     const watcher = new IntersectionObserver(
@@ -630,7 +620,7 @@ export const initRepoPlanets = (
       { threshold: sunriseVisibility }
     );
     watcher.observe(logo.node);
-    disposers.push(() => {
+    listeners.add(() => {
       watcher.disconnect();
     });
   }
@@ -707,7 +697,7 @@ export const initRepoPlanets = (
       stop();
       observer.disconnect();
       visibility.disconnect();
-      for (const dispose of disposers) dispose();
+      listeners.dispose();
       releaseGl();
       delete canvas.dataset["ready"];
       delete stage.dataset["planets"];

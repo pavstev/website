@@ -2,6 +2,7 @@
 
 import { type ReactElement, useEffect, useRef } from "react";
 
+import { isCoarseDevice, scheduleIdle, scheduleStaggered } from "@/lib/idle";
 import { prefersLightLoad } from "@/lib/save-data";
 import { hasSeenSoftwareRenderer } from "@/lib/webgl";
 
@@ -14,32 +15,28 @@ export const RepoPlanetsCanvas = (): ReactElement => {
     if (!stage || prefersLightLoad()) return;
     let dispose: (() => void) | undefined;
     let alive = true;
-    let idleHandle: number | undefined;
-    let timerHandle: ReturnType<typeof globalThis.setTimeout> | undefined;
-    const boot = (): void => {
+    let cancelBoot: (() => void) | undefined;
+    const boot = async (): Promise<void> => {
       if (hasSeenSoftwareRenderer()) return;
-      void import("@/lib/repo-planets")
-        .then((module) => {
-          if (!alive) return;
-          const controls = module.initRepoPlanets(canvas, stage);
-          ({ dispose } = controls);
-        })
-        .catch(() => undefined);
-    };
-    const schedule = (): void => {
-      if (typeof globalThis.requestIdleCallback === "function") {
-        idleHandle = globalThis.requestIdleCallback(boot, { timeout: 2000 });
-      } else {
-        timerHandle = globalThis.setTimeout(boot, 500);
+      try {
+        const planets = await import("@/lib/repo-planets");
+        if (alive) ({ dispose } = planets.initRepoPlanets(canvas, stage));
+      } catch {
+        dispose = undefined;
       }
     };
-    if (document.readyState === "complete") schedule();
+    const options = { fallbackMs: 500, timeout: 2000 };
+    const schedule = (): void => {
+      cancelBoot = scheduleIdle(boot, options);
+    };
+    if (isCoarseDevice()) {
+      cancelBoot = scheduleStaggered(boot, options);
+    } else if (document.readyState === "complete") schedule();
     else globalThis.addEventListener("load", schedule, { once: true });
     return () => {
       alive = false;
       globalThis.removeEventListener("load", schedule);
-      if (idleHandle !== undefined) globalThis.cancelIdleCallback(idleHandle);
-      if (timerHandle !== undefined) globalThis.clearTimeout(timerHandle);
+      cancelBoot?.();
       dispose?.();
     };
   }, []);

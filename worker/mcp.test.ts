@@ -324,6 +324,7 @@ describe("handleMcp", () => {
     assert.equal(response.status, 502);
     assert.equal(await errorOf(response), "failed");
     assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   });
   it("answers 502 with no-store when the facts fail to load", async () => {
     const { env } = envOf({ assetsStatus: 500 });
@@ -375,6 +376,19 @@ describe("handleMcp", () => {
     const text = await response.text();
 
     assert.equal(response.status, 200);
+    assert.equal(
+      response.headers.get("strict-transport-security"),
+      "max-age=31536000"
+    );
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(
+      response.headers.get("referrer-policy"),
+      "strict-origin-when-cross-origin"
+    );
+    assert.equal(
+      response.headers.get("permissions-policy"),
+      "camera=(), microphone=(), geolocation=()"
+    );
     assert.equal(response.headers.get("mcp-session-id"), null);
     for (const name of [
       "contact",

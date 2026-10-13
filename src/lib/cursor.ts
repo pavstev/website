@@ -1,3 +1,4 @@
+import { createListeners } from "@/lib/listeners";
 import { finePointerQuery } from "@/lib/media";
 import { stillQuery } from "@/lib/motion-pause";
 
@@ -159,22 +160,12 @@ export const initPointerLight = (scope: HTMLElement): (() => void) => {
     ...scope.querySelectorAll<HTMLElement>("[data-pointer-light]"),
   ];
   const rects = new Map<HTMLElement, DOMRect | null>();
-  const disposers: Array<() => void> = [];
+  const listeners = createListeners({ passive: true });
+  const { on } = listeners;
 
   const clear = (element: HTMLElement): void => {
     element.style.removeProperty("--mx");
     element.style.removeProperty("--my");
-  };
-
-  const on = (
-    target: EventTarget,
-    type: string,
-    listener: (event: Event) => void
-  ): void => {
-    target.addEventListener(type, listener, { passive: true });
-    disposers.push(() => {
-      target.removeEventListener(type, listener);
-    });
   };
 
   for (const element of elements) {
@@ -208,7 +199,7 @@ export const initPointerLight = (scope: HTMLElement): (() => void) => {
   });
 
   return () => {
-    for (const dispose of disposers) dispose();
+    listeners.dispose();
     for (const element of elements) clear(element);
     rects.clear();
   };

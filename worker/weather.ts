@@ -1,5 +1,5 @@
 import { parseViennaWeather, type ViennaWeather } from "../src/lib/weather.ts";
-import { failure } from "./http.ts";
+import { failure, withSecurityHeaders } from "./http.ts";
 
 const upstreamUrl =
   "https://api.open-meteo.com/v1/forecast?latitude=48.21&longitude=16.37&current=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,rain,showers,snowfall,visibility,wind_speed_10m,wind_direction_10m&timezone=Europe%2FVienna";
@@ -103,6 +103,11 @@ const store = async (
 };
 
 export const handleWeather = async (
+  request: Request,
+  deps: WeatherDeps
+): Promise<Response> => withSecurityHeaders(await respond(request, deps));
+
+const respond = async (
   request: Request,
   deps: WeatherDeps
 ): Promise<Response> => {

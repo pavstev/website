@@ -4,14 +4,7 @@ import { CompoundText } from "@/components/compound-text";
 import { ProductMark } from "@/components/product-mark";
 import { en } from "@/lib/i18n";
 import { type Product, productMetaParts } from "@/lib/products";
-
-const plural = new Intl.PluralRules("en");
-
-const headingFor = (count: number): string =>
-  (plural.select(count) === "one"
-    ? en.products.headingOne
-    : en.products.headingOther
-  ).replace("{count}", () => String(count));
+import { countHeading } from "@/lib/template";
 
 interface ProductStripProps {
   newTabId: string;
@@ -29,9 +22,12 @@ export const ProductStrip = ({
       className="strip"
       data-products=""
     >
-      <div className="repo-head text-halo">
-        <h2 className="repo-heading type-eyebrow" id="products-heading">
-          {headingFor(products.length)}
+      <div className="repo-head">
+        <h2
+          className="repo-heading type-eyebrow text-sky"
+          id="products-heading"
+        >
+          {countHeading(products.length, en.products)}
         </h2>
         <span aria-hidden="true" className="repo-rule" />
       </div>

@@ -6,7 +6,8 @@ import type { Product } from "./products.ts";
 import { en } from "./i18n.ts";
 import { personalData, plainName } from "./personal.ts";
 
-const site = `${personalData.website}/`;
+const home = personalData.website;
+const site = `${home}/`;
 const personId = `${site}#person`;
 const profileId = `${site}#profile`;
 const websiteId = `${site}#website`;
@@ -22,7 +23,7 @@ const portrait: ImageObject = {
 export const structuredData = (
   repos: Repo[],
   contact: Contact,
-  modified: Date,
+  modified: string,
   items: readonly Product[]
 ): Graph => ({
   "@context": "https://schema.org",
@@ -33,19 +34,19 @@ export const structuredData = (
       inLanguage: "en",
       name: personalData.name,
       publisher: { "@id": personId },
-      url: site,
+      url: home,
     },
     {
       "@id": profileId,
       "@type": "ProfilePage",
-      dateModified: modified.toISOString(),
+      dateModified: modified,
       description: en.meta.description,
       inLanguage: "en",
       isPartOf: { "@id": websiteId },
       mainEntity: { "@id": personId },
       name: en.meta.title,
       primaryImageOfPage: portrait,
-      url: site,
+      url: home,
     },
     {
       "@id": personId,
@@ -78,11 +79,12 @@ export const structuredData = (
         name: en.meta.resume,
         url: `${site}resume.pdf`,
       },
-      url: site,
+      url: home,
     },
     ...repos.map(
       (repo) =>
         ({
+          "@id": `${site}#repo-${repo.name}`,
           "@type": "SoftwareSourceCode",
           author: { "@id": personId },
           codeRepository: repo.url,

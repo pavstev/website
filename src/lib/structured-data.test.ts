@@ -23,10 +23,11 @@ const repo: Repo = {
   topics: [],
   url: "https://github.com/ada/engine",
 };
+const modified = "2026-10-12T09:03:17.113Z";
 const person = "https://stevanpavlovic.com/#person";
 const graph = z
   .array(z.looseObject({ "@id": z.string().optional(), "@type": z.string() }))
-  .parse(structuredData([repo], contact, new Date(0), products)["@graph"]);
+  .parse(structuredData([repo], contact, modified, products)["@graph"]);
 const credited = z.object({ creator: z.object({ "@id": z.string() }) });
 
 describe("structuredData", () => {
@@ -73,6 +74,20 @@ describe("structuredData", () => {
     assert.equal(made.length, products.length);
     for (const node of made) {
       assert.equal(credited.parse(node).creator["@id"], personNode["@id"]);
+    }
+  });
+  it("dates the profile page with the given content date", () => {
+    const page = graph.find((node) => node["@type"] === "ProfilePage");
+    assert.equal(page?.["dateModified"], modified);
+  });
+  it("gives each repo a stable id", () => {
+    const code = graph.find((node) => node["@type"] === "SoftwareSourceCode");
+    assert.equal(code?.["@id"], "https://stevanpavlovic.com/#repo-engine");
+  });
+  it("uses one page url without a slash for every url field", () => {
+    for (const type of ["WebSite", "ProfilePage", "Person"]) {
+      const node = graph.find((entry) => entry["@type"] === type);
+      assert.equal(node?.["url"], "https://stevanpavlovic.com");
     }
   });
   it("never claims an employer", () => {

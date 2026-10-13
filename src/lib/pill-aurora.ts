@@ -1,3 +1,4 @@
+import { clamp } from "@/lib/math";
 import { finePointerQuery } from "@/lib/media";
 import { stillQuery } from "@/lib/motion-pause";
 
@@ -65,7 +66,7 @@ export const initPillAurora = (
   };
 
   const tick = (now: number): void => {
-    const dt = Math.max(0, Math.min(64, now - last));
+    const dt = clamp(now - last, 0, 64);
     last = now;
     const current = animation;
     if (!current) {

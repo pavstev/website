@@ -15,7 +15,6 @@ export const TopicTrigger = ({
 }: TopicTriggerProps): ReactElement => (
   <button
     aria-controls={panelId}
-    aria-expanded="false"
     aria-haspopup="dialog"
     aria-label={label}
     className="topic-trigger focus-ring"

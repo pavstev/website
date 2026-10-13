@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import { parseCv } from "../src/lib/cv.ts";
+import { fetchLive } from "../src/lib/cv.ts";
 import {
   buildSnapshot,
   changeTitle,
@@ -53,17 +53,6 @@ const sha256 = async (file: string): Promise<string> =>
     .update(await readFile(file))
     .digest("hex");
 
-const fetchLiveCv = async (): Promise<ReturnType<typeof parseCv>> => {
-  const response = await fetch(liveCvUrl, {
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(fetchTimeoutMs),
-  });
-  if (!response.ok) {
-    throw new Error(`${liveCvUrl} answered ${String(response.status)}`);
-  }
-  return parseCv(JSON.parse(await response.text()), liveCvUrl);
-};
-
 const loadPrevious = async (): Promise<Snapshot | undefined> => {
   if (previousFile === undefined) return undefined;
   const body = await readFile(previousFile, "utf8");
@@ -97,7 +86,7 @@ const hashes = {
 };
 
 const after = buildSnapshot({
-  cv: await fetchLiveCv(),
+  cv: await fetchLive(liveCvUrl, fetch, fetchTimeoutMs),
   hashes,
   person: personalData,
   products,

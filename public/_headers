@@ -70,10 +70,12 @@
   ! X-Frame-Options
 
 /llms.txt
+  Content-Type: text/plain; charset=utf-8
   ! Content-Security-Policy
   ! X-Frame-Options
 
 /cv.json
+  Content-Type: application/json; charset=utf-8
   ! Content-Security-Policy
   ! X-Frame-Options
 

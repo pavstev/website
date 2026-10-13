@@ -1,3 +1,5 @@
+import { clamp, clamp01, smoothstep } from "./math.ts";
+
 export interface SkyWeather {
   cover: number;
   drift: number;
@@ -78,16 +80,6 @@ const snowByCode: Readonly<Record<number, number>> = {
 const fogCodes = new Set([45, 48]);
 const stormCodes = new Set([95, 96, 99]);
 
-const clamp = (value: number, low: number, high: number): number =>
-  Math.min(high, Math.max(low, value));
-
-const clamp01 = (value: number): number => clamp(value, 0, 1);
-
-const smoothstep = (from: number, to: number, value: number): number => {
-  const t = clamp01((value - from) / (to - from));
-  return t * t * (3 - 2 * t);
-};
-
 const calm: Omit<SkyWeather, "cover" | "high" | "overcast"> = {
   drift: 1,
   fog: 0,
@@ -126,6 +118,8 @@ export const weatherPresets: Record<WeatherState, SkyWeather> = {
     storm: 1,
   },
 };
+
+export const crawlerSky: SkyWeather = { ...weatherPresets.partly };
 
 const windDrift = (east: number): number =>
   Math.abs(east) < 1

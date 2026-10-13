@@ -2,22 +2,49 @@
 
 import { type ReactElement, useEffect, useRef } from "react";
 
+import {
+  createUniformSink,
+  fanOut,
+  type LayerPlacement,
+  placeLayer,
+  type UniformSink,
+} from "@/lib/corona-layer";
+import { isCrawler } from "@/lib/crawler";
 import { createFrameClock } from "@/lib/frame-clock";
 import { createFramePacer } from "@/lib/frame-pacer";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
 import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
-import { skyPhase } from "@/lib/sky-clock";
+import { nightPhase, skyPhase } from "@/lib/sky-clock";
+import { inkTargets, liftFor, nextLift, skyLevel } from "@/lib/sky-ink";
+import { createSkyProbe, type ProbeBox } from "@/lib/sky-probe";
 import {
+  coronaFragmentShader as CORONA,
   skyFragmentShader as FRAGMENT,
   skyVertexShader as VERTEX,
 } from "@/lib/sky-shader";
 import {
+  crawlerSky,
   fallbackSky,
   fetchSkyWeather,
   type SkyWeather,
   weatherOverride,
 } from "@/lib/weather";
 import { isSoftwareRenderer } from "@/lib/webgl";
+
+interface CoronaLayer {
+  dispose: () => void;
+  draw: (place: LayerPlacement) => void;
+  hide: () => void;
+  onLost: (handler: () => void) => void;
+  ready: () => boolean;
+  sink: () => undefined | UniformSink;
+  stage: HTMLElement;
+}
+
+interface InkNodes {
+  paint: HTMLElement | null;
+  probe: Element | null;
+}
 
 interface Puff {
   age: number;
@@ -47,15 +74,17 @@ const followRate = 3.7;
 const parallaxReach = 0.01175;
 const labPixelsPerCss = 1.2;
 const maxCanvasPixels = 1_400_000;
-const rippleLife = 1.6;
-const rippleSpeed = 2.25;
 const resizeDelayMs = 150;
 const meteorMs = 1450;
 const meteorGapMs: [number, number] = [2000, 14_000];
 const timeWrapHighSeconds = 86_400;
 const timeWrapLowSeconds = 1024;
 const portraitSelector = "[data-card] [data-portrait]";
-const quietSelector = "[data-card] .bio";
+const probeEveryMs = 1000;
+const scrollQuietMs = 180;
+const probeReadMs = 34;
+const probeSlackMs = 5;
+const layerReach = 7.6;
 const cloudZone = 0.8;
 const gustMax = 3.5;
 const gustEaseSeconds = 2.3;
@@ -132,16 +161,11 @@ const whenLinked = (
   return () => globalThis.cancelAnimationFrame(handle);
 };
 
-const startSky = (
+const bindTriangle = (
   gl: WebGLRenderingContext,
-  program: WebGLProgram,
-  canvas: HTMLCanvasElement,
-  reduceMotion: MediaQueryList,
-  still: boolean,
-  setState: (state: SpaceState) => void
-): (() => void) => {
+  program: WebGLProgram
+): void => {
   gl.useProgram(program);
-
   const buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(
@@ -152,24 +176,100 @@ const startSky = (
   const position = gl.getAttribLocation(program, "a_pos");
   gl.enableVertexAttribArray(position);
   gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+};
 
-  const uRes = gl.getUniformLocation(program, "u_res");
-  const uView = gl.getUniformLocation(program, "u_view");
-  const uLabPx = gl.getUniformLocation(program, "u_labPx");
-  const uTime = gl.getUniformLocation(program, "u_time");
-  const uPointer = gl.getUniformLocation(program, "u_pointer");
-  const uPortrait = gl.getUniformLocation(program, "u_portrait");
-  const uQuiet = gl.getUniformLocation(program, "u_quiet");
-  const uRipple = gl.getUniformLocation(program, "u_ripple");
-  const uMeteor = gl.getUniformLocation(program, "u_meteor");
-  const uClouds = gl.getUniformLocation(program, "u_clouds");
-  const uCloudTime = gl.getUniformLocation(program, "u_cloudTime");
-  const uCloudShift = gl.getUniformLocation(program, "u_cloudShift");
-  const uDaylight = gl.getUniformLocation(program, "u_daylight");
-  const uWeather = gl.getUniformLocation(program, "u_weather");
-  const uFall = gl.getUniformLocation(program, "u_fall");
-  const uPuffs = gl.getUniformLocation(program, "u_puffs");
-  const uPuffOn = gl.getUniformLocation(program, "u_puffOn");
+const contextOptions: WebGLContextAttributes = {
+  alpha: false,
+  antialias: false,
+  depth: false,
+  powerPreference: "low-power",
+  stencil: false,
+};
+
+const createCoronaLayer = (
+  stage: HTMLElement,
+  canvas: HTMLCanvasElement
+): CoronaLayer | undefined => {
+  const gl = canvas.getContext("webgl", contextOptions);
+  const vertex = gl ? createShader(gl, gl.VERTEX_SHADER, VERTEX) : undefined;
+  const fragment = gl
+    ? createShader(gl, gl.FRAGMENT_SHADER, CORONA)
+    : undefined;
+  const program = gl?.createProgram();
+  if (!gl || !vertex || !fragment || !program) return undefined;
+  gl.attachShader(program, vertex);
+  gl.attachShader(program, fragment);
+  gl.linkProgram(program);
+  let sink: undefined | UniformSink;
+  let shown: LayerPlacement | undefined;
+  let onLost = (): void => undefined;
+  const cancelWait = whenLinked(gl, program, (linked) => {
+    if (!linked || gl.isContextLost()) return;
+    bindTriangle(gl, program);
+    sink = createUniformSink(gl, program);
+  });
+  const hide = (): void => {
+    delete stage.dataset["live"];
+    shown = undefined;
+  };
+  const onContextLost = (): void => {
+    sink = undefined;
+    hide();
+    onLost();
+  };
+  canvas.addEventListener("webglcontextlost", onContextLost);
+  const draw = (place: LayerPlacement): void => {
+    if (!sink) return;
+    if (canvas.width !== place.width || canvas.height !== place.height) {
+      canvas.width = place.width;
+      canvas.height = place.height;
+      gl.viewport(0, 0, place.width, place.height);
+    }
+    if (
+      shown?.left !== place.left ||
+      shown.top !== place.top ||
+      shown.cssWidth !== place.cssWidth ||
+      shown.cssHeight !== place.cssHeight
+    ) {
+      canvas.style.transform = `translate(${String(place.left)}px, ${String(place.top)}px)`;
+      canvas.style.width = `${String(place.cssWidth)}px`;
+      canvas.style.height = `${String(place.cssHeight)}px`;
+    }
+    sink.set("u_origin", place.originX, place.originY);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    stage.dataset["live"] = "";
+    shown = place;
+  };
+  return {
+    dispose: () => {
+      cancelWait();
+      canvas.removeEventListener("webglcontextlost", onContextLost);
+      hide();
+    },
+    draw,
+    hide,
+    onLost: (handler) => {
+      onLost = handler;
+    },
+    ready: () => sink !== undefined,
+    sink: () => sink,
+    stage,
+  };
+};
+
+const startSky = (
+  gl: WebGLRenderingContext,
+  program: WebGLProgram,
+  canvas: HTMLCanvasElement,
+  reduceMotion: MediaQueryList,
+  still: boolean,
+  layer: CoronaLayer | undefined,
+  setState: (state: SpaceState) => void
+): (() => void) => {
+  bindTriangle(gl, program);
+  const sky = createUniformSink(gl, program);
+  const uniforms = fanOut([() => sky, () => layer?.sink()]);
+  const probe = createSkyProbe(gl, sky, inkTargets.length);
   const highPrecision =
     (gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)
       ?.precision ?? 0) > 0;
@@ -182,18 +282,33 @@ const startSky = (
   let rafId = 0;
   let frozen = false;
   let portraitNode: Element | null = null;
-  let quietNode: Element | null = null;
+  let placement: LayerPlacement | undefined;
+  let split = false;
+  const inkNodes: InkNodes[] = inkTargets.map(() => ({
+    paint: null,
+    probe: null,
+  }));
+  const lifts = inkTargets.map(() => 0);
+  const inkSeen = inkTargets.map(() => false);
+  const textRange = document.createRange();
+  let probedAt = performance.now();
+  let scrolledAt = -Infinity;
+  let probeTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+  let readTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
+  let probing = false;
   const pointer = { x: 0, y: 0 };
   const pointerTarget = { x: 0, y: 0 };
-  const ripple = { age: rippleLife, x: 0, y: 0 };
   const meteor = { angle: 0, at: 0, x: 0, y: 0 };
   const gust = { dir: -1, energy: 0, inside: false, x: 0, y: 0 };
   let cloudMs = 0;
   let shiftMs = 0;
-  let daylight = skyPhase(new Date());
-  let daylightAt = performance.now();
   const override = weatherOverride(globalThis.location.search);
-  const weatherTarget: SkyWeather = { ...(override ?? fallbackSky) };
+  const crawler = !override && isCrawler(navigator.userAgent);
+  let daylight = crawler ? nightPhase : skyPhase(new Date());
+  let daylightAt = performance.now();
+  const weatherTarget: SkyWeather = {
+    ...(override ?? (crawler ? crawlerSky : fallbackSky)),
+  };
   const weather: SkyWeather = { ...weatherTarget };
   const weatherStop = new AbortController();
   const puffs: Puff[] = [];
@@ -250,39 +365,127 @@ const startSky = (
     gl.viewport(0, 0, width, height);
   };
 
-  const trackPortrait = (): void => {
+  const trackPortrait = (): DOMRect | undefined => {
     if (!portraitNode?.isConnected)
       portraitNode = document.querySelector(portraitSelector);
     if (!portraitNode) {
-      gl.uniform3f(uPortrait, 0, 0, 0);
-      return;
+      uniforms.set("u_portrait", 0, 0, 0);
+      return undefined;
     }
-    const sky = canvas.getBoundingClientRect();
+    const box = canvas.getBoundingClientRect();
     const face = portraitNode.getBoundingClientRect();
-    gl.uniform3f(
-      uPortrait,
-      (face.left + face.width / 2 - sky.left) * scale,
-      (sky.bottom - face.top - face.height / 2) * scale,
+    uniforms.set(
+      "u_portrait",
+      (face.left + face.width / 2 - box.left) * scale,
+      (box.bottom - face.top - face.height / 2) * scale,
       (face.width / 2) * scale
     );
+    return face;
   };
 
-  const trackQuiet = (): void => {
-    if (!quietNode?.isConnected)
-      quietNode = document.querySelector(quietSelector);
-    if (!quietNode) {
-      gl.uniform4f(uQuiet, 0, 0, 0, 0);
+  const placeCorona = (
+    face: DOMRect | undefined
+  ): LayerPlacement | undefined => {
+    if (!face || !layer?.ready() || face.width <= 0) return undefined;
+    const root = document.documentElement;
+    if (root.scrollHeight - root.clientHeight < 1) return undefined;
+    const box = canvas.getBoundingClientRect();
+    placement = placeLayer({
+      face,
+      pitchX: canvas.width / Math.max(1, box.width),
+      pitchY: canvas.height / Math.max(1, box.height),
+      previous: placement,
+      reach: layerReach,
+      sky: box,
+      stage: layer.stage.getBoundingClientRect(),
+    });
+    return placement;
+  };
+
+  const inkBox = (slot: number, box: DOMRect): ProbeBox | undefined => {
+    const target = inkTargets[slot];
+    const nodes = inkNodes[slot];
+    if (!target || !nodes) return undefined;
+    if (!nodes.probe?.isConnected || !nodes.paint?.isConnected) {
+      nodes.probe =
+        document.querySelectorAll(target.probe)[target.index] ?? null;
+      nodes.paint =
+        document.querySelectorAll<HTMLElement>(target.paint)[target.index] ??
+        null;
+    }
+    if (!nodes.probe) return undefined;
+    textRange.selectNodeContents(nodes.probe);
+    const area = textRange.getBoundingClientRect();
+    const left = Math.max(area.left, box.left);
+    const right = Math.min(area.right, box.right);
+    const top = Math.max(area.top, box.top);
+    const bottom = Math.min(area.bottom, box.bottom);
+    if (right - left < 1 || bottom - top < 1) return undefined;
+    return {
+      bottom: (box.bottom - bottom) * scale,
+      left: (left - box.left) * scale,
+      right: (right - box.left) * scale,
+      top: (box.bottom - top) * scale,
+    };
+  };
+
+  const readInk = (): void => {
+    if (readTimer !== undefined) globalThis.clearTimeout(readTimer);
+    readTimer = undefined;
+    if (!probe || !probing) return;
+    probing = false;
+    const pixels = probe.read();
+    if (!pixels) return;
+    for (const [slot, target] of inkTargets.entries()) {
+      const node = inkNodes[slot]?.paint;
+      if (!node || inkSeen[slot] !== true) continue;
+      const light = skyLevel(pixels, {
+        columns: probe.columns,
+        rows: probe.rows,
+        slot,
+        stride: probe.stride,
+      });
+      const lift = nextLift(
+        lifts[slot] ?? 0,
+        liftFor(target.base, light, target.need)
+      );
+      if (lift === lifts[slot]) continue;
+      lifts[slot] = lift;
+      node.style.setProperty("--lift", lift.toFixed(2));
+    }
+  };
+
+  const wakeProbe = (delay: number): void => {
+    if (probeTimer !== undefined) globalThis.clearTimeout(probeTimer);
+    probeTimer = globalThis.setTimeout(() => {
+      probeTimer = undefined;
+      scrolledAt = -Infinity;
+      if (!rafId) drawStill();
+    }, delay);
+  };
+
+  const drawInk = (now: number): void => {
+    if (!probe || probing) return;
+    if (now - scrolledAt < scrollQuietMs || now - probedAt < probeEveryMs) {
+      if (!rafId)
+        wakeProbe(
+          Math.max(
+            scrollQuietMs - (now - scrolledAt),
+            probeEveryMs - (now - probedAt)
+          ) + probeSlackMs
+        );
       return;
     }
-    const sky = canvas.getBoundingClientRect();
-    const box = quietNode.getBoundingClientRect();
-    gl.uniform4f(
-      uQuiet,
-      (box.left - sky.left) * scale,
-      (sky.bottom - box.bottom) * scale,
-      (box.right - sky.left) * scale,
-      (sky.bottom - box.top) * scale
-    );
+    probedAt = now;
+    const box = canvas.getBoundingClientRect();
+    const boxes = inkTargets.map((_, slot) => inkBox(slot, box));
+    for (const [slot, area] of boxes.entries())
+      inkSeen[slot] = area !== undefined;
+    sky.set("u_split", 0);
+    probing = probe.draw(boxes);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (probing && !rafId)
+      readTimer = globalThis.setTimeout(readInk, probeReadMs);
   };
 
   const uploadPuffs = (): boolean => {
@@ -296,8 +499,8 @@ const startSky = (
       );
       if (strength > puffVisible) visible = true;
     }
-    gl.uniform4fv(uPuffs, puffData);
-    gl.uniform1f(uPuffOn, visible ? 1 : 0);
+    uniforms.array("u_puffs", puffData);
+    uniforms.set("u_puffOn", visible ? 1 : 0);
     return visible;
   };
 
@@ -318,7 +521,7 @@ const startSky = (
   };
 
   const refreshWeather = (): void => {
-    if (override || process.env.NODE_ENV !== "production") return;
+    if (override || crawler || process.env.NODE_ENV !== "production") return;
     void fetchSkyWeather(weatherStop.signal).then((next) => {
       if (!next || weatherStop.signal.aborted) return;
       Object.assign(weatherTarget, next);
@@ -334,6 +537,7 @@ const startSky = (
   const frame = (now: number, dt = frameDt): void => {
     const current = currentLevel();
     if (!current) return;
+    if (probing) readInk();
     const skyMs = clock.tick(now);
     const follow = 1 - Math.exp((-followRate * dt) / 1000);
     pointer.x += (pointerTarget.x - pointer.x) * follow;
@@ -353,32 +557,29 @@ const startSky = (
     }
     const puffing = uploadPuffs();
     if (rafId && puffing) markActive();
-    gl.uniform2f(uRes, canvas.width, canvas.height);
-    gl.uniform1f(uView, viewPixels());
-    gl.uniform1f(uLabPx, labPixelsPerCss / scale);
-    gl.uniform1f(uTime, (skyMs / 1000) % timeWrap);
-    gl.uniform2f(uPointer, pointer.x, pointer.y);
-    trackPortrait();
-    trackQuiet();
-    if (ripple.age < rippleLife) ripple.age += (dt / 1000) * rippleSpeed;
-    gl.uniform3f(uRipple, ripple.x, ripple.y, ripple.age);
-    gl.uniform1f(uClouds, current.clouds ? 1 : 0);
-    gl.uniform1f(uCloudTime, (cloudMs / 1000) % timeWrap);
-    gl.uniform1f(uCloudShift, (shiftMs / 1000) % timeWrap);
-    if (now - daylightAt >= daylightEveryMs) {
+    uniforms.set("u_res", canvas.width, canvas.height);
+    uniforms.set("u_view", viewPixels());
+    uniforms.set("u_labPx", labPixelsPerCss / scale);
+    uniforms.set("u_time", (skyMs / 1000) % timeWrap);
+    uniforms.set("u_pointer", pointer.x, pointer.y);
+    const face = trackPortrait();
+    uniforms.set("u_clouds", current.clouds ? 1 : 0);
+    uniforms.set("u_cloudTime", (cloudMs / 1000) % timeWrap);
+    uniforms.set("u_cloudShift", (shiftMs / 1000) % timeWrap);
+    if (!crawler && now - daylightAt >= daylightEveryMs) {
       daylight = skyPhase(new Date());
       daylightAt = now;
     }
-    gl.uniform3f(uDaylight, daylight.day, daylight.twilight, daylight.dusk);
-    gl.uniform4f(
-      uWeather,
+    uniforms.set("u_daylight", daylight.day, daylight.twilight, daylight.dusk);
+    uniforms.set(
+      "u_weather",
       weather.cover,
       weather.overcast,
       weather.high,
       weather.fog
     );
-    gl.uniform4f(
-      uFall,
+    uniforms.set(
+      "u_fall",
       weather.rain,
       weather.snow,
       weather.storm,
@@ -387,14 +588,20 @@ const startSky = (
     const flight = rafId ? (skyMs - meteor.at) / meteorMs : -1;
     if (flight >= 1) launch(skyMs);
     if (flight >= 0 && flight < 1) markActive();
-    gl.uniform4f(
-      uMeteor,
+    uniforms.set(
+      "u_meteor",
       meteor.x,
       meteor.y,
       meteor.angle,
       flight >= 0 && flight < 1 ? flight : 2
     );
+    const place = placeCorona(face);
+    drawInk(now);
+    split = place !== undefined;
+    sky.set("u_split", split ? 1 : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (place) layer?.draw(place);
+    else layer?.hide();
   };
 
   const drawStill = (): void => {
@@ -437,7 +644,6 @@ const startSky = (
       return;
     }
     if (document.hidden || isSceneHeld()) {
-      ripple.age = rippleLife;
       calmClouds();
       setState("paused");
       return;
@@ -488,14 +694,6 @@ const startSky = (
     pointerTarget.y =
       (0.5 - event.clientY / window.innerHeight) * parallaxReach;
   };
-  const onDown = (event: PointerEvent): void => {
-    if (reduceMotion.matches || isSceneHeld()) return;
-    markActive();
-    const [x, y] = toSky(event.clientX, event.clientY);
-    ripple.x = x;
-    ripple.y = y;
-    ripple.age = 0;
-  };
   const applyResize = (): void => {
     resizeTimer = undefined;
     markActive();
@@ -514,7 +712,6 @@ const startSky = (
   const onTouch = (event: TouchEvent): void => {
     const touch = event.touches[0];
     if (!touch || reduceMotion.matches || isSceneHeld()) return;
-    markActive();
     stirClouds(touch.clientX, touch.clientY, touchScrollShare);
   };
   const onLift = (): void => {
@@ -522,6 +719,9 @@ const startSky = (
     lastPuff = undefined;
   };
   const onScroll = (): void => {
+    scrolledAt = performance.now();
+    if (!rafId) wakeProbe(scrollQuietMs);
+    if (split) return;
     if (rafId) {
       markActive();
       return;
@@ -540,6 +740,9 @@ const startSky = (
     setState("paused");
   };
 
+  layer?.onLost(() => {
+    if (!rafId) drawStill();
+  });
   resize();
   launch(0);
   refreshWeather();
@@ -556,7 +759,6 @@ const startSky = (
   window.addEventListener("resize", onResize);
   window.addEventListener("scroll", onScroll, { passive: true });
   globalThis.addEventListener("pointermove", onPointer, { passive: true });
-  globalThis.addEventListener("pointerdown", onDown, { passive: true });
   globalThis.addEventListener("pointerout", onLeave, { passive: true });
   globalThis.addEventListener("pointerup", onLift, { passive: true });
   globalThis.addEventListener("touchmove", onTouch, { passive: true });
@@ -569,16 +771,18 @@ const startSky = (
   reduceMotion.addEventListener("change", sync);
   return () => {
     stop();
+    layer?.dispose();
     weatherStop.abort();
     globalThis.clearInterval(weatherTimer);
     main?.removeEventListener("transitionend", onShift);
     if (scrollFrame) globalThis.cancelAnimationFrame(scrollFrame);
     if (resizeTimer !== undefined) globalThis.clearTimeout(resizeTimer);
+    if (probeTimer !== undefined) globalThis.clearTimeout(probeTimer);
+    if (readTimer !== undefined) globalThis.clearTimeout(readTimer);
     sizeWatch.disconnect();
     window.removeEventListener("resize", onResize);
     window.removeEventListener("scroll", onScroll);
     globalThis.removeEventListener("pointermove", onPointer);
-    globalThis.removeEventListener("pointerdown", onDown);
     globalThis.removeEventListener("pointerout", onLeave);
     globalThis.removeEventListener("pointerup", onLift);
     globalThis.removeEventListener("touchmove", onTouch);
@@ -594,10 +798,14 @@ const startSky = (
 
 export const SpaceBackground = (): ReactElement => {
   const ref = useRef<HTMLCanvasElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const layerRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
+    const stage = stageRef.current;
+    const layerCanvas = layerRef.current;
     const reduceMotion = globalThis.matchMedia(reducedMotionQuery);
     const setState = (state: SpaceState): void => {
       canvas.dataset["spaceState"] = state;
@@ -606,13 +814,7 @@ export const SpaceBackground = (): ReactElement => {
       canvas.hidden = true;
       setState("fallback");
     };
-    const gl = canvas.getContext("webgl", {
-      alpha: false,
-      antialias: false,
-      depth: false,
-      powerPreference: "low-power",
-      stencil: false,
-    });
+    const gl = canvas.getContext("webgl", contextOptions);
     const still = gl ? isSoftwareRenderer(gl) : false;
     const vertex = gl ? createShader(gl, gl.VERTEX_SHADER, VERTEX) : undefined;
     const fragment = gl
@@ -633,7 +835,19 @@ export const SpaceBackground = (): ReactElement => {
         fallback();
         return;
       }
-      stopSky = startSky(gl, program, canvas, reduceMotion, still, setState);
+      const layer =
+        still || !stage || !layerCanvas
+          ? undefined
+          : createCoronaLayer(stage, layerCanvas);
+      stopSky = startSky(
+        gl,
+        program,
+        canvas,
+        reduceMotion,
+        still,
+        layer,
+        setState
+      );
     });
     return () => {
       cancelWait();
@@ -642,11 +856,16 @@ export const SpaceBackground = (): ReactElement => {
   }, []);
 
   return (
-    <canvas
-      aria-hidden="true"
-      data-space=""
-      data-space-state="init"
-      ref={ref}
-    />
+    <>
+      <canvas
+        aria-hidden="true"
+        data-space=""
+        data-space-state="init"
+        ref={ref}
+      />
+      <div aria-hidden="true" data-corona="" ref={stageRef}>
+        <canvas ref={layerRef} />
+      </div>
+    </>
   );
 };

@@ -11,6 +11,7 @@ import { PageDock } from "@/components/page-dock";
 import { Profile } from "@/components/profile";
 import { ResumeTip } from "@/components/resume-tip";
 import { SpaceBackground } from "@/components/space-background";
+import { getCv } from "@/lib/cv";
 import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
@@ -21,7 +22,7 @@ import { serializeJsonLd, structuredData } from "@/lib/structured-data";
 const resumeDetailId = "resume-detail";
 
 export const metadata: Metadata = {
-  alternates: { canonical: `${personalData.website}/` },
+  alternates: { canonical: personalData.website },
   description: en.meta.description,
   robots: {
     follow: true,
@@ -38,17 +39,18 @@ export const metadata: Metadata = {
 };
 
 export default async function Page(): Promise<ReactElement> {
-  const [repos, contact, resume] = await Promise.all([
+  const [repos, contact, resume, cv] = await Promise.all([
     getRepos(personalData.githubHandle),
     getContact(personalData.githubHandle),
     getResumeFacts(),
+    getCv(),
   ]);
   return (
     <>
       <script
         dangerouslySetInnerHTML={{
           __html: serializeJsonLd(
-            structuredData(repos, contact, new Date(), products)
+            structuredData(repos, contact, cv.updatedAt, products)
           ),
         }}
         type="application/ld+json"

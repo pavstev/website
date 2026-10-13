@@ -1,3 +1,6 @@
+import { clamp01 } from "@/lib/math";
+import { hexBytes } from "@/lib/theme";
+
 export type Color3 = [number, number, number];
 
 export interface Geometry {
@@ -25,12 +28,8 @@ export const parseHex = (value: string): Color3 | undefined => {
   if (!digits) return undefined;
   const full = digits.length === 3 ? digits.replaceAll(/(.)/g, "$1$1") : digits;
   if (full.length !== 6) return undefined;
-  const hex = Number.parseInt(full, 16);
-  return [
-    srgbToLinear(((hex >> 16) & 255) / 255),
-    srgbToLinear(((hex >> 8) & 255) / 255),
-    srgbToLinear((hex & 255) / 255),
-  ];
+  const [r, g, b] = hexBytes(`#${full}`);
+  return [srgbToLinear(r / 255), srgbToLinear(g / 255), srgbToLinear(b / 255)];
 };
 
 const hueToRgb = (p: number, q: number, t: number): number => {
@@ -41,8 +40,6 @@ const hueToRgb = (p: number, q: number, t: number): number => {
   if (k < 1 / 2) return q;
   return k < 2 / 3 ? p + (q - p) * 6 * (2 / 3 - k) : p;
 };
-
-const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 export const offsetHsl = (
   [r, g, b]: Color3,

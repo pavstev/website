@@ -1,3 +1,5 @@
+import { clamp } from "./math.ts";
+
 export interface LabelAnchor {
   height: number;
   key: string;
@@ -61,7 +63,7 @@ const tie = 1e-6;
 const wallWeight = 4;
 
 const fit = (value: number, room: number): number =>
-  Math.min(Math.max(value, 0), Math.max(0, room));
+  clamp(value, 0, Math.max(0, room));
 
 const overlap = (a: Box, b: Box): number =>
   Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) *

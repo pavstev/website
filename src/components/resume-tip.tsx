@@ -3,8 +3,7 @@ import type { CSSProperties, ReactElement } from "react";
 import type { ResumeFacts } from "@/lib/resume-facts";
 
 import { en } from "@/lib/i18n";
-
-const plural = new Intl.PluralRules("en");
+import { fillCount, pluralForm } from "@/lib/template";
 
 const lineWidths = [58, 92, 80, 88, 64];
 
@@ -16,10 +15,10 @@ interface ResumeTipProps {
 const describe = ({ kilobytes, pages }: ResumeFacts): string =>
   en.card.resumeFacts
     .replace("{pages}", () =>
-      (plural.select(pages) === "one"
-        ? en.card.resumePagesOne
-        : en.card.resumePagesOther
-      ).replace("{count}", () => String(pages))
+      fillCount(
+        pluralForm(pages, en.card.resumePagesOne, en.card.resumePagesOther),
+        pages
+      )
     )
     .replace("{size}", () =>
       en.card.resumeSize.replace("{size}", () => String(kilobytes))

@@ -12,9 +12,12 @@ on:
       - scripts/generate-images.ts
       - src/lib/i18n.ts
       - src/lib/icon-data.ts
+      - src/lib/math.ts
       - src/lib/personal.ts
+      - src/lib/sky-clock.ts
       - src/lib/sky-shader.ts
       - src/lib/theme.ts
+      - src/lib/weather.ts
   workflow_dispatch:
 
 permissions:

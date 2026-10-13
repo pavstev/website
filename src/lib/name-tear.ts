@@ -1,3 +1,4 @@
+import { isCoarseDevice, scheduleIdle, scheduleStaggered } from "@/lib/idle";
 import { isSceneHeld } from "@/lib/scene-hold";
 import { skyRgb } from "@/lib/theme";
 import { hasSeenSoftwareRenderer, isSoftwareRenderer } from "@/lib/webgl";
@@ -209,7 +210,7 @@ export const createNameTear = (host: HTMLElement): NameTear => {
   let frame = 0;
   let started = 0;
   let poll: ReturnType<typeof globalThis.setTimeout> | undefined;
-  let idle: number | undefined;
+  let cancelPrepare: (() => void) | undefined;
   const painted: Painted = { height: 0, key: "", source: null, width: 0 };
 
   const upload = (current: Engine, ratio: number): boolean => {
@@ -251,18 +252,17 @@ export const createNameTear = (host: HTMLElement): NameTear => {
   };
 
   const prepare = (): void => {
-    idle = undefined;
+    cancelPrepare = undefined;
     if (engine !== undefined || pending) return;
     pending = startEngine();
     if (pending) check();
     else engine = null;
   };
 
-  if (typeof globalThis.requestIdleCallback === "function") {
-    idle = globalThis.requestIdleCallback(prepare, { timeout: 4000 });
-  } else {
-    poll = globalThis.setTimeout(prepare, 1500);
-  }
+  const prepareOptions = { fallbackMs: 1500, timeout: 4000 };
+  cancelPrepare = isCoarseDevice()
+    ? scheduleStaggered(prepare, prepareOptions)
+    : scheduleIdle(prepare, prepareOptions);
 
   const stop = (): void => {
     if (frame) cancelAnimationFrame(frame);
@@ -293,7 +293,7 @@ export const createNameTear = (host: HTMLElement): NameTear => {
   return {
     dispose: (): void => {
       stop();
-      if (idle !== undefined) globalThis.cancelIdleCallback(idle);
+      cancelPrepare?.();
       if (poll !== undefined) globalThis.clearTimeout(poll);
       pending?.gl.getExtension("WEBGL_lose_context")?.loseContext();
       pending = null;

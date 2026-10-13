@@ -77,6 +77,8 @@ const eslintConfig = defineConfig([
     ".superpowers/**",
     ".wrangler/**",
     "dist/**",
+    "postcss.config.mjs",
+    "scripts/postcss-color-mix.mjs",
     "worker-configuration.d.ts",
   ]),
   ...[
