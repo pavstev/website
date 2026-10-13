@@ -2,7 +2,6 @@ import type { Element, Root } from "hast";
 
 import rehypeStringify from "rehype-stringify";
 import remarkGfm from "remark-gfm";
-import remarkMdx from "remark-mdx";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { unified } from "unified";
@@ -11,28 +10,13 @@ import * as z from "zod";
 
 import { chartLines, isChartType, readChartFile } from "./chart-data.ts";
 import { diagramText } from "./diagrams.ts";
+import { parseMdx, type SourceNode } from "./mdx-tree.ts";
 import { absoluteUrl, mediaUrl } from "./media.ts";
 import { type PostSource } from "./posts.ts";
 
 interface Context {
   body: string;
   source: PostSource;
-}
-
-interface Point {
-  offset?: number | undefined;
-}
-
-interface SourceNode {
-  alt?: null | string | undefined;
-  attributes?: unknown[];
-  children?: SourceNode[];
-  label?: null | string | undefined;
-  name?: null | string | undefined;
-  position?: undefined | { end: Point; start: Point };
-  title?: null | string | undefined;
-  type: string;
-  url?: string;
 }
 
 const attributeShape = z.object({
@@ -206,11 +190,7 @@ const spliced = (
 };
 
 const plainBody = (source: PostSource): string => {
-  const tree: SourceNode = unified()
-    .use(remarkParse)
-    .use(remarkMdx)
-    .use(remarkGfm)
-    .parse(source.body);
+  const tree = parseMdx(source.body);
   const context = { body: source.body, source };
   return spliced(context, tree.children ?? [], 0, source.body.length)
     .replaceAll(/\n{3,}/g, "\n\n")

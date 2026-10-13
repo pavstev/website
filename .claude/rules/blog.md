@@ -14,7 +14,7 @@ Loads when you touch a post or the blog code. The full design is in the **Blog**
 
 ## Add a post
 
-1. Make `content/blog/<slug>/index.mdx`. The slug is lowercase letters, digits and single dashes, and it is the URL.
+1. Make `content/blog/<slug>/index.mdx`. The slug is lowercase letters and digits in groups joined by single dashes (at most 80 characters), and it is the URL.
 2. Frontmatter (a strict object: an unknown key fails the build):
 
    ```yaml
@@ -44,6 +44,8 @@ Loads when you touch a post or the blog code. The full design is in the **Blog**
 
 `draft: true` hides a post everywhere (index, home button count, feeds, sitemap, `llms.txt`, Markdown copy, share image, `/mcp`) except where `showDrafts()` is true: a preview build (`WORKERS_CI_BRANCH` set and not `main`), `next dev` and `BLOG_DRAFTS=1`. Production never shows a draft. To publish, set `draft: false` and land the commit on `main`.
 
+A post whose `date` is after the build day is scheduled and is treated like a draft in every place above. The build day is the calendar date in `Europe/Vienna` when the build runs (`viennaDay` in `src/lib/blog/schedule.ts`; `listPosts`, `findPost` and `visibleSources` take an optional `now` so tests can set the clock). Where `showDrafts()` is true a scheduled post shows too, with a "Scheduled" label next to the date. A post dated today is public. A scheduled post goes live at the first build on or after its date; nothing rebuilds the site on that day by itself yet.
+
 ## Copy rules
 
 - No em dashes or en dashes (`src/lib/blog/content.test.ts` fails on one in any post), no taglines, short plain sentences, first person where the owner speaks.
@@ -62,8 +64,8 @@ Loads when you touch a post or the blog code. The full design is in the **Blog**
 - Every code path that calls `setSkyPreset(post.sky)` must call `setSkyPreset(null)` on leave and on unmount, or the next index visit starts on the old preset.
 - The index has ink targets for 8 rows (`blogRowSlots` in `sky-ink.ts`). `content.test.ts` fails once there are more posts, drafts included; then raise it.
 - New text over the sky needs `text-sky`, one of the registered class names (`.blog-heading`, `.post-row-title`, `.post-row-meta`, `.post-row-text`, `.blog-footer .tabular`, `.weather-credit`, `.post-title`, `.post-meta`) and the matching `--ink` base in `globals.css`.
-- Keep `<picture>` a server element in `BlogImage`; only the `<img>` is a client part (`BlurImage`). React preloads every eager `<img>` that a server component renders outside a `<picture>`, so a client wrapper around the `<picture>` makes AVIF browsers also fetch the WebP fallback. After a change, `dist/blog/<slug>.html` must hold no `rel="preload"` with `as="image"`.
+- Keep `<picture>` a server element in `BlogImage`; only the `<img>` is a client part (`BlurImage`). React preloads every eager `<img>` that a server component renders outside a `<picture>`, so a client wrapper around the `<picture>` makes AVIF browsers also fetch the WebP fallback. After a change, `dist/blog/<slug>.html` must hold no `rel="preload"` with `as="image"`. `scripts/preload-guard.ts` checks this after `next build` in `pnpm build` and fails the build on a post page that has one (`/` and `/blog` keep their portrait preload on purpose).
 - `BlogImage` sets `sizes="(min-width: 48em) min(46rem, calc(100vw - 4rem)), min(43.5rem, calc(100vw - 2.5rem))"`; it should match the prose column (46rem wide from 48em up, 43.5rem or the viewport minus 2.5rem below).
 - Never edit `public/blog-media/`, `public/blog/`, `public/build.json` or `.blog/`: the prebuild writes them and they are gitignored.
 - When you touch `serializeJsonLd` or any JSON-LD string, check the raw bytes for `<` (see the SEO note in `CLAUDE.md`).
-- IndexNow runs on its own after a push to `main` that touches `content/blog/**`; do not ping by hand for a post.
+- IndexNow runs on its own after a push to `main` that touches `content/blog/**`; do not ping by hand for a post. It also tells the engines about a deleted post, or one switched back to draft, when the post was public before the push.

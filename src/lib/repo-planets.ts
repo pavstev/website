@@ -1,4 +1,3 @@
-import { createFramePacer } from "@/lib/frame-pacer";
 import { createListeners } from "@/lib/listeners";
 import {
   createLogoMotion,
@@ -11,7 +10,6 @@ import {
   createLogoPlanet,
   logoFragment,
   type LogoPlanet,
-  logoVertex,
 } from "@/lib/logo-planet";
 import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
 import {
@@ -24,15 +22,20 @@ import {
   type GlProgram,
   type Mat4,
   multiply,
+  noiseGlsl,
   normalMatrix,
   offsetHsl,
-  orthographic,
   parseHex,
+  sphereVertex,
   whenLinked,
 } from "@/lib/planet-gl";
+import {
+  clearFrame,
+  createPlanetStage,
+  openPlanetGl,
+} from "@/lib/planet-stage";
 import { isSceneHeld, sceneHoldEvent } from "@/lib/scene-hold";
 import { globePalette } from "@/lib/theme";
-import { isSoftwareRenderer } from "@/lib/webgl";
 
 export interface PlanetsControls {
   dispose: () => void;
@@ -98,36 +101,6 @@ const near = -400;
 const far = 400;
 const origin3: Color3 = [0, 0, 0];
 
-const commonNoise = `
-float hash3(vec3 p) {
-  p = fract(p * 0.3183099 + 0.1);
-  p *= 17.0;
-  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-}
-float noise3(vec3 x) {
-  vec3 i = floor(x);
-  vec3 f = fract(x);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x),
-        mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
-    mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x),
-        mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y),
-    f.z);
-}
-`;
-
-const planetVertex = `
-varying vec3 vObj;
-varying vec3 vNormal;
-void main() {
-  vObj = position;
-  vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
-  vNormal = normalize(normalMatrix * normal);
-  gl_Position = projectionMatrix * viewPosition;
-}
-`;
-
 const planetFragment = `
 uniform vec3 uColor;
 uniform vec3 uWarm;
@@ -139,7 +112,7 @@ uniform float uTime;
 uniform float uSeed;
 varying vec3 vObj;
 varying vec3 vNormal;
-${commonNoise}
+${noiseGlsl}
 void main() {
   vec3 p = normalize(vObj);
   float c = cos(uSpin);
@@ -228,23 +201,7 @@ export const initRepoPlanets = (
   canvas: HTMLCanvasElement,
   stage: HTMLElement
 ): PlanetsControls => {
-  const gl = canvas.getContext("webgl2", {
-    alpha: true,
-    antialias: true,
-    depth: true,
-    powerPreference: "low-power",
-    premultipliedAlpha: true,
-    preserveDrawingBuffer: false,
-    stencil: false,
-  });
-  if (!gl) throw new Error("webgl2 unavailable");
-  const loseContext = (): void => {
-    gl.getExtension("WEBGL_lose_context")?.loseContext();
-  };
-  if (isSoftwareRenderer(gl)) {
-    loseContext();
-    throw new Error("software renderer");
-  }
+  const { gl, loseContext } = openPlanetGl(canvas);
   const nodes = [...stage.querySelectorAll<HTMLElement>(".repo-planet")];
   const logoNodes = [...stage.querySelectorAll<HTMLElement>(".logo-planet")];
   if (nodes.length === 0 && logoNodes.length === 0) {
@@ -254,12 +211,11 @@ export const initRepoPlanets = (
   const checkErrors = process.env.NODE_ENV !== "production";
   const fine = globalThis.matchMedia(finePointerQuery);
   const reduce = globalThis.matchMedia(reducedMotionQuery);
-  let pixelRatio = Math.min(globalThis.devicePixelRatio || 1, maxPixelRatio);
   const sphere = createSphere(gl, 40, 28);
   const ring = createRing(gl, ringInner, ringOuter, 72);
-  const planetProgram = createProgram(gl, planetVertex, planetFragment);
+  const planetProgram = createProgram(gl, sphereVertex, planetFragment);
   const ringProgram = createProgram(gl, ringVertex, ringFragment);
-  const logoProgram = createProgram(gl, logoVertex, logoFragment);
+  const logoProgram = createProgram(gl, sphereVertex, logoFragment);
   const programs = [planetProgram, ringProgram, logoProgram];
   const geometries = [sphere, ring];
   const ringFrame = compose(origin3, ringTilt, 1);
@@ -332,23 +288,10 @@ export const initRepoPlanets = (
     return planet;
   });
 
-  let width = 1;
-  let height = 1;
-  let projection = orthographic(1, 1, near, far);
-  let handle = 0;
   let visible = true;
-  let frozen = false;
   let lost = false;
   let ready = false;
   let compiled = false;
-
-  const resize = (): void => {
-    width = Math.max(1, stage.clientWidth);
-    height = Math.max(1, stage.clientHeight);
-    canvas.width = Math.floor(width * pixelRatio);
-    canvas.height = Math.floor(height * pixelRatio);
-    projection = orthographic(width, height, near, far);
-  };
 
   const placeAt = (
     target: Placed,
@@ -384,7 +327,7 @@ export const initRepoPlanets = (
 
   const bindProgram = ({ program, uniform }: GlProgram): void => {
     gl.useProgram(program);
-    gl.uniformMatrix4fv(uniform("projectionMatrix"), false, projection);
+    gl.uniformMatrix4fv(uniform("projectionMatrix"), false, view.projection);
     gl.uniform1f(uniform("uTime"), time);
   };
 
@@ -435,23 +378,11 @@ export const initRepoPlanets = (
   };
 
   const prepare = (): void => {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(
-      0,
-      0,
-      Math.round(width * pixelRatio),
-      Math.round(height * pixelRatio)
+    clearFrame(
+      gl,
+      Math.round(view.width * view.pixelRatio),
+      Math.round(view.height * view.pixelRatio)
     );
-    gl.clearColor(0, 0, 0, 0);
-    gl.clearDepth(1);
-    gl.depthMask(true);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    gl.frontFace(gl.CCW);
-    gl.cullFace(gl.BACK);
-    gl.enable(gl.CULL_FACE);
-    gl.disable(gl.BLEND);
   };
 
   const render = (): void => {
@@ -542,33 +473,19 @@ export const initRepoPlanets = (
     }
   };
 
-  const pacer = createFramePacer({
-    activeFrameMs: frameMs,
-    canDowngrade: () => pixelRatio > 1,
-    downgrade: () => {
-      pixelRatio = 1;
-      resize();
-    },
-  });
-
-  const stop = (): void => {
-    if (handle !== 0) cancelAnimationFrame(handle);
-    handle = 0;
-    pacer.reset();
-  };
-
-  const loop = (now: number): void => {
-    handle = requestAnimationFrame(loop);
-    const step = pacer.step(now);
-    if (step.kind === "freeze") {
-      frozen = true;
+  const view = createPlanetStage({
+    advance,
+    canvas,
+    draw,
+    far,
+    frameMs,
+    maxPixelRatio,
+    near,
+    onFreeze: () => {
       sync();
-      return;
-    }
-    if (step.kind !== "draw") return;
-    advance(step.dt);
-    draw();
-  };
+    },
+    stage,
+  });
 
   const settleLogos = (): boolean => {
     let moved = false;
@@ -580,8 +497,9 @@ export const initRepoPlanets = (
   };
 
   const sync = (): void => {
-    stop();
+    view.stop();
     if (lost) return;
+    const { frozen } = view;
     const moved = (frozen || reduce.matches || isSceneHeld()) && settleLogos();
     if (reduce.matches) {
       advance(0);
@@ -595,16 +513,16 @@ export const initRepoPlanets = (
       }
       return;
     }
-    pacer.markActive();
-    handle = requestAnimationFrame(loop);
+    view.markActive();
+    view.start();
   };
 
   const wake = (): void => {
-    if (!frozen) {
+    if (!view.frozen) {
       return;
     }
 
-    frozen = false;
+    view.frozen = false;
     sync();
   };
 
@@ -653,8 +571,8 @@ export const initRepoPlanets = (
   }
 
   const observer = new ResizeObserver(() => {
-    resize();
-    if (!handle || reduce.matches) draw();
+    view.resize();
+    if (!view.running() || reduce.matches) draw();
   });
   observer.observe(stage);
   const visibility = new IntersectionObserver((entries) => {
@@ -664,20 +582,20 @@ export const initRepoPlanets = (
   visibility.observe(stage);
 
   listen(globalThis.window, sceneHoldEvent, sync);
-  listen(globalThis.window, "blur", stop);
+  listen(globalThis.window, "blur", view.stop);
   listen(globalThis.window, "focus", sync);
   listen(document, "visibilitychange", sync);
   listen(reduce, "change", sync);
   listen(canvas, "webglcontextlost", (event) => {
     event.preventDefault();
     lost = true;
-    stop();
+    view.stop();
     delete canvas.dataset["ready"];
     delete stage.dataset["planets"];
   });
 
   let disposed = false;
-  resize();
+  view.resize();
   advance(0);
   void whenLinked(gl, programs, checkErrors, () => disposed)
     .then(() => {
@@ -688,13 +606,13 @@ export const initRepoPlanets = (
     })
     .catch(() => {
       lost = true;
-      stop();
+      view.stop();
     });
 
   return {
     dispose: (): void => {
       disposed = true;
-      stop();
+      view.stop();
       observer.disconnect();
       visibility.disconnect();
       listeners.dispose();

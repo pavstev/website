@@ -2,21 +2,18 @@ import { ImageResponse } from "next/og.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { postMeta } from "./post-fixture.ts";
 import { type PostMeta } from "./schema.ts";
 import { shareFonts, shareSize, shareTree } from "./share.ts";
 
-const postWith = (title: string, readingMinutes: number): PostMeta => ({
-  date: "2026-10-13",
-  description: "About a post.",
-  draft: false,
-  readingMinutes,
-  sky: { phase: "night", weather: "clear" },
-  slug: "a",
-  tags: ["Test"],
-  title,
-  url: "https://stevanpavlovic.com/blog/a",
-  wordCount: 1,
-});
+const postWith = (title: string, readingMinutes: number): PostMeta =>
+  postMeta({
+    readingMinutes,
+    slug: "a",
+    title,
+    url: "https://stevanpavlovic.com/blog/a",
+    wordCount: 1,
+  });
 
 const texts = (node: unknown): string[] => {
   if (typeof node === "string") {

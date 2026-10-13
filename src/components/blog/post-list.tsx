@@ -3,6 +3,7 @@ import { type ReactElement, ViewTransition } from "react";
 
 import { PostTags } from "@/components/blog/post-tags";
 import { formatPostDate, minutesLabel } from "@/lib/blog/format";
+import { isScheduled } from "@/lib/blog/schedule";
 import { type PostMeta } from "@/lib/blog/schema";
 import { en } from "@/lib/i18n";
 
@@ -27,6 +28,9 @@ export const PostList = ({ posts }: PostListProps): ReactElement => (
             <span aria-hidden="true">·</span>{" "}
             <span>{minutesLabel(post.readingMinutes)}</span>
             {post.draft && <span className="post-draft"> {en.blog.draft}</span>}
+            {!post.draft && isScheduled(post.date) && (
+              <span className="post-draft"> {en.blog.scheduled}</span>
+            )}
           </p>
           <p className="post-row-text text-sky">{post.description}</p>
           <PostTags tags={post.tags} unlabeled />

@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import * as z from "zod";
 
+import { isSlug } from "../src/lib/blog/slug.ts";
 import {
   type BlogPost,
   compact,
@@ -23,7 +24,6 @@ const resumeProjectsHeading = "Projects from the résumé";
 const linksHeading = "Links";
 const unavailable = "Not available.";
 const maxRequestBodySize = 16_384;
-const slugPattern = /^[a-z0-9-]{1,80}$/;
 const notFound = JSON.stringify({ error: "not_found" });
 const readOnly = { openWorldHint: false, readOnlyHint: true };
 
@@ -215,7 +215,7 @@ export const createMcpServer = (facts: Facts, blog: BlogSource): McpServer => {
       annotations: readOnly,
       description:
         "The full text of one blog post as Markdown. Use a slug from the posts tool.",
-      inputSchema: { slug: z.string().regex(slugPattern) },
+      inputSchema: { slug: z.string().refine(isSlug) },
     },
     async ({ slug }) => postResult(blog, slug)
   );

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
 
-import { BlogFooter } from "@/components/blog/blog-footer";
+import Link from "next/link";
+
 import { BlogMoons } from "@/components/blog/blog-moons";
 import { PostList } from "@/components/blog/post-list";
+import { SiteFooter } from "@/components/site-footer";
 import { SpaceBackground } from "@/components/space-background";
 import { pageRobots, showDrafts } from "@/lib/blog/build-env";
 import { blogUrl, feedTypes, shareImage } from "@/lib/blog/metadata";
@@ -53,10 +55,14 @@ export default function BlogIndex(): ReactElement {
           data-blog-index=""
         >
           <div className="blog-orbit">
-            <span
+            <Link
+              aria-hidden="true"
               className="blog-portrait"
               data-eclipse=""
               data-portrait-mini=""
+              href="/"
+              prefetch={false}
+              tabIndex={-1}
             >
               <img
                 alt=""
@@ -66,7 +72,7 @@ export default function BlogIndex(): ReactElement {
                 src="/portraits/portrait-224.webp"
                 srcSet={portraitSrcSet}
               />
-            </span>
+            </Link>
             <BlogMoons
               posts={posts.map((post) => ({
                 readingMinutes: post.readingMinutes,
@@ -81,7 +87,7 @@ export default function BlogIndex(): ReactElement {
           </h1>
           <PostList posts={posts} />
         </section>
-        <BlogFooter weatherCredit />
+        <SiteFooter className="blog-footer" rss weatherCredit />
       </main>
     </>
   );

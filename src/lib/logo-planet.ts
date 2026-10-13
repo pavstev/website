@@ -1,4 +1,4 @@
-import { type Color3, parseHex } from "@/lib/planet-gl";
+import { type Color3, noiseGlsl, parseHex } from "@/lib/planet-gl";
 
 export interface LogoPlanet {
   dispose: () => void;
@@ -25,17 +25,6 @@ const maskInk = {
   none: "rgb(0,0,0)",
 } as const;
 
-export const logoVertex = `
-varying vec3 vObj;
-varying vec3 vNormal;
-void main() {
-  vObj = position;
-  vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
-  vNormal = normalize(normalMatrix * normal);
-  gl_Position = projectionMatrix * viewPosition;
-}
-`;
-
 export const logoFragment = `
 uniform vec3 uDisc;
 uniform vec3 uMark;
@@ -48,22 +37,7 @@ uniform float uHot;
 uniform float uTime;
 varying vec3 vObj;
 varying vec3 vNormal;
-float hash3(vec3 p) {
-  p = fract(p * 0.3183099 + 0.1);
-  p *= 17.0;
-  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-}
-float noise3(vec3 x) {
-  vec3 i = floor(x);
-  vec3 f = fract(x);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x),
-        mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
-    mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x),
-        mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y),
-    f.z);
-}
+${noiseGlsl}
 void main() {
   vec3 p = normalize(vObj);
   float c = cos(uSpin);

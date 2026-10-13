@@ -3,7 +3,7 @@ import type { VFile } from "vfile";
 
 import { visit } from "unist-util-visit";
 
-import { anchorClass, footnoteLabel } from "./anchors.ts";
+import { anchorClass, sectionHeading } from "./anchors.ts";
 
 export interface TocItem {
   depth: 2 | 3;
@@ -34,22 +34,13 @@ const textOf = (nodes: ElementContent[]): string =>
     })
     .join("");
 
-const depthOf = (tagName: string): 2 | 3 | undefined =>
-  tagName === "h2" ? 2 : tagName === "h3" ? 3 : undefined;
-
 const collectToc = (tree: Root, file: VFile): void => {
   const toc: TocItem[] = [];
   visit(tree, "element", (node) => {
-    const depth = depthOf(node.tagName);
-    const { id } = node.properties;
-    if (
-      depth !== undefined &&
-      typeof id === "string" &&
-      !id.endsWith(footnoteLabel)
-    ) {
+    const heading = sectionHeading(node);
+    if (heading !== undefined) {
       toc.push({
-        depth,
-        id,
+        ...heading,
         text: textOf(node.children).replaceAll(/\s+/g, " ").trim(),
       });
     }

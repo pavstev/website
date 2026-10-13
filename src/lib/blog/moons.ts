@@ -85,3 +85,6 @@ export const sharedTags = (
   a: readonly string[],
   b: readonly string[]
 ): string[] => a.filter((tag) => b.includes(tag));
+
+export const moonSide = (x: number, depth: number): string =>
+  `${x >= 0 ? "end" : "start"} ${depth < 0 ? "front" : "back"}`;

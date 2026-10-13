@@ -1,4 +1,5 @@
 import { escapeXml } from "./blog/feeds.ts";
+import { modifiedOf } from "./blog/modified.ts";
 import { lastModified } from "./blog/posts.ts";
 import { type PostMeta } from "./blog/schema.ts";
 
@@ -33,7 +34,7 @@ export const sitemapEntries = ({
       const image = imageFor(post.slug);
       return {
         images: image === undefined ? [] : [image],
-        lastmod: post.updated ?? post.date,
+        lastmod: modifiedOf(post),
         loc: post.url,
       };
     }),

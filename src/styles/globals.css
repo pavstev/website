@@ -3551,6 +3551,42 @@ html:has(.globe-dialog[open]) {
   display: none;
 }
 
+.blog-dock {
+  display: flow-root;
+}
+
+[data-blog]:has(> .post-main) + .blog-dock {
+  background: var(--background);
+}
+
+.blog-dock > .page-dock {
+  position: relative;
+  inset: auto;
+  margin-block: 0 var(--privacy-y);
+}
+
+[data-blog] {
+  --blog-end: 1.5rem;
+}
+
+:root[data-privacy-ack] [data-blog],
+:root[data-privacy-closed] [data-blog] {
+  --blog-end: 2.5rem;
+}
+
+[data-blog] > #main-content {
+  min-height: calc(100dvh - var(--privacy-zone));
+  padding-bottom: var(--blog-end);
+}
+
+[data-blog] > #main-content.post-main {
+  padding-bottom: 0;
+}
+
+html:has([data-blog]) {
+  scroll-padding-bottom: 1rem;
+}
+
 .motion-item {
   position: absolute;
   top: max(0.75rem, env(safe-area-inset-top));
@@ -3727,6 +3763,135 @@ html:has(.globe-dialog[open]) {
   }
 }
 
+.back-item {
+  position: absolute;
+  top: max(0.75rem, env(safe-area-inset-top));
+  left: max(0.75rem, env(safe-area-inset-left));
+  z-index: 20;
+  display: flex;
+
+  @variant no-scroll {
+    position: fixed;
+  }
+}
+
+.back-button {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  color: var(--foreground-soft);
+}
+
+.back-button:focus-visible {
+  outline: none;
+}
+
+.back-ring {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--foreground-soft);
+  border-radius: 9999px;
+  box-shadow:
+    0 0 3px 1px color-mix(in oklab, var(--background) 60%, transparent),
+    inset 0 0 3px 1px color-mix(in oklab, var(--background) 60%, transparent);
+  transition:
+    border-color var(--duration-normal) var(--ease-smooth),
+    color var(--duration-normal) var(--ease-smooth);
+}
+
+.back-button:focus-visible > .back-ring {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+
+.back-tip {
+  --tone: var(--primary);
+  --tip-rise: -4px;
+  top: calc(100% - 0.125rem);
+  right: auto;
+  bottom: auto;
+  left: 0.75rem;
+  width: max-content;
+  max-width: calc(50vw - 5.25rem);
+  padding-inline: 0.75rem;
+  border-radius: 0.875rem;
+  white-space: normal;
+  text-align: center;
+  translate: none;
+}
+
+.back-tip::before {
+  top: auto;
+  bottom: 100%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .back-button:hover > .back-ring {
+    border-color: var(--foreground);
+    color: var(--foreground);
+  }
+
+  .back-item:hover > .contact-tip {
+    pointer-events: auto;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--duration-normal) var(--ease-entrance),
+      transform var(--duration-slow) var(--ease-entrance),
+      visibility 0s;
+  }
+}
+
+@media (any-hover: hover) {
+  .back-button:focus-visible + .contact-tip {
+    pointer-events: auto;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--duration-normal) var(--ease-entrance),
+      transform var(--duration-slow) var(--ease-entrance),
+      visibility 0s;
+  }
+}
+
+.back-item[data-dismissed] > .contact-tip {
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(var(--tip-rise));
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-smooth),
+    visibility 0s linear var(--duration-fast);
+}
+
+@media (forced-colors: active) {
+  .back-button {
+    background: ButtonFace;
+    color: ButtonText;
+  }
+
+  .back-ring {
+    border-color: ButtonText;
+  }
+
+  .back-button:focus-visible > .back-ring {
+    outline-color: Highlight;
+  }
+}
+
+@media print {
+  .back-item {
+    display: none !important;
+  }
+}
+
 .privacy-chip {
   display: inline-flex;
   align-items: center;
@@ -3885,7 +4050,8 @@ html:has(.globe-dialog[open]) {
   }
 }
 
-.card-footer {
+.card-footer,
+.blog-footer {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3909,26 +4075,20 @@ html:has(.globe-dialog[open]) {
   font-size: 0.6875rem;
 }
 
-.post-row-meta {
-  --ink: var(--muted-foreground);
-}
-
-.post-row-text,
-.post-meta,
-.blog-footer {
-  --ink: var(--foreground-soft);
-}
-
 .blog-footer a {
   padding-block: 0.3125rem;
 }
 
-.weather-credit a {
+.weather-credit a,
+.blog-footer a {
   border-radius: 0.25rem;
   color: inherit;
   text-decoration: underline;
   text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
   text-underline-offset: 0.2em;
+}
+
+.weather-credit a {
   transition: text-decoration-color var(--duration-normal) var(--ease-smooth);
 }
 
@@ -4250,8 +4410,7 @@ html:has(.globe-dialog[open]) {
   position: relative;
   align-self: stretch;
   width: 100%;
-  padding: 1rem var(--container-px)
-    max(2.5rem, calc(var(--privacy-zone) + 1rem));
+  padding: 1rem var(--container-px) var(--blog-end);
   background: var(--background);
 }
 
@@ -4508,14 +4667,6 @@ html:has(.globe-dialog[open]) {
   outline-offset: 2px;
 }
 
-.prose-blog pre .highlighted {
-  display: inline-block;
-  min-width: 100%;
-  margin-inline: -1.25rem;
-  padding-inline: 1.25rem;
-  background: color-mix(in oklab, var(--primary) 14%, transparent);
-}
-
 .prose-blog hr {
   margin-block: 2.5em;
   border-top: 1px solid var(--border);
@@ -4551,76 +4702,6 @@ html:has(.globe-dialog[open]) {
   margin-top: 0.75em;
   color: var(--muted-foreground);
   font-size: 0.875em;
-}
-
-@media (forced-colors: active) {
-  .blog-viz {
-    forced-color-adjust: none;
-    color: CanvasText;
-  }
-
-  .blog-viz figcaption,
-  .blog-viz [data-fc="text"],
-  .blog-viz text {
-    color: CanvasText;
-    fill: CanvasText;
-  }
-
-  .blog-viz [data-fc="muted"] {
-    color: GrayText;
-    fill: GrayText;
-  }
-
-  .blog-viz [data-fc="line"],
-  .blog-viz [data-fc="series"] {
-    stroke: CanvasText;
-  }
-
-  .blog-viz [data-fc="grid"] {
-    stroke: GrayText;
-  }
-
-  .blog-viz [data-fc="mark"] {
-    background: Highlight !important;
-    fill: Highlight;
-    stroke: Highlight;
-  }
-
-  .blog-viz [data-fc="before"] {
-    background: GrayText !important;
-  }
-
-  .blog-viz [data-fc="track"] {
-    background: Canvas;
-    outline: 1px solid CanvasText;
-  }
-
-  .blog-viz [data-fc="dot"] {
-    fill: CanvasText;
-    stroke: Canvas;
-  }
-
-  .blog-viz [data-fc="hollow"],
-  .blog-viz [data-fc="plane"] {
-    fill: Canvas;
-    stroke: CanvasText;
-  }
-
-  .blog-viz [data-fc="node"] {
-    border-color: Highlight;
-    background: Highlight;
-  }
-
-  .blog-viz [data-fc="ring"],
-  .blog-viz [data-fc="pill"] {
-    border-color: CanvasText;
-    background: Canvas;
-    color: CanvasText;
-  }
-
-  .blog-viz [data-fc="spine"] {
-    background: CanvasText;
-  }
 }
 
 .blog-image {
@@ -4696,15 +4777,34 @@ html:has(.image-zoom-dialog[open]) {
 
 .post-nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  max-width: 40rem;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 64ch;
   margin: 3.5rem auto 0;
+  font-size: 1.125rem;
+}
+
+@media (min-width: 48em) {
+  .post-nav {
+    font-size: 1.1875rem;
+  }
+}
+
+@media (min-width: 80em) {
+  .post-nav {
+    max-width: min(64ch, 46rem);
+  }
+}
+
+.post-nav-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 0.75rem;
+  font-size: 1rem;
 }
 
 .post-nav-link {
   display: flex;
-  flex: 1 1 14rem;
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
@@ -4737,7 +4837,9 @@ html:has(.image-zoom-dialog[open]) {
 .post-nav-back {
   display: inline-flex;
   align-items: center;
+  align-self: center;
   min-height: 2.75rem;
+  font-size: 1rem;
   border-radius: 0.25rem;
   color: var(--primary);
   text-decoration: underline;
@@ -4745,31 +4847,8 @@ html:has(.image-zoom-dialog[open]) {
 }
 
 .blog-footer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   width: min(100% - 2 * var(--container-px), 36rem);
   margin: 3rem auto 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid transparent;
-  border-image: linear-gradient(
-      90deg,
-      transparent,
-      var(--border-strong),
-      transparent
-    )
-    1;
-  line-height: 1.3;
-  text-align: center;
-  --ink: var(--foreground-soft);
-}
-
-.blog-footer a {
-  border-radius: 0.25rem;
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
-  text-underline-offset: 0.2em;
 }
 
 .blog-footer .weather-credit {
@@ -4781,6 +4860,10 @@ html:has(.image-zoom-dialog[open]) {
   .post-nav,
   .heading-anchor {
     display: none !important;
+  }
+
+  .blog-moons {
+    display: none;
   }
 
   .post-page,
@@ -4910,6 +4993,74 @@ html:has(.image-zoom-dialog[open]) {
 }
 
 @media (forced-colors: active) {
+  .blog-viz {
+    forced-color-adjust: none;
+    color: CanvasText;
+  }
+
+  .blog-viz figcaption,
+  .blog-viz [data-fc="text"],
+  .blog-viz text {
+    color: CanvasText;
+    fill: CanvasText;
+  }
+
+  .blog-viz [data-fc="muted"] {
+    color: GrayText;
+    fill: GrayText;
+  }
+
+  .blog-viz [data-fc="line"],
+  .blog-viz [data-fc="series"] {
+    stroke: CanvasText;
+  }
+
+  .blog-viz [data-fc="grid"] {
+    stroke: GrayText;
+  }
+
+  .blog-viz [data-fc="mark"] {
+    background: Highlight !important;
+    fill: Highlight;
+    stroke: Highlight;
+  }
+
+  .blog-viz [data-fc="before"] {
+    background: GrayText !important;
+  }
+
+  .blog-viz [data-fc="track"] {
+    background: Canvas;
+    outline: 1px solid CanvasText;
+  }
+
+  .blog-viz [data-fc="dot"] {
+    fill: CanvasText;
+    stroke: Canvas;
+  }
+
+  .blog-viz [data-fc="hollow"],
+  .blog-viz [data-fc="plane"] {
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+
+  .blog-viz [data-fc="node"] {
+    border-color: Highlight;
+    background: Highlight;
+  }
+
+  .blog-viz [data-fc="ring"],
+  .blog-viz [data-fc="pill"] {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .blog-viz [data-fc="spine"] {
+    background: CanvasText;
+  }
+
   .moon-canvas,
   .moon-lines {
     display: none;
@@ -4945,10 +5096,4 @@ html:has(.image-zoom-dialog[open]) {
 :root[data-motion-paused]::view-transition-new(*) {
   animation-delay: 0s !important;
   animation-duration: 0s !important;
-}
-
-@media print {
-  .blog-moons {
-    display: none;
-  }
 }

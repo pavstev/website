@@ -1,13 +1,10 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import remarkGfm from "remark-gfm";
-import remarkMdx from "remark-mdx";
-import remarkParse from "remark-parse";
-import { unified } from "unified";
 import * as z from "zod";
 
 import { personalData } from "../personal.ts";
+import { parseMdx, type SourceNode } from "./mdx-tree.ts";
 import { type PostSource } from "./posts.ts";
 
 export const mediaManifestPath = ".blog/media.json";
@@ -116,6 +113,19 @@ export interface CropImage {
   width: number;
 }
 
+export const singleImageEntry = (
+  image: CropImage,
+  webp: string[]
+): MediaEntry => ({
+  avif: [],
+  blur: "",
+  fallback: image.url,
+  height: image.height,
+  webp,
+  width: image.width,
+  widths: [image.width],
+});
+
 export const postCrops = (
   slug: string,
   site: string,
@@ -129,14 +139,6 @@ export const postCrops = (
       url: absoluteUrl(entry.fallback, site),
       width: entry.width,
     }));
-
-interface SourceNode {
-  attributes?: unknown[];
-  children?: SourceNode[];
-  name?: null | string | undefined;
-  type: string;
-  url?: string;
-}
 
 const srcAttribute = z.object({
   name: z.literal("src"),
@@ -174,13 +176,8 @@ const collect = (node: SourceNode, found: Set<string>): void => {
 };
 
 export const postImages = (source: PostSource): string[] => {
-  const tree: SourceNode = unified()
-    .use(remarkParse)
-    .use(remarkMdx)
-    .use(remarkGfm)
-    .parse(source.body);
   const found = new Set<string>();
-  collect(tree, found);
+  collect(parseMdx(source.body), found);
   const files = [...found];
   for (const file of files) {
     if (!existsSync(path.join(source.dir, file))) {

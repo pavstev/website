@@ -4,6 +4,7 @@ import "@/styles/globals.css";
 import type { ReactElement, ReactNode } from "react";
 
 import { isPreviewBuild } from "@/lib/blog/build-env";
+import { shareImage } from "@/lib/blog/metadata";
 import { en } from "@/lib/i18n";
 import { headScript } from "@/lib/motion-pause";
 import { personalData } from "@/lib/personal";
@@ -35,15 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     description: en.meta.description,
     firstName: personalData.givenName,
-    images: [
-      {
-        alt: en.meta.imageAlt,
-        height: 630,
-        type: "image/jpeg",
-        url: "/og-image.jpg",
-        width: 1200,
-      },
-    ],
+    images: [shareImage],
     lastName: personalData.familyName,
     locale: "en_US",
     siteName: personalData.name,
@@ -57,7 +50,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     description: en.meta.description,
-    images: [{ alt: en.meta.imageAlt, url: "/og-image.jpg" }],
+    images: [{ alt: shareImage.alt, url: shareImage.url }],
     title: en.meta.title,
   },
 };

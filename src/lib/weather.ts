@@ -27,8 +27,17 @@ export interface ViennaWeather {
   windSpeed: number;
 }
 
-export type WeatherState =
-  "clear" | "fog" | "overcast" | "partly" | "rain" | "snow" | "storm";
+export const weatherStates = [
+  "clear",
+  "partly",
+  "overcast",
+  "rain",
+  "snow",
+  "fog",
+  "storm",
+] as const;
+
+export type WeatherState = (typeof weatherStates)[number];
 
 export const weatherSourceUrl = "https://open-meteo.com/";
 

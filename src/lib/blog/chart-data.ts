@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import * as z from "zod";
 
+import { isSlug } from "./slug.ts";
+
 const chartTypes = ["bar", "line", "pair"] as const;
 
 export type ChartType = (typeof chartTypes)[number];
@@ -83,7 +85,6 @@ export const parseChartData = (
   return parsed.data;
 };
 
-const slugPattern = /^[a-z\d][a-z\d-]*$/;
 const segmentPattern = /^[a-z\d][\w.-]*$/i;
 
 const isSafeSrc = (src: string): boolean =>
@@ -110,8 +111,7 @@ export const readChartData = (
   type: ChartType,
   root = process.cwd()
 ): ChartData => {
-  if (!slugPattern.test(slug))
-    throw new Error(`Invalid post slug for a chart: ${slug}`);
+  if (!isSlug(slug)) throw new Error(`Invalid post slug for a chart: ${slug}`);
   return readChartFile(path.join(root, "content/blog", slug), src, type);
 };
 

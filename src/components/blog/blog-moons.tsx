@@ -14,6 +14,7 @@ import { MoonFallback } from "@/components/blog/moon-fallback";
 import {
   moonPosition,
   moonRadius,
+  moonSide,
   orbitFor,
   sharedTags,
   startAngle,
@@ -80,8 +81,7 @@ const placeStill = ({ anchors, eclipse, stage }: MoonNodes): void => {
       startAngle(index, anchors.length)
     );
     anchor.style.translate = `${x.toFixed(2)}px ${y.toFixed(2)}px`;
-    anchor.dataset["side"] =
-      `${x >= 0 ? "end" : "start"} ${depth < 0 ? "front" : "back"}`;
+    anchor.dataset["side"] = moonSide(x, depth);
   }
 };
 

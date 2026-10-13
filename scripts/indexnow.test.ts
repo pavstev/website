@@ -11,7 +11,11 @@ import {
   indexNowBody,
   indexNowError,
   isIndexNowAccepted,
+  isPublicSource,
   parseBuildSha,
+  resolveBase,
+  urlAction,
+  wasPublicAt,
 } from "./indexnow.ts";
 
 describe("changedSlugs", () => {
@@ -149,9 +153,18 @@ describe("changedPaths", () => {
     after(() => {
       rmSync(dir, { force: true, recursive: true });
     });
+    const env = {
+      ...process.env,
+      ...Object.fromEntries(
+        Object.keys(process.env)
+          .filter((key) => key.startsWith("GIT_"))
+          .map((key) => [key, undefined])
+      ),
+    };
     const run = (args: string[]): string =>
       execFileSync("git", ["-C", dir, ...args], {
         encoding: "utf8",
+        env,
         stdio: ["ignore", "pipe", "pipe"],
       });
 
@@ -179,5 +192,135 @@ describe("changedPaths", () => {
       const paths = changedPaths("c".repeat(40), head, run);
       assert.deepEqual(changedSlugs(paths), ["one", "two"]);
     });
+  });
+});
+
+const post = (lines: string[]): string =>
+  ["---", "title: T", ...lines, "tags: [A]", "---", "", "Body"].join("\n");
+
+describe("urlAction", () => {
+  it("sends a live post", () => {
+    assert.equal(urlAction(200, false), "live");
+    assert.equal(urlAction(200, true), "live");
+  });
+
+  it("sends a removed post only when it was public", () => {
+    assert.equal(urlAction(404, true), "removed");
+    assert.equal(urlAction(410, true), "removed");
+    assert.equal(urlAction(404, false), "skip");
+    assert.equal(urlAction(410, false), "skip");
+  });
+
+  it("skips any other answer", () => {
+    assert.equal(urlAction(undefined, true), "skip");
+    assert.equal(urlAction(500, true), "skip");
+    assert.equal(urlAction(301, true), "skip");
+    assert.equal(urlAction(403, true), "skip");
+  });
+});
+
+describe("isPublicSource", () => {
+  const now = new Date("2026-10-13T10:00:00Z");
+
+  it("is true for a dated post that is no draft", () => {
+    assert.equal(isPublicSource(post(["date: 2026-10-12"]), now), true);
+    assert.equal(isPublicSource(post(["date: 2026-10-13"]), now), true);
+    assert.equal(
+      isPublicSource(post(["date: 2026-10-12", "draft: false"]), now),
+      true
+    );
+  });
+
+  it("is false for a draft", () => {
+    assert.equal(
+      isPublicSource(post(["date: 2026-10-12", "draft: true"]), now),
+      false
+    );
+  });
+
+  it("is false for a scheduled post", () => {
+    assert.equal(isPublicSource(post(["date: 2026-10-14"]), now), false);
+  });
+
+  it("counts the Vienna day", () => {
+    const late = new Date("2026-10-13T22:30:00Z");
+    assert.equal(isPublicSource(post(["date: 2026-10-14"]), late), true);
+  });
+
+  it("reads quoted dates, comments and Windows line endings", () => {
+    assert.equal(
+      isPublicSource(
+        post(['date: "2026-10-12" # day']).replaceAll("\n", "\r\n"),
+        now
+      ),
+      true
+    );
+    assert.equal(
+      isPublicSource(post(["date: 2026-10-12", "draft: true # wip"]), now),
+      false
+    );
+  });
+
+  it("is false without frontmatter or a date", () => {
+    assert.equal(isPublicSource("Body only", now), false);
+    assert.equal(isPublicSource(post([]), now), false);
+  });
+});
+
+const known =
+  (...ok: string[]) =>
+  (args: string[]): string => {
+    const ref = args.at(-1)?.replace("^{commit}", "") ?? "";
+    if (!ok.includes(ref)) throw new Error("unknown");
+    return ref;
+  };
+
+describe("resolveBase", () => {
+  const sha = "b".repeat(40);
+  const before = "a".repeat(40);
+  const zero = "0".repeat(40);
+
+  it("uses before when it resolves", () => {
+    assert.equal(resolveBase(before, sha, known(before, `${sha}^`)), before);
+  });
+
+  it("falls back to the parent when before is gone", () => {
+    assert.equal(resolveBase(before, sha, known(`${sha}^`)), `${sha}^`);
+  });
+
+  it("skips before for a new branch", () => {
+    assert.equal(resolveBase(zero, sha, known(zero, `${sha}^`)), `${sha}^`);
+  });
+
+  it("answers undefined for a first commit", () => {
+    assert.equal(resolveBase(before, sha, known()), undefined);
+  });
+});
+
+describe("wasPublicAt", () => {
+  const now = new Date("2026-10-13T10:00:00Z");
+  const files = new Map([
+    ["a:content/blog/later/index.mdx", post(["date: 2026-11-01"])],
+    ["a:content/blog/live/index.mdx", post(["date: 2026-10-01"])],
+    ["a:content/blog/wip/index.mdx", post(["date: 2026-10-01", "draft: true"])],
+  ]);
+  const run = (args: string[]): string => {
+    const text = files.get(args.at(-1) ?? "");
+    if (text === undefined) throw new Error("missing");
+    return text;
+  };
+
+  it("is true for a public post at the base", () => {
+    assert.equal(wasPublicAt("a", "live", now, run), true);
+  });
+
+  it("is false for a draft, a scheduled post and a missing folder", () => {
+    assert.equal(wasPublicAt("a", "wip", now, run), false);
+    assert.equal(wasPublicAt("a", "later", now, run), false);
+    assert.equal(wasPublicAt("a", "gone", now, run), false);
+  });
+
+  it("is false without a base", () => {
+    assert.equal(wasPublicAt(undefined, "live", now, run), false);
   });
 });

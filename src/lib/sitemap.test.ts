@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { describe, it } from "node:test";
 
+import { modifiedOf } from "./blog/modified.ts";
 import { listPosts } from "./blog/posts.ts";
 import { sitemapEntries, type SitemapEntry, sitemapXml } from "./sitemap.ts";
 
@@ -182,7 +183,7 @@ describe("sitemapEntries", () => {
     const posts = listPosts({ drafts: false }, valid);
     const entries = sitemapEntries({ ...input, posts });
     const newest = posts
-      .map((post) => post.updated ?? post.date)
+      .map((post) => modifiedOf(post))
       .toSorted((a, b) => b.localeCompare(a))[0];
     assert.equal(entries[1]?.lastmod, newest);
   });

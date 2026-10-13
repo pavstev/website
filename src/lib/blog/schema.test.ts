@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { weatherPresets } from "../weather.ts";
-import { frontmatterSchema, weatherStates } from "./schema.ts";
+import { weatherPresets, weatherStates } from "../weather.ts";
+import { frontmatterSchema } from "./schema.ts";
 
 const sample = {
   date: "2026-10-13",

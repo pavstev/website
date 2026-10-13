@@ -2,7 +2,6 @@ import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
 
 import { evaluate } from "@mdx-js/mdx";
 import rehypeShiki from "@shikijs/rehype";
-import { transformerNotationHighlight } from "@shikijs/transformers";
 import * as runtime from "react/jsx-runtime";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
@@ -97,7 +96,6 @@ export const renderPost = async (
           fallbackLanguage: "text",
           langs: languages,
           theme,
-          transformers: [transformerNotationHighlight()],
         },
       ],
       rehypeToc,

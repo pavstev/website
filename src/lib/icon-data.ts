@@ -10,6 +10,11 @@ export const iconData: Record<string, IconData> = {
     height: 512,
     width: 512,
   },
+  "lucide:arrow-left": {
+    body: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m12 19l-7-7l7-7m7 7H5"/>',
+    height: 24,
+    width: 24,
+  },
   "lucide:check": {
     body: '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 6L9 17l-5-5"/>',
     height: 24,

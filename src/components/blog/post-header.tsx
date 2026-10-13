@@ -3,6 +3,7 @@ import { type ReactElement, ViewTransition } from "react";
 import { PostTags } from "@/components/blog/post-tags";
 import { SpaceBackground } from "@/components/space-background";
 import { formatPostDate, minutesLabel } from "@/lib/blog/format";
+import { isScheduled } from "@/lib/blog/schedule";
 import { type PostMeta } from "@/lib/blog/schema";
 import { en } from "@/lib/i18n";
 
@@ -34,6 +35,9 @@ export const PostHeader = ({ post }: PostHeaderProps): ReactElement => (
         </>
       )}
       {post.draft && <span className="post-draft"> {en.blog.draft}</span>}
+      {!post.draft && isScheduled(post.date) && (
+        <span className="post-draft"> {en.blog.scheduled}</span>
+      )}
     </p>
     <PostTags className="post-header-tags" tags={post.tags} />
   </header>

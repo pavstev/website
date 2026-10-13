@@ -1,8 +1,9 @@
 import { en } from "../i18n.ts";
 import { personalData } from "../personal.ts";
 import { shareImageUrl } from "./media.ts";
+import { modifiedOf } from "./modified.ts";
 import { toFeedHtml } from "./plain.ts";
-import { findPost, lastModified, listPosts } from "./posts.ts";
+import { lastModified, listSources } from "./posts.ts";
 import { type PostMeta } from "./schema.ts";
 
 export interface FeedPost {
@@ -68,8 +69,6 @@ export const escapeXml = (text: string): string =>
 
 const cdata = (text: string): string =>
   `<![CDATA[${xmlSafe(text).replaceAll("]]>", "]]]]><![CDATA[>")}]]>`;
-
-const modifiedOf = (meta: PostMeta): string => meta.updated ?? meta.date;
 
 const rfc822 = (day: string): string =>
   new Date(`${day}T00:00:00Z`).toUTCString();
@@ -142,12 +141,9 @@ export const loadFeedPosts = (
   site: string,
   root?: string
 ): FeedPostWithMarkdown[] =>
-  listPosts(options, root)
-    .map((meta) => findPost(meta.slug, options, root))
-    .filter((source) => source !== undefined)
-    .map((source) => ({
-      html: toFeedHtml(source),
-      image: shareImageUrl(source.slug, site),
-      markdownUrl: `${site}/blog/${source.slug}.md`,
-      meta: source.meta,
-    }));
+  listSources(options, root).map((source) => ({
+    html: toFeedHtml(source),
+    image: shareImageUrl(source.slug, site),
+    markdownUrl: `${site}/blog/${source.slug}.md`,
+    meta: source.meta,
+  }));

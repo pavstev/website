@@ -4,7 +4,10 @@ import { VFile } from "vfile";
 import { matter } from "vfile-matter";
 
 import { personalData } from "../personal.ts";
+import { modifiedOf } from "./modified.ts";
+import { isScheduled } from "./schedule.ts";
 import { frontmatterSchema, type PostMeta } from "./schema.ts";
+import { isSlug } from "./slug.ts";
 
 const blogDir = "content/blog";
 
@@ -17,9 +20,9 @@ export interface PostSource {
 
 interface DraftOptions {
   drafts: boolean;
+  now?: Date;
 }
 
-const slugPattern = /^[a-z\d-]+$/;
 const wordsPerMinute = 230;
 
 const fenceOpen = /^ {0,3}(`{3,}|~{3,})/;
@@ -60,12 +63,7 @@ const fail = (file: string, field: string, message: string): Error =>
 
 const readSource = (root: string, slug: string): PostSource => {
   const relative = `${blogDir}/${slug}/index.mdx`;
-  if (
-    !slugPattern.test(slug) ||
-    slug.startsWith("-") ||
-    slug.endsWith("-") ||
-    slug.includes("--")
-  ) {
+  if (!isSlug(slug)) {
     throw fail(relative, "slug", "use lowercase letters, digits and dashes");
   }
   const dir = path.join(root, blogDir, slug);
@@ -125,15 +123,24 @@ const byDateThenTitle = (a: PostMeta, b: PostMeta): number =>
   b.date.localeCompare(a.date) || a.title.localeCompare(b.title, "en");
 
 export const visibleSources = (
-  { drafts }: DraftOptions,
+  { drafts, now = new Date() }: DraftOptions,
   root?: string
 ): PostSource[] =>
-  readPostSources(root).filter((source) => drafts || !source.meta.draft);
+  readPostSources(root).filter(
+    (source) =>
+      drafts || !(source.meta.draft || isScheduled(source.meta.date, now))
+  );
+
+export const listSources = (
+  options: DraftOptions,
+  root?: string
+): PostSource[] =>
+  visibleSources(options, root).toSorted((a, b) =>
+    byDateThenTitle(a.meta, b.meta)
+  );
 
 export const listPosts = (options: DraftOptions, root?: string): PostMeta[] =>
-  visibleSources(options, root)
-    .map((source) => source.meta)
-    .toSorted(byDateThenTitle);
+  listSources(options, root).map((source) => source.meta);
 
 export const findPost = (
   slug: string,
@@ -144,5 +151,5 @@ export const findPost = (
 
 export const lastModified = (posts: readonly PostMeta[]): string | undefined =>
   posts
-    .map((post) => post.updated ?? post.date)
+    .map((post) => modifiedOf(post))
     .toSorted((a, b) => b.localeCompare(a))[0];

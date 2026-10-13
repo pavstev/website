@@ -6,29 +6,14 @@ import { describe, it } from "node:test";
 
 import { diagramText } from "./diagrams.ts";
 import { toFeedHtml, toMarkdown } from "./plain.ts";
+import { postSource } from "./post-fixture.ts";
 import { type PostSource } from "./posts.ts";
 
 const sourceFor = (
   body: string,
   title = "A post",
   dir = "/nowhere"
-): PostSource => ({
-  body,
-  dir,
-  meta: {
-    date: "2026-10-13",
-    description: "About a post.",
-    draft: false,
-    readingMinutes: 1,
-    sky: { phase: "night", weather: "clear" },
-    slug: "a-post",
-    tags: ["Test"],
-    title,
-    url: "https://stevanpavlovic.com/blog/a-post",
-    wordCount: 3,
-  },
-  slug: "a-post",
-});
+): PostSource => postSource(body, dir, { title });
 
 describe("toMarkdown", () => {
   it("starts with the title, the URL and the date", () => {

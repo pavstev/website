@@ -4,26 +4,34 @@ import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
 import { weatherSourceUrl } from "@/lib/weather";
 
-interface BlogFooterProps {
+interface SiteFooterProps {
+  className: string;
+  rss?: boolean;
   weatherCredit?: boolean;
 }
 
-export const BlogFooter = ({
+export const SiteFooter = ({
+  className,
+  rss = false,
   weatherCredit = false,
-}: BlogFooterProps): ReactElement => {
+}: SiteFooterProps): ReactElement => {
   const year = new Date().getFullYear();
   return (
-    <div className="blog-footer type-chip">
+    <div className={`${className} type-chip`}>
       <p className="tabular text-sky">
         © {year} <span className="whitespace-nowrap">{personalData.name}</span>
-        <span aria-hidden="true"> · </span>
-        <a
-          className="focus-ring"
-          href="/blog/feed.xml"
-          type="application/rss+xml"
-        >
-          {en.blog.rss}
-        </a>
+        {rss && (
+          <>
+            <span aria-hidden="true"> · </span>
+            <a
+              className="focus-ring"
+              href="/blog/feed.xml"
+              type="application/rss+xml"
+            >
+              {en.blog.rss}
+            </a>
+          </>
+        )}
       </p>
       {weatherCredit && (
         <p className="weather-credit text-sky">

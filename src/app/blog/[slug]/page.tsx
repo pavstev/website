@@ -3,14 +3,15 @@ import type { ReactElement } from "react";
 
 import { notFound } from "next/navigation";
 
-import { BlogFooter } from "@/components/blog/blog-footer";
 import { PostBody } from "@/components/blog/post-body";
 import { PostHeader } from "@/components/blog/post-header";
 import { PostNav } from "@/components/blog/post-nav";
+import { SiteFooter } from "@/components/site-footer";
 import { pageRobots, showDrafts } from "@/lib/blog/build-env";
 import { postTitle } from "@/lib/blog/format";
 import { postCrops } from "@/lib/blog/media";
 import { feedTypes, postShareImage } from "@/lib/blog/metadata";
+import { modifiedOf } from "@/lib/blog/modified";
 import { findPost, listPosts } from "@/lib/blog/posts";
 import { renderPost } from "@/lib/blog/render";
 import { personalData } from "@/lib/personal";
@@ -47,7 +48,7 @@ export const generateMetadata = async ({
       description: meta.description,
       images: [image],
       locale: "en_US",
-      modifiedTime: meta.updated ?? meta.date,
+      modifiedTime: modifiedOf(meta),
       publishedTime: meta.date,
       siteName: personalData.name,
       tags: meta.tags,
@@ -100,7 +101,7 @@ export default async function PostPage({
         <div className="post-page">
           <PostBody content={content} toc={toc} />
           <PostNav newer={posts[index - 1]} older={posts[index + 1]} />
-          <BlogFooter />
+          <SiteFooter className="blog-footer" rss />
         </div>
       </main>
     </>

@@ -4,6 +4,7 @@ import { type CSSProperties, type ReactElement } from "react";
 import {
   moonPosition,
   moonRadius,
+  moonSide,
   orbitFor,
   startAngle,
 } from "@/lib/blog/moons";
@@ -39,7 +40,7 @@ export const MoonFallback = ({
       aria-hidden="true"
       className="moon"
       data-moon={post.slug}
-      data-side={`${x >= 0 ? "end" : "start"} ${depth < 0 ? "front" : "back"}`}
+      data-side={moonSide(x, depth)}
       href={`/blog/${post.slug}`}
       style={style}
       tabIndex={-1}

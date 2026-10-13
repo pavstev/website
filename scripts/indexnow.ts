@@ -3,6 +3,8 @@ import { appendFileSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
+import { isScheduled } from "../src/lib/blog/schedule.ts";
+
 const host = "stevanpavlovic.com";
 const origin = `https://${host}`;
 const key = "ee32ef309c036fb4c6b716d08e9bf922";
@@ -152,6 +154,86 @@ export const changedPaths = (
   }
 };
 
+export type UrlAction = "live" | "removed" | "skip";
+
+export const urlAction = (
+  status: number | undefined,
+  wasPublic: boolean
+): UrlAction => {
+  if (status === 200) return "live";
+  if (!wasPublic) return "skip";
+  return status === 404 || status === 410 ? "removed" : "skip";
+};
+
+const frontmatterLines = (text: string): string[] => {
+  const lines = text.replace(/^\u{FEFF}/u, "").split(/\r?\n/u);
+  if (lines[0]?.trim() !== "---") return [];
+  const end = lines.slice(1).findIndex((line) => line.trim() === "---");
+  return end === -1 ? [] : lines.slice(1, end + 1);
+};
+
+const fieldValue = (lines: string[], name: string): string | undefined => {
+  const prefix = `${name}:`;
+  const line = lines.find((entry) => entry.startsWith(prefix));
+  return line
+    ?.slice(prefix.length)
+    .split("#", 1)[0]
+    ?.trim()
+    .replaceAll(/["']/gu, "");
+};
+
+const isoDate = /^\d{4}-\d{2}-\d{2}$/u;
+
+export const isPublicSource = (
+  text: string,
+  now: Date = new Date()
+): boolean => {
+  const lines = frontmatterLines(text);
+  const date = fieldValue(lines, "date");
+  const dated = date !== undefined && isoDate.test(date);
+  return (
+    dated && fieldValue(lines, "draft") !== "true" && !isScheduled(date, now)
+  );
+};
+
+export const resolveBase = (
+  before: string,
+  sha: string,
+  run: GitRunner = git
+): string | undefined => {
+  const parent = `${sha}^`;
+  const bases =
+    before === emptySha || !shaPattern.test(before)
+      ? [parent]
+      : [before, parent];
+  for (const base of bases) {
+    try {
+      run(["rev-parse", "--verify", "--quiet", `${base}${commitSuffix}`]);
+      return base;
+    } catch {
+      continue;
+    }
+  }
+  return undefined;
+};
+
+export const wasPublicAt = (
+  base: string | undefined,
+  slug: string,
+  now: Date = new Date(),
+  run: GitRunner = git
+): boolean => {
+  if (base === undefined) return false;
+  try {
+    return isPublicSource(
+      run(["show", `${base}:content/blog/${slug}/index.mdx`]),
+      now
+    );
+  } catch {
+    return false;
+  }
+};
+
 export const indexNowError = (status: number, body: string): string => {
   const hints = new Map([
     [422, "the URLs do not belong to the host, or the key file does not match"],
@@ -166,7 +248,7 @@ export const indexNowError = (status: number, body: string): string => {
   ].join("");
 };
 
-const answersOk = async (url: string): Promise<boolean> => {
+const answerStatus = async (url: string): Promise<number | undefined> => {
   try {
     const response = await fetch(url, {
       cache: "no-store",
@@ -174,9 +256,9 @@ const answersOk = async (url: string): Promise<boolean> => {
       signal: AbortSignal.timeout(requestTimeoutMs),
     });
     await response.body?.cancel();
-    return response.status === 200;
+    return response.status;
   } catch {
-    return false;
+    return undefined;
   }
 };
 
@@ -210,11 +292,31 @@ const run = async (): Promise<void> => {
     );
   }
 
-  const candidates = slugs.map((slug) => `${origin}/blog/${slug}`);
-  const answers = await Promise.all(candidates.map((url) => answersOk(url)));
-  const posts = candidates.filter((_url, index) => answers[index] === true);
-  const skipped = candidates.filter((_url, index) => answers[index] !== true);
-  const urls = [...posts, `${origin}/blog`, `${origin}/blog/feed.xml`];
+  const base = resolveBase(before, sha);
+  const now = new Date();
+  const candidates = slugs.map((slug) => ({
+    public: wasPublicAt(base, slug, now),
+    url: `${origin}/blog/${slug}`,
+  }));
+  const answers = await Promise.all(
+    candidates.map((candidate) => answerStatus(candidate.url))
+  );
+  const actions = candidates.map((candidate, index) =>
+    urlAction(answers[index], candidate.public)
+  );
+  const pick = (action: UrlAction): string[] =>
+    candidates
+      .filter((_candidate, index) => actions[index] === action)
+      .map((candidate) => candidate.url);
+  const posts = pick("live");
+  const removed = pick("removed");
+  const skipped = pick("skip");
+  const urls = [
+    ...posts,
+    ...removed,
+    `${origin}/blog`,
+    `${origin}/blog/feed.xml`,
+  ];
 
   const response = await fetch(endpoint, {
     body: JSON.stringify(indexNowBody(urls)),
@@ -235,10 +337,16 @@ const run = async (): Promise<void> => {
   summarize([
     `IndexNow accepted ${String(urls.length)} URLs (${String(response.status)}):`,
     ...urls.map((url) => `- ${url}`),
+    ...(removed.length === 0
+      ? []
+      : [
+          "Sent as removed (public before this push, now 404 or 410):",
+          ...removed.map((url) => `- ${url}`),
+        ]),
     ...(skipped.length === 0
       ? []
       : [
-          "Skipped, as they did not answer 200 (deleted or still a draft):",
+          "Skipped, as they never were public or did not answer 200 or 404 or 410:",
           ...skipped.map((url) => `- ${url}`),
         ]),
   ]);

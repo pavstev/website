@@ -2,11 +2,13 @@ export const en = {
   blog: {
     anchor: "Link to the section {heading}",
     back: "All posts",
+    backNav: "Back",
     blogName: "Stevan Pavlović’s blog",
     draft: "Draft",
     footnoteBack: "Back to the text",
     footnotes: "Notes",
     heading: "Blog",
+    home: "Home",
     metaDescription:
       "Posts by Stevan Pavlović, a backend engineer in Vienna, about how this website was built and how he works with AI.",
     metaTitle: "Blog · Stevan Pavlović",
@@ -18,6 +20,7 @@ export const en = {
     previous: "Previous post",
     published: "Published",
     rss: "RSS feed",
+    scheduled: "Scheduled",
     shareLine: "{blog} · {minutes}",
     tags: "Tags",
     toc: "On this page",

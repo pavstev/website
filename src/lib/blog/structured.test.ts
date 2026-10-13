@@ -3,21 +3,20 @@ import { describe, it } from "node:test";
 import * as z from "zod";
 
 import { blogGraph, postGraph, serializeJsonLd } from "../structured-data.ts";
+import { postMeta } from "./post-fixture.ts";
 import { type PostMeta } from "./schema.ts";
 
-const post = (slug: string, title: string, updated?: string): PostMeta => ({
-  date: "2026-10-13",
-  description: `About ${title}.`,
-  draft: false,
-  readingMinutes: 10,
-  sky: { phase: "night", weather: "clear" },
-  slug,
-  tags: ["WebGL", "Next.js"],
-  title,
-  ...(updated !== undefined && { updated }),
-  url: `https://stevanpavlovic.com/blog/${slug}`,
-  wordCount: 2300,
-});
+const post = (slug: string, title: string, updated?: string): PostMeta =>
+  postMeta({
+    description: `About ${title}.`,
+    readingMinutes: 10,
+    slug,
+    tags: ["WebGL", "Next.js"],
+    title,
+    ...(updated !== undefined && { updated }),
+    url: `https://stevanpavlovic.com/blog/${slug}`,
+    wordCount: 2300,
+  });
 
 const nodes = z.array(
   z.looseObject({ "@id": z.string().optional(), "@type": z.string() })

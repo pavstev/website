@@ -1,17 +1,7 @@
 import * as z from "zod";
 
 import { skyPhaseNames } from "../sky-clock.ts";
-import { type WeatherState } from "../weather.ts";
-
-export const weatherStates = [
-  "clear",
-  "partly",
-  "overcast",
-  "rain",
-  "snow",
-  "fog",
-  "storm",
-] as const satisfies readonly WeatherState[];
+import { weatherStates } from "../weather.ts";
 
 const nonEmpty = z.string().trim().min(1);
 

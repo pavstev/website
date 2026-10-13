@@ -12,6 +12,7 @@ const config: KnipConfig = {
     "scripts/github-snapshot.ts",
     "scripts/indexnow.ts",
     "scripts/linkedin-sync.ts",
+    "scripts/preload-guard.ts",
     "scripts/**/*.test.ts",
     "src/profile/**/*.test.ts",
   ],

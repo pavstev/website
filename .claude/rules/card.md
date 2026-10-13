@@ -14,7 +14,7 @@ paths:
   - "src/components/repo-strip.tsx"
   - "src/components/repo-tags.tsx"
   - "src/components/product-strip.tsx"
-  - "src/components/card-footer.tsx"
+  - "src/components/site-footer.tsx"
   - "src/components/topic-*.tsx"
   - "src/components/industry-panel.tsx"
   - "src/components/effects-init.tsx"

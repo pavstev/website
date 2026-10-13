@@ -3,24 +3,23 @@ import path from "node:path";
 import { describe, it } from "node:test";
 
 import { jsonFeed, loadFeedPosts, rssXml } from "./feeds.ts";
+import { postMeta } from "./post-fixture.ts";
 import { type PostMeta } from "./schema.ts";
 
 const site = "https://stevanpavlovic.com";
 const valid = path.join(import.meta.dirname, "fixtures", "valid");
 
-const meta = (over: Partial<PostMeta>): PostMeta => ({
-  date: "2026-10-12",
-  description: "A short description.",
-  draft: false,
-  readingMinutes: 1,
-  sky: { phase: "night", weather: "clear" },
-  slug: "one",
-  tags: ["Alpha"],
-  title: "One",
-  url: `${site}/blog/one`,
-  wordCount: 10,
-  ...over,
-});
+const meta = (over: Partial<PostMeta>): PostMeta =>
+  postMeta({
+    date: "2026-10-12",
+    description: "A short description.",
+    slug: "one",
+    tags: ["Alpha"],
+    title: "One",
+    url: `${site}/blog/one`,
+    wordCount: 10,
+    ...over,
+  });
 
 const posts = [
   {

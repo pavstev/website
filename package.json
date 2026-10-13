@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "node scripts/cv-fetch.ts && node scripts/blog-build.ts && next build && node scripts/cv-guard.ts",
+    "build": "node scripts/cv-fetch.ts && node scripts/blog-build.ts && next build && node scripts/preload-guard.ts && node scripts/cv-guard.ts",
     "check": "prettier --check . --cache --log-level=warn && eslint . --max-warnings=0 --cache && tsc --noEmit && tsc --noEmit -p worker/tsconfig.json && node --test \"scripts/**/*.test.ts\" \"src/**/*.test.ts\" \"worker/**/*.test.ts\" && knip && pnpm build && node src/profile/cli.ts --check",
     "dev": "node scripts/cv-fetch.ts && BLOG_DRAFTS=1 node scripts/blog-build.ts && next dev -p 4321",
     "fix": "prettier --write . --cache --log-level=warn && eslint . --fix --max-warnings=0 --cache",
@@ -22,7 +22,6 @@
     "@modelcontextprotocol/sdk": "1.32.1",
     "@react-pdf/renderer": "^4.9.0",
     "@shikijs/rehype": "^4.5.0",
-    "@shikijs/transformers": "^4.5.0",
     "next": "^16.3.8",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

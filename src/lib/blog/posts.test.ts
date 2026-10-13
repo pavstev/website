@@ -42,6 +42,39 @@ describe("listPosts", () => {
   });
 });
 
+const slugs = (options: { drafts: boolean; now: Date }): string[] =>
+  listPosts(options, valid).map((post) => post.slug);
+
+describe("scheduled posts", () => {
+  it("hides a post dated after the build day", () => {
+    const now = new Date("2026-10-11T10:00:00Z");
+    assert.deepEqual(slugs({ drafts: false, now }), []);
+    assert.equal(findPost("alpha", { drafts: false, now }, valid), undefined);
+    assert.equal(visibleSources({ drafts: false, now }, valid).length, 0);
+  });
+
+  it("shows a post dated on the build day", () => {
+    const now = new Date("2026-10-12T10:00:00Z");
+    assert.deepEqual(slugs({ drafts: false, now }), ["alpha", "beta"]);
+  });
+
+  it("counts the Vienna day when the UTC day is still the day before", () => {
+    assert.deepEqual(
+      slugs({ drafts: false, now: new Date("2026-10-11T22:30:00Z") }),
+      ["alpha", "beta"]
+    );
+    assert.deepEqual(
+      slugs({ drafts: false, now: new Date("2026-10-11T21:30:00Z") }),
+      []
+    );
+  });
+
+  it("shows scheduled posts where drafts show", () => {
+    const now = new Date("2026-10-11T10:00:00Z");
+    assert.deepEqual(slugs({ drafts: true, now }), ["gamma", "alpha", "beta"]);
+  });
+});
+
 describe("findPost", () => {
   it("finds a post by slug and hides a draft unless asked", () => {
     assert.equal(

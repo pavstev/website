@@ -1,11 +1,12 @@
 import type { ReactElement } from "react";
 
+import { DiagramLine } from "@/components/blog/diagrams/diagram-line";
+import { DiagramNode } from "@/components/blog/diagrams/diagram-node";
 import { DiagramSvg } from "@/components/blog/diagrams/diagram-svg";
-import { ink, size } from "@/lib/blog/diagram-ink";
+import { ink } from "@/lib/blog/diagram-ink";
 import { workLoop } from "@/lib/blog/diagrams";
 
 const spine = 26;
-const textX = 46;
 const firstY = 16;
 const step = 54;
 const loopX = 6;
@@ -32,51 +33,17 @@ export const WorkLoop = (): ReactElement => {
         strokeLinejoin="round"
         strokeWidth={1.25}
       />
-      <line
-        data-fc="line"
-        stroke={ink.line}
-        strokeWidth={1.25}
-        x1={spine}
-        x2={spine}
-        y1={firstY}
-        y2={lastY}
-      />
-      {workLoop.map((item, index) => {
-        const y = firstY + index * step;
-        const last = index === workLoop.length - 1;
-        return (
-          <g key={item.label}>
-            <circle
-              cx={spine}
-              cy={y}
-              data-fc={last ? "mark" : "hollow"}
-              fill={last ? ink.accent : ink.fill}
-              r={6}
-              stroke={ink.accent}
-              strokeWidth={1.5}
-            />
-            <text
-              data-fc="text"
-              fill={ink.label}
-              fontSize={size.label}
-              fontWeight={600}
-              x={textX}
-              y={y + 5}
-            >
-              {item.label}
-            </text>
-            <text
-              data-fc="muted"
-              fill={ink.detail}
-              fontSize={size.detail}
-              x={textX}
-              y={y + 24}
-            >
-              {item.detail}
-            </text>
-          </g>
-        );
-      })}
+      <DiagramLine x1={spine} x2={spine} y1={firstY} y2={lastY} />
+      {workLoop.map((item, index) => (
+        <DiagramNode
+          detail={item.detail}
+          filled={index === workLoop.length - 1}
+          key={item.label}
+          label={item.label}
+          x={spine}
+          y={firstY + index * step}
+        />
+      ))}
     </DiagramSvg>
   );
 };

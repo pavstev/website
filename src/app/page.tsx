@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import type { ReactElement } from "react";
 
 import { BlogButton } from "@/components/blog-button";
-import { CardFooter } from "@/components/card-footer";
 import { CardStrips } from "@/components/card-strips";
 import { ContactLinks } from "@/components/contact-links";
 import { DownloadButton } from "@/components/download-button";
@@ -11,6 +10,7 @@ import { MotionToggle } from "@/components/motion-toggle";
 import { PageDock } from "@/components/page-dock";
 import { Profile } from "@/components/profile";
 import { ResumeTip } from "@/components/resume-tip";
+import { SiteFooter } from "@/components/site-footer";
 import { SpaceBackground } from "@/components/space-background";
 import { pageRobots, showDrafts } from "@/lib/blog/build-env";
 import { listPosts } from "@/lib/blog/posts";
@@ -72,7 +72,10 @@ export default async function Page(): Promise<ReactElement> {
             </div>
           </div>
           <CardStrips products={products} repos={repos} />
-          <CardFooter />
+          <SiteFooter
+            className="card-footer fade-up mt-(--card-gap-footer) delay-4"
+            weatherCredit
+          />
         </div>
         <EffectsInit />
       </main>

@@ -5,6 +5,7 @@ import {
   moonPhase,
   moonPosition,
   moonRadius,
+  moonSide,
   orbitFor,
   sharedTags,
   startAngle,
@@ -14,6 +15,13 @@ const desktop = { height: 900, width: 1440 };
 const phone = { height: 568, width: 320 };
 
 describe("moons", () => {
+  it("names the side and the depth of a moon", () => {
+    assert.equal(moonSide(1, -1), "end front");
+    assert.equal(moonSide(0, 1), "end back");
+    assert.equal(moonSide(-1, -1), "start front");
+    assert.equal(moonSide(-1, 1), "start back");
+  });
+
   it("mirrors the positions at angle 0 and pi", () => {
     const orbit = orbitFor(0, 2, 48, desktop);
     const right = moonPosition(orbit, 0);

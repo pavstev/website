@@ -16,25 +16,7 @@ import {
   shareImageUrl,
   shareKey,
 } from "./media.ts";
-import { type PostSource } from "./posts.ts";
-
-const sourceIn = (dir: string, body: string): PostSource => ({
-  body,
-  dir,
-  meta: {
-    date: "2026-10-13",
-    description: "About a post.",
-    draft: false,
-    readingMinutes: 1,
-    sky: { phase: "night", weather: "clear" },
-    slug: "a-post",
-    tags: ["Test"],
-    title: "A post",
-    url: "https://stevanpavlovic.com/blog/a-post",
-    wordCount: 3,
-  },
-  slug: "a-post",
-});
+import { postSource } from "./post-fixture.ts";
 
 describe("hashName", () => {
   it("puts eight hex digits of the hash and the width in the name", () => {
@@ -85,13 +67,17 @@ describe("postImages", () => {
       "",
       "![Remote](https://example.com/x.png)",
     ].join("\n");
-    assert.deepEqual(postImages(sourceIn(dir, body)), ["one.webp", "two.webp"]);
+    assert.deepEqual(postImages(postSource(body, dir)), [
+      "one.webp",
+      "two.webp",
+    ]);
   });
 
   it("fails with the post and the file when an image is missing", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "blog-media-"));
     assert.throws(
-      () => postImages(sourceIn(dir, '<Figure src="gone.webp" alt="Gone" />')),
+      () =>
+        postImages(postSource('<Figure src="gone.webp" alt="Gone" />', dir)),
       /content\/blog\/a-post\/index\.mdx: image "gone\.webp" not found/
     );
   });

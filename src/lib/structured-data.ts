@@ -11,6 +11,8 @@ import type { PostMeta } from "./blog/schema.ts";
 import type { Contact, Repo } from "./github.ts";
 import type { Product } from "./products.ts";
 
+import { blogUrl } from "./blog/metadata.ts";
+import { modifiedOf } from "./blog/modified.ts";
 import { en } from "./i18n.ts";
 import { personalData, plainName } from "./personal.ts";
 
@@ -119,7 +121,6 @@ export const structuredData = (
   ],
 });
 
-const blogUrl = `${home}/blog`;
 const blogId = `${blogUrl}#blog`;
 const postId = (post: PostMeta): string => `${post.url}#post`;
 
@@ -153,7 +154,7 @@ const postSummary = (post: PostMeta): BlogPosting => ({
   "@id": postId(post),
   "@type": "BlogPosting",
   author,
-  dateModified: post.updated ?? post.date,
+  dateModified: modifiedOf(post),
   datePublished: post.date,
   description: post.description,
   headline: post.title,

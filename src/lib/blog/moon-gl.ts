@@ -1,4 +1,3 @@
-import { createFramePacer } from "../frame-pacer.ts";
 import { createListeners } from "../listeners.ts";
 import { reducedMotionQuery } from "../media.ts";
 import { stillQuery } from "../motion-pause.ts";
@@ -6,15 +5,20 @@ import {
   compose,
   createProgram,
   createSphere,
+  noiseGlsl,
   normalMatrix,
-  orthographic,
   whenLinked,
 } from "../planet-gl.ts";
+import {
+  clearFrame,
+  createPlanetStage,
+  openPlanetGl,
+} from "../planet-stage.ts";
 import { isSceneHeld, sceneHoldEvent } from "../scene-hold.ts";
-import { isSoftwareRenderer } from "../webgl.ts";
 import {
   moonPhase,
   moonPosition,
+  moonSide,
   type Orbit,
   orbitFor,
   startAngle,
@@ -79,22 +83,7 @@ uniform float uSeed;
 varying vec3 vObj;
 varying vec3 vNormal;
 varying float vZ;
-float hash3(vec3 p) {
-  p = fract(p * 0.3183099 + 0.1);
-  p *= 17.0;
-  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-}
-float noise3(vec3 x) {
-  vec3 i = floor(x);
-  vec3 f = fract(x);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x),
-        mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
-    mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x),
-        mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y),
-    f.z);
-}
+${noiseGlsl}
 float craters(vec3 q, float scale, float seed) {
   vec3 g = q * scale + seed;
   vec3 id = floor(g);
@@ -133,27 +122,10 @@ export const initMoons = (
   bodies: readonly MoonBody[],
   links: readonly MoonLink[]
 ): MoonScene => {
-  const gl = canvas.getContext("webgl2", {
-    alpha: true,
-    antialias: true,
-    depth: true,
-    powerPreference: "low-power",
-    premultipliedAlpha: true,
-    preserveDrawingBuffer: false,
-    stencil: false,
-  });
-  if (!gl) throw new Error("webgl2 unavailable");
-  const loseContext = (): void => {
-    gl.getExtension("WEBGL_lose_context")?.loseContext();
-  };
-  if (isSoftwareRenderer(gl)) {
-    loseContext();
-    throw new Error("software renderer");
-  }
+  const { gl, loseContext } = openPlanetGl(canvas);
   const checkErrors = process.env.NODE_ENV !== "production";
   const reduce = globalThis.matchMedia(reducedMotionQuery);
   const still = stillQuery();
-  let pixelRatio = Math.min(globalThis.devicePixelRatio || 1, maxPixelRatio);
   let sphere = createSphere(gl, 36, 24);
   let program = createProgram(gl, vertex, fragment);
   const releaseGl = (): void => {
@@ -175,23 +147,13 @@ export const initMoons = (
     y: 0,
   }));
 
-  let width = 1;
-  let height = 1;
-  let projection = orthographic(1, 1, near, far);
-  let handle = 0;
   let visible = true;
-  let frozen = false;
   let lost = false;
   let generation = 0;
   let compiled = false;
   let linesShown = false;
 
-  const resize = (): void => {
-    width = Math.max(1, stage.clientWidth);
-    height = Math.max(1, stage.clientHeight);
-    canvas.width = Math.floor(width * pixelRatio);
-    canvas.height = Math.floor(height * pixelRatio);
-    projection = orthographic(width, height, near, far);
+  const reorbit = (): void => {
     const radius = eclipse.offsetWidth / 2;
     const viewport = {
       height: globalThis.innerHeight,
@@ -209,7 +171,7 @@ export const initMoons = (
       moon.y = point.y;
       moon.depth = point.depth;
       moon.node.style.translate = `${point.x.toFixed(2)}px ${point.y.toFixed(2)}px`;
-      const side = `${point.x >= 0 ? "end" : "start"} ${point.depth < 0 ? "front" : "back"}`;
+      const side = moonSide(point.x, point.depth);
       if (side === moon.side) {
         continue;
       }
@@ -218,8 +180,8 @@ export const initMoons = (
       moon.node.dataset["side"] = side;
     }
     if (!linesShown) return;
-    const cx = width / 2;
-    const cy = height / 2;
+    const cx = view.width / 2;
+    const cy = view.height / 2;
     for (const link of links) {
       const a = moons[link.from];
       const b = moons[link.to];
@@ -237,31 +199,21 @@ export const initMoons = (
   };
 
   const render = (): void => {
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clearDepth(1);
-    gl.depthMask(true);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
-    gl.disable(gl.BLEND);
+    clearFrame(gl, canvas.width, canvas.height);
     const { uniform } = program;
     gl.useProgram(program.program);
-    gl.uniformMatrix4fv(uniform("projectionMatrix"), false, projection);
-    const scale = canvas.width / width;
+    gl.uniformMatrix4fv(uniform("projectionMatrix"), false, view.projection);
+    const scale = canvas.width / view.width;
     gl.uniform3f(
       uniform("uEclipse"),
-      (width / 2) * scale,
-      (height / 2) * scale,
+      (view.width / 2) * scale,
+      (view.height / 2) * scale,
       (eclipse.offsetWidth / 2) * scale
     );
     gl.bindVertexArray(sphere.vao);
     for (const moon of moons) {
       const model = compose(
-        [width / 2 + moon.x, -(height / 2 + moon.y), -moon.depth],
+        [view.width / 2 + moon.x, -(view.height / 2 + moon.y), -moon.depth],
         [0.4, moon.seed * 6.28, 0],
         moon.radius * (1 + moon.hot * 0.06)
       );
@@ -307,37 +259,25 @@ export const initMoons = (
     }
   };
 
-  const pacer = createFramePacer({
-    activeFrameMs: frameMs,
-    canDowngrade: () => pixelRatio > 1,
-    downgrade: () => {
-      pixelRatio = 1;
-      resize();
+  const view = createPlanetStage({
+    advance,
+    canvas,
+    draw,
+    far,
+    frameMs,
+    maxPixelRatio,
+    near,
+    onFreeze: () => {
+      sync();
     },
+    onResize: reorbit,
+    stage,
   });
 
-  const stop = (): void => {
-    if (handle !== 0) cancelAnimationFrame(handle);
-    handle = 0;
-    pacer.reset();
-  };
-
-  const loop = (now: number): void => {
-    handle = requestAnimationFrame(loop);
-    const step = pacer.step(now);
-    if (step.kind === "freeze") {
-      frozen = true;
-      sync();
-      return;
-    }
-    if (step.kind !== "draw") return;
-    advance(step.dt);
-    draw();
-  };
-
   const sync = (): void => {
-    stop();
+    view.stop();
     if (lost || !compiled) return;
+    const { frozen } = view;
     if (
       frozen ||
       !visible ||
@@ -349,7 +289,7 @@ export const initMoons = (
       draw();
       return;
     }
-    handle = requestAnimationFrame(loop);
+    view.start();
   };
 
   let disposed = false;
@@ -371,14 +311,14 @@ export const initMoons = (
       .catch(() => {
         if (mine !== generation) return;
         lost = true;
-        stop();
+        view.stop();
       });
   };
 
   const listeners = createListeners();
   const listen = listeners.on;
   const sizeWatch = new ResizeObserver(() => {
-    resize();
+    view.resize();
     draw();
   });
   sizeWatch.observe(stage);
@@ -392,14 +332,14 @@ export const initMoons = (
     still.removeEventListener("change", sync);
   });
   listen(globalThis.window, sceneHoldEvent, sync);
-  listen(globalThis.window, "blur", stop);
+  listen(globalThis.window, "blur", view.stop);
   listen(globalThis.window, "focus", sync);
   listen(document, "visibilitychange", sync);
   listen(canvas, "webglcontextlost", (event) => {
     event.preventDefault();
     lost = true;
     generation += 1;
-    stop();
+    view.stop();
     stage.dataset["moons"] = "css";
   });
   listen(canvas, "webglcontextrestored", () => {
@@ -416,13 +356,13 @@ export const initMoons = (
     compileProgram();
   });
 
-  resize();
+  view.resize();
   compileProgram();
 
   return {
     dispose: (): void => {
       disposed = true;
-      stop();
+      view.stop();
       sizeWatch.disconnect();
       viewWatch.disconnect();
       listeners.dispose();
@@ -436,8 +376,8 @@ export const initMoons = (
           moons[link.from]?.slug === slug || moons[link.to]?.slug === slug
       );
       if (linesShown) place();
-      if (frozen) frozen = false;
-      if (handle === 0) sync();
+      if (view.frozen) view.frozen = false;
+      if (!view.running()) sync();
     },
   };
 };

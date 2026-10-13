@@ -22,6 +22,7 @@ import {
   mediaManifestPath,
   postImages,
   shareKey,
+  singleImageEntry,
 } from "../src/lib/blog/media.ts";
 import { toMarkdown } from "../src/lib/blog/plain.ts";
 import { type PostSource, visibleSources } from "../src/lib/blog/posts.ts";
@@ -158,15 +159,9 @@ const renderCrops = async (
       );
       return [
         cropKey(source.slug, spec.name),
-        {
-          avif: [],
-          blur: "",
-          fallback: url,
-          height: spec.height,
-          webp: [url],
-          width: spec.width,
-          widths: [spec.width],
-        },
+        singleImageEntry({ height: spec.height, url, width: spec.width }, [
+          url,
+        ]),
       ];
     })
   );
@@ -200,15 +195,10 @@ const renderShare = async (
     `share.${contentHash(bytes)}.png`,
     bytes
   );
-  return {
-    avif: [],
-    blur: "",
-    fallback: url,
-    height: shareSize.height,
-    webp: [],
-    width: shareSize.width,
-    widths: [shareSize.width],
-  };
+  return singleImageEntry(
+    { height: shareSize.height, url, width: shareSize.width },
+    []
+  );
 };
 
 const postMedia = async (
