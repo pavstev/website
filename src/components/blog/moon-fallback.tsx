@@ -42,6 +42,7 @@ export const MoonFallback = ({
       data-moon={post.slug}
       data-side={moonSide(x, depth)}
       href={`/blog/${post.slug}`}
+      prefetch={false}
       style={style}
       tabIndex={-1}
     />

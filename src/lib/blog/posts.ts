@@ -4,6 +4,7 @@ import { VFile } from "vfile";
 import { matter } from "vfile-matter";
 
 import { personalData } from "../personal.ts";
+import { builtInstant } from "./build-env.ts";
 import { modifiedOf } from "./modified.ts";
 import { isScheduled } from "./schedule.ts";
 import { frontmatterSchema, type PostMeta } from "./schema.ts";
@@ -123,7 +124,7 @@ const byDateThenTitle = (a: PostMeta, b: PostMeta): number =>
   b.date.localeCompare(a.date) || a.title.localeCompare(b.title, "en");
 
 export const visibleSources = (
-  { drafts, now = new Date() }: DraftOptions,
+  { drafts, now = builtInstant() ?? new Date() }: DraftOptions,
   root?: string
 ): PostSource[] =>
   readPostSources(root).filter(

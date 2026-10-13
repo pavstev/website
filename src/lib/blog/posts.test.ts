@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { describe, it } from "node:test";
 
-import { isPreviewBuild, showDrafts } from "./build-env.ts";
+import { showDrafts } from "./build-env.ts";
 import {
   findPost,
   lastModified,
@@ -72,6 +72,27 @@ describe("scheduled posts", () => {
   it("shows scheduled posts where drafts show", () => {
     const now = new Date("2026-10-11T10:00:00Z");
     assert.deepEqual(slugs({ drafts: true, now }), ["gamma", "alpha", "beta"]);
+  });
+});
+
+describe("the build instant", () => {
+  it("is what listPosts uses when no now is passed", () => {
+    const saved = process.env["BLOG_BUILT_AT"];
+    try {
+      process.env["BLOG_BUILT_AT"] = "2026-10-11T10:00:00Z";
+      assert.deepEqual(
+        listPosts({ drafts: false }, valid).map((post) => post.slug),
+        []
+      );
+      process.env["BLOG_BUILT_AT"] = "2026-10-12T10:00:00Z";
+      assert.deepEqual(
+        listPosts({ drafts: false }, valid).map((post) => post.slug),
+        ["alpha", "beta"]
+      );
+    } finally {
+      if (saved === undefined) delete process.env["BLOG_BUILT_AT"];
+      else process.env["BLOG_BUILT_AT"] = saved;
+    }
   });
 });
 
@@ -147,20 +168,7 @@ describe("readingStats", () => {
 });
 
 describe("build env", () => {
-  it("treats a branch other than main as a preview with drafts", () => {
-    const env = { WORKERS_CI_BRANCH: "blog" };
-    assert.equal(isPreviewBuild(env), true);
-    assert.equal(showDrafts(env), true);
-  });
-
-  it("treats main as production without drafts", () => {
-    const env = { WORKERS_CI_BRANCH: "main" };
-    assert.equal(isPreviewBuild(env), false);
-    assert.equal(showDrafts(env), false);
-  });
-
-  it("shows drafts without a branch only in development or when asked", () => {
-    assert.equal(isPreviewBuild({}), false);
+  it("shows drafts only in development or when asked", () => {
     assert.equal(showDrafts({}), false);
     assert.equal(showDrafts({ NODE_ENV: "production" }), false);
     assert.equal(showDrafts({ NODE_ENV: "development" }), true);

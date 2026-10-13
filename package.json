@@ -5,11 +5,10 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "node scripts/cv-fetch.ts && node scripts/blog-build.ts && next build && node scripts/preload-guard.ts && node scripts/cv-guard.ts",
+    "build": "export BLOG_BUILT_AT=$(node -p \"new Date().toISOString()\") && node scripts/cv-fetch.ts && node scripts/blog-build.ts && next build && node scripts/preload-guard.ts && node scripts/cv-guard.ts",
     "check": "prettier --check . --cache --log-level=warn && eslint . --max-warnings=0 --cache && tsc --noEmit && tsc --noEmit -p worker/tsconfig.json && node --test \"scripts/**/*.test.ts\" \"src/**/*.test.ts\" \"worker/**/*.test.ts\" && knip && pnpm build && node src/profile/cli.ts --check",
     "dev": "node scripts/cv-fetch.ts && BLOG_DRAFTS=1 node scripts/blog-build.ts && next dev -p 4321",
     "fix": "prettier --write . --cache --log-level=warn && eslint . --fix --max-warnings=0 --cache",
-    "github:snapshot": "node scripts/github-snapshot.ts && prettier --write src/lib/github-snapshot.json --log-level=warn",
     "icons": "node scripts/generate-icon-data.ts",
     "prepare": "husky",
     "preview": "serve dist -l 4321",

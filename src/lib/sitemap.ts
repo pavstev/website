@@ -1,6 +1,7 @@
 import { escapeXml } from "./blog/feeds.ts";
 import { modifiedOf } from "./blog/modified.ts";
 import { lastModified } from "./blog/posts.ts";
+import { viennaMidnightIso } from "./blog/schedule.ts";
 import { type PostMeta } from "./blog/schema.ts";
 
 export interface SitemapEntry {
@@ -29,12 +30,18 @@ export const sitemapEntries = ({
     { images: homeImages, lastmod: homeModified, loc: site },
     ...(blogModified === undefined
       ? []
-      : [{ images: [], lastmod: blogModified, loc: `${site}/blog` }]),
+      : [
+          {
+            images: [],
+            lastmod: viennaMidnightIso(blogModified),
+            loc: `${site}/blog`,
+          },
+        ]),
     ...posts.map((post) => {
       const image = imageFor(post.slug);
       return {
         images: image === undefined ? [] : [image],
-        lastmod: modifiedOf(post),
+        lastmod: viennaMidnightIso(modifiedOf(post)),
         loc: post.url,
       };
     }),

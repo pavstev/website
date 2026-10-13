@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     type: "website",
     url: blogUrl,
   },
-  robots: pageRobots(),
+  robots: pageRobots,
   title: en.blog.metaTitle,
   twitter: {
     card: "summary_large_image",

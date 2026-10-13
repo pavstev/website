@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  type ReactElement,
-  useEffect,
-  useMemo,
-  useRef,
-  ViewTransition,
-} from "react";
+import { type ReactElement, useEffect, useMemo, useRef } from "react";
 
 import type { MoonBody, MoonLink, MoonScene } from "@/lib/blog/moon-gl";
 
@@ -356,14 +350,12 @@ export const BlogMoons = ({ posts }: BlogMoonsProps): ReactElement => {
       </svg>
       <canvas aria-hidden="true" className="moon-canvas" ref={canvasRef} />
       {posts.map((post, index) => (
-        <ViewTransition
-          default="none"
+        <MoonFallback
+          count={posts.length}
+          index={index}
           key={post.slug}
-          name={`moon-${post.slug}`}
-          share="morph"
-        >
-          <MoonFallback count={posts.length} index={index} post={post} />
-        </ViewTransition>
+          post={post}
+        />
       ))}
     </div>
   );

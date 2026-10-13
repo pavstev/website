@@ -6,6 +6,11 @@ import { en } from "../src/lib/i18n.ts";
 import { iconData } from "../src/lib/icon-data.ts";
 import { personalData } from "../src/lib/personal.ts";
 import { nightPhase } from "../src/lib/sky-clock.ts";
+import {
+  cornerCorona,
+  cornerMeteor,
+  longRaysShader,
+} from "../src/lib/sky-rays.ts";
 import { skyFragmentShader, skyVertexShader } from "../src/lib/sky-shader.ts";
 import { designTokens, hexBytes, profilePalette } from "../src/lib/theme.ts";
 import { crawlerSky } from "../src/lib/weather.ts";
@@ -66,24 +71,6 @@ const crawlerWeather: [number, number, number, number] = [
 ];
 
 const noMeteor: Meteor = { angle: 0, progress: 2, x: 0, y: 0 };
-
-const longRays: Array<[string, string]> = [
-  ["const float coronaSize = 0.48;", "const float coronaSize = 1.60;"],
-  ["const float coronaBright = 1.06;", "const float coronaBright = 1.30;"],
-];
-
-const patchShader = (
-  shader: string,
-  swaps: Array<[string, string]>
-): string => {
-  let source = shader;
-  for (const [from, to] of swaps) {
-    if (!source.includes(from))
-      throw new Error(`The sky shader no longer holds: ${from}`);
-    source = source.replace(from, () => to);
-  }
-  return source;
-};
 
 const rgba = (hex: string, alpha: number): string =>
   `rgba(${[...hexBytes(hex), alpha].join(", ")})`;
@@ -286,12 +273,12 @@ const specs: ImageSpec[] = [
   },
   {
     body: "",
-    corona: { radius: 170, x: -170, y: -170 },
+    corona: cornerCorona(396),
     daylight: nightPhase,
     file: path.join(publicDir, "linkedin-cover.png"),
-    fragment: patchShader(skyFragmentShader, longRays),
+    fragment: longRaysShader,
     height: 396,
-    meteor: { angle: -0.4, progress: 0.55, x: 0.3, y: 0.38 },
+    meteor: { ...cornerMeteor, progress: 0.55 },
     type: "png",
     width: 1584,
   },

@@ -14,9 +14,6 @@ interface PostHeaderProps {
 export const PostHeader = ({ post }: PostHeaderProps): ReactElement => (
   <header className="post-header" data-post-slug={post.slug} data-sky-header="">
     <SpaceBackground key={post.slug} mode="post" preset={post.sky} />
-    <ViewTransition default="none" name={`moon-${post.slug}`} share="morph">
-      <span aria-hidden="true" className="post-eclipse" data-eclipse="" />
-    </ViewTransition>
     <ViewTransition default="none" name={`title-${post.slug}`} share="morph">
       <h1 className="post-title text-sky">{post.title}</h1>
     </ViewTransition>

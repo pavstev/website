@@ -13,6 +13,7 @@ import type { Product } from "./products.ts";
 
 import { blogUrl } from "./blog/metadata.ts";
 import { modifiedOf } from "./blog/modified.ts";
+import { viennaMidnightIso } from "./blog/schedule.ts";
 import { en } from "./i18n.ts";
 import { personalData, plainName } from "./personal.ts";
 
@@ -154,8 +155,8 @@ const postSummary = (post: PostMeta): BlogPosting => ({
   "@id": postId(post),
   "@type": "BlogPosting",
   author,
-  dateModified: modifiedOf(post),
-  datePublished: post.date,
+  dateModified: viennaMidnightIso(modifiedOf(post)),
+  datePublished: viennaMidnightIso(post.date),
   description: post.description,
   headline: post.title,
   inLanguage: "en",

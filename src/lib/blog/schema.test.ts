@@ -66,6 +66,79 @@ describe("frontmatterSchema", () => {
     );
   });
 
+  it("rejects a day that is not on the calendar", () => {
+    for (const date of ["2026-02-30", "2026-13-01", "2026-04-31"]) {
+      assert.equal(
+        frontmatterSchema.safeParse({ ...sample, date }).success,
+        false,
+        date
+      );
+    }
+    assert.ok(
+      frontmatterSchema.safeParse({ ...sample, date: "2028-02-29" }).success
+    );
+    assert.equal(
+      frontmatterSchema.safeParse({ ...sample, date: "2026-02-29" }).success,
+      false
+    );
+  });
+
+  it("rejects a time, wrong padding and other shapes", () => {
+    for (const date of [
+      "2026-10-20T09:00",
+      "2026-10-20T00:00:00Z",
+      "2026-10-20 09:00",
+      "2026-1-5",
+      "2026-10-5",
+      "26-10-20",
+      "2026/10/20",
+      "",
+    ]) {
+      assert.equal(
+        frontmatterSchema.safeParse({ ...sample, date }).success,
+        false,
+        date
+      );
+      assert.equal(
+        frontmatterSchema.safeParse({ ...sample, updated: date }).success,
+        false,
+        date
+      );
+    }
+  });
+
+  it("explains the date format in the error", () => {
+    const result = frontmatterSchema.safeParse({ ...sample, date: "soon" });
+    assert.match(result.error?.issues[0]?.message ?? "", /YYYY-MM-DD/);
+    assert.match(result.error?.issues[0]?.message ?? "", /Vienna/);
+  });
+
+  it("gives updated its own error text", () => {
+    const result = frontmatterSchema.safeParse({ ...sample, updated: "soon" });
+    assert.deepEqual(result.error?.issues[0]?.path, ["updated"]);
+    assert.match(result.error?.issues[0]?.message ?? "", /YYYY-MM-DD/);
+    assert.doesNotMatch(result.error?.issues[0]?.message ?? "", /Vienna|live/);
+  });
+
+  it("accepts an updated date on or after the date", () => {
+    for (const updated of ["2026-10-13", "2026-10-14", "2027-01-01"]) {
+      assert.ok(
+        frontmatterSchema.safeParse({ ...sample, updated }).success,
+        updated
+      );
+    }
+  });
+
+  it("rejects an updated date before the date", () => {
+    const result = frontmatterSchema.safeParse({
+      ...sample,
+      updated: "2026-10-12",
+    });
+    assert.equal(result.success, false);
+    assert.deepEqual(result.error?.issues[0]?.path, ["updated"]);
+    assert.match(result.error?.issues[0]?.message ?? "", /before date/);
+  });
+
   it("lists every weather state and the four phases", () => {
     assert.deepEqual(
       [...weatherStates].toSorted((a, b) => a.localeCompare(b)),

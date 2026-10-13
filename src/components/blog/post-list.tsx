@@ -15,7 +15,11 @@ export const PostList = ({ posts }: PostListProps): ReactElement => (
   <ol className="post-list">
     {posts.map((post) => (
       <li className="post-row" data-post-slug={post.slug} key={post.slug}>
-        <Link className="post-row-link focus-ring" href={`/blog/${post.slug}`}>
+        <Link
+          className="post-row-link focus-ring"
+          href={`/blog/${post.slug}`}
+          prefetch={false}
+        >
           <ViewTransition
             default="none"
             name={`title-${post.slug}`}

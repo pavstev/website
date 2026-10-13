@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 
 import { modifiedOf } from "./blog/modified.ts";
 import { listPosts } from "./blog/posts.ts";
+import { viennaMidnightIso } from "./blog/schedule.ts";
 import { sitemapEntries, type SitemapEntry, sitemapXml } from "./sitemap.ts";
 
 const site = "https://stevanpavlovic.com";
@@ -168,15 +169,15 @@ describe("sitemapEntries", () => {
     assert.deepEqual(entries[3]?.images, []);
   });
 
-  it("leaves drafts out of a production build and keeps them in a preview", () => {
+  it("leaves drafts out of a production build and keeps them in a draft build", () => {
     const production = sitemapXml(
       sitemapEntries({ ...input, posts: listPosts({ drafts: false }, valid) })
     );
     assert.doesNotMatch(production, /gamma/);
-    const preview = sitemapXml(
+    const withDrafts = sitemapXml(
       sitemapEntries({ ...input, posts: listPosts({ drafts: true }, valid) })
     );
-    assert.match(preview, /\/blog\/gamma</);
+    assert.match(withDrafts, /\/blog\/gamma</);
   });
 
   it("uses the newest post date for the blog index", () => {
@@ -185,7 +186,7 @@ describe("sitemapEntries", () => {
     const newest = posts
       .map((post) => modifiedOf(post))
       .toSorted((a, b) => b.localeCompare(a))[0];
-    assert.equal(entries[1]?.lastmod, newest);
+    assert.equal(entries[1]?.lastmod, newest && viennaMidnightIso(newest));
   });
 
   it("omits the blog index when there are no posts", () => {

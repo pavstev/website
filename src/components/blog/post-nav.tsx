@@ -18,6 +18,7 @@ export const PostNav = ({ newer, older }: PostNavProps): ReactElement => (
           <Link
             className="post-nav-link focus-ring"
             href={`/blog/${older.slug}`}
+            prefetch={false}
             rel="prev"
           >
             <span className="post-nav-label type-chip">{en.blog.previous}</span>
@@ -28,6 +29,7 @@ export const PostNav = ({ newer, older }: PostNavProps): ReactElement => (
           <Link
             className="post-nav-link post-nav-next focus-ring"
             href={`/blog/${newer.slug}`}
+            prefetch={false}
             rel="next"
           >
             <span className="post-nav-label type-chip">{en.blog.next}</span>
@@ -36,7 +38,7 @@ export const PostNav = ({ newer, older }: PostNavProps): ReactElement => (
         )}
       </div>
     )}
-    <Link className="post-nav-back focus-ring" href="/blog">
+    <Link className="post-nav-back focus-ring" href="/blog" prefetch={false}>
       {en.blog.back}
     </Link>
   </nav>

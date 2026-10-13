@@ -27,7 +27,7 @@ const resumeDetailId = "resume-detail";
 export const metadata: Metadata = {
   alternates: { canonical: personalData.website },
   description: en.meta.description,
-  robots: pageRobots(),
+  robots: pageRobots,
   title: en.meta.title,
 };
 

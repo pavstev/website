@@ -15,6 +15,7 @@ on:
       - src/lib/math.ts
       - src/lib/personal.ts
       - src/lib/sky-clock.ts
+      - src/lib/sky-rays.ts
       - src/lib/sky-shader.ts
       - src/lib/theme.ts
       - src/lib/weather.ts

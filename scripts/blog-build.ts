@@ -11,7 +11,7 @@ import {
 import path from "node:path";
 import sharp from "sharp";
 
-import { showDrafts } from "../src/lib/blog/build-env.ts";
+import { builtInstant, showDrafts } from "../src/lib/blog/build-env.ts";
 import {
   contentHash,
   cropKey,
@@ -252,6 +252,7 @@ const prune = (out: Output, dir: string): void => {
 
 interface BuildOptions {
   drafts: boolean;
+  now?: Date;
   root: string;
 }
 
@@ -260,12 +261,19 @@ interface BuildResult {
   posts: number;
 }
 
+export const markerText = (sha: string, builtAt: Date): string =>
+  `{"sha": ${JSON.stringify(sha)}, "builtAt": ${JSON.stringify(builtAt.toISOString())}}\n`;
+
 export const buildBlog = async ({
   drafts,
+  now,
   root,
 }: BuildOptions): Promise<BuildResult> => {
   const out: Output = { root, written: new Set() };
-  const sources = visibleSources({ drafts }, root);
+  const sources = visibleSources(
+    { drafts, ...(now !== undefined && { now }) },
+    root
+  );
   const fonts = shareFonts();
   const entries = await Promise.all(
     sources.map((source) => postMedia(out, source, fonts))
@@ -292,14 +300,13 @@ export const buildBlog = async ({
 
 if (import.meta.main) {
   try {
+    const builtAt = builtInstant() ?? new Date();
     const { manifest, posts } = await buildBlog({
       drafts: showDrafts(),
+      now: builtAt,
       root: process.cwd(),
     });
-    writeFileSync(
-      buildMarkerPath,
-      `{"sha": ${JSON.stringify(commitSha())}, "builtAt": ${JSON.stringify(new Date().toISOString())}}\n`
-    );
+    writeFileSync(buildMarkerPath, markerText(commitSha(), builtAt));
     console.warn(
       `blog: ${String(posts)} posts, ${String(Object.keys(manifest).length)} media entries`
     );

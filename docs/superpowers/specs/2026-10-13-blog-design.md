@@ -110,7 +110,7 @@ One more `contact-item` (internal link, lucide icon, its own tone, tooltip "Blog
 ## Cloudflare
 
 - `wrangler.jsonc`: `"preview_urls": true` (an explicit `false` would turn the owner's dashboard switch off on the next deploy). Keep `"workers_dev": false`. Add `previews: { ratelimits: [the MCP_LIMITER entry] }` when the wrangler schema accepts it, because Worker Previews do not inherit production bindings; the first branch build proves `/mcp` answers on the preview.
-- Preview URL for this branch: `blog-website.pavlovicmstevan.workers.dev`. Only the owner's main Cloudflare account; never the one `CLAUDE.md` rules out.
+- Preview URL for this branch: the branch preview on the owner's workers.dev subdomain. Only the owner's main Cloudflare account; never the one `CLAUDE.md` rules out.
 
 ## Docs
 

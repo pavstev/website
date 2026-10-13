@@ -79,7 +79,7 @@ describe("rssXml", () => {
   it("takes lastBuildDate from the newest updated or date, not the clock", () => {
     assert.match(
       xml,
-      /<lastBuildDate>Wed, 14 Oct 2026 00:00:00 GMT<\/lastBuildDate>/
+      /<lastBuildDate>Wed, 14 Oct 2026 00:00:00 \+0200<\/lastBuildDate>/
     );
   });
 
@@ -88,7 +88,7 @@ describe("rssXml", () => {
       xml,
       /<guid isPermaLink="true">https:\/\/stevanpavlovic\.com\/blog\/two<\/guid>/
     );
-    assert.match(xml, /<pubDate>Mon, 12 Oct 2026 00:00:00 GMT<\/pubDate>/);
+    assert.match(xml, /<pubDate>Mon, 12 Oct 2026 00:00:00 \+0200<\/pubDate>/);
     assert.match(xml, /<category>Beta<\/category>/);
     assert.match(xml, /<category>Gamma<\/category>/);
     assert.match(xml, /<description>A short description\.<\/description>/);
@@ -164,9 +164,9 @@ describe("jsonFeed", () => {
 
   it("carries date_modified and the markdown URL", () => {
     const [first, second] = feed.items;
-    assert.equal(first?.date_modified, "2026-10-14T00:00:00Z");
-    assert.equal(first?.date_published, "2026-10-12T00:00:00Z");
-    assert.equal(second?.date_modified, "2026-10-12T00:00:00Z");
+    assert.equal(first?.date_modified, "2026-10-14T00:00:00+02:00");
+    assert.equal(first?.date_published, "2026-10-12T00:00:00+02:00");
+    assert.equal(second?.date_modified, "2026-10-12T00:00:00+02:00");
     assert.equal(first?._markdown_url, `${site}/blog/two.md`);
     assert.deepEqual(first?.tags, ["Beta", "Gamma"]);
     assert.equal(first?.id, `${site}/blog/two`);

@@ -13,6 +13,7 @@ import {
   isIndexNowAccepted,
   isPublicSource,
   parseBuildSha,
+  parseBuiltAt,
   resolveBase,
   urlAction,
   wasPublicAt,
@@ -82,6 +83,24 @@ describe("parseBuildSha", () => {
     assert.equal(parseBuildSha("{}"), undefined);
     assert.equal(parseBuildSha(JSON.stringify({ sha: 5 })), undefined);
     assert.equal(parseBuildSha(JSON.stringify({ sha: "main" })), undefined);
+  });
+});
+
+describe("parseBuiltAt", () => {
+  it("reads the build time of a build marker", () => {
+    assert.equal(
+      parseBuiltAt(
+        JSON.stringify({ builtAt: "2026-10-13T12:03:56.892Z", sha: "a" })
+      )?.toISOString(),
+      "2026-10-13T12:03:56.892Z"
+    );
+  });
+
+  it("answers undefined for anything else", () => {
+    assert.equal(parseBuiltAt("not json"), undefined);
+    assert.equal(parseBuiltAt("{}"), undefined);
+    assert.equal(parseBuiltAt(JSON.stringify({ builtAt: 5 })), undefined);
+    assert.equal(parseBuiltAt(JSON.stringify({ builtAt: "soon" })), undefined);
   });
 });
 

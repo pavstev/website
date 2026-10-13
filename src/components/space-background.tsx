@@ -35,6 +35,7 @@ import {
   startingSkyPreset,
 } from "@/lib/sky-preset";
 import { createSkyProbe, type ProbeBox } from "@/lib/sky-probe";
+import { cornerCorona, cornerMeteor, longRaysShader } from "@/lib/sky-rays";
 import {
   coronaFragmentShader as CORONA,
   skyFragmentShader as FRAGMENT,
@@ -105,6 +106,9 @@ const maxCanvasPixels = 1_400_000;
 const resizeDelayMs = 150;
 const meteorMs = 1450;
 const meteorGapMs: [number, number] = [2000, 14_000];
+const postMeteorMs = 1600;
+const postMeteorGapMs = 4400;
+const postMeteorRoom = 0.55;
 const timeWrapHighSeconds = 86_400;
 const timeWrapLowSeconds = 1024;
 const portraitSelector = "[data-eclipse]";
@@ -367,6 +371,7 @@ const startSky = (
   const pointer = { x: 0, y: 0 };
   const pointerTarget = { x: 0, y: 0 };
   const meteor = { angle: 0, at: 0, x: 0, y: 0 };
+  const flightMs = anchored ? postMeteorMs : meteorMs;
   const gust = { dir: -1, energy: 0, inside: false, x: 0, y: 0 };
   let cloudMs = 0;
   let shiftMs = 0;
@@ -390,6 +395,7 @@ const startSky = (
   const weather: SkyWeather = { ...weatherTarget };
   const daylightTarget: SkyPhase = { ...(heldLook?.daylight ?? liveDaylight) };
   const daylight: SkyPhase = { ...daylightTarget };
+  const meteorShown = !anchored || (!crawler && weatherTarget.overcast < 1);
   let offscreen = false;
   let daylightEasing = false;
   const weatherStop = new AbortController();
@@ -412,14 +418,17 @@ const startSky = (
   };
 
   const launch = (now: number): void => {
+    if (anchored) {
+      const halfWidth = canvas.width / viewPixels() / 2;
+      Object.assign(meteor, cornerMeteor, {
+        at: now + postMeteorGapMs,
+        x: Math.min(cornerMeteor.x, halfWidth - postMeteorRoom),
+      });
+      return;
+    }
     meteor.at = now + nextGap();
-    const rect = anchored ? canvas.getBoundingClientRect() : undefined;
-    const aspect = rect
-      ? rect.width / Math.max(1, rect.height)
-      : window.innerWidth / Math.max(1, window.innerHeight);
-    const [, centerY] = rect
-      ? toSky(rect.left + rect.width / 2, rect.top + rect.height / 2)
-      : toSky(window.innerWidth / 2, window.innerHeight / 2);
+    const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+    const [, centerY] = toSky(window.innerWidth / 2, window.innerHeight / 2);
     const side = Math.random() < 0.5 ? -1 : 1;
     const tilt = 0.35 + Math.random() * 0.35;
     meteor.x = side * (0.15 + Math.random() * 0.3) * aspect;
@@ -453,6 +462,16 @@ const startSky = (
   };
 
   const trackPortrait = (): DOMRect | undefined => {
+    if (anchored) {
+      const source = cornerCorona(canvas.height);
+      uniforms.set(
+        "u_portrait",
+        source.x,
+        canvas.height - source.y,
+        source.radius
+      );
+      return undefined;
+    }
     if (!portraitNode?.isConnected)
       portraitNode = document.querySelector(portraitSelector);
     if (!portraitNode) {
@@ -694,7 +713,7 @@ const startSky = (
       weather.storm,
       weather.slant
     );
-    const flight = rafId ? (skyMs - meteor.at) / meteorMs : -1;
+    const flight = rafId && meteorShown ? (skyMs - meteor.at) / flightMs : -1;
     if (flight >= 1) launch(skyMs);
     if (flight >= 0 && flight < 1) markActive();
     uniforms.set(
@@ -975,7 +994,11 @@ export const SpaceBackground = ({
     const still = gl ? isSoftwareRenderer(gl) : false;
     const vertex = gl ? createShader(gl, gl.VERTEX_SHADER, VERTEX) : undefined;
     const fragment = gl
-      ? createShader(gl, gl.FRAGMENT_SHADER, FRAGMENT)
+      ? createShader(
+          gl,
+          gl.FRAGMENT_SHADER,
+          mode === "post" ? longRaysShader : FRAGMENT
+        )
       : undefined;
     const program = gl?.createProgram();
     if (!gl || !vertex || !fragment || !program) {

@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 
-import { buildBlog } from "./blog-build.ts";
+import { buildBlog, markerText } from "./blog-build.ts";
 
 const fixtures = path.join(
   import.meta.dirname,
@@ -42,7 +42,33 @@ afterEach(() => {
   rmSync(root, { force: true, recursive: true });
 });
 
+describe("markerText", () => {
+  it("writes the instant it is given", () => {
+    const sha = "a".repeat(40);
+    const text = markerText(sha, new Date("2026-10-13T21:59:59.123Z"));
+    assert.deepEqual(JSON.parse(text), {
+      builtAt: "2026-10-13T21:59:59.123Z",
+      sha,
+    });
+  });
+});
+
 describe("buildBlog", () => {
+  it("picks posts at the instant it is given, not at the clock", async () => {
+    const before = await buildBlog({
+      drafts: false,
+      now: new Date("2026-10-11T10:00:00Z"),
+      root,
+    });
+    assert.equal(before.posts, 0);
+    const after = await buildBlog({
+      drafts: false,
+      now: new Date("2026-10-12T10:00:00Z"),
+      root,
+    });
+    assert.equal(after.posts, 1);
+  });
+
   it("writes nothing for a draft in a production build", async () => {
     const { manifest, posts } = await buildBlog({ drafts: false, root });
     assert.equal(posts, 1);

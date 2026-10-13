@@ -8,7 +8,7 @@ My personal site: one contact card floating over a live WebGL sky, a small blog 
 
 ## What is in it
 
-- **A hand-written sky.** A WebGL nebula with sparkling stars and a shooting star every 15 to 30 s.
+- **A hand-written sky.** A WebGL nebula with sparkling stars and a shooting star every 2 to 14 s.
 - **Real clouds.** One three.js shader: drifting decks lit from below, silver edges, fast cirrus on top. They part around the cursor.
 - **A glass bead.** It follows the cursor over the portrait (a finger after a press and hold) and magnifies the photo with chromatic edges, in the card and in the portrait dialog.
 - **A name that tunes in.** A CSS signal intro, then every 8 s a WebGL tear and a weight-morph wave across the letters.
@@ -41,16 +41,15 @@ pnpm install
 pnpm dev   # http://localhost:4321
 ```
 
-| Script                 | What it does                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------------ |
-| `pnpm dev`             | Fetches the CV, builds the blog media, then a dev server on port 4321 (drafts show)  |
-| `pnpm build`           | Fetches the CV, builds the blog media and `dist/`, then checks the CV did not change |
-| `pnpm github:snapshot` | Saves the GitHub data that preview builds replay when they have no token             |
-| `pnpm preview`         | Serves `dist/` on port 4321                                                          |
-| `pnpm check`           | Format, lint, types (site and Worker), tests, unused code, build, profile            |
-| `pnpm fix`             | Applies Prettier and ESLint fixes                                                    |
-| `pnpm icons`           | Rebuilds `src/lib/icon-data.ts`                                                      |
-| `pnpm profile:build`   | Builds the GitHub profile into `.profile-out/` (`--check` also checks links)         |
+| Script               | What it does                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| `pnpm dev`           | Fetches the CV, builds the blog media, then a dev server on port 4321 (drafts show)  |
+| `pnpm build`         | Fetches the CV, builds the blog media and `dist/`, then checks the CV did not change |
+| `pnpm preview`       | Serves `dist/` on port 4321                                                          |
+| `pnpm check`         | Format, lint, types (site and Worker), tests, unused code, build, profile            |
+| `pnpm fix`           | Applies Prettier and ESLint fixes                                                    |
+| `pnpm icons`         | Rebuilds `src/lib/icon-data.ts`                                                      |
+| `pnpm profile:build` | Builds the GitHub profile into `.profile-out/` (`--check` also checks links)         |
 
 `pnpm check` changes no file. It runs before every commit (husky) and in CI.
 
@@ -66,7 +65,7 @@ gh secret set PROFILE_DEPLOY_KEY -R pavstev/website < /tmp/profile_sync && rm /t
 
 ## Deploy
 
-Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). Cloudflare runs `pnpm run build` and needs `GITHUB_TOKEN`, `CV_FEED_URL` and `CV_FEED_TOKEN` as build variables; CI needs the two CV feed values as GitHub Actions secrets (and Dependabot secrets). Saving a résumé in hirista starts a new build. The `workers.dev` URL is off. Every other branch gets a preview at `<branch>-website.pavlovicmstevan.workers.dev`: drafts show, search engines are asked not to index it, and without a token it replays the saved GitHub data. Nobody deploys by hand.
+Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). Cloudflare runs `pnpm run build` and needs `GITHUB_TOKEN`, `CV_FEED_URL` and `CV_FEED_TOKEN` as build variables; CI needs the two CV feed values as GitHub Actions secrets (and Dependabot secrets). Saving a résumé in hirista starts a new build. The `workers.dev` URL and branch previews are off. A blog post with a future `date` goes live at 00:00 Vienna time on that day: `.github/workflows/blog-publish.yml` checks every hour and, when a post is due, starts a build through a Cloudflare deploy hook (the secret `CLOUDFLARE_DEPLOY_HOOK`). Nobody deploys by hand.
 
 ## Contact
 

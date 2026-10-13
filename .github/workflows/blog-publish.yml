@@ -1,0 +1,80 @@
+name: Blog publish
+
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        default: false
+        description: Say which posts are due and change nothing
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  cancel-in-progress: false
+  group: blog-publish
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      actions: write
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+      HUSKY: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          cache: pnpm
+          node-version-file: .nvmrc
+      - run: pnpm install --frozen-lockfile
+      - name: Publish the posts that are due
+        id: publish
+        env:
+          CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=()
+          if [ "$DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            FAILING_SINCE="$(gh issue list --label blog-publish-failed --state open --limit 1 --json createdAt --jq '.[0].createdAt // empty' || true)"
+            export FAILING_SINCE
+          fi
+          node scripts/blog-publish.ts "${args[@]}"
+      - name: Keep the schedule alive
+        if: always() && github.event_name == 'schedule'
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/blog-publish.yml/enable"
+      - name: Report the failure
+        if: failure()
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create blog-publish-failed --color B60205 --description "The blog publish workflow failed" --force
+          body="The blog publish failed ($GITHUB_EVENT_NAME): $RUN_URL"
+          issue="$(gh issue list --label blog-publish-failed --state open --limit 1 --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "Blog publish failed" --label blog-publish-failed --body "$body"
+          fi
+      - name: Close the failure report
+        if: success() && !inputs.dry_run && steps.publish.outputs.backed_off != 'true'
+        continue-on-error: true
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue list --label blog-publish-failed --state open --json number --jq '.[].number' | while read -r issue; do
+            gh issue close "$issue" --comment "The blog publish works again: $RUN_URL"
+          done || echo "Could not list the blog publish issues" >> "$GITHUB_STEP_SUMMARY"

@@ -6,7 +6,7 @@ import { parseArgs } from "node:util";
 import { isScheduled } from "../src/lib/blog/schedule.ts";
 
 const host = "stevanpavlovic.com";
-const origin = `https://${host}`;
+export const origin = `https://${host}`;
 const key = "ee32ef309c036fb4c6b716d08e9bf922";
 const endpoint = "https://api.indexnow.org/IndexNow";
 const pollIntervalMs = 20_000;
@@ -51,6 +51,19 @@ export const parseBuildSha = (text: string): string | undefined => {
   }
 };
 
+export const parseBuiltAt = (text: string): Date | undefined => {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (typeof parsed !== "object" || parsed === null) return undefined;
+    const { builtAt } = parsed as { builtAt?: unknown };
+    if (typeof builtAt !== "string") return undefined;
+    const date = new Date(builtAt);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  } catch {
+    return undefined;
+  }
+};
+
 export const isIndexNowAccepted = (status: number): boolean =>
   status === 200 || status === 202;
 
@@ -76,30 +89,38 @@ const isAncestor = (sha: string, live: string): boolean => {
   return gitSucceeds(["merge-base", "--is-ancestor", sha, live]);
 };
 
+export type BuildJson =
+  { problem: string; text?: undefined } | { text: string };
+
 type Live = { problem: string; sha?: undefined } | { sha: string };
 
-const readLive = async (): Promise<Live> => {
+export const readBuildJson = async (): Promise<BuildJson> => {
   try {
     const response = await fetch(`${origin}/build.json`, {
       cache: "no-store",
       redirect: "error",
       signal: AbortSignal.timeout(requestTimeoutMs),
     });
-    if (response.status !== 200) {
-      return { problem: `build.json answered ${String(response.status)}` };
-    }
-    const sha = parseBuildSha(await response.text());
-    return sha === undefined
-      ? {
-          problem:
-            "build.json is not a marker with a full 40 character commit in sha",
-        }
-      : { sha };
+    return response.status === 200
+      ? { text: await response.text() }
+      : { problem: `build.json answered ${String(response.status)}` };
   } catch (error) {
     return {
       problem: `build.json could not be read (${error instanceof Error ? error.message : String(error)})`,
     };
   }
+};
+
+const readLive = async (): Promise<Live> => {
+  const marker = await readBuildJson();
+  if (marker.text === undefined) return { problem: marker.problem };
+  const sha = parseBuildSha(marker.text);
+  return sha === undefined
+    ? {
+        problem:
+          "build.json is not a marker with a full 40 character commit in sha",
+      }
+    : { sha };
 };
 
 const waitForDeploy = async (
@@ -248,7 +269,9 @@ export const indexNowError = (status: number, body: string): string => {
   ].join("");
 };
 
-const answerStatus = async (url: string): Promise<number | undefined> => {
+export const answerStatus = async (
+  url: string
+): Promise<number | undefined> => {
   try {
     const response = await fetch(url, {
       cache: "no-store",
@@ -262,7 +285,26 @@ const answerStatus = async (url: string): Promise<number | undefined> => {
   }
 };
 
-const summarize = (lines: string[]): void => {
+export const postIndexNow = async (urls: string[]): Promise<number> => {
+  const response = await fetch(endpoint, {
+    body: JSON.stringify(indexNowBody(urls)),
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    method: "POST",
+    signal: AbortSignal.timeout(requestTimeoutMs),
+  });
+  if (!isIndexNowAccepted(response.status)) {
+    let body = "";
+    try {
+      body = await response.text();
+    } catch {
+      body = "";
+    }
+    throw new Error(indexNowError(response.status, body));
+  }
+  return response.status;
+};
+
+export const summarize = (lines: string[]): void => {
   const text = lines.join("\n");
   process.stdout.write(`${text}\n`);
   const file = process.env["GITHUB_STEP_SUMMARY"];
@@ -318,24 +360,10 @@ const run = async (): Promise<void> => {
     `${origin}/blog/feed.xml`,
   ];
 
-  const response = await fetch(endpoint, {
-    body: JSON.stringify(indexNowBody(urls)),
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-    method: "POST",
-    signal: AbortSignal.timeout(requestTimeoutMs),
-  });
-  if (!isIndexNowAccepted(response.status)) {
-    let body = "";
-    try {
-      body = await response.text();
-    } catch {
-      body = "";
-    }
-    throw new Error(indexNowError(response.status, body));
-  }
+  const status = await postIndexNow(urls);
 
   summarize([
-    `IndexNow accepted ${String(urls.length)} URLs (${String(response.status)}):`,
+    `IndexNow accepted ${String(urls.length)} URLs (${String(status)}):`,
     ...urls.map((url) => `- ${url}`),
     ...(removed.length === 0
       ? []
