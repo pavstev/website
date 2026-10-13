@@ -22,16 +22,15 @@ Loads when you touch a post or the blog code. The full design is in the **Blog**
    ```yaml
    title: Plain title
    description: One or two sentences, at most 160 characters.
-   date: 2026-10-13 # YYYY-MM-DD only; live at 00:00 Vienna time on that day
-   updated: 2026-10-20 # optional, not before date
+   date: 2026-10-13T09:30:00+02:00 # required, with seconds and offset; live at this instant
+   updated: 2026-10-20T18:00:00+02:00 # optional, same form, not before date
    draft: true # optional, default false
    tags: [AI, Workflow] # 1 to 5
-   sky:
-     phase: dusk # night, dawn, day or dusk
-     weather: storm # clear, partly, overcast, rain, snow, fog or storm
    ```
 
-   `sky` sets the header sky of the post and the sky behind the moon on the index.
+   Every blog page shares one sky (the clear night with corner rays); a post has no sky field.
+
+   Write Vienna time with its offset: `+02:00` from the last Sunday of March to the last Sunday of October, else `+01:00`. Any valid offset passes; a wrong one moves the post by an hour (accepted risk). A date alone fails.
 
 3. Write Markdown with GFM (tables, task lists, footnotes). Headings h2 and h3 get anchors and a TOC entry. Code fences use Shiki; name the language.
 4. Put images next to the post and reference them by file name: `<Figure src="sky-storm.webp" alt="..." caption="..." />`. `alt` is required and must describe what the image shows. A plain `![alt](file.webp)` also works but has no caption or zoom. Only referenced images ship. A missing file fails the build.
@@ -40,7 +39,7 @@ Loads when you touch a post or the blog code. The full design is in the **Blog**
 7. Diagrams: `<Diagram name="site-pipeline|sky-layers|work-loop|skill-map" caption="..." />`. A new diagram is a component in `src/components/blog/diagrams/` plus an entry (title, description, labels) in `src/lib/blog/diagrams.ts`. Diagram copy stays there, not in `i18n.ts`, and that file must not import from `@/`.
 8. `<Note>text</Note>` is an aside. In the Markdown copy it becomes a blockquote.
 9. Link other posts with a root path (`/blog/other-slug`). External links open in a new tab by themselves.
-10. Check it with `pnpm dev` (drafts and scheduled posts show). Then `pnpm check`.
+10. Check it with `pnpm dev` (drafts and scheduled posts show), or `pnpm dev:many` to see it among 30 test posts. Then `pnpm check`.
 
 ## Drafts
 
@@ -48,11 +47,27 @@ Loads when you touch a post or the blog code. The full design is in the **Blog**
 
 ## Schedule a post
 
-Set `date` to a future day (`YYYY-MM-DD`, a real day; no time). Nothing else. The post is hidden like a draft until 00:00 `Europe/Vienna` on that day (`goLiveAt` in `src/lib/blog/schedule.ts` is the one rule; `listPosts`, `findPost` and `visibleSources` take an optional `now` for tests). Where drafts show, a scheduled post carries a "Scheduled" label.
+Set `date` to a future instant (`2026-11-02T08:00:00+01:00`). Nothing else. The post is hidden like a draft until that instant (`goLiveAt` in `src/lib/blog/schedule.ts` is the one rule; `listPosts`, `findPost` and `visibleSources` take an optional `now` for tests). Where drafts show, a scheduled post carries a "Scheduled" label.
 
-`.github/workflows/blog-publish.yml` runs at minute 7 of every hour on `main`. `scripts/blog-publish.ts` compares the live `/build.json` `builtAt` with the go-live instants of the non-draft posts. If one fell between `builtAt` and now, it POSTs the deploy hook, waits for a newer `builtAt`, then tells IndexNow about the new posts, `/blog` and both feeds. A scheduled post is live within about an hour plus the build after its day starts. Nothing due: one log line, exit 0. It needs the GitHub Actions secret `CLOUDFLARE_DEPLOY_HOOK` (a Cloudflare deploy hook for `main`); without it a run that finds a due post fails. A failed run opens a `blog-publish-failed` issue. When nothing is due, the run tells IndexNow again about posts that went live in the last two hours, are in the live build and answer 200 (a lost ping is retried). On a scheduled run, if a post is due and the open `blog-publish-failed` issue is older than three hours, the run skips the hook, logs one line and leaves the issue open (a run by hand always tries). `pnpm build` takes one instant (`BLOG_BUILT_AT`) before anything else; the prebuild, `next build` and `public/build.json` all use it, so they agree on which posts are live. The pure parts (`duePosts`, `runPublish`) are tested with injected network calls; `node scripts/blog-publish.ts --dry-run` reports what is due and changes nothing.
+`.github/workflows/blog-publish.yml` runs at minutes 7, 22, 37 and 52 of every hour on `main`, with no dependency install: `scripts/blog-publish.ts` imports only `node:` modules, `schedule.ts` and `scripts/indexnow.ts`, and reads `date` and `draft` straight from the front matter (`timingOf`). Keep it that way, or the workflow needs `pnpm install` again. It compares the live `/build.json` `builtAt` with the go-live instants of the non-draft posts. If one fell between `builtAt` and now, it POSTs the deploy hook, waits for a newer `builtAt`, then tells IndexNow about the new posts, `/blog` and both feeds. A scheduled post is live within about 15 minutes plus the build. Nothing due: one log line, exit 0. It needs the GitHub Actions secret `CLOUDFLARE_DEPLOY_HOOK`; without it a run that finds a due post fails. A failed run opens a `blog-publish-failed` issue. When nothing is due, the run tells IndexNow again about posts that went live in the last 30 minutes (two runs), are in the live build and answer 200. With no readable `builtAt` it treats the last 30 minutes as due. On a scheduled run, if a post is due and the open `blog-publish-failed` issue is older than an hour (four runs), the run skips the hook, logs one line and leaves the issue open (a run by hand always tries). `pnpm build` takes one instant (`BLOG_BUILT_AT`) before anything else; the prebuild, `next build` and `public/build.json` all use it. The pure parts (`duePosts`, `recentlyLive`, `shouldBackOff`, `timingOf`, `runPublish`) are tested with injected network calls; `node scripts/blog-publish.ts --dry-run` reports what is due and changes nothing.
 
-Dates in outputs (sitemap `lastmod`, RSS, JSON Feed, JSON-LD, Open Graph) are the Vienna midnight with its real offset (`viennaMidnightIso`). Never append `Z` to a date.
+Dates in outputs (sitemap `lastmod`, RSS, JSON Feed, JSON-LD, Open Graph) are the instant as written, with its offset. Never append `Z`.
+
+## Dates on the page
+
+`PostDate` (`src/components/blog/post-date.tsx`) prints the Vienna date in the server HTML ("13 Oct 2026"), then, in the browser, relative text within 7 days ("3 hours ago", "yesterday") or the date in the reader's zone, refreshed once a minute while visible. The date is a button: hover, focus or tap opens a tip with the full date, time and zone in the reader's zone and the Vienna time; Escape and an outside click close it. Formatting lives in `src/lib/blog/dates.ts` (tested). Use `PostDate` for every post date shown on a page.
+
+## Reading time
+
+`src/lib/blog/reading.ts` counts visible words only (link text, not URLs; no image paths, alt or JSX props; `caption` and `title` of `Figure`, `Chart`, `Diagram` count; headings, inline code and footnote text count; footnote markers do not) at 238 words a minute, fenced code at 119, plus 12 s per image or `Figure` and 20 s per `Chart` or `Diagram`, rounded up, at least 1 minute. One value feeds the header, the list, the share image and JSON-LD. Changing a post changes its golden numbers in `reading.test.ts`: update them in the same commit.
+
+## Tags and pages
+
+Tag chips link to `/blog/tag/<slug>` (`tagSlug`: "Claude Code" is `claude-code`, "Next.js" is `next-js`). Two spellings that map to one slug fail the build: pick one. `/blog` shows 10 posts, then `/blog/page/2`, and so on; tags paginate the same way (`/blog/tag/<slug>/page/2`). There is no `/blog/page/1`. All listing URLs come from one route, `src/app/blog/[slug]/[...rest]/page.tsx`, because a static export cannot build a dynamic route with no params; so `page` and `tag` are reserved post slugs. Listings are indexable, self-canonical and in the sitemap; feeds stay the full list.
+
+## Many posts locally
+
+`pnpm dev:many` adds 30 generated test posts (`src/lib/blog/fixture-posts.ts`, fixed seed, dated 2023 to 2025) from the gitignored `.blog/fixtures/`. They load only with `BLOG_FIXTURES=1` outside a production build and CI; `pnpm build` with `BLOG_FIXTURES=1` fails on purpose.
 
 ## Copy rules
 
@@ -67,14 +82,14 @@ Dates in outputs (sitemap `lastmod`, RSS, JSON Feed, JSON-LD, Open Graph) are th
 - `pnpm check` is the gate. It runs `scripts/blog-build.ts` through `pnpm build`, so image, chart and frontmatter errors fail it. ESLint and Prettier lint the MDX and Markdown.
 - Run `pnpm exec prettier --write content/blog` after editing a post; it wraps long JSX props.
 - Satori (share images) cannot read WebP. `coverData` in `scripts/blog-build.ts` converts the cover with sharp first; keep that if you touch it. Share images load Inter `latin` and `latin-ext` (400 and 600, from `@fontsource/inter`, under the names "Inter" and "Inter Ext") so `next/og` never fetches a font from Google during a build; a title with a glyph outside both subsets would make it fetch again, and `share.test.ts` fails when any request goes out.
-- Headless Chromium counts as a crawler (`isCrawler`) and always gets the cloudy night sky, which ignores presets. Browser tests of post or index skies need a normal desktop `userAgent`.
-- The post-mode sky must mount inside `header[data-sky-header]` (as the first child, `key={slug}`). Mounting it from a layout shows nothing in the header.
-- The post header has no eclipse and no `[data-eclipse]`: the rays come from the top-left corner and only the title morphs from the index (see the Sky modes bullet in `docs/architecture.md`). Its text sits at the bottom-left, so keep the lowest part of the header sky dark enough for `postInkTargets`.
-- Every code path that calls `setSkyPreset(post.sky)` must call `setSkyPreset(null)` on leave and on unmount, or the next index visit starts on the old preset.
-- The index has ink targets for 8 rows (`blogRowSlots` in `sky-ink.ts`). `content.test.ts` fails once there are more posts, drafts included; then raise it.
-- New text over the sky needs `text-sky`, one of the registered class names (`.blog-heading`, `.post-row-title`, `.post-row-meta`, `.post-row-text`, `.blog-footer .tabular`, `.weather-credit`, `.post-title`, `.post-meta`) and the matching `--ink` base in `globals.css`.
-- Keep `<picture>` a server element in `BlogImage`; only the `<img>` is a client part (`BlurImage`). React preloads every eager `<img>` that a server component renders outside a `<picture>`, so a client wrapper around the `<picture>` makes AVIF browsers also fetch the WebP fallback. After a change, `dist/blog/<slug>.html` must hold no `rel="preload"` with `as="image"`. `scripts/preload-guard.ts` checks this after `next build` in `pnpm build` and fails the build on a post page that has one (`/` and `/blog` keep their portrait preload on purpose).
-- `BlogImage` sets `sizes="(min-width: 48em) min(46rem, calc(100vw - 4rem)), min(43.5rem, calc(100vw - 2.5rem))"`; it should match the prose column (46rem wide from 48em up, 43.5rem or the viewport minus 2.5rem below).
+- Headless Chromium counts as a crawler (`isCrawler`) and always gets the cloudy night sky with no parallax. Browser tests of the blog sky need a normal desktop `userAgent`.
+- The blog sky (`SpaceBackground mode="blog"`) mounts once, in `src/app/blog/layout.tsx`, as the first child of `[data-blog]`, and stays mounted across blog routes. Never mount a second one in a page. New blog routes get the sky for free; give them the shared `BlogHeader` (`src/components/blog/blog-header.tsx`) so the bar, the title morph and the ink targets work.
+- The sky behind text: only the header title and meta line sit on the bright part of the sky and carry `text-sky` with ink targets (`postInkTargets` and `blogIndexInkTargets`, the same `[data-sky-header] .blog-title` and `.blog-header-meta`). The cards have their own glass, and the prose sits on the faded sky (at least 9.9:1 measured). New text in the header needs `text-sky`, a target in `sky-ink.ts` and an `--ink` base in `globals.css`.
+- The sticky bar is `--bar-h` (3rem) tall. In-page jumps land below it through `scroll-padding-top` on `html:has([data-blog])` and `scroll-margin-top` on the prose headings; keep both if you change the bar height.
+- The bar's right end (`[data-bar-slot]`) holds the pause button (`<MotionToggle variant="bar" />`); the blog layout renders no corner pause button. The TOC has three forms in one `nav.post-toc`: the rail (80em and up), the drawer (`toc-drawer.tsx`, opened by any `[data-toc-open]` button) and the `<details>` list without JS; `toc-spy.tsx` marks the active link in all of them.
+- List rows: the title link stretches over the card with `::after`; anything clickable inside a card (date button, tag chips) needs `position: relative; z-index: 1` to sit above it. Never nest a link in the row link. The card surface and its corner-ray glow are on `.post-row` (`::before`), so the date tip is never clipped.
+- Keep `<picture>` a server element in `BlogImage`; only the `<img>` is a client part (`BlurImage`). React preloads every eager `<img>` that a server component renders outside a `<picture>`, so a client wrapper around the `<picture>` makes AVIF browsers also fetch the WebP fallback. After a change, `dist/blog/<slug>.html` must hold no `rel="preload"` with `as="image"`. `scripts/preload-guard.ts` checks this after `next build` in `pnpm build` and fails the build on a post page that has one (`/` keeps its portrait preload on purpose).
+- `BlogImage` sets `sizes="(min-width: 48em) min(43rem, calc(100vw - 4rem)), min(43rem, calc(100vw - 2.5rem))"`; it should match the prose column (`max-width: 43rem`, about 64ch at 17 px from 48em up; set in rem, not ch, because a ch width moves when the web font arrives and shifted the article by 0.139 CLS; below 48em the viewport minus 2.5rem limits it).
 - Never edit `public/blog-media/`, `public/blog/`, `public/build.json` or `.blog/`: the prebuild writes them and they are gitignored.
 - When you touch `serializeJsonLd` or any JSON-LD string, check the raw bytes for `<` (see the SEO note in `CLAUDE.md`).
 - IndexNow runs on its own after a push to `main` that touches `content/blog/**`, and `blog-publish.yml` pings after a scheduled go-live; do not ping by hand for a post. It also tells the engines about a deleted post, or one switched back to draft, when the post was public before the push.

@@ -13,7 +13,6 @@ import type { Product } from "./products.ts";
 
 import { blogUrl } from "./blog/metadata.ts";
 import { modifiedOf } from "./blog/modified.ts";
-import { viennaMidnightIso } from "./blog/schedule.ts";
 import { en } from "./i18n.ts";
 import { personalData, plainName } from "./personal.ts";
 
@@ -155,8 +154,8 @@ const postSummary = (post: PostMeta): BlogPosting => ({
   "@id": postId(post),
   "@type": "BlogPosting",
   author,
-  dateModified: viennaMidnightIso(modifiedOf(post)),
-  datePublished: viennaMidnightIso(post.date),
+  dateModified: modifiedOf(post),
+  datePublished: post.date,
   description: post.description,
   headline: post.title,
   inLanguage: "en",
@@ -214,6 +213,7 @@ export const postGraph = (
       },
       mainEntityOfPage: { "@id": post.url, "@type": "WebPage" },
       publisher: author,
+      timeRequired: `PT${String(post.readingMinutes)}M`,
       wordCount: post.wordCount,
     },
     breadcrumbs(`${post.url}#breadcrumb`, [

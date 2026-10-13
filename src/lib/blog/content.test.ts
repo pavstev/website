@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
 
-import { blogRowSlots } from "../sky-ink.ts";
 import { readPostSources } from "./posts.ts";
 
 const sources = readPostSources();
@@ -18,12 +17,5 @@ describe("committed posts", () => {
         `${source.slug}: replace each em or en dash with a comma, a colon or a new sentence`
       );
     }
-  });
-
-  it("fit the ink slots of the blog index", () => {
-    assert.ok(
-      sources.length <= blogRowSlots,
-      `${String(sources.length)} posts but only ${String(blogRowSlots)} ink slots: raise blogRowSlots in src/lib/sky-ink.ts`
-    );
   });
 });

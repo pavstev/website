@@ -27,7 +27,7 @@ import {
   type PlacedLabel,
   placeLabels,
 } from "@/lib/globe-labels";
-import { clamp, smoothstep } from "@/lib/math";
+import { clamp, deg, smoothstep } from "@/lib/math";
 import { stillQuery } from "@/lib/motion-pause";
 import { subsolarPoint } from "@/lib/sun";
 import { globePalette } from "@/lib/theme";
@@ -86,7 +86,6 @@ export class SoftwareRendererError extends Error {
   override name = "SoftwareRendererError";
 }
 
-const deg = Math.PI / 180;
 const fov = 30;
 const fitRatio = 0.86;
 const minZoom = 1;

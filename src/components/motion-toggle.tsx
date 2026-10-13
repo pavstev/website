@@ -17,7 +17,13 @@ import {
 
 const flashMs = 2000;
 
-export const MotionToggle = (): ReactElement => {
+interface MotionToggleProps {
+  variant?: "bar" | "corner";
+}
+
+export const MotionToggle = ({
+  variant = "corner",
+}: MotionToggleProps): ReactElement => {
   const paused = useSyncExternalStore(
     subscribeMotionPause,
     isMotionPaused,
@@ -25,7 +31,7 @@ export const MotionToggle = (): ReactElement => {
   );
   const [dismissed, setDismissed] = useState(false);
   const [flash, setFlash] = useState(0);
-  const itemRef = useRef<HTMLElement>(null);
+  const itemRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const pointerRef = useRef("");
 
@@ -55,11 +61,14 @@ export const MotionToggle = (): ReactElement => {
     };
   }, [flash]);
 
+  const Item = variant === "corner" ? "header" : "div";
+
   return (
-    <header
+    <Item
       className="motion-item"
       data-dismissed={dismissed ? "" : undefined}
       data-flash={flash > 0 ? "" : undefined}
+      data-variant={variant}
       onPointerLeave={() => {
         setDismissed(false);
       }}
@@ -67,8 +76,7 @@ export const MotionToggle = (): ReactElement => {
     >
       <button
         aria-describedby={paused ? "motion-tip-play" : "motion-tip-pause"}
-        aria-label={en.motion.label}
-        aria-pressed={paused}
+        aria-label={paused ? en.motion.play : en.motion.pause}
         className="motion-toggle"
         onBlur={() => {
           setDismissed(false);
@@ -86,18 +94,21 @@ export const MotionToggle = (): ReactElement => {
         ref={buttonRef}
         type="button"
       >
-        <span aria-hidden="true" className="motion-orbit fade-up delay-4">
-          <span className="motion-moon" />
+        <span aria-hidden="true" className="motion-glyph fade-up delay-4">
+          <span className="motion-bar" data-side="start" />
+          <span className="motion-bar" data-side="end" />
         </span>
       </button>
-      <span className="contact-tip motion-tip" id="motion-tip" role="tooltip">
+      <span className="contact-tip motion-tip" role="tooltip">
         <span className="motion-tip-pause" id="motion-tip-pause">
-          {en.motion.tipPause}
+          <span className="motion-tip-title">{en.motion.tipPause}</span>{" "}
+          <span className="motion-tip-detail">{en.motion.tipPauseDetail}</span>
         </span>
         <span className="motion-tip-play" id="motion-tip-play">
-          {en.motion.tipPlay}
+          <span className="motion-tip-title">{en.motion.tipPlay}</span>{" "}
+          <span className="motion-tip-detail">{en.motion.tipPlayDetail}</span>
         </span>
       </span>
-    </header>
+    </Item>
   );
 };

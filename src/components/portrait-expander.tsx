@@ -107,7 +107,6 @@ export const PortraitExpander = ({
         aria-haspopup="dialog"
         aria-label={expandLabel}
         className="focus-ring relative block size-33.5 shrink-0 rounded-full md:size-38.5"
-        data-eclipse=""
         data-portrait=""
         onClick={onOpen}
         ref={buttonRef}

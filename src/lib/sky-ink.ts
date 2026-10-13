@@ -18,9 +18,9 @@ export interface ProbeBlock {
 const liftSteps = 20;
 const raiseBy = 0.02;
 const lowerBy = 0.12;
-const skyShare = 0.95;
+const skyShare = 0.98;
 
-export const inkMargin = 1.08;
+export const inkMargin = 1.35;
 export const tintLuminance = 0.02;
 
 export const inkTargets: readonly InkTarget[] = [
@@ -34,23 +34,9 @@ export const inkTargets: readonly InkTarget[] = [
   {
     base: inkPalette.soft,
     index: 0,
-    need: 6.9,
+    need: 4.5,
     paint: "[data-card] .bio",
     probe: "[data-card] .bio",
-  },
-  {
-    base: inkPalette.soft,
-    index: 0,
-    need: 4.5,
-    paint: "[data-card] .repo-heading",
-    probe: "[data-card] .repo-heading",
-  },
-  {
-    base: inkPalette.soft,
-    index: 1,
-    need: 4.5,
-    paint: "[data-card] .repo-heading",
-    probe: "[data-card] .repo-heading",
   },
   {
     base: inkPalette.soft,
@@ -59,57 +45,28 @@ export const inkTargets: readonly InkTarget[] = [
     paint: "[data-card] .card-footer .tabular",
     probe: "[data-card] .card-footer .tabular",
   },
-  {
-    base: inkPalette.muted,
-    index: 0,
-    need: 4.5,
-    paint: "[data-card] .weather-credit",
-    probe: "[data-card] .weather-credit",
-  },
 ];
 
-export const blogRowSlots = 8;
-
-const blogTarget = (
+const headerTarget = (
   selector: string,
   base: string,
-  need: number,
-  index = 0
+  need: number
 ): InkTarget => ({
   base,
-  index,
+  index: 0,
   need,
-  paint: `[data-blog] ${selector}`,
-  probe: `[data-blog] ${selector}`,
+  paint: `[data-sky-header] ${selector}`,
+  probe: `[data-sky-header] ${selector}`,
 });
 
-export const blogIndexInkTargets: readonly InkTarget[] = [
-  blogTarget(".blog-heading", inkPalette.foreground, 3),
-  ...Array.from({ length: blogRowSlots }, (_, row) => [
-    blogTarget(".post-row-title", inkPalette.foreground, 3, row),
-    blogTarget(".post-row-meta", inkPalette.muted, 4.5, row),
-    blogTarget(".post-row-text", inkPalette.soft, 4.5, row),
-  ]).flat(),
-  blogTarget(".blog-footer .tabular", inkPalette.soft, 4.5),
-  blogTarget(".weather-credit", inkPalette.muted, 4.5),
+const headerTargets = (): readonly InkTarget[] => [
+  headerTarget(".blog-title", inkPalette.foreground, 3),
+  headerTarget(".blog-header-meta", inkPalette.soft, 4.5),
 ];
 
-export const postInkTargets: readonly InkTarget[] = [
-  {
-    base: inkPalette.foreground,
-    index: 0,
-    need: 3,
-    paint: "[data-sky-header] .post-title",
-    probe: "[data-sky-header] .post-title",
-  },
-  {
-    base: inkPalette.soft,
-    index: 0,
-    need: 4.5,
-    paint: "[data-sky-header] .post-meta",
-    probe: "[data-sky-header] .post-meta",
-  },
-];
+export const blogIndexInkTargets: readonly InkTarget[] = headerTargets();
+
+export const postInkTargets: readonly InkTarget[] = headerTargets();
 
 const linear = (byte: number): number => {
   const value = byte / 255;

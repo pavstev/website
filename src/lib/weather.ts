@@ -1,4 +1,4 @@
-import { clamp, clamp01, smoothstep } from "./math.ts";
+import { clamp, clamp01, deg, smoothstep } from "./math.ts";
 
 export interface SkyWeather {
   cover: number;
@@ -21,6 +21,7 @@ export interface ViennaWeather {
   rain: number;
   showers: number;
   snow: number;
+  temperature?: number;
   time: string;
   visibility: number;
   windDirection: number;
@@ -40,8 +41,8 @@ export const weatherStates = [
 export type WeatherState = (typeof weatherStates)[number];
 
 export const weatherSourceUrl = "https://open-meteo.com/";
+export const weatherLicenseUrl = "https://creativecommons.org/licenses/by/4.0/";
 
-const deg = Math.PI / 180;
 const presetSlant = -0.12;
 
 const numberFields = [
@@ -206,6 +207,9 @@ export const parseViennaWeather = (
     windSpeed: finite(value, "windSpeed"),
   };
 
+  const temperature = finite(value, "temperature");
+  if (Number.isFinite(temperature)) weather.temperature = temperature;
+
   return numberFields.every((field) => Number.isFinite(weather[field]))
     ? weather
     : undefined;
@@ -222,11 +226,29 @@ export const weatherOverride = (search: string): SkyWeather | undefined => {
     : undefined;
 };
 
+export const readViennaWeather = (body: unknown): undefined | ViennaWeather =>
+  isRecord(body) ? parseViennaWeather(body["weather"]) : undefined;
+
 export const readSkyWeather = (body: unknown): SkyWeather | undefined => {
-  const weather = isRecord(body)
-    ? parseViennaWeather(body["weather"])
-    : undefined;
+  const weather = readViennaWeather(body);
   return weather ? skyFromWeather(weather) : undefined;
+};
+
+let latestWeather: undefined | ViennaWeather;
+const weatherListeners = new Set<() => void>();
+
+export const currentWeather = (): undefined | ViennaWeather => latestWeather;
+
+export const publishWeather = (weather: ViennaWeather): void => {
+  latestWeather = weather;
+  for (const listener of weatherListeners) listener();
+};
+
+export const subscribeWeather = (listener: () => void): (() => void) => {
+  weatherListeners.add(listener);
+  return () => {
+    weatherListeners.delete(listener);
+  };
 };
 
 export const fetchSkyWeather = async (
@@ -234,7 +256,12 @@ export const fetchSkyWeather = async (
 ): Promise<SkyWeather | undefined> => {
   try {
     const response = await fetch("/weather", { signal });
-    return response.ok ? readSkyWeather(await response.json()) : undefined;
+    const weather = response.ok
+      ? readViennaWeather(await response.json())
+      : undefined;
+    if (!weather) return undefined;
+    publishWeather(weather);
+    return skyFromWeather(weather);
   } catch {
     return undefined;
   }

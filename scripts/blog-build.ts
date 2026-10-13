@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og.js";
 import { execFileSync } from "node:child_process";
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -11,7 +12,17 @@ import {
 import path from "node:path";
 import sharp from "sharp";
 
-import { builtInstant, showDrafts } from "../src/lib/blog/build-env.ts";
+import {
+  type BuildEnv,
+  builtInstant,
+  fixturesEnabled,
+  showDrafts,
+} from "../src/lib/blog/build-env.ts";
+import {
+  fixtureImageSource,
+  fixturePosts,
+  fixtureRoot,
+} from "../src/lib/blog/fixture-posts.ts";
 import {
   contentHash,
   cropKey,
@@ -250,6 +261,29 @@ const prune = (out: Output, dir: string): void => {
   }
 };
 
+export const fixtureGuard = (env: BuildEnv): string | undefined =>
+  env.BLOG_FIXTURES === "1" && !fixturesEnabled(env)
+    ? "BLOG_FIXTURES=1 is for pnpm dev:many only. Unset it for a build or in CI: test posts must never ship."
+    : undefined;
+
+export const writeFixtures = (root: string, imagesFrom = root): number => {
+  const base = path.join(root, fixtureRoot, "content/blog");
+  rmSync(path.join(root, fixtureRoot), { force: true, recursive: true });
+  const posts = fixturePosts();
+  for (const post of posts) {
+    const dir = path.join(base, post.slug);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(path.join(dir, "index.mdx"), post.mdx);
+    if (post.image !== undefined) {
+      copyFileSync(
+        path.join(imagesFrom, fixtureImageSource, post.image),
+        path.join(dir, post.image)
+      );
+    }
+  }
+  return posts.length;
+};
+
 interface BuildOptions {
   drafts: boolean;
   now?: Date;
@@ -300,6 +334,14 @@ export const buildBlog = async ({
 
 if (import.meta.main) {
   try {
+    const guard = fixtureGuard(process.env);
+    if (guard !== undefined) throw new Error(guard);
+    if (fixturesEnabled()) {
+      const count = writeFixtures(process.cwd());
+      console.warn(`blog: ${String(count)} test posts`);
+    } else {
+      rmSync(fixtureRoot, { force: true, recursive: true });
+    }
     const builtAt = builtInstant() ?? new Date();
     const { manifest, posts } = await buildBlog({
       drafts: showDrafts(),

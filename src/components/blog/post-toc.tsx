@@ -1,5 +1,7 @@
 import type { ReactElement } from "react";
 
+import { TocDrawer } from "@/components/blog/toc-drawer";
+import { Icon } from "@/components/icon";
 import { type TocItem } from "@/lib/blog/toc";
 import { en } from "@/lib/i18n";
 
@@ -26,11 +28,22 @@ export const PostToc = ({ items }: PostTocProps): null | ReactElement =>
         <summary className="toc-summary focus-ring">{en.blog.toc}</summary>
         {tocList(items)}
       </details>
+      <button
+        aria-controls="toc-drawer"
+        aria-haspopup="dialog"
+        className="toc-open focus-ring"
+        data-toc-open=""
+        type="button"
+      >
+        <Icon name="lucide:list" size="1rem" />
+        {en.blog.toc}
+      </button>
       <div className="toc-aside">
         <p aria-hidden="true" className="toc-title type-chip">
           {en.blog.toc}
         </p>
         {tocList(items)}
       </div>
+      <TocDrawer items={items} />
     </nav>
   );

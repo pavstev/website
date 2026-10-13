@@ -78,7 +78,7 @@ describe("renderProfile", () => {
     }
   });
 
-  it("puts the name, the title and all four fonts in the header", () => {
+  it("puts the name, the title, all four fonts and the sky in the header", () => {
     const header = file("assets/header.svg");
     assert.ok(header.includes(">Ada Example</text>"));
     assert.ok(header.includes(">Backend &amp; Systems Engineer</text>"));
@@ -87,6 +87,7 @@ describe("renderProfile", () => {
     assert.ok(header.includes("base64,BwgJ"));
     assert.ok(header.includes("base64,CgsM"));
     assert.ok(header.includes("Geist,"));
+    assert.ok(header.includes("data:image/webp;base64,DQ4P"));
   });
 
   it("passes its own validation", () => {

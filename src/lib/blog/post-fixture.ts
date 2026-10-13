@@ -2,11 +2,10 @@ import { type PostSource } from "./posts.ts";
 import { type PostMeta } from "./schema.ts";
 
 export const postMeta = (over: Partial<PostMeta> = {}): PostMeta => ({
-  date: "2026-10-13",
+  date: "2026-10-13T09:30:00+02:00",
   description: "About a post.",
   draft: false,
   readingMinutes: 1,
-  sky: { phase: "night", weather: "clear" },
   slug: "a-post",
   tags: ["Test"],
   title: "A post",

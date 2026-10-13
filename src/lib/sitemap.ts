@@ -1,7 +1,13 @@
 import { escapeXml } from "./blog/feeds.ts";
+import {
+  blogListing,
+  blogPageParams,
+  tagListing,
+  tagPageParams,
+  tagParams,
+} from "./blog/listing.ts";
 import { modifiedOf } from "./blog/modified.ts";
 import { lastModified } from "./blog/posts.ts";
-import { viennaMidnightIso } from "./blog/schedule.ts";
 import { type PostMeta } from "./blog/schema.ts";
 
 export interface SitemapEntry {
@@ -18,6 +24,31 @@ export interface SitemapInput {
   site: string;
 }
 
+const listingEntry = (
+  listing: undefined | { posts: readonly PostMeta[]; url: string }
+): SitemapEntry[] =>
+  listing === undefined
+    ? []
+    : [
+        {
+          images: [],
+          lastmod: lastModified(listing.posts),
+          loc: listing.url,
+        },
+      ];
+
+const listingEntries = (posts: readonly PostMeta[]): SitemapEntry[] => [
+  ...blogPageParams(posts).flatMap(({ n }) =>
+    listingEntry(blogListing(posts, Number(n)))
+  ),
+  ...tagParams(posts).flatMap(({ tag }) =>
+    listingEntry(tagListing(posts, tag, 1))
+  ),
+  ...tagPageParams(posts).flatMap(({ n, tag }) =>
+    listingEntry(tagListing(posts, tag, Number(n)))
+  ),
+];
+
 export const sitemapEntries = ({
   homeImages,
   homeModified,
@@ -33,7 +64,7 @@ export const sitemapEntries = ({
       : [
           {
             images: [],
-            lastmod: viennaMidnightIso(blogModified),
+            lastmod: blogModified,
             loc: `${site}/blog`,
           },
         ]),
@@ -41,10 +72,11 @@ export const sitemapEntries = ({
       const image = imageFor(post.slug);
       return {
         images: image === undefined ? [] : [image],
-        lastmod: viennaMidnightIso(modifiedOf(post)),
+        lastmod: modifiedOf(post),
         loc: post.url,
       };
     }),
+    ...listingEntries(posts),
   ];
 };
 

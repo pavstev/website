@@ -186,14 +186,17 @@ export const urlAction = (
   return status === 404 || status === 410 ? "removed" : "skip";
 };
 
-const frontmatterLines = (text: string): string[] => {
+export const frontmatterLines = (text: string): string[] => {
   const lines = text.replace(/^\u{FEFF}/u, "").split(/\r?\n/u);
   if (lines[0]?.trim() !== "---") return [];
   const end = lines.slice(1).findIndex((line) => line.trim() === "---");
   return end === -1 ? [] : lines.slice(1, end + 1);
 };
 
-const fieldValue = (lines: string[], name: string): string | undefined => {
+export const fieldValue = (
+  lines: string[],
+  name: string
+): string | undefined => {
   const prefix = `${name}:`;
   const line = lines.find((entry) => entry.startsWith(prefix));
   return line
@@ -203,17 +206,25 @@ const fieldValue = (lines: string[], name: string): string | undefined => {
     .replaceAll(/["']/gu, "");
 };
 
-const isoDate = /^\d{4}-\d{2}-\d{2}$/u;
+const instantPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/u;
+const legacyDay = /^\d{4}-\d{2}-\d{2}$/u;
+
+export const goLiveText = (date: string | undefined): string | undefined => {
+  if (date === undefined) return undefined;
+  if (instantPattern.test(date)) return date;
+  return legacyDay.test(date) ? `${date}T00:00:00+01:00` : undefined;
+};
 
 export const isPublicSource = (
   text: string,
   now: Date = new Date()
 ): boolean => {
   const lines = frontmatterLines(text);
-  const date = fieldValue(lines, "date");
-  const dated = date !== undefined && isoDate.test(date);
+  const date = goLiveText(fieldValue(lines, "date"));
   return (
-    dated && fieldValue(lines, "draft") !== "true" && !isScheduled(date, now)
+    date !== undefined &&
+    fieldValue(lines, "draft") !== "true" &&
+    !isScheduled(date, now)
   );
 };
 

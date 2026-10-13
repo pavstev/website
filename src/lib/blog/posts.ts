@@ -4,13 +4,16 @@ import { VFile } from "vfile";
 import { matter } from "vfile-matter";
 
 import { personalData } from "../personal.ts";
-import { builtInstant } from "./build-env.ts";
-import { modifiedOf } from "./modified.ts";
+import { type BuildEnv, builtInstant, fixturesEnabled } from "./build-env.ts";
+import { fixtureRoot } from "./fixture-posts.ts";
+import { modifiedOf, newestFirst } from "./modified.ts";
+import { readingOf } from "./reading.ts";
 import { isScheduled } from "./schedule.ts";
 import { frontmatterSchema, type PostMeta } from "./schema.ts";
 import { isSlug } from "./slug.ts";
 
 const blogDir = "content/blog";
+const reservedSlugs = new Set(["page", "tag"]);
 
 export interface PostSource {
   body: string;
@@ -24,41 +27,6 @@ interface DraftOptions {
   now?: Date;
 }
 
-const wordsPerMinute = 230;
-
-const fenceOpen = /^ {0,3}(`{3,}|~{3,})/;
-const jsxTagPattern = /<\/?[a-z][^<>]*>/gi;
-const wordPattern = /[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu;
-
-const withoutFences = (body: string): string => {
-  const kept: string[] = [];
-  let fence = "";
-  for (const line of body.split("\n")) {
-    const marker = fenceOpen.exec(line)?.[1] ?? "";
-    if (fence === "") {
-      if (marker === "") {
-        kept.push(line);
-      } else {
-        fence = marker;
-      }
-    } else if (marker.startsWith(fence) && line.trim() === marker) {
-      fence = "";
-    }
-  }
-  return kept.join("\n");
-};
-
-export const readingStats = (
-  body: string
-): { minutes: number; words: number } => {
-  const prose = withoutFences(body).replaceAll(jsxTagPattern, " ");
-  const words = prose.match(wordPattern)?.length ?? 0;
-  return {
-    minutes: Math.max(1, Math.round(words / wordsPerMinute)),
-    words,
-  };
-};
-
 const fail = (file: string, field: string, message: string): Error =>
   new Error(`${file}: ${field}: ${message}`);
 
@@ -66,6 +34,9 @@ const readSource = (root: string, slug: string): PostSource => {
   const relative = `${blogDir}/${slug}/index.mdx`;
   if (!isSlug(slug)) {
     throw fail(relative, "slug", "use lowercase letters, digits and dashes");
+  }
+  if (reservedSlugs.has(slug)) {
+    throw fail(relative, "slug", `"${slug}" is a blog route, pick another`);
   }
   const dir = path.join(root, blogDir, slug);
   const file = new VFile({
@@ -92,22 +63,22 @@ const readSource = (root: string, slug: string): PostSource => {
     );
   }
   const body = String(file.value);
-  const stats = readingStats(body);
+  const reading = readingOf(body);
   return {
     body,
     dir,
     meta: {
       ...parsed.data,
-      readingMinutes: stats.minutes,
+      readingMinutes: reading.minutes,
       slug,
       url: `${personalData.website}/blog/${slug}`,
-      wordCount: stats.words,
+      wordCount: reading.words,
     },
     slug,
   };
 };
 
-export const readPostSources = (root: string = process.cwd()): PostSource[] => {
+const readDir = (root: string): PostSource[] => {
   const base = path.join(root, blogDir);
   return existsSync(base)
     ? readdirSync(base, { withFileTypes: true })
@@ -120,8 +91,16 @@ export const readPostSources = (root: string = process.cwd()): PostSource[] => {
     : [];
 };
 
+export const readPostSources = (
+  root: string = process.cwd(),
+  env: BuildEnv = process.env
+): PostSource[] => [
+  ...readDir(root),
+  ...(fixturesEnabled(env) ? readDir(path.join(root, fixtureRoot)) : []),
+];
+
 const byDateThenTitle = (a: PostMeta, b: PostMeta): number =>
-  b.date.localeCompare(a.date) || a.title.localeCompare(b.title, "en");
+  newestFirst(a.date, b.date) || a.title.localeCompare(b.title, "en");
 
 export const visibleSources = (
   { drafts, now = builtInstant() ?? new Date() }: DraftOptions,
@@ -151,6 +130,4 @@ export const findPost = (
   visibleSources(options, root).find((source) => source.slug === slug);
 
 export const lastModified = (posts: readonly PostMeta[]): string | undefined =>
-  posts
-    .map((post) => modifiedOf(post))
-    .toSorted((a, b) => b.localeCompare(a))[0];
+  posts.map((post) => modifiedOf(post)).toSorted(newestFirst)[0];

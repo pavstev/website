@@ -53,6 +53,7 @@ const files = renderProfile({
     url: product.url,
   })),
   repos,
+  sky: readFileSync(path.join(root, "src", "profile", "header-sky.webp")),
   strings: en,
 });
 

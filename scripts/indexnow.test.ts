@@ -261,9 +261,28 @@ describe("isPublicSource", () => {
     assert.equal(isPublicSource(post(["date: 2026-10-14"]), now), false);
   });
 
-  it("counts the Vienna day", () => {
-    const late = new Date("2026-10-13T22:30:00Z");
+  it("compares the written instant with now", () => {
+    const date = "date: 2026-10-13T12:15:00+02:00";
+    assert.equal(
+      isPublicSource(post([date]), new Date("2026-10-13T10:14:59Z")),
+      false
+    );
+    assert.equal(
+      isPublicSource(post([date]), new Date("2026-10-13T10:15:00Z")),
+      true
+    );
+  });
+
+  it("reads an old date-only line from history as midnight +01:00", () => {
+    const late = new Date("2026-10-13T23:30:00Z");
     assert.equal(isPublicSource(post(["date: 2026-10-14"]), late), true);
+    assert.equal(
+      isPublicSource(
+        post(["date: 2026-10-14"]),
+        new Date("2026-10-13T22:59:59Z")
+      ),
+      false
+    );
   });
 
   it("reads quoted dates, comments and Windows line endings", () => {

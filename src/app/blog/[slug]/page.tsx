@@ -14,7 +14,6 @@ import { feedTypes, postShareImage } from "@/lib/blog/metadata";
 import { modifiedOf } from "@/lib/blog/modified";
 import { findPost, listPosts } from "@/lib/blog/posts";
 import { renderPost } from "@/lib/blog/render";
-import { viennaMidnightIso } from "@/lib/blog/schedule";
 import { personalData } from "@/lib/personal";
 import { postGraph, serializeJsonLd } from "@/lib/structured-data";
 
@@ -49,8 +48,8 @@ export const generateMetadata = async ({
       description: meta.description,
       images: [image],
       locale: "en_US",
-      modifiedTime: viennaMidnightIso(modifiedOf(meta)),
-      publishedTime: viennaMidnightIso(meta.date),
+      modifiedTime: modifiedOf(meta),
+      publishedTime: meta.date,
       siteName: personalData.name,
       tags: meta.tags,
       title,
@@ -98,7 +97,7 @@ export default async function PostPage({
         type="application/ld+json"
       />
       <main className="blog-main post-main" id="main-content">
-        <PostHeader post={source.meta} />
+        <PostHeader post={source.meta} toc={toc.length > 0} />
         <div className="post-page">
           <PostBody content={content} toc={toc} />
           <PostNav newer={posts[index - 1]} older={posts[index + 1]} />

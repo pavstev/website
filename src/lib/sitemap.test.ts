@@ -3,8 +3,8 @@ import path from "node:path";
 import { describe, it } from "node:test";
 
 import { modifiedOf } from "./blog/modified.ts";
+import { postMeta } from "./blog/post-fixture.ts";
 import { listPosts } from "./blog/posts.ts";
-import { viennaMidnightIso } from "./blog/schedule.ts";
 import { sitemapEntries, type SitemapEntry, sitemapXml } from "./sitemap.ts";
 
 const site = "https://stevanpavlovic.com";
@@ -24,21 +24,21 @@ const liveXml = `<?xml version="1.0" encoding="UTF-8"?>
 </url>
 <url>
 <loc>https://stevanpavlovic.com/blog</loc>
-<lastmod>2026-10-13</lastmod>
+<lastmod>2026-10-13T12:30:00+02:00</lastmod>
 </url>
 <url>
 <loc>https://stevanpavlovic.com/blog/how-i-built-this-website</loc>
 <image:image>
 <image:loc>https://stevanpavlovic.com/blog-media/how-i-built-this-website/share.8d8a8d22.png</image:loc>
 </image:image>
-<lastmod>2026-10-13</lastmod>
+<lastmod>2026-10-13T12:00:00+02:00</lastmod>
 </url>
 <url>
 <loc>https://stevanpavlovic.com/blog/how-i-use-ai</loc>
 <image:image>
 <image:loc>https://stevanpavlovic.com/blog-media/how-i-use-ai/share.fe974c7d.png</image:loc>
 </image:image>
-<lastmod>2026-10-13</lastmod>
+<lastmod>2026-10-13T12:30:00+02:00</lastmod>
 </url>
 </urlset>
 `;
@@ -160,7 +160,14 @@ describe("sitemapEntries", () => {
     });
     assert.deepEqual(
       entries.map((entry) => entry.loc),
-      [site, `${site}/blog`, `${site}/blog/alpha`, `${site}/blog/beta`]
+      [
+        site,
+        `${site}/blog`,
+        `${site}/blog/alpha`,
+        `${site}/blog/beta`,
+        `${site}/blog/tag/two`,
+        `${site}/blog/tag/one`,
+      ]
     );
     assert.equal(entries[0]?.lastmod, "2026-10-12T09:03:17.113Z");
     assert.deepEqual(entries[2]?.images, [
@@ -183,10 +190,34 @@ describe("sitemapEntries", () => {
   it("uses the newest post date for the blog index", () => {
     const posts = listPosts({ drafts: false }, valid);
     const entries = sitemapEntries({ ...input, posts });
-    const newest = posts
-      .map((post) => modifiedOf(post))
-      .toSorted((a, b) => b.localeCompare(a))[0];
-    assert.equal(entries[1]?.lastmod, newest && viennaMidnightIso(newest));
+    assert.equal(entries[1]?.lastmod, "2026-10-13T07:45:00+02:00");
+    assert.ok(posts.some((post) => modifiedOf(post) === entries[1]?.lastmod));
+  });
+
+  it("lists later pages and tag pages with their newest post as lastmod", () => {
+    const many = Array.from({ length: 21 }, (_, index) =>
+      postMeta({
+        date: `2025-01-${String(index + 1).padStart(2, "0")}T10:00:00+01:00`,
+        slug: `p-${String(index)}`,
+        tags: index < 11 ? ["Next.js", "AI"] : ["AI"],
+        url: `${site}/blog/p-${String(index)}`,
+      })
+    ).toReversed();
+    const entries = sitemapEntries({ ...input, posts: many });
+    const listings = entries.slice(2 + many.length);
+    assert.deepEqual(
+      listings.map((entry) => [entry.loc, entry.lastmod]),
+      [
+        [`${site}/blog/page/2`, "2025-01-11T10:00:00+01:00"],
+        [`${site}/blog/page/3`, "2025-01-01T10:00:00+01:00"],
+        [`${site}/blog/tag/ai`, "2025-01-21T10:00:00+01:00"],
+        [`${site}/blog/tag/next-js`, "2025-01-11T10:00:00+01:00"],
+        [`${site}/blog/tag/ai/page/2`, "2025-01-11T10:00:00+01:00"],
+        [`${site}/blog/tag/ai/page/3`, "2025-01-01T10:00:00+01:00"],
+        [`${site}/blog/tag/next-js/page/2`, "2025-01-01T10:00:00+01:00"],
+      ]
+    );
+    assert.ok(entries.every((entry) => !entry.loc.endsWith("/page/1")));
   });
 
   it("omits the blog index when there are no posts", () => {

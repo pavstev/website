@@ -11,7 +11,7 @@ interface BlogImageProps {
 }
 
 const sizes =
-  "(min-width: 48em) min(46rem, calc(100vw - 4rem)), min(43.5rem, calc(100vw - 2.5rem))";
+  "(min-width: 48em) min(43rem, calc(100vw - 4rem)), min(43rem, calc(100vw - 2.5rem))";
 
 const srcSet = (urls: string[], widths: number[]): string =>
   urls.map((url, index) => `${url} ${String(widths[index] ?? 0)}w`).join(", ");

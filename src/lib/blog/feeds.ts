@@ -4,7 +4,6 @@ import { shareImageUrl } from "./media.ts";
 import { modifiedOf } from "./modified.ts";
 import { toFeedHtml } from "./plain.ts";
 import { lastModified, listSources } from "./posts.ts";
-import { viennaMidnightIso } from "./schedule.ts";
 import { type PostMeta } from "./schema.ts";
 
 export interface FeedPost {
@@ -71,13 +70,10 @@ export const escapeXml = (text: string): string =>
 const cdata = (text: string): string =>
   `<![CDATA[${xmlSafe(text).replaceAll("]]>", "]]]]><![CDATA[>")}]]>`;
 
-const numericZone = (day: string): string =>
-  viennaMidnightIso(day).slice(-6).replace(":", "");
-
-const rfc822 = (day: string): string =>
-  new Date(`${day}T00:00:00Z`)
+export const rfc822 = (iso: string): string =>
+  new Date(`${iso.slice(0, 19)}Z`)
     .toUTCString()
-    .replace(/GMT$/u, () => numericZone(day));
+    .replace(/GMT$/u, () => iso.slice(19).replace(":", ""));
 
 const newest = (posts: readonly FeedPost[]): string | undefined =>
   lastModified(posts.map((post) => post.meta));
@@ -127,8 +123,8 @@ export const jsonFeed = (
   items: posts.map(({ html, image, markdownUrl, meta }) => ({
     _markdown_url: markdownUrl,
     content_html: html,
-    date_modified: viennaMidnightIso(modifiedOf(meta)),
-    date_published: viennaMidnightIso(meta.date),
+    date_modified: modifiedOf(meta),
+    date_published: meta.date,
     id: meta.url,
     ...(image !== undefined && { image }),
     summary: meta.description,

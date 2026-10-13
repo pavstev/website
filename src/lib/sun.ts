@@ -1,4 +1,4 @@
-const deg = Math.PI / 180;
+import { deg } from "./math.ts";
 const msPerDay = 86_400_000;
 const unixEpochJulianDay = 2_440_587.5;
 const j2000JulianDay = 2_451_545;

@@ -17,6 +17,7 @@ export interface ProfileInput {
   personal: ProfilePerson;
   products: ProfileProduct[];
   repos: readonly Repo[];
+  sky: Uint8Array;
   strings: ProfileStrings;
 }
 

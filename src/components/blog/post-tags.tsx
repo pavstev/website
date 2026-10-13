@@ -1,5 +1,8 @@
 import type { ReactElement } from "react";
 
+import Link from "next/link";
+
+import { tagHref } from "@/lib/blog/tags";
 import { en } from "@/lib/i18n";
 
 interface PostTagsProps {
@@ -19,7 +22,13 @@ export const PostTags = ({
   >
     {tags.map((tag) => (
       <li className="post-tag type-chip" key={tag}>
-        {tag}
+        <Link
+          className="post-tag-link focus-ring"
+          href={tagHref(tag)}
+          prefetch={false}
+        >
+          {tag}
+        </Link>
       </li>
     ))}
   </ul>

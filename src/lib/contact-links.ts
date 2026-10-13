@@ -128,15 +128,20 @@ export const initContactLinks = (list: HTMLElement): (() => void) => {
       items.push({ angle: 315, center: null, link, root, tip });
     }
   }
-  const targets: AimTarget[] = items;
+  const card = list.closest("[data-card]");
+  const targets: AimTarget[] = [
+    ...items,
+    ...[...(card?.querySelectorAll<HTMLElement>(".section-link") ?? [])].map(
+      (link) => ({ angle: 315, center: null, link })
+    ),
+  ];
   const avoid: Obstacle[] = [
     ...[...row.querySelectorAll(":is(.download-pill, .contact-link)")].map(
       (element) => ({ element, weight: 2 })
     ),
     ...[
-      ...(list
-        .closest("[data-card]")
-        ?.querySelectorAll(":scope > [data-blur-in], .repo-heading") ?? []),
+      ...(card?.querySelectorAll(":scope > [data-blur-in], .section-link") ??
+        []),
     ].map((element) => ({ element, weight: 1 })),
   ];
   const { dispose, on } = createListeners({ passive: true });

@@ -120,7 +120,7 @@ const languagesQuery = `query ($owner: String!, $name: String!) {
 
 type RawRepo = z.infer<typeof RawRepoSchema>;
 
-const maxRepos = 4;
+const maxRepos = 12;
 const maxTopics = 6;
 const minLanguageShare = 0.03;
 const api = "https://api.github.com";

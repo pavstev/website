@@ -2,10 +2,14 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  currentWeather,
   fallbackSky,
   parseViennaWeather,
+  publishWeather,
   readSkyWeather,
+  readViennaWeather,
   skyFromWeather,
+  subscribeWeather,
   type ViennaWeather,
   weatherOverride,
   weatherPresets,
@@ -179,6 +183,16 @@ describe("parseViennaWeather", () => {
     assert.deepEqual(parseViennaWeather({ ...live, extra: 1 }), live);
   });
 
+  it("keeps a finite temperature and drops a broken one", () => {
+    assert.equal(
+      parseViennaWeather({ ...live, temperature: 14.3 })?.temperature,
+      14.3
+    );
+    const broken = parseViennaWeather({ ...live, temperature: "14" });
+    assert.ok(broken);
+    assert.equal(Object.hasOwn(broken, "temperature"), false);
+  });
+
   it("rejects bad input", () => {
     assert.equal(parseViennaWeather(null), undefined);
     assert.equal(parseViennaWeather("weather"), undefined);
@@ -229,5 +243,28 @@ describe("readSkyWeather", () => {
     assert.equal(readSkyWeather({ weather: null }), undefined);
     assert.equal(readSkyWeather("weather"), undefined);
     assert.equal(readSkyWeather({ weather: { code: 2 } }), undefined);
+  });
+});
+
+describe("readViennaWeather", () => {
+  it("reads the weather inside a /weather answer", () => {
+    assert.deepEqual(readViennaWeather({ weather: live }), live);
+    assert.equal(readViennaWeather({ weather: null }), undefined);
+    assert.equal(readViennaWeather(null), undefined);
+  });
+});
+
+describe("publishWeather", () => {
+  it("keeps the latest answer and tells subscribers", () => {
+    let calls = 0;
+    const stop = subscribeWeather(() => {
+      calls += 1;
+    });
+    publishWeather(live);
+    assert.equal(currentWeather(), live);
+    stop();
+    publishWeather(withWeather({ code: 3 }));
+    assert.equal(calls, 1);
+    assert.equal(currentWeather()?.code, 3);
   });
 });

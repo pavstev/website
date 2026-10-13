@@ -7,7 +7,6 @@ import {
   findPost,
   lastModified,
   listPosts,
-  readingStats,
   readPostSources,
   visibleSources,
 } from "./posts.ts";
@@ -46,26 +45,25 @@ const slugs = (options: { drafts: boolean; now: Date }): string[] =>
   listPosts(options, valid).map((post) => post.slug);
 
 describe("scheduled posts", () => {
-  it("hides a post dated after the build day", () => {
-    const now = new Date("2026-10-11T10:00:00Z");
+  it("hides every post before its exact go-live instant", () => {
+    const now = new Date("2026-10-12T05:59:59Z");
     assert.deepEqual(slugs({ drafts: false, now }), []);
     assert.equal(findPost("alpha", { drafts: false, now }, valid), undefined);
     assert.equal(visibleSources({ drafts: false, now }, valid).length, 0);
   });
 
-  it("shows a post dated on the build day", () => {
-    const now = new Date("2026-10-12T10:00:00Z");
-    assert.deepEqual(slugs({ drafts: false, now }), ["alpha", "beta"]);
-  });
-
-  it("counts the Vienna day when the UTC day is still the day before", () => {
+  it("shows a post from its instant on, minute by minute", () => {
     assert.deepEqual(
-      slugs({ drafts: false, now: new Date("2026-10-11T22:30:00Z") }),
-      ["alpha", "beta"]
+      slugs({ drafts: false, now: new Date("2026-10-12T06:00:00Z") }),
+      ["beta"]
     );
     assert.deepEqual(
-      slugs({ drafts: false, now: new Date("2026-10-11T21:30:00Z") }),
-      []
+      slugs({ drafts: false, now: new Date("2026-10-12T16:14:59Z") }),
+      ["beta"]
+    );
+    assert.deepEqual(
+      slugs({ drafts: false, now: new Date("2026-10-12T16:15:00Z") }),
+      ["alpha", "beta"]
     );
   });
 
@@ -84,7 +82,7 @@ describe("the build instant", () => {
         listPosts({ drafts: false }, valid).map((post) => post.slug),
         []
       );
-      process.env["BLOG_BUILT_AT"] = "2026-10-12T10:00:00Z";
+      process.env["BLOG_BUILT_AT"] = "2026-10-12T17:00:00Z";
       assert.deepEqual(
         listPosts({ drafts: false }, valid).map((post) => post.slug),
         ["alpha", "beta"]
@@ -115,6 +113,15 @@ describe("readPostSources", () => {
     assert.equal(beta?.dir, path.join(valid, "content/blog/beta"));
   });
 
+  it("leaves the test posts out unless BLOG_FIXTURES=1 in development", () => {
+    assert.deepEqual(
+      readPostSources(valid, { BLOG_FIXTURES: "1", NODE_ENV: "production" })
+        .length,
+      3
+    );
+    assert.equal(readPostSources(valid, {}).length, 3);
+  });
+
   it("names the file and the field when the frontmatter is wrong", () => {
     assert.throws(
       () => readPostSources(broken),
@@ -141,32 +148,6 @@ describe("visibleSources", () => {
   });
 });
 
-describe("readingStats", () => {
-  it("ignores fenced code and JSX tags", () => {
-    const code = Array.from(
-      { length: 300 },
-      (_, index) => `word${String(index)}`
-    ).join(" ");
-    const body = [
-      "One two three four five.",
-      "",
-      "```ts",
-      code,
-      "```",
-      "",
-      '<Figure src="./a.png" alt="ignored words here" caption="also ignored" />',
-      "",
-      "<Note>six seven</Note>",
-    ].join("\n");
-    assert.deepEqual(readingStats(body), { minutes: 1, words: 7 });
-  });
-
-  it("returns at least one minute and rounds at 230 words a minute", () => {
-    assert.equal(readingStats("").minutes, 1);
-    assert.equal(readingStats("word ".repeat(690)).minutes, 3);
-  });
-});
-
 describe("build env", () => {
   it("shows drafts only in development or when asked", () => {
     assert.equal(showDrafts({}), false);
@@ -184,15 +165,30 @@ describe("lastModified", () => {
     const [first, second] = posts;
     assert.ok(first !== undefined && second !== undefined);
     assert.equal(
-      lastModified([first, { ...second, updated: "2030-01-02" }]),
-      "2030-01-02"
+      lastModified([
+        first,
+        { ...second, updated: "2030-01-02T09:00:00+01:00" },
+      ]),
+      "2030-01-02T09:00:00+01:00"
     );
     assert.equal(
       lastModified([
-        { ...first, date: "2020-01-01" },
-        { ...second, date: "2021-05-05", updated: undefined },
+        { ...first, date: "2020-01-01T09:00:00+01:00" },
+        { ...second, date: "2021-05-05T09:00:00+02:00", updated: undefined },
       ]),
-      "2021-05-05"
+      "2021-05-05T09:00:00+02:00"
+    );
+  });
+
+  it("compares instants, not the written text", () => {
+    const [first, second] = posts;
+    assert.ok(first !== undefined && second !== undefined);
+    assert.equal(
+      lastModified([
+        { ...first, date: "2026-10-13T09:00:00-05:00", updated: undefined },
+        { ...second, date: "2026-10-13T12:00:00+02:00", updated: undefined },
+      ]),
+      "2026-10-13T09:00:00-05:00"
     );
   });
 

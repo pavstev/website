@@ -17,6 +17,7 @@ const upstreamSample = {
     rain: 0,
     showers: 0,
     snowfall: 0,
+    temperature_2m: 14.3,
     time: "2026-10-12T16:30",
     visibility: 44_520,
     weather_code: 2,
@@ -34,6 +35,7 @@ const viennaSample = {
   rain: 0,
   showers: 0,
   snow: 0,
+  temperature: 14.3,
   time: "2026-10-12T16:30",
   visibility: 44_520,
   windDirection: 342,
@@ -136,6 +138,24 @@ describe("handleWeather", () => {
     assert.deepEqual(await response.json(), { weather: viennaSample });
     assert.equal(fetches.length, 0);
     assert.equal(stored.length, 0);
+  });
+
+  it("asks Open-Meteo for the temperature", async () => {
+    const { deps, fetches } = harness(ok);
+    await handleWeather(get(), deps);
+
+    assert.match(fetches[0]?.url ?? "", /current=temperature_2m,/);
+  });
+
+  it("serves an older cached answer without a temperature", async () => {
+    const { temperature, ...older } = viennaSample;
+    assert.equal(temperature, 14.3);
+    const cached = Response.json({ weather: older });
+    const { deps, fetches } = harness(ok, cached);
+    const response = await handleWeather(get(), deps);
+
+    assert.deepEqual(await response.json(), { weather: older });
+    assert.equal(fetches.length, 0);
   });
 
   it("serves a cached failure without calling upstream", async () => {

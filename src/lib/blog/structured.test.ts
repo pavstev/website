@@ -72,14 +72,14 @@ describe("blogGraph", () => {
           "BlogPosting",
           "One",
           "https://stevanpavlovic.com/blog/one",
-          "2026-10-13T00:00:00+02:00",
+          "2026-10-13T09:30:00+02:00",
         ],
         [
           "https://stevanpavlovic.com/blog/two#post",
           "BlogPosting",
           "Two",
           "https://stevanpavlovic.com/blog/two",
-          "2026-10-13T00:00:00+02:00",
+          "2026-10-13T09:30:00+02:00",
         ],
       ]
     );
@@ -134,13 +134,15 @@ describe("postGraph", () => {
 
   it("describes the post as a BlogPosting", () => {
     const [node] = nodes.parse(
-      postGraph(post("one", "One", "2026-10-20"), image)["@graph"]
+      postGraph(post("one", "One", "2026-10-20T08:00:00+02:00"), image)[
+        "@graph"
+      ]
     );
     assert.equal(node?.["@type"], "BlogPosting");
     assert.equal(node?.["@id"], "https://stevanpavlovic.com/blog/one#post");
     assert.equal(node?.["headline"], "One");
-    assert.equal(node?.["datePublished"], "2026-10-13T00:00:00+02:00");
-    assert.equal(node?.["dateModified"], "2026-10-20T00:00:00+02:00");
+    assert.equal(node?.["datePublished"], "2026-10-13T09:30:00+02:00");
+    assert.equal(node?.["dateModified"], "2026-10-20T08:00:00+02:00");
     assert.equal(node?.["description"], "About One.");
     assert.equal(node?.["url"], "https://stevanpavlovic.com/blog/one");
     assert.deepEqual(node?.["author"], namedAuthor);
@@ -164,6 +166,7 @@ describe("postGraph", () => {
     );
     assert.deepEqual(node?.["keywords"], ["WebGL", "Next.js"]);
     assert.equal(node?.["wordCount"], 2300);
+    assert.equal(node?.["timeRequired"], "PT10M");
     assert.equal(node?.["inLanguage"], "en");
   });
 
@@ -189,7 +192,7 @@ describe("postGraph", () => {
 
   it("uses the publish date as the modified date without an update", () => {
     const [node] = nodes.parse(postGraph(post("one", "One"), image)["@graph"]);
-    assert.equal(node?.["dateModified"], "2026-10-13T00:00:00+02:00");
+    assert.equal(node?.["dateModified"], "2026-10-13T09:30:00+02:00");
   });
 
   it("lists the share image first, then the 16x9, 4x3 and 1x1 crops", () => {

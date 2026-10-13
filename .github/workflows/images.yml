@@ -15,10 +15,17 @@ on:
       - src/lib/math.ts
       - src/lib/personal.ts
       - src/lib/sky-clock.ts
+      - src/lib/sky-ephemeris.ts
+      - src/lib/sky-light.ts
+      - src/lib/sky-path.ts
       - src/lib/sky-rays.ts
+      - src/lib/sky-scene.ts
       - src/lib/sky-shader.ts
+      - src/lib/skyline.ts
       - src/lib/theme.ts
       - src/lib/weather.ts
+      - src/profile/header.ts
+      - src/profile/text.ts
   workflow_dispatch:
 
 permissions:
@@ -51,26 +58,27 @@ jobs:
         id: push
         if: github.ref == 'refs/heads/main'
         run: |
-          if [ -z "$(git status --porcelain public/og-image.jpg public/linkedin-cover.png)" ]; then
+          if [ -z "$(git status --porcelain public/og-image.jpg public/linkedin-cover.png src/profile/header-sky.webp)" ]; then
             echo "Nothing changed. The images are already up to date." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/og-image.jpg public/linkedin-cover.png
+          git add public/og-image.jpg public/linkedin-cover.png src/profile/header-sky.webp
           git commit -m "chore(images): refresh the social images"
           git pull --rebase origin main
           git push origin HEAD:main
           echo "pushed=true" >> "$GITHUB_OUTPUT"
           echo "Pushed the new images." >> "$GITHUB_STEP_SUMMARY"
-      - name: Tell the LinkedIn sync
+      - name: Tell the LinkedIn and profile syncs
         if: steps.push.outputs.pushed == 'true'
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run linkedin-sync.yml --ref main
-          echo "Started the LinkedIn sync." >> "$GITHUB_STEP_SUMMARY"
+          gh workflow run profile.yml --ref main
+          echo "Started the LinkedIn sync and the profile sync." >> "$GITHUB_STEP_SUMMARY"
       - name: Report the failure
         if: failure() && github.ref == 'refs/heads/main'
         env:

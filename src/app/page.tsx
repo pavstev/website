@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
 
-import { BlogButton } from "@/components/blog-button";
-import { CardStrips } from "@/components/card-strips";
+import { CardSections } from "@/components/card-sections";
 import { ContactLinks } from "@/components/contact-links";
 import { DownloadButton } from "@/components/download-button";
 import { EffectsInit } from "@/components/effects-init";
@@ -12,8 +11,8 @@ import { Profile } from "@/components/profile";
 import { ResumeTip } from "@/components/resume-tip";
 import { SiteFooter } from "@/components/site-footer";
 import { SpaceBackground } from "@/components/space-background";
-import { pageRobots, showDrafts } from "@/lib/blog/build-env";
-import { listPosts } from "@/lib/blog/posts";
+import { WeatherBadge } from "@/components/weather-badge";
+import { pageRobots } from "@/lib/blog/build-env";
 import { getCv } from "@/lib/cv";
 import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
@@ -60,7 +59,7 @@ export default async function Page(): Promise<ReactElement> {
         >
           <Profile />
           <div
-            className="fade-up contact-row relative z-1 mt-(--card-gap-actions) flex w-full flex-wrap items-center justify-center gap-3 delay-2"
+            className="fade-up contact-row relative z-2 mt-(--card-gap-actions) flex w-full flex-wrap items-center justify-center gap-3 delay-2"
             data-proximity=""
           >
             <DownloadButton describedBy={resumeDetailId}>
@@ -68,14 +67,12 @@ export default async function Page(): Promise<ReactElement> {
             </DownloadButton>
             <div className="contact-group flex items-center justify-center gap-3">
               <ContactLinks contact={contact} />
-              <BlogButton count={listPosts({ drafts: showDrafts() }).length} />
             </div>
           </div>
-          <CardStrips products={products} repos={repos} />
-          <SiteFooter
-            className="card-footer fade-up mt-(--card-gap-footer) delay-4"
-            weatherCredit
-          />
+          <CardSections products={products} repos={repos} />
+          <SiteFooter className="card-footer fade-up mt-(--card-gap-footer) delay-4">
+            <WeatherBadge />
+          </SiteFooter>
         </div>
         <EffectsInit />
       </main>

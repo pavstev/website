@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
+
 import { en } from "../i18n.ts";
 import { personalData } from "../personal.ts";
+import { pageRobots } from "./build-env.ts";
 import { readMedia, shareKey } from "./media.ts";
 import { type PostMeta } from "./schema.ts";
 
@@ -40,3 +43,35 @@ export const postShareImage = (post: PostMeta): ShareImage => {
         width: entry.width,
       };
 };
+
+interface ListMetadata {
+  description: string;
+  title: string;
+  url: string;
+}
+
+export const listMetadata = ({
+  description,
+  title,
+  url,
+}: ListMetadata): Metadata => ({
+  alternates: { canonical: url, types: feedTypes },
+  description,
+  openGraph: {
+    description,
+    images: [shareImage],
+    locale: "en_US",
+    siteName: personalData.name,
+    title,
+    type: "website",
+    url,
+  },
+  robots: pageRobots,
+  title,
+  twitter: {
+    card: "summary_large_image",
+    description,
+    images: [{ alt: shareImage.alt, url: shareImage.url }],
+    title,
+  },
+});

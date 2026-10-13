@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { describe, it } from "node:test";
 
-import { jsonFeed, loadFeedPosts, rssXml } from "./feeds.ts";
+import { jsonFeed, loadFeedPosts, rfc822, rssXml } from "./feeds.ts";
 import { postMeta } from "./post-fixture.ts";
 import { type PostMeta } from "./schema.ts";
 
@@ -11,7 +11,7 @@ const valid = path.join(import.meta.dirname, "fixtures", "valid");
 
 const meta = (over: Partial<PostMeta>): PostMeta =>
   postMeta({
-    date: "2026-10-12",
+    date: "2026-10-12T09:05:00+02:00",
     description: "A short description.",
     slug: "one",
     tags: ["Alpha"],
@@ -28,7 +28,7 @@ const posts = [
       slug: "two",
       tags: ["Beta", "Gamma"],
       title: "A & B <C>",
-      updated: "2026-10-14",
+      updated: "2026-10-14T18:30:00+02:00",
       url: `${site}/blog/two`,
     }),
   },
@@ -79,7 +79,7 @@ describe("rssXml", () => {
   it("takes lastBuildDate from the newest updated or date, not the clock", () => {
     assert.match(
       xml,
-      /<lastBuildDate>Wed, 14 Oct 2026 00:00:00 \+0200<\/lastBuildDate>/
+      /<lastBuildDate>Wed, 14 Oct 2026 18:30:00 \+0200<\/lastBuildDate>/
     );
   });
 
@@ -88,7 +88,7 @@ describe("rssXml", () => {
       xml,
       /<guid isPermaLink="true">https:\/\/stevanpavlovic\.com\/blog\/two<\/guid>/
     );
-    assert.match(xml, /<pubDate>Mon, 12 Oct 2026 00:00:00 \+0200<\/pubDate>/);
+    assert.match(xml, /<pubDate>Mon, 12 Oct 2026 09:05:00 \+0200<\/pubDate>/);
     assert.match(xml, /<category>Beta<\/category>/);
     assert.match(xml, /<category>Gamma<\/category>/);
     assert.match(xml, /<description>A short description\.<\/description>/);
@@ -130,6 +130,19 @@ describe("rssXml", () => {
   });
 });
 
+describe("rfc822", () => {
+  it("keeps the written wall time and offset", () => {
+    assert.equal(
+      rfc822("2026-12-01T23:30:00+01:00"),
+      "Tue, 01 Dec 2026 23:30:00 +0100"
+    );
+    assert.equal(
+      rfc822("2026-10-13T09:30:00-05:00"),
+      "Tue, 13 Oct 2026 09:30:00 -0500"
+    );
+  });
+});
+
 describe("jsonFeed", () => {
   const feed = jsonFeed(
     posts.map((post) => ({ ...post, markdownUrl: `${post.meta.url}.md` })),
@@ -164,9 +177,9 @@ describe("jsonFeed", () => {
 
   it("carries date_modified and the markdown URL", () => {
     const [first, second] = feed.items;
-    assert.equal(first?.date_modified, "2026-10-14T00:00:00+02:00");
-    assert.equal(first?.date_published, "2026-10-12T00:00:00+02:00");
-    assert.equal(second?.date_modified, "2026-10-12T00:00:00+02:00");
+    assert.equal(first?.date_modified, "2026-10-14T18:30:00+02:00");
+    assert.equal(first?.date_published, "2026-10-12T09:05:00+02:00");
+    assert.equal(second?.date_modified, "2026-10-12T09:05:00+02:00");
     assert.equal(first?._markdown_url, `${site}/blog/two.md`);
     assert.deepEqual(first?.tags, ["Beta", "Gamma"]);
     assert.equal(first?.id, `${site}/blog/two`);

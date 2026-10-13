@@ -1,34 +1,41 @@
 import * as z from "zod";
 
-import { skyPhaseNames } from "../sky-clock.ts";
-import { weatherStates } from "../weather.ts";
-
 const nonEmpty = z.string().trim().min(1);
 
-const dateMessage =
-  "Use a real date as YYYY-MM-DD, for example 2026-10-20 (a post goes live at 00:00 Vienna time on that day)";
+const instantPattern =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-](?:0\d|1[0-4]):[0-5]\d$/u;
 
-const updatedMessage = "Use a real date as YYYY-MM-DD, for example 2026-10-20";
+const instantMessage =
+  "Use a full date and time with its offset, for example 2026-10-13T09:30:00+02:00 (a date alone is not enough)";
 
-const day = (error: string): z.ZodISODate => z.iso.date({ error });
+const instant = (): z.ZodString =>
+  z
+    .string({ error: instantMessage })
+    .regex(instantPattern, { error: instantMessage })
+    .refine(
+      (text) => z.iso.datetime({ offset: true }).safeParse(text).success,
+      {
+        error: instantMessage,
+      }
+    );
+
+export const instantMs = (iso: string): number => new Date(iso).getTime();
 
 export const frontmatterSchema = z
   .strictObject({
-    date: day(dateMessage),
+    date: instant(),
     description: nonEmpty.max(160),
     draft: z.boolean().default(false),
-    sky: z.strictObject({
-      phase: z.enum(skyPhaseNames),
-      weather: z.enum(weatherStates),
-    }),
     tags: z.array(nonEmpty).min(1).max(5),
     title: nonEmpty,
-    updated: day(updatedMessage).optional(),
+    updated: instant().optional(),
   })
-  .refine((meta) => meta.updated === undefined || meta.updated >= meta.date, {
-    error: "updated must not be before date",
-    path: ["updated"],
-  });
+  .refine(
+    (meta) =>
+      meta.updated === undefined ||
+      instantMs(meta.updated) >= instantMs(meta.date),
+    { error: "updated must not be before date", path: ["updated"] }
+  );
 
 export interface PostMeta extends Frontmatter {
   readingMinutes: number;

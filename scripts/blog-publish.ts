@@ -1,11 +1,14 @@
-import { appendFileSync } from "node:fs";
+import { appendFileSync, existsSync, readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
-import { readPostSources } from "../src/lib/blog/posts.ts";
 import { goLiveAt } from "../src/lib/blog/schedule.ts";
 import {
   answerStatus,
+  fieldValue,
+  frontmatterLines,
+  goLiveText,
   origin,
   parseBuiltAt,
   postIndexNow,
@@ -14,9 +17,10 @@ import {
 } from "./indexnow.ts";
 
 const minuteMs = 60_000;
-const unknownWindowMs = 120 * minuteMs;
-const retryWindowMs = 120 * minuteMs;
-const backOffAfterMs = 180 * minuteMs;
+const unknownWindowMs = 30 * minuteMs;
+const retryWindowMs = 30 * minuteMs;
+const backOffAfterMs = 60 * minuteMs;
+const blogDir = "content/blog";
 const pollIntervalMs = 20_000;
 const pollLimitMs = 15 * minuteMs;
 const hookTimeoutMs = 30_000;
@@ -88,6 +92,28 @@ export const recentlyLive = (
     .toSorted((a, b) => a.localeCompare(b));
 };
 
+export const timingOf = (
+  slug: string,
+  text: string
+): PostTiming | undefined => {
+  const lines = frontmatterLines(text);
+  const date = goLiveText(fieldValue(lines, "date"));
+  return date === undefined
+    ? undefined
+    : { date, draft: fieldValue(lines, "draft") === "true", slug };
+};
+
+const readTimings = (root: string = process.cwd()): PostTiming[] => {
+  const base = path.join(root, blogDir);
+  if (!existsSync(base)) return [];
+  return readdirSync(base, { withFileTypes: true }).flatMap((entry) => {
+    const file = path.join(base, entry.name, "index.mdx");
+    if (!entry.isDirectory() || !existsSync(file)) return [];
+    const timing = timingOf(entry.name, readFileSync(file, "utf8"));
+    return timing === undefined ? [] : [timing];
+  });
+};
+
 export const shouldBackOff = (
   failingSince: Date | undefined,
   now: Date
@@ -129,7 +155,7 @@ export const runPublish = async (
   const due = duePosts(deps.posts(), builtAt, now);
   const state =
     builtAt === undefined
-      ? "the live build time is unknown, so the last two hours count"
+      ? "the live build time is unknown, so the last 30 minutes count"
       : `live build ${builtAt.toISOString()}`;
   if (due.length === 0) {
     const idle = `No scheduled post is due (${state}, checked ${now.toISOString()}).`;
@@ -146,14 +172,14 @@ export const runPublish = async (
     if (options.dryRun) {
       deps.log([
         idle,
-        `Dry run: would tell IndexNow again about ${slugs.join(", ")}, which went live in the last two hours.`,
+        `Dry run: would tell IndexNow again about ${slugs.join(", ")}, which went live in the last 30 minutes.`,
       ]);
       return { kind: "idle" };
     }
     const status = await deps.indexNow(urls);
     deps.log([
       idle,
-      `Told IndexNow again about ${slugs.join(", ")}, live in the last two hours (${String(status)}):`,
+      `Told IndexNow again about ${slugs.join(", ")}, live in the last 30 minutes (${String(status)}):`,
       ...urls.map((url) => `- ${url}`),
     ]);
     return { kind: "retried", slugs, urls };
@@ -241,12 +267,7 @@ const run = async (): Promise<void> => {
       log: summarize,
       now: () => new Date(),
       postHook: () => callHook(hook),
-      posts: () =>
-        readPostSources().map(({ meta }) => ({
-          date: meta.date,
-          draft: meta.draft,
-          slug: meta.slug,
-        })),
+      posts: () => readTimings(),
       sleep: (ms) => sleep(ms),
       status: answerStatus,
     },

@@ -1,19 +1,18 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
-import { weatherSourceUrl } from "@/lib/weather";
 
 interface SiteFooterProps {
+  children?: ReactNode;
   className: string;
   rss?: boolean;
-  weatherCredit?: boolean;
 }
 
 export const SiteFooter = ({
+  children,
   className,
   rss = false,
-  weatherCredit = false,
 }: SiteFooterProps): ReactElement => {
   const year = new Date().getFullYear();
   return (
@@ -32,15 +31,13 @@ export const SiteFooter = ({
             </a>
           </>
         )}
+        {children ? (
+          <>
+            <br />
+            {children}
+          </>
+        ) : null}
       </p>
-      {weatherCredit && (
-        <p className="weather-credit text-sky">
-          {en.weather.credit}{" "}
-          <a className="focus-ring" href={weatherSourceUrl}>
-            {en.weather.source}
-          </a>
-        </p>
-      )}
     </div>
   );
 };

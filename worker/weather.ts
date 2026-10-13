@@ -2,7 +2,7 @@ import { parseViennaWeather, type ViennaWeather } from "../src/lib/weather.ts";
 import { failure, withSecurityHeaders } from "./http.ts";
 
 const upstreamUrl =
-  "https://api.open-meteo.com/v1/forecast?latitude=48.21&longitude=16.37&current=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,rain,showers,snowfall,visibility,wind_speed_10m,wind_direction_10m&timezone=Europe%2FVienna";
+  "https://api.open-meteo.com/v1/forecast?latitude=48.21&longitude=16.37&current=temperature_2m,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,rain,showers,snowfall,visibility,wind_speed_10m,wind_direction_10m&timezone=Europe%2FVienna";
 const upstreamTimeoutMs = 4000;
 const browserCache = "public, max-age=300";
 const edgeCache = "public, max-age=900";
@@ -38,6 +38,7 @@ const fromOpenMeteo = (value: unknown): undefined | ViennaWeather => {
         rain: current["rain"],
         showers: current["showers"],
         snow: current["snowfall"],
+        temperature: current["temperature_2m"],
         time: current["time"],
         visibility: current["visibility"],
         windDirection: current["wind_direction_10m"],

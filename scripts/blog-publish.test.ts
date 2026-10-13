@@ -11,6 +11,7 @@ import {
   recentlyLive,
   runPublish,
   shouldBackOff,
+  timingOf,
 } from "./blog-publish.ts";
 
 const post = (slug: string, date: string, draft = false): PostTiming => ({
@@ -22,14 +23,14 @@ const post = (slug: string, date: string, draft = false): PostTiming => ({
 describe("duePosts", () => {
   const built = new Date("2026-10-13T12:03:56.892Z");
 
-  it("takes posts whose Vienna midnight is after the live build and not after now", () => {
+  it("takes posts whose go-live instant is after the live build and not after now", () => {
     const now = new Date("2026-10-14T08:07:00Z");
     assert.deepEqual(
       duePosts(
         [
-          post("old", "2026-10-13"),
-          post("today", "2026-10-14"),
-          post("later", "2026-10-15"),
+          post("old", "2026-10-13T00:00:00+02:00"),
+          post("today", "2026-10-14T00:00:00+02:00"),
+          post("later", "2026-10-15T00:00:00+02:00"),
         ],
         built,
         now
@@ -42,7 +43,7 @@ describe("duePosts", () => {
     const live = new Date("2026-10-13T22:00:00Z");
     assert.deepEqual(
       duePosts(
-        [post("a", "2026-10-14")],
+        [post("a", "2026-10-14T00:00:00+02:00")],
         live,
         new Date("2026-10-14T05:00:00Z")
       ),
@@ -50,7 +51,7 @@ describe("duePosts", () => {
     );
     assert.deepEqual(
       duePosts(
-        [post("a", "2026-10-14")],
+        [post("a", "2026-10-14T00:00:00+02:00")],
         new Date("2026-10-13T21:59:59Z"),
         live
       ),
@@ -61,7 +62,7 @@ describe("duePosts", () => {
   it("skips drafts", () => {
     assert.deepEqual(
       duePosts(
-        [post("hidden", "2026-10-14", true)],
+        [post("hidden", "2026-10-14T00:00:00+02:00", true)],
         built,
         new Date("2026-10-14T08:07:00Z")
       ),
@@ -73,9 +74,9 @@ describe("duePosts", () => {
     assert.deepEqual(
       duePosts(
         [
-          post("b", "2026-10-14"),
-          post("a", "2026-10-14"),
-          post("c", "2026-10-13"),
+          post("b", "2026-10-14T00:00:00+02:00"),
+          post("a", "2026-10-14T00:00:00+02:00"),
+          post("c", "2026-10-13T00:00:00+02:00"),
         ],
         new Date("2026-10-12T10:00:00Z"),
         new Date("2026-10-14T08:07:00Z")
@@ -84,11 +85,11 @@ describe("duePosts", () => {
     );
   });
 
-  it("uses the Vienna midnight across the spring clock change", () => {
+  it("compares instants across the spring clock change", () => {
     const before = new Date("2026-03-28T22:30:00Z");
     assert.deepEqual(
       duePosts(
-        [post("dst", "2026-03-29")],
+        [post("dst", "2026-03-29T00:00:00+01:00")],
         new Date("2026-03-28T12:00:00Z"),
         before
       ),
@@ -96,7 +97,7 @@ describe("duePosts", () => {
     );
     assert.deepEqual(
       duePosts(
-        [post("dst", "2026-03-29")],
+        [post("dst", "2026-03-29T00:00:00+01:00")],
         new Date("2026-03-28T12:00:00Z"),
         new Date("2026-03-28T23:07:00Z")
       ),
@@ -104,7 +105,7 @@ describe("duePosts", () => {
     );
     assert.deepEqual(
       duePosts(
-        [post("after", "2026-03-30")],
+        [post("after", "2026-03-30T00:00:00+02:00")],
         new Date("2026-03-29T12:00:00Z"),
         new Date("2026-03-29T22:07:00Z")
       ),
@@ -112,10 +113,10 @@ describe("duePosts", () => {
     );
   });
 
-  it("uses the Vienna midnight across the autumn clock change", () => {
+  it("compares instants across the autumn clock change", () => {
     assert.deepEqual(
       duePosts(
-        [post("fall", "2026-10-25")],
+        [post("fall", "2026-10-25T00:00:00+02:00")],
         new Date("2026-10-24T12:00:00Z"),
         new Date("2026-10-24T21:07:00Z")
       ),
@@ -123,7 +124,7 @@ describe("duePosts", () => {
     );
     assert.deepEqual(
       duePosts(
-        [post("fall", "2026-10-25")],
+        [post("fall", "2026-10-25T00:00:00+02:00")],
         new Date("2026-10-24T12:00:00Z"),
         new Date("2026-10-24T22:07:00Z")
       ),
@@ -131,7 +132,7 @@ describe("duePosts", () => {
     );
     assert.deepEqual(
       duePosts(
-        [post("after", "2026-10-26")],
+        [post("after", "2026-10-26T00:00:00+01:00")],
         new Date("2026-10-25T12:00:00Z"),
         new Date("2026-10-25T23:07:00Z")
       ),
@@ -139,11 +140,14 @@ describe("duePosts", () => {
     );
   });
 
-  it("looks back two hours when the live build time is unknown", () => {
-    const now = new Date("2026-10-13T23:30:00Z");
+  it("looks back 30 minutes when the live build time is unknown", () => {
+    const now = new Date("2026-10-13T22:20:00Z");
     assert.deepEqual(
       duePosts(
-        [post("recent", "2026-10-14"), post("ancient", "2026-10-10")],
+        [
+          post("recent", "2026-10-14T00:00:00+02:00"),
+          post("ancient", "2026-10-10T00:00:00+02:00"),
+        ],
         undefined,
         now
       ),
@@ -151,7 +155,7 @@ describe("duePosts", () => {
     );
     assert.deepEqual(
       duePosts(
-        [post("recent", "2026-10-14")],
+        [post("recent", "2026-10-14T00:00:00+02:00")],
         undefined,
         new Date("2026-10-14T01:00:00Z")
       ),
@@ -161,16 +165,16 @@ describe("duePosts", () => {
 });
 
 describe("recentlyLive", () => {
-  const built = new Date("2026-10-13T22:30:00Z");
-  const now = new Date("2026-10-13T23:07:00Z");
+  const built = new Date("2026-10-13T22:10:00Z");
+  const now = new Date("2026-10-13T22:22:00Z");
 
-  it("takes posts that went live in the last two hours and are in the live build", () => {
+  it("takes posts that went live in the last 30 minutes and are in the live build", () => {
     assert.deepEqual(
       recentlyLive(
         [
-          post("fresh", "2026-10-14"),
-          post("yesterday", "2026-10-13"),
-          post("later", "2026-10-15"),
+          post("fresh", "2026-10-14T00:00:00+02:00"),
+          post("yesterday", "2026-10-13T00:00:00+02:00"),
+          post("later", "2026-10-15T00:00:00+02:00"),
         ],
         built,
         now
@@ -182,7 +186,7 @@ describe("recentlyLive", () => {
   it("leaves out posts whose go-live is after the live build", () => {
     assert.deepEqual(
       recentlyLive(
-        [post("fresh", "2026-10-14")],
+        [post("fresh", "2026-10-14T00:00:00+02:00")],
         new Date("2026-10-13T21:00:00Z"),
         now
       ),
@@ -192,15 +196,38 @@ describe("recentlyLive", () => {
 
   it("skips drafts", () => {
     assert.deepEqual(
-      recentlyLive([post("hidden", "2026-10-14", true)], built, now),
+      recentlyLive(
+        [post("hidden", "2026-10-14T00:00:00+02:00", true)],
+        built,
+        now
+      ),
       []
     );
   });
 
-  it("stops at two hours", () => {
+  it("takes a post 29 minutes after its go-live", () => {
     assert.deepEqual(
       recentlyLive(
-        [post("fresh", "2026-10-14")],
+        [post("fresh", "2026-10-14T00:00:00+02:00")],
+        built,
+        new Date("2026-10-13T22:29:00Z")
+      ),
+      ["fresh"]
+    );
+  });
+
+  it("stops at 30 minutes", () => {
+    assert.deepEqual(
+      recentlyLive(
+        [post("fresh", "2026-10-14T00:00:00+02:00")],
+        built,
+        new Date("2026-10-13T22:31:00Z")
+      ),
+      []
+    );
+    assert.deepEqual(
+      recentlyLive(
+        [post("fresh", "2026-10-14T00:00:00+02:00")],
         new Date("2026-10-14T10:30:00Z"),
         new Date("2026-10-14T10:07:00Z")
       ),
@@ -208,7 +235,7 @@ describe("recentlyLive", () => {
     );
     assert.deepEqual(
       recentlyLive(
-        [post("fresh", "2026-10-14")],
+        [post("fresh", "2026-10-14T00:00:00+02:00")],
         new Date("2026-10-14T10:30:00Z"),
         new Date("2026-10-14T00:07:00Z")
       ),
@@ -218,7 +245,11 @@ describe("recentlyLive", () => {
 
   it("is empty when the live build time is unknown", () => {
     assert.deepEqual(
-      recentlyLive([post("fresh", "2026-10-14")], undefined, now),
+      recentlyLive(
+        [post("fresh", "2026-10-14T00:00:00+02:00")],
+        undefined,
+        now
+      ),
       []
     );
   });
@@ -231,13 +262,13 @@ describe("shouldBackOff", () => {
     assert.equal(shouldBackOff(undefined, now), false);
   });
 
-  it("is false while the issue is three hours old or less", () => {
-    assert.equal(shouldBackOff(new Date("2026-10-14T05:07:00Z"), now), false);
-    assert.equal(shouldBackOff(new Date("2026-10-14T07:00:00Z"), now), false);
+  it("is false while the issue is an hour old or less (four runs)", () => {
+    assert.equal(shouldBackOff(new Date("2026-10-14T07:07:00Z"), now), false);
+    assert.equal(shouldBackOff(new Date("2026-10-14T07:30:00Z"), now), false);
   });
 
-  it("is true once the issue is older than three hours", () => {
-    assert.equal(shouldBackOff(new Date("2026-10-14T05:06:59Z"), now), true);
+  it("is true once the issue is older than an hour", () => {
+    assert.equal(shouldBackOff(new Date("2026-10-14T07:06:59Z"), now), true);
   });
 });
 
@@ -297,7 +328,8 @@ const fakes = (
         calls.hook += 1;
         return Promise.resolve();
       },
-      posts: () => overrides.posts ?? [post("fresh", "2026-10-14")],
+      posts: () =>
+        overrides.posts ?? [post("fresh", "2026-10-14T00:00:00+02:00")],
       sleep: (ms) => {
         calls.sleeps += 1;
         clock.ms += ms;
@@ -320,7 +352,9 @@ const options: PublishOptions = {
 
 describe("runPublish", () => {
   it("does nothing and says so when no post is due", async () => {
-    const { calls, deps } = fakes({ posts: [post("old", "2026-10-10")] });
+    const { calls, deps } = fakes({
+      posts: [post("old", "2026-10-10T00:00:00+02:00")],
+    });
     const outcome = await runPublish(deps, options);
     assert.deepEqual(outcome, { kind: "idle" });
     assert.equal(calls.hook, 0);
@@ -414,11 +448,14 @@ describe("runPublish", () => {
     assert.equal(calls.indexNow.length, 0);
   });
 
-  it("tells IndexNow again about a post that went live in the last two hours", async () => {
+  it("tells IndexNow again about a post that went live in the last 30 minutes", async () => {
     const { calls, deps } = fakes({
-      builtAt: () => new Date("2026-10-13T22:30:00Z"),
-      posts: [post("fresh", "2026-10-14"), post("old", "2026-10-10")],
-      start: "2026-10-13T23:07:00Z",
+      builtAt: () => new Date("2026-10-13T22:10:00Z"),
+      posts: [
+        post("fresh", "2026-10-14T00:00:00+02:00"),
+        post("old", "2026-10-10T00:00:00+02:00"),
+      ],
+      start: "2026-10-13T22:22:00Z",
     });
     const outcome = await runPublish(deps, options);
     assert.deepEqual(outcome, {
@@ -433,9 +470,9 @@ describe("runPublish", () => {
 
   it("does not retry a post whose page does not answer 200", async () => {
     const { calls, deps } = fakes({
-      builtAt: () => new Date("2026-10-13T22:30:00Z"),
-      posts: [post("fresh", "2026-10-14")],
-      start: "2026-10-13T23:07:00Z",
+      builtAt: () => new Date("2026-10-13T22:10:00Z"),
+      posts: [post("fresh", "2026-10-14T00:00:00+02:00")],
+      start: "2026-10-13T22:22:00Z",
       status: 404,
     });
     const outcome = await runPublish(deps, options);
@@ -445,9 +482,9 @@ describe("runPublish", () => {
 
   it("does not retry in a dry run", async () => {
     const { calls, deps } = fakes({
-      builtAt: () => new Date("2026-10-13T22:30:00Z"),
-      posts: [post("fresh", "2026-10-14")],
-      start: "2026-10-13T23:07:00Z",
+      builtAt: () => new Date("2026-10-13T22:10:00Z"),
+      posts: [post("fresh", "2026-10-14T00:00:00+02:00")],
+      start: "2026-10-13T22:22:00Z",
     });
     const outcome = await runPublish(deps, { ...options, dryRun: true });
     assert.deepEqual(outcome, { kind: "idle" });
@@ -457,9 +494,9 @@ describe("runPublish", () => {
 
   it("lets a failed retry fail the run", async () => {
     const { deps } = fakes({
-      builtAt: () => new Date("2026-10-13T22:30:00Z"),
-      posts: [post("fresh", "2026-10-14")],
-      start: "2026-10-13T23:07:00Z",
+      builtAt: () => new Date("2026-10-13T22:10:00Z"),
+      posts: [post("fresh", "2026-10-14T00:00:00+02:00")],
+      start: "2026-10-13T22:22:00Z",
     });
     await assert.rejects(
       runPublish(
@@ -473,7 +510,7 @@ describe("runPublish", () => {
     );
   });
 
-  it("skips the hook and logs one line when the failure issue is older than three hours", async () => {
+  it("skips the hook and logs one line when the failure issue is older than an hour", async () => {
     const { calls, deps } = fakes();
     const outcome = await runPublish(deps, {
       ...options,
@@ -500,9 +537,26 @@ describe("runPublish", () => {
     const { calls, deps } = fakes();
     const outcome = await runPublish(deps, {
       ...options,
-      failingSince: new Date("2026-10-14T07:00:00Z"),
+      failingSince: new Date("2026-10-14T07:30:00Z"),
     });
     assert.equal(outcome.kind, "published");
     assert.equal(calls.hook, 1);
+  });
+});
+
+describe("timingOf", () => {
+  it("reads the date and draft lines of the front matter", () => {
+    assert.deepEqual(
+      timingOf(
+        "a",
+        "---\ntitle: A\ndate: 2026-10-13T09:30:00+02:00\ndraft: true\n---\nBody"
+      ),
+      { date: "2026-10-13T09:30:00+02:00", draft: true, slug: "a" }
+    );
+  });
+
+  it("skips a post without a readable date", () => {
+    assert.equal(timingOf("a", "---\ntitle: A\n---\n"), undefined);
+    assert.equal(timingOf("a", "---\ndate: soon\n---\n"), undefined);
   });
 });

@@ -1,4 +1,4 @@
-import { type UniformSink } from "./corona-layer.ts";
+import { type UniformSink } from "./uniform-sink.ts";
 
 export interface ProbeBox {
   bottom: number;

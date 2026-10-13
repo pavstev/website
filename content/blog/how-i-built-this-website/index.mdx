@@ -1,12 +1,9 @@
 ---
 title: How I built this website
 description: Eight days, three redesigns and a sky that shows the live Vienna weather. How I rebuilt this site with Next.js, raw WebGL and Claude Code.
-date: 2026-10-13
+date: 2026-10-13T12:00:00+02:00
 draft: false
 tags: [Next.js, WebGL, Cloudflare, Claude Code]
-sky:
-  weather: clear
-  phase: night
 ---
 
 On Monday, 5 October, my personal site was a static Astro site with about twenty URLs and a résumé pipeline that started a headless browser to print a PDF. It worked, but it was more site than I needed.
@@ -78,7 +75,7 @@ The clouds took three tries. One version ran a stable-fluids wind simulation tha
 
 ### The real weather
 
-Then came the weather. A Worker route, `/weather`, asks Open-Meteo for the current cloud cover, weather code, rain, snow, visibility and wind in Vienna. The Cloudflare cache keeps one good answer for 15 minutes per data center, so each data center asks at most 96 times a day. A failure answers `null`, never a 5xx, so the sky keeps a default look.
+Then came the weather. A Worker route, `/weather`, asks Open-Meteo for the current cloud cover, weather code, rain, snow, visibility and wind in Vienna. The Cloudflare cache keeps one good answer for 15 minutes per data center, so each data center asks at most 96 times a day. A failure answers `null`, never a 5xx, so the sky keeps a default look. I use the data under its licence and credit it on the home page: [Weather data by Open-Meteo.com](https://open-meteo.com/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 The shader turns that answer into seven looks: clear, partly cloudy, overcast, fog, rain, snow and storm. The clouds move with the real wind. You can force a look with `?weather=snow` or any of the other six.
 
@@ -170,6 +167,6 @@ Let builds fail loudly. The broken feed blocked my deploys, and it never put an 
 And delete things. The light theme, the galaxy, the foil, the wind, the chat: each was fun to build, and the site is better without them.
 
 <Note>
-  The sky in the header of this post is the same shader as the home page, fixed
-  to a clear night. On the home page it shows the weather in Vienna right now.
+  The sky behind this blog is the same shader as the home page, fixed to a clear
+  night. On the home page it shows the weather in Vienna right now.
 </Note>

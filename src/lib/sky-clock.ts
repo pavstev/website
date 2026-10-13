@@ -1,6 +1,5 @@
-import { clamp, clamp01, smoothstep } from "./math.ts";
+import { clamp, clamp01, deg, smoothstep } from "./math.ts";
 
-const deg = Math.PI / 180;
 const msPerDay = 86_400_000;
 const horizonDeg = -0.833;
 const defaultTwilightHours = 1.1;

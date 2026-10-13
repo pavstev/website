@@ -1,19 +1,26 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright-core";
+import sharp from "sharp";
 
 import { en } from "../src/lib/i18n.ts";
 import { iconData } from "../src/lib/icon-data.ts";
 import { personalData } from "../src/lib/personal.ts";
 import { nightPhase } from "../src/lib/sky-clock.ts";
+import { crawlerInstant, skyLight } from "../src/lib/sky-light.ts";
 import {
   cornerCorona,
   cornerMeteor,
   longRaysShader,
 } from "../src/lib/sky-rays.ts";
-import { skyFragmentShader, skyVertexShader } from "../src/lib/sky-shader.ts";
+import { cameraFor } from "../src/lib/sky-scene.ts";
+import {
+  homeSkyFragmentShader,
+  skyVertexShader,
+} from "../src/lib/sky-shader.ts";
 import { designTokens, hexBytes, profilePalette } from "../src/lib/theme.ts";
 import { crawlerSky } from "../src/lib/weather.ts";
+import { headerHeight, headerWidth } from "../src/profile/header.ts";
 
 interface Corona {
   radius: number;
@@ -29,13 +36,14 @@ interface Daylight {
 
 interface ImageSpec {
   body: string;
-  corona: Corona | string;
+  corona: Corona;
   daylight: Daylight;
+  extra: readonly Uniform[];
   file: string;
   fragment: string;
   height: number;
   meteor: Meteor;
-  type: "jpeg" | "png";
+  type: "jpeg" | "png" | "webp";
   width: number;
 }
 
@@ -48,8 +56,9 @@ interface Meteor {
 
 interface SkyInput {
   cloudTime: number;
-  corona: Corona | string;
+  corona: Corona;
   daylight: Daylight;
+  extra: readonly Uniform[];
   fragment: string;
   labPx: number;
   meteor: Meteor;
@@ -63,6 +72,7 @@ const skyTime = 41;
 const cloudTime = 23;
 const labPixelsPerCss = 1.2;
 const jpegQuality = 88;
+const webpQuality = 80;
 const crawlerWeather: [number, number, number, number] = [
   crawlerSky.cover,
   crawlerSky.overcast,
@@ -70,7 +80,31 @@ const crawlerWeather: [number, number, number, number] = [
   crawlerSky.fog,
 ];
 
+type Uniform = readonly [string, readonly number[]];
+
 const noMeteor: Meteor = { angle: 0, progress: 2, x: 0, y: 0 };
+const noCorona: Corona = { radius: 0, x: 0, y: 0 };
+
+const homeUniforms = (width: number, height: number): Uniform[] => {
+  const light = skyLight(crawlerInstant, crawlerSky, { height, width });
+  const camera = cameraFor(width, height);
+  return [
+    ["u_cam", [camera.focal, camera.horizon, camera.eye]],
+    ["u_look", [0, 0]],
+    ["u_sun", [...light.shownSun, Math.asin(light.trueSun[1])]],
+    ["u_sunCol", light.sunColor],
+    ["u_amb", light.ambient],
+    ["u_sunDisk", light.sunDisk],
+    ["u_moon", light.moon],
+    ["u_moon2", light.moonShade],
+    ["u_moon3", light.moonDisk],
+    ["u_moonCol", light.moonColor],
+    ["u_wind", [575, 172.5, 1035, 230]],
+    ["u_ground", [0, 0]],
+    ["u_wpuff", Array.from({ length: 24 }, () => 0)],
+    ["u_txt", Array.from({ length: 12 }, () => 0)],
+  ];
+};
 
 const rgba = (hex: string, alpha: number): string =>
   `rgba(${[...hexBytes(hex), alpha].join(", ")})`;
@@ -166,18 +200,7 @@ const drawSky = (input: SkyInput): void => {
   const at = (uniform: string): null | WebGLUniformLocation =>
     gl.getUniformLocation(program, uniform);
   const { height, width } = canvas;
-  const measure = (selector: string): Corona => {
-    const node = document.querySelector(selector);
-    if (!node) throw new Error("No portrait to center the corona on");
-    const face = node.getBoundingClientRect();
-    return {
-      radius: face.width / 2,
-      x: face.left + face.width / 2,
-      y: face.top + face.height / 2,
-    };
-  };
-  const corona =
-    typeof input.corona === "string" ? measure(input.corona) : input.corona;
+  const { corona } = input;
   gl.viewport(0, 0, width, height);
   gl.uniform2f(at("u_res"), width, height);
   gl.uniform1f(at("u_view"), height);
@@ -204,6 +227,13 @@ const drawSky = (input: SkyInput): void => {
     input.daylight.twilight,
     input.daylight.dusk
   );
+  for (const [uniform, values] of input.extra) {
+    const [a = 0, b = 0, c = 0, d = 0] = values;
+    if (values.length > 4) gl.uniform4fv(at(uniform), new Float32Array(values));
+    else if (values.length === 4) gl.uniform4f(at(uniform), a, b, c, d);
+    else if (values.length === 3) gl.uniform3f(at(uniform), a, b, c);
+    else gl.uniform2f(at(uniform), a, b);
+  }
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.finish();
 };
@@ -227,6 +257,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
     cloudTime,
     corona: spec.corona,
     daylight: spec.daylight,
+    extra: spec.extra,
     fragment: spec.fragment,
     labPx: labPixelsPerCss,
     meteor: spec.meteor,
@@ -234,9 +265,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
     vertex: skyVertexShader,
     weather: crawlerWeather,
   });
-  return spec.type === "jpeg"
-    ? page.screenshot({ quality: jpegQuality, type: "jpeg" })
-    : page.screenshot({ type: "png" });
+  if (spec.type === "jpeg")
+    return page.screenshot({ quality: jpegQuality, type: "jpeg" });
+  const png = await page.screenshot({ type: "png" });
+  return spec.type === "png"
+    ? png
+    : sharp(png).webp({ effort: 6, quality: webpQuality }).toBuffer();
 };
 
 const writeIfChanged = async (
@@ -262,10 +296,11 @@ const portrait = await dataUrl(
 const specs: ImageSpec[] = [
   {
     body: ogBody(portrait),
-    corona: "#portrait",
+    corona: noCorona,
     daylight: nightPhase,
+    extra: homeUniforms(1200, 630),
     file: path.join(publicDir, "og-image.jpg"),
-    fragment: skyFragmentShader,
+    fragment: homeSkyFragmentShader,
     height: 630,
     meteor: noMeteor,
     type: "jpeg",
@@ -275,12 +310,25 @@ const specs: ImageSpec[] = [
     body: "",
     corona: cornerCorona(396),
     daylight: nightPhase,
+    extra: [],
     file: path.join(publicDir, "linkedin-cover.png"),
     fragment: longRaysShader,
     height: 396,
     meteor: { ...cornerMeteor, progress: 0.55 },
     type: "png",
     width: 1584,
+  },
+  {
+    body: "",
+    corona: cornerCorona(headerHeight),
+    daylight: nightPhase,
+    extra: [],
+    file: path.join("src", "profile", "header-sky.webp"),
+    fragment: longRaysShader,
+    height: headerHeight,
+    meteor: { ...cornerMeteor, progress: 0.55, x: -2.1, y: 0.32 },
+    type: "webp",
+    width: headerWidth,
   },
 ];
 

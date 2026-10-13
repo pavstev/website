@@ -73,6 +73,7 @@ export const fixture: ProfileInput = {
       url: "https://github.com/ada/engine-two",
     },
   ],
+  sky: new Uint8Array([13, 14, 15]),
   strings: {
     card: { linkedin: "LinkedIn" },
     products: {
