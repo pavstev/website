@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
 
+import { BlogButton } from "@/components/blog-button";
 import { CardFooter } from "@/components/card-footer";
 import { CardStrips } from "@/components/card-strips";
 import { ContactLinks } from "@/components/contact-links";
@@ -11,6 +12,8 @@ import { PageDock } from "@/components/page-dock";
 import { Profile } from "@/components/profile";
 import { ResumeTip } from "@/components/resume-tip";
 import { SpaceBackground } from "@/components/space-background";
+import { pageRobots, showDrafts } from "@/lib/blog/build-env";
+import { listPosts } from "@/lib/blog/posts";
 import { getCv } from "@/lib/cv";
 import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
@@ -24,17 +27,7 @@ const resumeDetailId = "resume-detail";
 export const metadata: Metadata = {
   alternates: { canonical: personalData.website },
   description: en.meta.description,
-  robots: {
-    follow: true,
-    googleBot: {
-      follow: true,
-      index: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
-    },
-    index: true,
-  },
+  robots: pageRobots(),
   title: en.meta.title,
 };
 
@@ -73,7 +66,10 @@ export default async function Page(): Promise<ReactElement> {
             <DownloadButton describedBy={resumeDetailId}>
               <ResumeTip detailId={resumeDetailId} facts={resume} />
             </DownloadButton>
-            <ContactLinks contact={contact} />
+            <div className="flex items-center justify-center gap-3">
+              <ContactLinks contact={contact} />
+              <BlogButton count={listPosts({ drafts: showDrafts() }).length} />
+            </div>
           </div>
           <CardStrips products={products} repos={repos} />
           <CardFooter />

@@ -1,0 +1,148 @@
+---
+title: How I use AI
+description: Thirteen days of Claude Code in real numbers. What went wrong, the rule each failure became, and how a task runs for me now.
+date: 2026-10-13
+draft: false
+tags: [AI, Claude Code, Workflow]
+sky:
+  weather: storm
+  phase: dusk
+---
+
+I write most of my side-project code with Claude Code now. From October 1 to October 13 I ran 145 sessions with it. They added up to 257 active hours, 1,095 prompts I typed myself, 1,132 helper agents and 25,125 tool calls.[^1]
+
+Some of that time was very good. A fair share was waste, and I can measure it because every session leaves a transcript. So this is not a list of tips. It is my setup, what went wrong with the numbers attached, the rule each failure became, and how a task runs today.
+
+## What I work on and with what
+
+By day I am a backend engineer and tech lead. The AI work in this post is my own projects. [hirista](https://hirista.app) is a job search app that also feeds the résumé on this site. pickwise builds product comparison indexes. I rebuilt the Safety Real Time website as a portfolio piece. Then there is a private toolbox repo, my dotfiles and [this website](/blog/how-i-built-this-website).
+
+hirista took most of the effort: 72 sessions, 640 helpers and 68.5% of all tokens. The website came second with 14.9%, pickwise third with 7.1%.
+
+I work in the Claude Code desktop app with many sessions open side by side. Bash is 55% of all tool calls. The Claude in Chrome extension drives dashboards in my real browser (2,122 calls), and the built-in browser pane shows the local dev server (1,814 calls).
+
+Opus wrote 54% of the main-session messages, Sonnet 33% and Fable 13%. Today my main sessions run at high effort, because an xhigh session read 5.1 million cached tokens per prompt, against 3.1 million at high. Sonnet builds and fixes. Opus or Fable plans and researches at xhigh. Max is only for architecture, research synthesis and the final review.
+
+Memory does quiet work: one global rules file, a short CLAUDE.md per repo, and one small note per learned fact, each saying why and how to apply it. hirista has 45 notes, this website 35.
+
+For visual choices I stopped answering questions in text. `ps:pick` builds one page with numbered variants, live sliders and a "Copy my pick" button; I paste the pick back and Claude applies it. My pick for the clouds on this site was A3 stratocumulus, stars 1.7 times as dense at the top of the screen, and clouds that speed up 3.5x in the direction of a swipe.
+
+## Thirteen days in numbers
+
+<Chart
+  type="bar"
+  src="data/prompts-per-day.json"
+  title="Prompts I typed per day"
+  caption="Prompts I typed per day across all my projects, October 1 to 13 (Vienna time). October 13 counts until 10:10. October 11 is empty because of the weekly limit."
+/>
+
+I also work late. The busiest hour is 23:00 with 94 prompts, and 111 prompts came between midnight and 3 in the morning.
+
+All sessions together moved 19.8 billion tokens, almost all cache reads. Helpers read more than my main sessions: 11.29 billion against 8.18 billion. Every session also starts with a fixed block of system text, tools, skills and rules: 84 to 134 thousand tokens before Claude reads my first word. About 37% of all tokens were that block, sent again with each call.
+
+Claude opened 470 question rounds with its question tool, each with up to four questions. I interrupted it 74 times.
+
+## Waiting costs more than working
+
+The worst failures were not wrong code. They were sessions that waited, polled or asked while nothing moved.
+
+**The watchdog.** On October 6 one hirista session had to wait for another one to land a commit. It set a five-minute timer to check. The timer ran 143 times over 11 hours and 50 minutes. 142 runs said "idle". Together they read 138 million tokens for zero work. And it never fired: I pushed the commit by hand the next morning and told the waiting session myself.
+
+The rule now: never poll from inside a session; use a background monitor or a notify-when-idle message, then one final report. `ps:sessions` finds, messages and archives my other sessions, and makes one wait for another without polling. A hook refuses any loop shorter than 30 minutes once the context is past 100 thousand tokens.
+
+**Locked out for almost two days.** On October 10 I asked a research session to "report here every 5 minutes". It sent 33 status updates, each one re-reading about 170 thousand tokens of context. Then the weekly limit hit, and a second session died in the same minute. I was locked out for almost 43 hours. Nothing ran on October 11; that is the gap in the chart above. Over the whole audit window, sessions sat paused on usage limits 31 times, for 51.6 hours in total.
+
+**"I pick yes."** In one toolbox session Claude wrote out a decision, ended with "I pick yes", and then waited for me to confirm. I came back 38 minutes later. The rule in my global file is now three words: "Decided means go." If Claude has picked, it proceeds in the same turn. It stops only for steps that cannot be undone or that cost money.
+
+**Contexts that never end.** My longest session ran 36 active hours over 59 hours of wall time. It made 1,623 API calls and started 142 helpers.
+
+<Chart
+  type="line"
+  src="data/context-longest-session.json"
+  title="Context size in my longest session"
+  caption="Peak context per 100 API calls in one hirista session, October 6 to 8. It started at 94 thousand tokens and peaked at 967 thousand. The three drops are compactions. 65% of its calls ran above the 300 thousand line."
+/>
+
+Every call re-reads the whole context, so a session at 900 thousand tokens pays for 900 thousand tokens on every small step. Across all sessions, 80% of the main-session tokens went into calls above 300 thousand.
+
+The fix is a hand-off at 300 thousand. My status line turns copper there, and a hook reminds me. `ps:handoff` writes a brief for a fresh session to a file and answers with one line: `Read <path> and do it.` Auto-compaction at 500 thousand is the safety net, and above that the hook refuses new helpers.
+
+## Doing more than I asked
+
+The second kind of failure is the opposite of waiting: too much process for a small change.
+
+**59 questions in three hours.** On October 5 the first redesign session for this website opened 40 question rounds with 59 questions in about three hours. "Lock section 1 (look and layout)?" through section 5, "Lock this design and let me build it?" twice, "Do you approve the written spec?". Then it hit the usage limit before anything was deployed. In the 27 website sessions the audit read, up to October 12, 42 of 177 question rounds were closers like "what next?" or "approve?".
+
+The rule now: one question call per turn, two to four options, my recommended option first, no closers, never ask twice. A hook blocks a second question call in the same turn. `ps:askme` is still my tool for real decisions: it interviews me in rounds before a build starts, and since October 12 it has a light mode that asks only about blockers.
+
+**One footer pill.** On October 7 I wanted a small privacy chip in the footer of this site: a CSS pill and a three-line note. It took 81 minutes, 414 messages and 189 tool calls, 10 screenshot reads and an accessibility scan at three screen sizes. Then Claude asked me five times how to squash and push. The rule is a short quote from my file: "Verify once, in proportion."
+
+**An astronomy engine nobody asked for.** On October 12 I asked for skies that were "more subtle but very wow", and to maybe follow the visitor's local time "in a smart mathematical way". Twenty minutes later I had a sun model, moon phases, 80 stars and 20 skies. I threw it out. The sky now follows the Vienna clock. A "maybe" in a prompt is not a spec.
+
+**"Tell me whether I'm going crazy."** I typed that on October 8, in a design session that had run 9 hours and 50 minutes with 57 helpers. I had asked six times how much time was left. Claude's own breakdown said the work "should have taken roughly half". Days like that started the part of my rules I call speed over ceremony. That rule set opens with my own count from October 8 and 9: one 10-hour session held only about 4 hours of real work.
+
+One line from it: "Tokens are not time." A big budget should buy more helpers at once, not longer runs. The process has to fit the change. A small change (three files or fewer, or a prompt with "just" or "quickly") gets no skill chain and no questions: read at most five files, edit, one check, push. Estimates come up front as a number and a range, because mine ran two to three times short.
+
+**Helpers without a deadline.** In one toolbox session, seven research helpers ran for 25 minutes with no time limit, then a second wave of seven started at max effort. The session took 7 hours and 49 minutes. Across the window, 220 of the 228 helpers at max effort were not doing planning or review. Now every helper prompt carries a model, an effort, a deadline and a hand-back of at most 4,000 characters.
+
+**A wrong premise.** A hirista session spent 494 minutes on a CPU cost hunt that assumed the wrong hosting plan. Checking took one minute. Rule: infra facts first, before any helper starts.
+
+## The audit that wrote my rules
+
+On October 12 I turned the tools on themselves. I asked Claude to "scan all my claude sessions starting from october 1". The audit read 118 sessions with 12 analyst helpers in 63 minutes, hit the usage limit in the middle and resumed after the reset. Most of the failures above come from its reports.
+
+Three `ps:askme` rounds turned the reports into a plan, and the same day 13 commits landed in my dotfiles: settings, a new status line, 17 working rules, a guard hook and four new skills. Each skill was tested by a fresh helper twice, without the skill and with it.
+
+The hook mattered most. A sentence in a rules file only asks; a hook enforces. Before it, in the 118 sessions the audit read, 778 of 851 helper calls had inherited their effort level. The hook has four guards:
+
+1. A helper call must name its model and its effort. Max effort is allowed only for planning, research synthesis, architecture or a final review.
+2. No polling loop under 30 minutes once the context is past 100 thousand tokens.
+3. A hand-off reminder at 300 thousand tokens, and no new helpers above 500 thousand.
+4. One question call per turn.
+
+I also deleted five skills with zero or one use. Every listed skill puts its description into every turn, so an unused skill is not free.
+
+The audit also listed what worked, and I kept it. `ps:whatsleft` shows open work as a me and you table with a time estimate; it came up 43 times in 23 sessions. One session shipped the Worker for this site with 31 helpers in three parallel lanes in 61 minutes. Memory notes written right after a correction stuck. And Claude refused destructive steps against production.
+
+## How a task runs now
+
+<Diagram
+  name="work-loop"
+  caption="A normal feature from question to main: question rounds, a design lab, parallel helpers, checks, a push to a preview, my OK, then one commit on main."
+/>
+
+A bigger feature starts with `ps:askme`: real questions in one or two rounds, defaults for the rest. If the choice is visual, `ps:pick` builds a lab. That started in the Safety Real Time rebuild, when I asked for a clickable prototype instead of a list of design questions. The site shipped with 41 commits and 206 tests, plus a facts file I fill in myself, so nothing on it is invented.
+
+Then the build fans out. `ps:iamrich` is my mode for wide jobs: many helpers at once, each with a model, an effort, a deadline and a short hand-back. `ps:captain-research` runs deep research with helpers that look things up online before they ask me. For a long brief I trust, `ps:autopilot` runs to the end without questions, keeps a progress ledger, commits per task and resumes after a limit reset.
+
+Checks are boring on purpose. For this site one command runs every check, before each commit and in CI. A push to main deploys, so Claude must name the deployment that carries a commit before it calls anything live.
+
+<Diagram
+  name="skill-map"
+  caption="My own skills by phase: askme and pick to ask, captain-research to research, autopilot and iamrich to build, sessions and handoff to coordinate, whatsleft and mic-drop to finish, bag-mode for the machine."
+/>
+
+Several sessions often work on one repo, so each checks the git log before it commits; another may have rewritten main a minute ago. Messages between sessions work when they are one round trip: a hub session once had status from three others in 36 seconds. But approval does not travel. When one session passed my "go" to another, the second refused it as not mine. I agree.
+
+Limits are mine to set. In pickwise, a 6-hour model evaluation on my home server ran the CPU at 85 to 86 °C. The rule since then: never above 85 °C, whatever the deadline.
+
+At the end, `ps:mic-drop` checks that everything is pushed and passing, cleans up tasks and worktrees, squashes the session into one commit on main and archives it. If I close the laptop with work running, `ps:bag-mode` tells me which tasks are heavy, for how long, and how to keep the Mac awake.
+
+## What changed so far
+
+The new rules are one day old, so the sample is small: 14 sessions and 63 helpers. Treat these as an early signal, not a result.
+
+<Chart
+  type="pair"
+  src="data/helper-effort.json"
+  title="Helper effort before and after October 12"
+  caption="Share of helper agents at high and at max effort, before and after the rules of October 12. The after sample is 14 sessions and 63 helpers in under a day."
+/>
+
+Helpers at high effort went from 49% to 90%, and helpers at max from 22% to 10%. Claude asked 43.8 questions per 100 of my prompts before, and 30.8 after. The rules file for this website shrank from 59 KB to 8.9 KB, pickwise from 32 KB to 6.6 KB. Smaller rules files mean a smaller fixed block on every call.
+
+In two weeks I will run the same profiler again and compare tokens per prompt and the share of calls above 300 thousand tokens. If the numbers do not move, the rules change again.
+
+If you are starting out, three things from my data beat any prompt trick. Measure your own sessions; the transcripts are on your disk. Turn every repeated correction into a written rule, and every rule that matters into a hook. And watch the waiting, not the typing. My worst hours went to sessions that waited for something that never came.
+
+[^1]: Active hours sum the gaps of 15 minutes or less between transcript records. Prompts count only what I typed, not notifications, relays between sessions or command output. Helpers are subagent transcripts.

@@ -679,7 +679,7 @@ export const initRepoPlanets = (
   let disposed = false;
   resize();
   advance(0);
-  void whenLinked(gl, programs, checkErrors)
+  void whenLinked(gl, programs, checkErrors, () => disposed)
     .then(() => {
       if (disposed || lost) return;
       compiled = true;

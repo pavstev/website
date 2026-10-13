@@ -1,31 +1,32 @@
 # CLAUDE.md
 
-One static page: a contact card over a WebGL sky that shows the live Vienna weather, plus a plain 404, and a Worker for `/mcp` and `/weather`.
+A contact card over a WebGL sky that shows the live Vienna weather, a blog of MDX posts (`/blog`) under the same sky, a plain 404, and a Worker for `/mcp` and `/weather`.
 
 ## Tech Stack
 
-Next.js 16 App Router (`output: "export"` to `dist/`), Tailwind v4, pnpm 12 on Node 24, one Cloudflare Worker for `/mcp` and `/weather`. The long notes (CV feed, GitHub data, fonts, icons, static files, products, profile mirror, LinkedIn sync, Worker, checks, CI, deploy) are in `docs/architecture.md`: read the bullet for the area you change.
+Next.js 16 App Router (`output: "export"` to `dist/`), Tailwind v4, pnpm 12 on Node 24, one Cloudflare Worker for `/mcp` and `/weather`. The long notes (CV feed, GitHub data, fonts, icons, static files, products, profile mirror, LinkedIn sync, Worker, blog, previews, IndexNow, checks, CI, deploy) are in `docs/architecture.md`: read the bullet for the area you change.
 
-Path rules in `.claude/rules/` load when you touch matching files: `card.md` (card, strips, topics), `motion.md` (pause button, dock, privacy, head script), `globe.md` (Vienna globe), `sky.md` (sky, planets, shaders).
+Path rules in `.claude/rules/` load when you touch matching files: `card.md` (card, strips, topics), `motion.md` (pause button, dock, privacy, head script), `globe.md` (Vienna globe), `sky.md` (sky, planets, shaders), `blog.md` (posts, blog code, how to add a post).
 
 ## Known blockers
 
-- `GITHUB_TOKEN` is **required** for the build (profile email, LinkedIn, repo languages). Cloudflare build variable; locally `github.ts` asks `gh auth token`. Any non-200 answer fails the build on purpose.
+- `GITHUB_TOKEN` is **required** for the build (profile email, LinkedIn, repo languages). Cloudflare build variable; locally `github.ts` asks `gh auth token`. Any non-200 answer fails the build on purpose. Preview builds without a token replay `src/lib/github-snapshot.json` instead (refresh with `pnpm github:snapshot`).
 - The CV fixture `src/lib/cv-feed.fixture.json` is a byte copy of hirista's `fixtures/cv-feed.json`. Change a feed shape in both repos in the same session. `.prettierignore` keeps it byte-exact.
 - The owner has no iPhone. Never suggest a real-iPhone check; emulate WebKit instead.
-- Every push to `main` deploys on Cloudflare. Never run `wrangler deploy` or `pnpm deploy`. Push only when asked and after `pnpm check` passes. Say which deployment carries a commit before calling it live.
+- Every push to `main` deploys on Cloudflare. Never run `wrangler deploy` or `pnpm deploy`. Push only when asked and after `pnpm check` passes. Say which deployment carries a commit before calling it live. Every other branch gets a preview at `<branch>-website.pavlovicmstevan.workers.dev` (drafts shown, `noindex`).
 - Never touch the Cloudflare account "Alpha.therapybg" (`Alpha.therapybg@gmail.com's Account`): no dashboard, no wrangler, no API, no MCP. Ask which account to use.
 
 ## Commands
 
 ```bash
-pnpm dev       # CV fetch, then next dev → http://localhost:4321
-pnpm build     # CV fetch, next build, CV guard → ./dist
+pnpm dev       # CV fetch, blog prebuild, then next dev → http://localhost:4321 (drafts show)
+pnpm build     # CV fetch, blog prebuild, next build, CV guard → ./dist
 pnpm preview   # serve ./dist on port 4321
 pnpm check     # every check, read-only  ← REQUIRED before done (also the husky pre-commit hook and CI)
 pnpm fix       # prettier --write + eslint --fix
 pnpm icons     # re-extract src/lib/icon-data.ts
 pnpm profile:build  # build the GitHub profile files into ./.profile-out
+pnpm github:snapshot  # refresh src/lib/github-snapshot.json, replayed by preview builds without a token
 ```
 
 ## Non-negotiables
@@ -35,7 +36,7 @@ pnpm profile:build  # build the GitHub profile files into ./.profile-out
 - **No `eslint-disable`**: zero-warning policy.
 - **No `any`** → use `unknown` or generics. **No `!`** non-null assertions.
 - **No hardcoded hex/hsl** outside `globals.css` or `src/lib/theme.ts`.
-- **No inline UI strings** → `src/lib/i18n.ts`.
+- **No inline UI strings** → `src/lib/i18n.ts` (one exception: diagram copy lives in `src/lib/blog/diagrams.ts`, post content that the Node-side Markdown converter loads).
 - **Tailwind v4 paren syntax** (`bg-(--surface)`) over bracket syntax.
 - **Never edit generated files** in `dist/`. **Never commit `.env`.** **Never deploy by hand.** **Never edit `pavstev/pavstev` by hand** (the Action overwrites it).
 
@@ -47,19 +48,25 @@ TypeScript strict, explicit return types on exports, `import { type Foo }`, keba
 
 ```text
 src/app/          layout.tsx (metadata, Open Graph `profile`), page.tsx (JSON-LD, sky, the card), not-found.tsx, robots.ts, sitemap.ts, manifest.ts, llms.txt/route.ts, cv.json/route.ts, resume.pdf/route.ts
-src/components/   profile + portrait + portrait-expander, compound-text, download-button, resume-tip, contact-links, card-strips, repo-strip, product-strip, product-mark, card-footer,
+src/app/blog/     layout.tsx, page.tsx (the index), [slug]/page.tsx (a post), feed.xml/route.ts, feed.json/route.ts
+src/components/   profile + portrait + portrait-expander, compound-text, download-button, resume-tip, contact-links, blog-button, card-strips, repo-strip, product-strip, product-mark, card-footer,
                   page-dock, motion-toggle, privacy-note, space-background, effects-init, icon,
                   topic-trigger, topic-panel, topic-heading, industry-panel, city-panel, city-heading, city-globe-launcher, city-globe-stage, vienna-arms
-src/lib/          personal, products, product-marks, i18n, bio, industries, github (repos, languages, contact, getProject), cv (the CV feed, getCv), cv-feed.fixture.json (hirista's contract fixture), cv-llms, cv-sample (test data), linkedin-fields, resume-pdf, resume-file, readme-html, resume-facts, anchored-popovers, repo-tags-fit, privacy-ack, motion-pause (pause flag, head script, stillQuery), scene-hold, save-data, weather (Vienna weather types, mapping, presets, fetch), corona-layer (corona layer placement and uniform fan-out), city, city-globe, globe-data, globe-labels, sun, world-cities, repo-planets, logo-planet, logo-motion, theme (hex for theme-color, sky palette, productPalette, inkPalette), sky-clock, sky-ink (text over the sky: targets, lift), sky-probe (reads the sky behind text), crawler (bot user agents get the night sky), github,
+src/components/blog/  post-list, post-header, post-body, post-toc, toc-spy, post-nav, post-tags, blog-footer, blog-link, blog-image, blog-picture, figure, image-zoom, note, chart (+ chart-rows, chart-line, chart-table), diagram (+ diagrams/), blog-moons, moon-fallback
+src/lib/          personal, products, product-marks, i18n, bio, industries, github (repos, languages, contact, getProject), cv (the CV feed, getCv), cv-feed.fixture.json (hirista's contract fixture), github-snapshot.json (the GitHub answers a tokenless preview build replays), cv-llms, cv-sample (test data), linkedin-fields, resume-pdf, resume-file, readme-html, resume-facts, anchored-popovers, repo-tags-fit, privacy-ack, motion-pause (pause flag, head script, stillQuery), scene-hold, save-data, weather (Vienna weather types, mapping, presets, fetch), corona-layer (corona layer placement and uniform fan-out), city, city-globe, globe-data, globe-labels, sun, world-cities, repo-planets, logo-planet, logo-motion, theme (hex for theme-color, sky palette, productPalette, inkPalette), sky-clock, sky-preset (sky presets and the `sky:preset` event), sky-ink (text over the sky: targets, lift), sky-probe (reads the sky behind text), crawler (bot user agents get the night sky), github,
                   frame-clock, intro, portrait-effects, portrait-bead, portrait-expand, contact-links, download-ring,
                   pill-aurora, cursor, webgl, icon-data
-src/styles/       globals.css (tokens, one dark palette + print, type utilities, card styles)
-public/           stevan-pavlovic.jpeg, portraits/, fonts/, favicons, og-image.jpg and linkedin-cover.png (both generated in CI), manifest.webmanifest, _headers
+src/lib/blog/     schema, posts, build-env (drafts, previews, robots), format (post date, reading time, post title), links (external link test), render (`evaluate()`), plain (Markdown and feed HTML), toc, anchors, media (hashed names, manifest), share (share images), metadata, feeds, chart-data, chart-layout, diagrams (diagram copy lives here, not in i18n), diagram-ink, moons, moon-gl, tests
+src/styles/       globals.css (tokens, one dark palette + print, type utilities, card styles, blog styles)
+content/blog/     <slug>/index.mdx, data/*.json for charts, stills and cover.webp per post
+public/           stevan-pavlovic.jpeg, portraits/, fonts/, favicons, og-image.jpg and linkedin-cover.png (both generated in CI), manifest.webmanifest, _headers; generated and gitignored: blog-media/, blog/ (Markdown copies), build.json
 src/profile/      types, text, icons, header, readme, render (pure), validate, cli, tests
 worker/           index (router), mcp (/mcp), weather (/weather, Open-Meteo, edge cache), facts (cv.json + llms.txt reader and text helpers), http, tests, tsconfig.json
-wrangler.jsonc    assets, run_worker_first, MCP_LIMITER; worker-configuration.d.ts is generated from it
-scripts/          cv-fetch.ts and cv-guard.ts (run by `pnpm build`), generate-icon-data.ts (pnpm icons), generate-globe-data.ts, generate-images.ts (images.yml), linkedin-sync.ts (linkedin-sync.yml), all run by Node's type stripping
+wrangler.jsonc    assets, run_worker_first, MCP_LIMITER (also under `previews`), preview_urls; worker-configuration.d.ts is generated from it
+scripts/          cv-fetch.ts, blog-build.ts and cv-guard.ts (run by `pnpm build`; blog-build also runs in `pnpm dev`), indexnow.ts (indexnow.yml), generate-icon-data.ts (pnpm icons), generate-globe-data.ts, generate-images.ts (images.yml), github-snapshot.ts (pnpm github:snapshot, writes src/lib/github-snapshot.json), linkedin-sync.ts (linkedin-sync.yml), all run by Node's type stripping
 .cv/              gitignored: cv.json and source, written by cv-fetch
+.blog/            gitignored: media.json (hashed image manifest), written by blog-build
+.github/workflows/  ci, images, profile, linkedin-sync, indexnow (pings IndexNow for changed posts after a deploy)
 ```
 
 ## SEO

@@ -4,3 +4,7 @@ dist
 pnpm-lock.yaml
 worker-configuration.d.ts
 src/lib/cv-feed.fixture.json
+.blog
+public/blog-media
+public/blog
+public/build.json

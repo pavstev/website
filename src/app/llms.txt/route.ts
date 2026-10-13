@@ -1,3 +1,5 @@
+import { showDrafts } from "@/lib/blog/build-env";
+import { listPosts } from "@/lib/blog/posts";
 import { getCv } from "@/lib/cv";
 import { cvLlmsSections } from "@/lib/cv-llms";
 import { getContact, getRepos } from "@/lib/github";
@@ -13,6 +15,7 @@ export const GET = async (): Promise<Response> => {
     getContact(personalData.githubHandle),
     getCv(),
   ]);
+  const posts = listPosts({ drafts: showDrafts() });
   const body = [
     `# ${personalData.name}`,
     "",
@@ -36,6 +39,20 @@ export const GET = async (): Promise<Response> => {
     "",
     ...productLlmsLines(products),
     "",
+    ...(posts.length > 0
+      ? [
+          `## ${en.llms.blog}`,
+          "",
+          `- [${en.llms.blogIndex}](${personalData.website}/blog)`,
+          `- [${en.llms.blogFeedRss}](${personalData.website}/blog/feed.xml)`,
+          `- [${en.llms.blogFeedJson}](${personalData.website}/blog/feed.json)`,
+          ...posts.map(
+            (post) =>
+              `- [${post.title}](${personalData.website}/blog/${post.slug}.md): ${post.description}`
+          ),
+          "",
+        ]
+      : []),
     ...cvLlmsSections(cv),
     `## ${en.llms.links}`,
     "",

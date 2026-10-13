@@ -79,6 +79,32 @@
   ! Content-Security-Policy
   ! X-Frame-Options
 
+/blog/feed.xml
+  Content-Type: application/rss+xml; charset=utf-8
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/blog/feed.json
+  Content-Type: application/feed+json; charset=utf-8
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
 /ee32ef309c036fb4c6b716d08e9bf922.txt
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/blog-media/*
+  Cache-Control: public, max-age=31536000, immutable
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/blog/*.md
+  Content-Type: text/markdown; charset=utf-8
+  Link: <https://stevanpavlovic.com/blog/:splat>; rel="canonical"
+  ! Content-Security-Policy
+  ! X-Frame-Options
+
+/build.json
+  Cache-Control: no-store
   ! Content-Security-Policy
   ! X-Frame-Options

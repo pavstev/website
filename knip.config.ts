@@ -2,11 +2,17 @@ import type { KnipConfig } from "knip";
 
 const config: KnipConfig = {
   entry: [
+    "content/blog/*/index.mdx",
+    "src/lib/blog/fixtures/**/*.mdx",
+    "scripts/blog-build.ts",
     "scripts/cv-fetch.ts",
     "scripts/cv-guard.ts",
     "scripts/generate-globe-data.ts",
     "scripts/generate-images.ts",
+    "scripts/github-snapshot.ts",
+    "scripts/indexnow.ts",
     "scripts/linkedin-sync.ts",
+    "scripts/**/*.test.ts",
     "src/profile/**/*.test.ts",
   ],
   ignoreDependencies: ["@fontsource/inter", "wrangler"],
@@ -14,6 +20,8 @@ const config: KnipConfig = {
   includeEntryExports: true,
   project: [
     "*.ts",
+    "content/blog/*/index.mdx",
+    "src/lib/blog/fixtures/**/*.mdx",
     "scripts/**/*.ts",
     "src/**/*.{css,ts,tsx}",
     "worker/**/*.ts",

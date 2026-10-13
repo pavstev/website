@@ -91,29 +91,154 @@ const fetchFacts = async (assets: Fetcher, origin: string): Promise<Facts> => {
   return { cv: parsed.data, llms: await llmsResponse.text() };
 };
 
-export const loadFacts = async (
-  assets: Fetcher,
-  origin: string
-): Promise<Facts> => {
-  const cached = cache.get(origin);
+const memoize = async <T>(
+  store: Map<string, Promise<T>>,
+  key: string,
+  load: () => Promise<T>,
+  keep: (value: T) => boolean
+): Promise<T> => {
+  const cached = store.get(key);
 
   if (cached) {
     return cached;
   }
 
-  const pending = fetchFacts(assets, origin);
-  cache.set(origin, pending);
+  const pending = load();
+  store.set(key, pending);
 
   try {
-    return await pending;
+    const value = await pending;
+
+    if (!keep(value) && store.get(key) === pending) {
+      store.delete(key);
+    }
+
+    return value;
   } catch (error) {
-    if (cache.get(origin) === pending) {
-      cache.delete(origin);
+    if (store.get(key) === pending) {
+      store.delete(key);
     }
 
     throw error;
   }
 };
+
+export const loadFacts = (assets: Fetcher, origin: string): Promise<Facts> =>
+  memoize(
+    cache,
+    origin,
+    () => fetchFacts(assets, origin),
+    () => true
+  );
+
+const feedItemSchema = z.object({
+  _markdown_url: z.string(),
+  date_published: z.string(),
+  summary: z.string(),
+  tags: z.array(z.string()).default([]),
+  title: z.string(),
+  url: z.string(),
+});
+
+const feedSchema = z.object({ items: z.array(feedItemSchema) });
+
+export interface BlogPost {
+  date: string;
+  description: string;
+  markdownUrl: string;
+  slug: string;
+  tags: string[];
+  title: string;
+  url: string;
+}
+
+const blogCache = new Map<string, Promise<BlogPost[]>>();
+const markdownCache = new Map<string, Promise<string | undefined>>();
+
+const slugOf = (url: string): string =>
+  url.split("/").findLast((part) => part !== "") ?? "";
+
+const readFeed = async (assets: Fetcher, origin: string): Promise<unknown> => {
+  const response = await readAsset(assets, origin, "/blog/feed.json");
+
+  return response.json();
+};
+
+const fetchBlogPosts = async (
+  assets: Fetcher,
+  origin: string
+): Promise<BlogPost[]> => {
+  let raw: unknown;
+
+  try {
+    raw = await readFeed(assets, origin);
+  } catch (error) {
+    throw new Error("blog unavailable", { cause: error });
+  }
+
+  const parsed = feedSchema.safeParse(raw);
+
+  if (!parsed.success) {
+    throw new Error("blog unavailable", { cause: parsed.error });
+  }
+
+  return parsed.data.items.map((item) => ({
+    date: item.date_published.slice(0, 10),
+    description: item.summary,
+    markdownUrl: item._markdown_url,
+    slug: slugOf(item.url),
+    tags: item.tags,
+    title: item.title,
+    url: item.url,
+  }));
+};
+
+export const loadBlogPosts = (
+  assets: Fetcher,
+  origin: string
+): Promise<BlogPost[]> =>
+  memoize(
+    blogCache,
+    origin,
+    () => fetchBlogPosts(assets, origin),
+    () => true
+  );
+
+const fetchMarkdown = async (
+  assets: Fetcher,
+  origin: string,
+  slug: string
+): Promise<string | undefined> => {
+  const posts = await loadBlogPosts(assets, origin);
+
+  if (posts.every((post) => post.slug !== slug)) {
+    return undefined;
+  }
+
+  const response = await assets.fetch(`${origin}/blog/${slug}.md`);
+
+  if (response.status === 404) {
+    return undefined;
+  }
+
+  if (response.status !== 200) {
+    throw new Error("blog unavailable");
+  }
+
+  return response.text();
+};
+
+export const loadPostMarkdown = (
+  assets: Fetcher,
+  origin: string,
+  slug: string
+): Promise<string | undefined> =>
+  memoize(
+    markdownCache,
+    `${origin}/blog/${slug}.md`,
+    () => fetchMarkdown(assets, origin, slug),
+    (text) => text !== undefined
+  );
 
 export const compact = (lines: Array<string | undefined>): string[] =>
   lines.filter((line): line is string => Boolean(line?.trim()));

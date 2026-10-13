@@ -104,3 +104,32 @@ export const skyPhase = (
   );
   return phaseAt(hours + minutes / 60 + seconds / 3600, sun, twilightHours);
 };
+
+export const skyPhaseNames = ["night", "dawn", "day", "dusk"] as const;
+
+export type SkyPhaseName = (typeof skyPhaseNames)[number];
+
+const presetDayOfYear = 286;
+const presetSummerHours = 2;
+const presetNoonHour = 12 + presetSummerHours - viennaStandardHours;
+const presetAfterSunHours = 20 / 60;
+const presetSun = sunTimes(presetDayOfYear, viennaLatitude, presetNoonHour);
+
+const namedPhases: Readonly<Record<SkyPhaseName, SkyPhase>> = {
+  dawn: phaseAt(
+    presetSun.rise + presetAfterSunHours,
+    presetSun,
+    defaultTwilightHours
+  ),
+  day: { day: 1, dusk: 0, twilight: 0 },
+  dusk: phaseAt(
+    presetSun.set + presetAfterSunHours,
+    presetSun,
+    defaultTwilightHours
+  ),
+  night: nightPhase,
+};
+
+export const phaseFromName = (name: SkyPhaseName): SkyPhase => ({
+  ...namedPhases[name],
+});

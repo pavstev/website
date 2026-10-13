@@ -81,6 +81,12 @@ const eslintConfig = defineConfig([
     "scripts/postcss-color-mix.mjs",
     "worker-configuration.d.ts",
   ]),
+  globalIgnores([
+    ".blog/**",
+    "public/blog-media/**",
+    "public/blog/**",
+    "public/build.json",
+  ]),
   ...[
     ...tseslint.configs.strictTypeChecked,
     ...tseslint.configs.stylisticTypeChecked,
@@ -280,7 +286,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["scripts/**", "src/profile/cli.ts"],
+    files: ["scripts/**", "src/lib/blog/**", "src/profile/cli.ts"],
     rules: { "security/detect-non-literal-fs-filename": "off" },
   },
   {

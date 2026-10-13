@@ -1,0 +1,18 @@
+{
+  "x": [
+    "Oct 5",
+    "Oct 6",
+    "Oct 7",
+    "Oct 8",
+    "Oct 9",
+    "Oct 10",
+    "Oct 11",
+    "Oct 12",
+    "Oct 13"
+  ],
+  "series": [
+    { "name": "My prompts", "values": [46, 6, 80, 55, 6, 0, 0, 78, 13] },
+    { "name": "Question rounds", "values": [60, 5, 73, 30, 0, 0, 0, 22, 2] }
+  ],
+  "unit": ""
+}

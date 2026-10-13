@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { phaseAt, skyPhase, sunTimes } from "./sky-clock.ts";
+import {
+  nightPhase,
+  phaseAt,
+  phaseFromName,
+  skyPhase,
+  skyPhaseNames,
+  sunTimes,
+} from "./sky-clock.ts";
 
 const close = (actual: number, expected: number, within: number): void => {
   assert.ok(Math.abs(actual - expected) <= within);
@@ -82,5 +89,59 @@ describe("skyPhase", () => {
     const after = skyPhase(new Date("2026-10-12T17:30:00Z"));
     assert.ok(before.day > 0.5);
     assert.equal(after.day, 0);
+  });
+});
+
+describe("phaseFromName", () => {
+  const october = sunTimes(286, 48.21, 13);
+  const viennaSummerOffset = 2;
+  const viennaAt = (hour: number): Date =>
+    new Date(Date.UTC(2026, 9, 13) + (hour - viennaSummerOffset) * 3_600_000);
+  const twentyMinutes = 20 / 60;
+
+  it("names the four phases", () => {
+    assert.deepEqual(skyPhaseNames, ["night", "dawn", "day", "dusk"]);
+  });
+
+  it("gives the night phase for night", () => {
+    assert.deepEqual(phaseFromName("night"), nightPhase);
+  });
+
+  it("gives full daylight for day", () => {
+    const day = phaseFromName("day");
+    assert.equal(day.day, 1);
+    assert.equal(day.twilight, 0);
+    assert.equal(day.dusk, 0);
+  });
+
+  it("puts the October Vienna sun where the sky clock expects it", () => {
+    assert.ok(october.rise > 7.3 && october.rise < 7.8);
+    assert.ok(october.set > 18.2 && october.set < 18.7);
+  });
+
+  it("matches the Vienna sky 20 minutes after sunrise on 2026-10-13", () => {
+    const dawn = phaseFromName("dawn");
+    const live = skyPhase(viennaAt(october.rise + twentyMinutes));
+    close(dawn.day, live.day, 1e-3);
+    close(dawn.twilight, live.twilight, 1e-3);
+    assert.equal(dawn.dusk, 0);
+    assert.equal(live.dusk, 0);
+    assert.ok(dawn.twilight > 0.5);
+  });
+
+  it("matches the Vienna sky 20 minutes after sunset on 2026-10-13", () => {
+    const dusk = phaseFromName("dusk");
+    const live = skyPhase(viennaAt(october.set + twentyMinutes));
+    close(dusk.day, live.day, 1e-3);
+    close(dusk.twilight, live.twilight, 1e-3);
+    assert.equal(dusk.dusk, 1);
+    assert.equal(live.dusk, 1);
+    assert.ok(dusk.twilight > 0.5);
+  });
+
+  it("returns a fresh object each time", () => {
+    const first = phaseFromName("dusk");
+    first.day = 9;
+    assert.notEqual(phaseFromName("dusk").day, 9);
   });
 });

@@ -202,7 +202,7 @@ export const parseViennaWeather = (
     : undefined;
 };
 
-const isWeatherState = (value: string): value is WeatherState =>
+export const isWeatherState = (value: string): value is WeatherState =>
   Object.hasOwn(weatherPresets, value);
 
 export const weatherOverride = (search: string): SkyWeather | undefined => {

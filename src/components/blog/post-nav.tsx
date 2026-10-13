@@ -1,0 +1,39 @@
+import type { ReactElement } from "react";
+
+import Link from "next/link";
+
+import { type PostMeta } from "@/lib/blog/schema";
+import { en } from "@/lib/i18n";
+
+interface PostNavProps {
+  newer?: PostMeta | undefined;
+  older?: PostMeta | undefined;
+}
+
+export const PostNav = ({ newer, older }: PostNavProps): ReactElement => (
+  <nav aria-label={en.blog.postNav} className="post-nav">
+    {older !== undefined && (
+      <Link
+        className="post-nav-link focus-ring"
+        href={`/blog/${older.slug}`}
+        rel="prev"
+      >
+        <span className="post-nav-label type-chip">{en.blog.previous}</span>
+        <span className="post-nav-title">{older.title}</span>
+      </Link>
+    )}
+    {newer !== undefined && (
+      <Link
+        className="post-nav-link post-nav-next focus-ring"
+        href={`/blog/${newer.slug}`}
+        rel="next"
+      >
+        <span className="post-nav-label type-chip">{en.blog.next}</span>
+        <span className="post-nav-title">{newer.title}</span>
+      </Link>
+    )}
+    <Link className="post-nav-back focus-ring" href="/blog">
+      {en.blog.back}
+    </Link>
+  </nav>
+);

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  blogIndexInkTargets,
+  blogRowSlots,
   contrast,
   inkMargin,
   inkTargets,
@@ -9,6 +11,7 @@ import {
   liftFor,
   luminance,
   nextLift,
+  postInkTargets,
   skyLevel,
   tintLuminance,
 } from "./sky-ink.ts";
@@ -107,6 +110,54 @@ describe("inkTargets", () => {
     assert.deepEqual(
       inkTargets.map((target) => target.need),
       [3, 6.9, 4.5, 4.5, 4.5, 4.5]
+    );
+  });
+});
+
+const needOf = (paint: string): number[] => [
+  ...new Set(
+    blogIndexInkTargets
+      .filter((target) => target.paint.endsWith(paint))
+      .map((target) => target.need)
+  ),
+];
+
+describe("blogIndexInkTargets", () => {
+  it("gives headings and titles 3 and every smaller text 4.5", () => {
+    assert.deepEqual(needOf(".blog-heading"), [3]);
+    assert.deepEqual(needOf(".post-row-title"), [3]);
+    assert.deepEqual(needOf(".post-row-meta"), [4.5]);
+    assert.deepEqual(needOf(".post-row-text"), [4.5]);
+    assert.deepEqual(needOf(".tabular"), [4.5]);
+    assert.deepEqual(needOf(".weather-credit"), [4.5]);
+  });
+
+  it("probes one slot per row up to the row limit", () => {
+    const titles = blogIndexInkTargets.filter((target) =>
+      target.paint.endsWith(".post-row-title")
+    );
+    assert.deepEqual(
+      titles.map((target) => target.index),
+      Array.from({ length: blogRowSlots }, (_, index) => index)
+    );
+  });
+
+  it("stays inside the blog", () => {
+    for (const target of blogIndexInkTargets) {
+      assert.ok(target.paint.startsWith("[data-blog] "));
+      assert.ok(target.probe.startsWith("[data-blog] "));
+    }
+  });
+});
+
+describe("postInkTargets", () => {
+  it("lifts the title to 3 and the meta line to 4.5 in the sky header", () => {
+    assert.deepEqual(
+      postInkTargets.map((target) => [target.paint, target.need]),
+      [
+        ["[data-sky-header] .post-title", 3],
+        ["[data-sky-header] .post-meta", 4.5],
+      ]
     );
   });
 });

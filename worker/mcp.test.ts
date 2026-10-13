@@ -75,16 +75,60 @@ const bareProject = {
   websiteUrl: "",
 };
 
-const connect = async (facts: Facts): Promise<Client> => {
+const blogFeed = {
+  items: [
+    {
+      _markdown_url: "https://ada.example/blog/newer.md",
+      date_published: "2026-10-12T00:00:00Z",
+      id: "https://ada.example/blog/newer",
+      summary: "The newer post.",
+      tags: ["One", "Two"],
+      title: "Newer & better",
+      url: "https://ada.example/blog/newer",
+    },
+    {
+      _markdown_url: "https://ada.example/blog/older.md",
+      date_published: "2026-10-01T00:00:00Z",
+      id: "https://ada.example/blog/older",
+      summary: "The older post.",
+      tags: ["Three"],
+      title: "Older",
+      url: "https://ada.example/blog/older",
+    },
+  ],
+};
+
+const blogAssets = {
+  fetch: (url: string) =>
+    Promise.resolve(
+      url.endsWith("/blog/feed.json")
+        ? Response.json(blogFeed)
+        : url.endsWith("/blog/newer.md")
+          ? new Response("# Newer & better\n\nBody.\n")
+          : new Response("", { status: 404 })
+    ),
+} as unknown as Fetcher;
+
+let blogOrigin = 0;
+
+const connect = async (facts: Facts, assets = blogAssets): Promise<Client> => {
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: "test", version: "0.0.0" });
-  await createMcpServer(facts).connect(serverSide);
+  blogOrigin += 1;
+  await createMcpServer(facts, {
+    assets,
+    origin: `https://blog${String(blogOrigin)}.test`,
+  }).connect(serverSide);
   await client.connect(clientSide);
   return client;
 };
 
-const textOf = async (client: Client, name: string): Promise<string> => {
-  const { content } = await client.callTool({ name });
+const textOf = async (
+  client: Client,
+  name: string,
+  args?: Record<string, unknown>
+): Promise<string> => {
+  const { content } = await client.callTool({ arguments: args, name });
 
   assert.ok(Array.isArray(content));
   assert.equal(content.length, 1);
@@ -167,15 +211,101 @@ const errorOf = async (response: Response): Promise<unknown> => {
 };
 
 describe("createMcpServer", () => {
-  it("lists exactly the six tools", async () => {
+  it("lists exactly the eight tools", async () => {
     const client = await connect(sampleFacts);
     const { tools } = await client.listTools();
 
     assert.deepEqual(
       tools.map((tool) => tool.name).toSorted((a, b) => a.localeCompare(b)),
-      ["contact", "experience", "products", "profile", "projects", "skills"]
+      [
+        "contact",
+        "experience",
+        "post",
+        "posts",
+        "products",
+        "profile",
+        "projects",
+        "skills",
+      ]
     );
   });
+  it("posts lists title, URL, date, description, tags and Markdown URL", async () => {
+    const client = await connect(sampleFacts);
+    const text = await textOf(client, "posts");
+
+    assert.match(text, /Newer & better/);
+    assert.match(text, /URL: https:\/\/ada\.example\/blog\/newer\n/);
+    assert.match(text, /Date: 2026-10-12/);
+    assert.match(text, /Tags: One, Two/);
+    assert.match(text, /Markdown: https:\/\/ada\.example\/blog\/newer\.md/);
+    assert.match(text, /The newer post\./);
+    assert.match(text, /Older/);
+    assert.ok(text.indexOf("Newer") < text.indexOf("Older"));
+  });
+  it("posts answers not available when the feed is missing", async () => {
+    const assets = {
+      fetch: () => Promise.resolve(new Response("", { status: 404 })),
+    } as unknown as Fetcher;
+    const client = await connect(sampleFacts, assets);
+
+    assert.match(await textOf(client, "posts"), /not available/i);
+  });
+  it("post returns the Markdown copy of a listed post", async () => {
+    const client = await connect(sampleFacts);
+    const found = await client.callTool({
+      arguments: { slug: "newer" },
+      name: "post",
+    });
+
+    assert.notEqual(found.isError, true);
+
+    assert.equal(
+      await textOf(client, "post", { slug: "newer" }),
+      "# Newer & better\n\nBody.\n"
+    );
+  });
+  it("post answers not_found for a slug that is not listed", async () => {
+    const client = await connect(sampleFacts);
+
+    const result = await client.callTool({
+      arguments: { slug: "draft-post" },
+      name: "post",
+    });
+
+    assert.equal(result.isError, true);
+    assert.deepEqual(result.content, [
+      { text: '{"error":"not_found"}', type: "text" },
+    ]);
+  });
+  it("post answers not_found when the copy is missing", async () => {
+    const client = await connect(sampleFacts);
+
+    const result = await client.callTool({
+      arguments: { slug: "older" },
+      name: "post",
+    });
+
+    assert.equal(result.isError, true);
+    assert.deepEqual(result.content, [
+      { text: '{"error":"not_found"}', type: "text" },
+    ]);
+  });
+  for (const slug of ["../x", "a/b", "UPPER", "", "a".repeat(81)]) {
+    it(`post rejects the slug ${JSON.stringify(slug)}`, async () => {
+      const client = await connect(sampleFacts);
+      let failed = false;
+      try {
+        const result = await client.callTool({
+          arguments: { slug },
+          name: "post",
+        });
+        failed = result.isError === true;
+      } catch {
+        failed = true;
+      }
+      assert.ok(failed);
+    });
+  }
   it("profile returns name, headline, location, summary and links", async () => {
     const client = await connect(sampleFacts);
     const text = await textOf(client, "profile");
@@ -393,6 +523,8 @@ describe("handleMcp", () => {
     for (const name of [
       "contact",
       "experience",
+      "post",
+      "posts",
       "products",
       "profile",
       "projects",

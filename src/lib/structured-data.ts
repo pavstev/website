@@ -1,5 +1,13 @@
-import type { Graph, ImageObject } from "schema-dts";
+import type {
+  BlogPosting,
+  BreadcrumbList,
+  Graph,
+  ImageObject,
+  Person,
+  WebSite,
+} from "schema-dts";
 
+import type { PostMeta } from "./blog/schema.ts";
 import type { Contact, Repo } from "./github.ts";
 import type { Product } from "./products.ts";
 
@@ -20,6 +28,15 @@ const portrait: ImageObject = {
   width: String(personalData.portrait.width),
 };
 
+const websiteNode: WebSite = {
+  "@id": websiteId,
+  "@type": "WebSite",
+  inLanguage: "en",
+  name: personalData.name,
+  publisher: { "@id": personId },
+  url: home,
+};
+
 export const structuredData = (
   repos: Repo[],
   contact: Contact,
@@ -28,14 +45,7 @@ export const structuredData = (
 ): Graph => ({
   "@context": "https://schema.org",
   "@graph": [
-    {
-      "@id": websiteId,
-      "@type": "WebSite",
-      inLanguage: "en",
-      name: personalData.name,
-      publisher: { "@id": personId },
-      url: home,
-    },
+    websiteNode,
     {
       "@id": profileId,
       "@type": "ProfilePage",
@@ -106,6 +116,109 @@ export const structuredData = (
           url: product.url,
         }) as const
     ),
+  ],
+});
+
+const blogUrl = `${home}/blog`;
+const blogId = `${blogUrl}#blog`;
+const postId = (post: PostMeta): string => `${post.url}#post`;
+
+const author: Person = {
+  "@id": personId,
+  "@type": "Person",
+  name: personalData.name,
+  url: home,
+};
+
+interface Crumb {
+  name: string;
+  url: string;
+}
+
+const breadcrumbs = (id: string, crumbs: readonly Crumb[]): BreadcrumbList => ({
+  "@id": id,
+  "@type": "BreadcrumbList",
+  itemListElement: crumbs.map((crumb, index) => ({
+    "@type": "ListItem",
+    item: crumb.url,
+    name: crumb.name,
+    position: index + 1,
+  })),
+});
+
+const homeCrumb: Crumb = { name: personalData.name, url: home };
+const blogCrumb: Crumb = { name: en.blog.heading, url: blogUrl };
+
+const postSummary = (post: PostMeta): BlogPosting => ({
+  "@id": postId(post),
+  "@type": "BlogPosting",
+  author,
+  dateModified: post.updated ?? post.date,
+  datePublished: post.date,
+  description: post.description,
+  headline: post.title,
+  inLanguage: "en",
+  keywords: [...post.tags],
+  url: post.url,
+});
+
+export const blogGraph = (posts: readonly PostMeta[]): Graph => ({
+  "@context": "https://schema.org",
+  "@graph": [
+    websiteNode,
+    {
+      "@id": blogId,
+      "@type": "Blog",
+      author,
+      blogPost: posts.map((post) => postSummary(post)),
+      description: en.blog.metaDescription,
+      inLanguage: "en",
+      isPartOf: { "@id": websiteId },
+      name: en.blog.blogName,
+      publisher: author,
+      url: blogUrl,
+    },
+    breadcrumbs(`${blogUrl}#breadcrumb`, [homeCrumb, blogCrumb]),
+  ],
+});
+
+export interface PostImage {
+  height: number;
+  url: string;
+  width: number;
+}
+
+const imageObject = (image: PostImage): ImageObject => ({
+  "@type": "ImageObject",
+  height: String(image.height),
+  url: image.url,
+  width: String(image.width),
+});
+
+export const postGraph = (
+  post: PostMeta,
+  images: readonly PostImage[]
+): Graph => ({
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      ...postSummary(post),
+      image: images.map((image) => imageObject(image)),
+      isPartOf: {
+        "@id": blogId,
+        "@type": "Blog",
+        name: en.blog.blogName,
+        url: blogUrl,
+      },
+      mainEntityOfPage: { "@id": post.url, "@type": "WebPage" },
+      publisher: author,
+      wordCount: post.wordCount,
+    },
+    breadcrumbs(`${post.url}#breadcrumb`, [
+      homeCrumb,
+      blogCrumb,
+      { name: post.title, url: post.url },
+    ]),
   ],
 });
 

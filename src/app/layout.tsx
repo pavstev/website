@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
 import type { ReactElement, ReactNode } from "react";
 
+import { isPreviewBuild } from "@/lib/blog/build-env";
 import { en } from "@/lib/i18n";
 import { headScript } from "@/lib/motion-pause";
 import { personalData } from "@/lib/personal";
@@ -51,6 +52,7 @@ export const metadata: Metadata = {
     url: "/",
     username: personalData.githubHandle,
   },
+  ...(isPreviewBuild() && { robots: { follow: false, index: false } }),
   title: en.meta.title,
   twitter: {
     card: "summary_large_image",

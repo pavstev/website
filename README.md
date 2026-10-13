@@ -1,6 +1,6 @@
 # stevanpavlovic.com
 
-My personal site: one contact card floating over a live WebGL sky, plus a small Worker that answers questions about my CV.
+My personal site: one contact card floating over a live WebGL sky, a small blog under the same sky, and a Worker that answers questions about my CV and posts.
 
 ![The site: a portrait, a name, a short bio, a résumé button and two open-source project cards over a dark sky with drifting clouds](.github/assets/hero.jpg)
 
@@ -15,6 +15,7 @@ My personal site: one contact card floating over a live WebGL sky, plus a small 
 - **A planet per project.** Each open-source repo gets its own three.js planet, with language chips in GitHub's colors.
 - **Two products beside the code.** hirista and Safety Real Time sit in a second column next to the repos. Each logo is a planet that starts near the terminator, turns into the light once, then wobbles gently.
 - **Vienna on a globe.** Click "Vienna" in the bio for the coat of arms, a few facts and a three.js globe that loads only then.
+- **A blog under the same sky.** [/blog](https://stevanpavlovic.com/blog) puts one moon around my portrait for each post and links posts that share a tag. Each post has its own sky in the header. Posts are MDX with charts, diagrams and shader stills, optimized at build time, with RSS and JSON feeds and a Markdown copy for AI tools.
 - **Kind to your device.** Every loop drops to 30 fps when idle, pauses when hidden, degrades on slow frames and draws one still frame under reduced motion or a software renderer. A pause button in the top-right corner stills everything and remembers it.
 - **No cookies.** Cloudflare Web Analytics counts visits without them, and a small chip says so once.
 
@@ -22,14 +23,14 @@ My personal site: one contact card floating over a live WebGL sky, plus a small 
 
 ```mermaid
 flowchart LR
-  data["personal.ts, products.ts, i18n.ts, GitHub API, CV feed"] --> build["pnpm build"] --> dist["dist/: page, sitemap, llms.txt, cv.json, resume.pdf"]
+  data["personal.ts, products.ts, i18n.ts, content/blog, GitHub API, CV feed"] --> build["pnpm build"] --> dist["dist/: page, blog, feeds, sitemap, llms.txt, cv.json, resume.pdf"]
   visitor["Visitor"] --> cf["Cloudflare"]
   cf -- "other paths" --> dist
-  cf -- "/mcp" --> worker["worker/"]
-  worker -. "cv.json, llms.txt" .-> dist
+  cf -- "/mcp, /weather" --> worker["worker/"]
+  worker -. "cv.json, llms.txt, feed.json" .-> dist
 ```
 
-The page is a Next.js 16 static export. The Worker in `worker/` runs only for `/mcp`: `POST /mcp` is a read-only MCP server with six tools (`profile`, `experience`, `skills`, `projects`, `products`, `contact`) behind a per-IP rate limit. It reads `/cv.json` and `/llms.txt` from the static assets. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
+The page is a Next.js 16 static export. The Worker in `worker/` runs only for `/mcp` and `/weather`. `POST /mcp` is a read-only MCP server with eight tools (`profile`, `experience`, `skills`, `projects`, `products`, `contact`, `posts`, `post`) behind a per-IP rate limit. It reads `/cv.json`, `/llms.txt` and `/blog/feed.json` from the static assets. `/weather` gives the sky the current Vienna weather. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
 
 ## Getting started
 
@@ -40,15 +41,16 @@ pnpm install
 pnpm dev   # http://localhost:4321
 ```
 
-| Script               | What it does                                                                 |
-| -------------------- | ---------------------------------------------------------------------------- |
-| `pnpm dev`           | Fetches the CV, then a dev server on port 4321                               |
-| `pnpm build`         | Fetches the CV, builds `dist/`, then checks the CV did not change            |
-| `pnpm preview`       | Serves `dist/` on port 4321                                                  |
-| `pnpm check`         | Format, lint, types (site and Worker), tests, unused code, build, profile    |
-| `pnpm fix`           | Applies Prettier and ESLint fixes                                            |
-| `pnpm icons`         | Rebuilds `src/lib/icon-data.ts`                                              |
-| `pnpm profile:build` | Builds the GitHub profile into `.profile-out/` (`--check` also checks links) |
+| Script                 | What it does                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `pnpm dev`             | Fetches the CV, builds the blog media, then a dev server on port 4321 (drafts show)  |
+| `pnpm build`           | Fetches the CV, builds the blog media and `dist/`, then checks the CV did not change |
+| `pnpm github:snapshot` | Saves the GitHub data that preview builds replay when they have no token             |
+| `pnpm preview`         | Serves `dist/` on port 4321                                                          |
+| `pnpm check`           | Format, lint, types (site and Worker), tests, unused code, build, profile            |
+| `pnpm fix`             | Applies Prettier and ESLint fixes                                                    |
+| `pnpm icons`           | Rebuilds `src/lib/icon-data.ts`                                                      |
+| `pnpm profile:build`   | Builds the GitHub profile into `.profile-out/` (`--check` also checks links)         |
 
 `pnpm check` changes no file. It runs before every commit (husky) and in CI.
 
@@ -64,7 +66,7 @@ gh secret set PROFILE_DEPLOY_KEY -R pavstev/website < /tmp/profile_sync && rm /t
 
 ## Deploy
 
-Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). Cloudflare runs `pnpm run build` and needs `GITHUB_TOKEN`, `CV_FEED_URL` and `CV_FEED_TOKEN` as build variables; CI needs the two CV feed values as GitHub Actions secrets (and Dependabot secrets). Saving a résumé in hirista starts a new build. The `workers.dev` and preview URLs are off. Nobody deploys by hand.
+Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). Cloudflare runs `pnpm run build` and needs `GITHUB_TOKEN`, `CV_FEED_URL` and `CV_FEED_TOKEN` as build variables; CI needs the two CV feed values as GitHub Actions secrets (and Dependabot secrets). Saving a résumé in hirista starts a new build. The `workers.dev` URL is off. Every other branch gets a preview at `<branch>-website.pavlovicmstevan.workers.dev`: drafts show, search engines are asked not to index it, and without a token it replays the saved GitHub data. Nobody deploys by hand.
 
 ## Contact
 

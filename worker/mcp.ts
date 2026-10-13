@@ -1,10 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import * as z from "zod";
 
 import {
+  type BlogPost,
   compact,
   type Facts,
+  loadBlogPosts,
   loadFacts,
+  loadPostMarkdown,
   projectsText,
   roleBlock,
   skillLines,
@@ -19,9 +23,22 @@ const resumeProjectsHeading = "Projects from the résumé";
 const linksHeading = "Links";
 const unavailable = "Not available.";
 const maxRequestBodySize = 16_384;
+const slugPattern = /^[a-z0-9-]{1,80}$/;
+const notFound = JSON.stringify({ error: "not_found" });
 const readOnly = { openWorldHint: false, readOnlyHint: true };
 
+export interface BlogSource {
+  assets: Fetcher;
+  origin: string;
+}
+
 type Cv = Facts["cv"];
+
+interface ToolResult {
+  [key: string]: unknown;
+  content: [{ text: string; type: "text" }];
+  isError?: boolean;
+}
 
 const section = (llms: string, heading: string): string | undefined => {
   const lines = llms.split("\n");
@@ -88,13 +105,47 @@ const projectsAnswer = (facts: Facts): string => {
   );
 };
 
-const textResult = (
-  text: string
-): { content: [{ text: string; type: "text" }] } => ({
+const postBlock = (post: BlogPost): string =>
+  [
+    post.title,
+    `URL: ${post.url}`,
+    `Date: ${post.date}`,
+    `Tags: ${post.tags.join(", ")}`,
+    `Markdown: ${post.markdownUrl}`,
+    post.description,
+  ].join("\n");
+
+const postsText = async (blog: BlogSource): Promise<string> => {
+  try {
+    const posts = await loadBlogPosts(blog.assets, blog.origin);
+
+    return posts.length > 0
+      ? posts.map((post) => postBlock(post)).join("\n\n")
+      : unavailable;
+  } catch {
+    return unavailable;
+  }
+};
+
+const postResult = async (
+  blog: BlogSource,
+  slug: string
+): Promise<ToolResult> => {
+  try {
+    const markdown = await loadPostMarkdown(blog.assets, blog.origin, slug);
+    return markdown === undefined
+      ? { content: [{ text: notFound, type: "text" }], isError: true }
+      : textResult(markdown);
+  } catch {
+    return textResult(unavailable);
+  }
+};
+
+const textResult = (text: string): ToolResult => ({
   content: [{ text, type: "text" }],
 });
 
-export const createMcpServer = (facts: Facts): McpServer => {
+export const createMcpServer = (facts: Facts, blog: BlogSource): McpServer => {
   const server = new McpServer({ name: serverName, version: serverVersion });
   const { cv, llms } = facts;
 
@@ -149,6 +200,25 @@ export const createMcpServer = (facts: Facts): McpServer => {
     },
     () => textResult(section(llms, linksHeading) ?? unavailable)
   );
+  server.registerTool(
+    "posts",
+    {
+      annotations: readOnly,
+      description:
+        "Blog posts, newest first: title, link, date, tags, Markdown link and a short description.",
+    },
+    async () => textResult(await postsText(blog))
+  );
+  server.registerTool(
+    "post",
+    {
+      annotations: readOnly,
+      description:
+        "The full text of one blog post as Markdown. Use a slug from the posts tool.",
+      inputSchema: { slug: z.string().regex(slugPattern) },
+    },
+    async ({ slug }) => postResult(blog, slug)
+  );
 
   return server;
 };
@@ -172,8 +242,9 @@ const respond = async (request: Request, env: Env): Promise<Response> => {
       return failure(429, "limit");
     }
 
-    const facts = await loadFacts(env.ASSETS, new URL(request.url).origin);
-    const server = createMcpServer(facts);
+    const { origin } = new URL(request.url);
+    const facts = await loadFacts(env.ASSETS, origin);
+    const server = createMcpServer(facts, { assets: env.ASSETS, origin });
     const transport = new WebStandardStreamableHTTPServerTransport({
       maxRequestBodySize,
     });

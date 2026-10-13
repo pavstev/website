@@ -68,6 +68,49 @@ export const inkTargets: readonly InkTarget[] = [
   },
 ];
 
+export const blogRowSlots = 8;
+
+const blogTarget = (
+  selector: string,
+  base: string,
+  need: number,
+  index = 0
+): InkTarget => ({
+  base,
+  index,
+  need,
+  paint: `[data-blog] ${selector}`,
+  probe: `[data-blog] ${selector}`,
+});
+
+export const blogIndexInkTargets: readonly InkTarget[] = [
+  blogTarget(".blog-heading", inkPalette.foreground, 3),
+  ...Array.from({ length: blogRowSlots }, (_, row) => [
+    blogTarget(".post-row-title", inkPalette.foreground, 3, row),
+    blogTarget(".post-row-meta", inkPalette.muted, 4.5, row),
+    blogTarget(".post-row-text", inkPalette.soft, 4.5, row),
+  ]).flat(),
+  blogTarget(".blog-footer .tabular", inkPalette.soft, 4.5),
+  blogTarget(".weather-credit", inkPalette.muted, 4.5),
+];
+
+export const postInkTargets: readonly InkTarget[] = [
+  {
+    base: inkPalette.foreground,
+    index: 0,
+    need: 3,
+    paint: "[data-sky-header] .post-title",
+    probe: "[data-sky-header] .post-title",
+  },
+  {
+    base: inkPalette.soft,
+    index: 0,
+    need: 4.5,
+    paint: "[data-sky-header] .post-meta",
+    probe: "[data-sky-header] .post-meta",
+  },
+];
+
 const linear = (byte: number): number => {
   const value = byte / 255;
   return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;

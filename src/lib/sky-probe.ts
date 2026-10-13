@@ -9,6 +9,7 @@ export interface ProbeBox {
 
 export interface SkyProbe {
   columns: number;
+  dispose: () => void;
   draw: (boxes: Array<ProbeBox | undefined>) => boolean;
   read: () => Uint8Array | undefined;
   rows: number;
@@ -53,10 +54,18 @@ export const createSkyProbe = (
   const complete =
     gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  if (!complete) return undefined;
+  if (!complete) {
+    gl.deleteFramebuffer(buffer);
+    gl.deleteTexture(texture);
+    return undefined;
+  }
   const pixels = new Uint8Array(width * probeRows * 4);
   return {
     columns: probeColumns,
+    dispose: () => {
+      gl.deleteFramebuffer(buffer);
+      gl.deleteTexture(texture);
+    },
     draw: (boxes) => {
       if (boxes.every((box) => box === undefined)) return false;
       gl.bindFramebuffer(gl.FRAMEBUFFER, buffer);

@@ -117,7 +117,7 @@ const placeTip = (
 export const initContactLinks = (list: HTMLElement): (() => void) => {
   const fine = globalThis.matchMedia(finePointerQuery);
   const reduce = stillQuery();
-  const row = list.parentElement ?? list;
+  const row = list.closest<HTMLElement>("[data-proximity]") ?? list;
   const items: ContactItem[] = [];
   for (const root of row.querySelectorAll<HTMLElement>(
     ":is(.download-item, .contact-item)"

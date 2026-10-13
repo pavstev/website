@@ -1,5 +1,9 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import * as z from "zod";
+
+import { type BuildEnv, isPreviewBuild } from "./blog/build-env.ts";
 
 export interface Contact {
   email: string;
@@ -176,6 +180,92 @@ const localToken = (): string | undefined => {
 const token = (): string | undefined =>
   process.env["GITHUB_TOKEN"] ?? localToken();
 
+export type GitHubSnapshot = Record<string, unknown>;
+
+export interface GitHubSource {
+  env?: BuildEnv;
+  fetch?: typeof fetch;
+  snapshot?: () => GitHubSnapshot;
+  token?: () => string | undefined;
+  warn?: (line: string) => void;
+}
+
+interface Client {
+  auth: string | undefined;
+  fetch: typeof fetch;
+  replay: boolean;
+}
+
+export const githubSnapshotPath = "src/lib/github-snapshot.json";
+
+const SnapshotSchema = z.record(z.string(), z.unknown());
+
+const readSnapshot = (): GitHubSnapshot => {
+  const text = readFileSync(githubSnapshotPath, "utf8");
+  return SnapshotSchema.parse(JSON.parse(text));
+};
+
+let warned = false;
+
+const warnOnce = (line: string): void => {
+  if (warned) return;
+  warned = true;
+  console.warn(line);
+};
+
+const bodyText = (body: RequestInit["body"]): string | undefined =>
+  typeof body === "string" ? body : undefined;
+
+export const requestKey = (url: string, init?: RequestInit): string => {
+  const target = url.startsWith(api) ? url.slice(api.length) : url;
+  const method = init?.method ?? "GET";
+  const body = bodyText(init?.body);
+  if (body === undefined) return `${method} ${target}`;
+  const digest = createHash("sha256").update(body).digest("hex").slice(0, 16);
+  return `${method} ${target} ${digest}`;
+};
+
+const requestUrl = (input: Parameters<typeof fetch>[0]): string => {
+  if (typeof input === "string") return input;
+  return input instanceof Request ? input.url : input.href;
+};
+
+const replayFetch =
+  (snapshot: GitHubSnapshot): typeof fetch =>
+  (input, init) => {
+    const key = requestKey(requestUrl(input), init);
+    if (!Object.hasOwn(snapshot, key)) {
+      return Promise.reject(
+        new Error(
+          `${githubSnapshotPath} has no answer for ${key}; run pnpm github:snapshot`
+        )
+      );
+    }
+    const answer = snapshot[key];
+    return Promise.resolve(
+      typeof answer === "string"
+        ? new Response(answer, { headers: { "Content-Type": "text/html" } })
+        : Response.json(answer)
+    );
+  };
+
+const client = ({
+  env = process.env,
+  fetch: fetchImpl = fetch,
+  snapshot = readSnapshot,
+  token: readToken = token,
+  warn = warnOnce,
+}: GitHubSource): Client => {
+  const auth = readToken();
+  if (auth || !isPreviewBuild(env)) {
+    return { auth, fetch: fetchImpl, replay: false };
+  }
+  warn(
+    `GITHUB_TOKEN is not set on preview branch ${env.WORKERS_CI_BRANCH ?? ""}, so the build replays ${githubSnapshotPath}`
+  );
+  return { auth: undefined, fetch: replayFetch(snapshot()), replay: true };
+};
+
 const headers = (auth?: string): Record<string, string> => ({
   Accept: "application/vnd.github+json",
   ...(auth && { Authorization: `Bearer ${auth}` }),
@@ -183,13 +273,10 @@ const headers = (auth?: string): Record<string, string> => ({
   "X-GitHub-Api-Version": "2022-11-28",
 });
 
-const request = async (
-  path: string,
-  fetchImpl: typeof fetch
-): Promise<unknown> => {
-  const response = await fetchImpl(`${api}${path}`, {
+const request = async (path: string, github: Client): Promise<unknown> => {
+  const response = await github.fetch(`${api}${path}`, {
     cache: "force-cache",
-    headers: headers(token()),
+    headers: headers(github.auth),
   });
   if (response.status !== 200) {
     throw new Error(`GitHub API ${String(response.status)} for ${path}`);
@@ -200,12 +287,12 @@ const request = async (
 const requestText = async (
   path: string,
   body: Record<string, string>,
-  fetchImpl: typeof fetch
+  github: Client
 ): Promise<string> => {
-  const response = await fetchImpl(`${api}${path}`, {
+  const response = await github.fetch(`${api}${path}`, {
     body: JSON.stringify(body),
     cache: "force-cache",
-    headers: { ...headers(token()), "Content-Type": "application/json" },
+    headers: { ...headers(github.auth), "Content-Type": "application/json" },
     method: "POST",
   });
   if (response.status !== 200) {
@@ -217,14 +304,15 @@ const requestText = async (
 const graph = async (
   query: string,
   variables: Record<string, string>,
-  fetchImpl: typeof fetch
+  github: Client
 ): Promise<unknown> => {
-  const auth = token();
-  if (!auth) throw new Error("GitHub GraphQL needs GITHUB_TOKEN");
-  const response = await fetchImpl(`${api}/graphql`, {
+  if (!github.auth && !github.replay) {
+    throw new Error("GitHub GraphQL needs GITHUB_TOKEN");
+  }
+  const response = await github.fetch(`${api}/graphql`, {
     body: JSON.stringify({ query, variables }),
     cache: "force-cache",
-    headers: headers(auth),
+    headers: headers(github.auth),
     method: "POST",
   });
   if (response.status !== 200) {
@@ -251,12 +339,13 @@ const languageShares = (
 
 export const getRepos = async (
   login: string,
-  fetchImpl: typeof fetch = fetch
+  source: GitHubSource = {}
 ): Promise<Repo[]> => {
+  const github = client(source);
   const raw = RawReposSchema.parse(
     await request(
       `/users/${login}/repos?per_page=100&type=owner&sort=pushed`,
-      fetchImpl
+      github
     )
   );
   return Promise.all(
@@ -264,11 +353,7 @@ export const getRepos = async (
       ...repo,
       languages: languageShares(
         RawGraphLanguagesSchema.parse(
-          await graph(
-            languagesQuery,
-            { name: repo.name, owner: login },
-            fetchImpl
-          )
+          await graph(languagesQuery, { name: repo.name, owner: login }, github)
         ).data.repository.languages.edges,
         repo.language
       ),
@@ -278,11 +363,12 @@ export const getRepos = async (
 
 export const getContact = async (
   login: string,
-  fetchImpl: typeof fetch = fetch
+  source: GitHubSource = {}
 ): Promise<Contact> => {
+  const github = client(source);
   const [userData, socialData] = await Promise.all([
-    request(`/users/${login}`, fetchImpl),
-    request(`/users/${login}/social_accounts`, fetchImpl),
+    request(`/users/${login}`, github),
+    request(`/users/${login}/social_accounts`, github),
   ]);
   const user = RawUserSchema.parse(userData);
   const social = RawSocialSchema.parse(socialData);
@@ -314,13 +400,14 @@ const releasePublishedAt = (
 export const getProject = async (
   login: string,
   repo: string,
-  fetchImpl: typeof fetch = fetch
+  source: GitHubSource = {}
 ): Promise<Project> => {
+  const github = client(source);
   const base = `/repos/${login}/${repo}`;
   const [info, readme, releases] = await Promise.all([
-    request(base, fetchImpl),
-    request(`${base}/readme`, fetchImpl),
-    request(`${base}/releases?per_page=5`, fetchImpl),
+    request(base, github),
+    request(`${base}/readme`, github),
+    request(`${base}/releases?per_page=5`, github),
   ]);
   const text = Buffer.from(
     RawReadmeSchema.parse(readme).content,
@@ -331,7 +418,7 @@ export const getProject = async (
     readmeHtml: await requestText(
       "/markdown",
       { context: `${login}/${repo}`, mode: "gfm", text },
-      fetchImpl
+      github
     ),
     releases: RawReleasesSchema.parse(releases)
       .filter((release) => !release.draft && !release.prerelease)

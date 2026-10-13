@@ -2,6 +2,7 @@
 .DS_Store
 .claude/skills/
 .agents/
+.blog/
 .cv/
 .dev.vars
 .env*
@@ -13,4 +14,7 @@
 dist/
 next-env.d.ts
 node_modules/
+public/blog-media/
+public/blog/
+public/build.json
 .cv/

@@ -375,7 +375,8 @@ export const createProgram = (
 export const whenLinked = async (
   gl: WebGL2RenderingContext,
   programs: GlProgram[],
-  checkErrors: boolean
+  checkErrors: boolean,
+  abandoned: () => boolean = () => false
 ): Promise<void> => {
   const parallel = gl.getExtension("KHR_parallel_shader_compile");
   if (parallel) {
@@ -387,12 +388,13 @@ export const whenLinked = async (
             parallel.COMPLETION_STATUS_KHR
           ) as boolean
       );
-    while (!done()) {
+    while (!done() && !gl.isContextLost() && !abandoned()) {
       await new Promise((resolve) => {
         globalThis.setTimeout(resolve, 10);
       });
     }
   }
+  if (abandoned()) return;
   if (!parallel && !checkErrors) return;
   for (const { program } of programs) {
     if (gl.getProgramParameter(program, gl.LINK_STATUS) !== true) {
