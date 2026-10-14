@@ -1,5 +1,6 @@
 export interface UniformSink {
   array: (name: string, data: Float32Array) => void;
+  matrix: (name: string, data: Float32Array | readonly number[]) => void;
   set: (name: string, ...values: number[]) => void;
 }
 
@@ -25,6 +26,9 @@ export const createUniformSink = (
   return {
     array: (name, data) => {
       gl.uniform4fv(at(name), data);
+    },
+    matrix: (name, data) => {
+      gl.uniformMatrix3fv(at(name), false, [...data]);
     },
     set: (name, ...values) => {
       const location = at(name);

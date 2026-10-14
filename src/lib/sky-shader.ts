@@ -4,67 +4,7 @@ void main() {
   gl_Position = vec4(a_pos, 0.0, 1.0);
 }`;
 
-const skyCommon = `
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-precision highp float;
-#else
-precision mediump float;
-#endif
-uniform vec2 u_res;
-uniform float u_view;
-uniform float u_labPx;
-uniform float u_time;
-uniform vec2 u_pointer;
-uniform vec4 u_meteor;
-uniform float u_clouds;
-uniform float u_cloudTime;
-uniform float u_cloudShift;
-uniform vec3 u_daylight;
-uniform vec4 u_weather;
-uniform vec4 u_fall;
-uniform vec4 u_probe;
-
-const float PI = 3.14159265;
-const float speed = 1.82;
-const float brightness = 0.7;
-const float hueShift = -0.2618;
-const float starAmount = 0.78;
-const float twinkle = 0.25;
-const float skyTop = 0.5;
-const float starTop = 1.7;
-const float dayLift = 0.87;
-const float dayTint = 1.6;
-const float dayGain = 1.6731;
-const float starFade = 0.75;
-const float meteorTail = 0.35;
-const float meteorTravel = 0.75;
-const float meteorWidth = 0.0028;
-const float haze = 0.21;
-const float cityGlow = 0.65;
-const float precip = 0.5;
-const vec3 lampColor = vec3(1.5217, 0.9125, 0.331);
-const vec3 tauRay = vec3(0.046, 0.108, 0.265);
-const vec3 aerosol = vec3(0.759, 1.0, 1.337);
-const float skyFov = 0.873;
-const vec3 luma = vec3(0.2126, 0.7152, 0.0722);
-const float dayKnee = 0.09;
-
-vec3 srgbToLinear(vec3 c) {
-  c = max(c, 0.0);
-  return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
-}
-
-vec3 linearToSrgb(vec3 c) {
-  c = max(c, 0.0);
-  return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
-}
-
-float flashAmt;
-float openSky;
-float nightSky;
-vec3 underLight;
-float flashX;
-
+export const noiseGlsl = `
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
   p += dot(p, p + 45.32);
@@ -101,7 +41,64 @@ float fbm3(vec2 p) {
   }
   return v;
 }
+`;
 
+const skyCommon = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec2 u_res;
+uniform float u_view;
+uniform float u_labPx;
+uniform float u_time;
+uniform vec2 u_pointer;
+uniform vec4 u_meteor;
+uniform float u_clouds;
+uniform float u_cloudTime;
+uniform float u_cloudShift;
+uniform vec3 u_daylight;
+uniform vec4 u_weather;
+uniform vec4 u_fall;
+uniform vec4 u_probe;
+
+const float PI = 3.14159265;
+const float speed = 1.82;
+const float brightness = 0.7;
+const float hueShift = -0.2618;
+const float skyTop = 0.5;
+const float dayLift = 0.87;
+const float dayTint = 1.6;
+const float dayGain = 1.6731;
+const float starFade = 0.75;
+const float meteorTail = 0.35;
+const float meteorTravel = 0.75;
+const float meteorWidth = 0.0028;
+const float haze = 0.21;
+const float precip = 0.5;
+const vec3 tauRay = vec3(0.046, 0.108, 0.265);
+const vec3 aerosol = vec3(0.759, 1.0, 1.337);
+const float skyFov = 0.873;
+const vec3 luma = vec3(0.2126, 0.7152, 0.0722);
+const float dayKnee = 0.09;
+
+vec3 srgbToLinear(vec3 c) {
+  c = max(c, 0.0);
+  return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c));
+}
+
+vec3 linearToSrgb(vec3 c) {
+  c = max(c, 0.0);
+  return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+}
+
+float flashAmt;
+float openSky;
+vec3 underLight;
+float flashX;
+
+${noiseGlsl}
 vec3 hueRotate(vec3 c, float a) {
   vec3 k = vec3(0.57735);
   float ca = cos(a);
@@ -124,28 +121,6 @@ vec3 clearSky(float h, vec3 tau, float aod) {
 vec3 sunTint(vec3 tau, float el) {
   vec3 t = exp(-tau * (airmass(el) / 3.2 + max(-el, 0.0) * 46.0));
   return t / max(max(t.r, max(t.g, t.b)), 0.0001);
-}
-
-vec3 starField(vec2 p, float scale, float keep, float t, float boost) {
-  vec2 g = p * scale;
-  vec2 id = floor(g);
-  float ybc = (id.y + 0.5) / scale - u_pointer.y + 0.5 * u_res.y / u_view;
-  float high = smoothstep(0.3, 0.95, ybc * u_view / u_res.y);
-  keep = clamp(1.0 - (1.0 - keep) * starAmount * (1.0 + (starTop - 1.0) * high * boost), 0.0, 1.0);
-  vec2 f = fract(g) - 0.5;
-  float r = hash(id);
-  if (r < keep) return vec3(0.0);
-  vec2 o = vec2(hash(id + 3.1), hash(id + 7.7)) - 0.5;
-  float d = length(f - o * 0.6) * u_view / scale * u_labPx;
-  float b = pow(hash(id + 1.3), 6.0) * 2.0 + 0.03;
-  float tw = 1.0 - twinkle + twinkle * sin(t * (0.6 + r * 2.0) + r * 40.0);
-  vec3 tint = mix(vec3(0.68, 0.78, 1.0), vec3(1.0, 0.86, 0.66), hash(id + 5.5));
-  float core = smoothstep(max(1.4, u_labPx * 1.1), 0.0, d);
-  return tint * b * tw * (core + exp(-d) * b * 0.18);
-}
-
-vec3 stars(vec2 p, float t) {
-  return starField(p, 30.0, 0.8, t, 0.35) + starField(p + 3.7, 70.0, 0.88, t, 0.8) * 0.75 + starField(p + 9.1, 150.0, 0.93, t, 1.0) * 0.5;
 }
 
 float rainLayer(vec2 p, float cells, float fall, float t, float seed, float rows) {
@@ -183,6 +158,11 @@ uniform vec3 u_portrait;
 uniform vec4 u_puffs[10];
 uniform float u_puffOn;
 const float TAU = 6.2831853;
+const float starAmount = 0.78;
+const float twinkle = 0.25;
+const float starTop = 1.7;
+const float cityGlow = 0.65;
+const vec3 lampColor = vec3(1.5217, 0.9125, 0.331);
 const float centerDim = 0.39;
 const float coronaSize = 0.48;
 const float coronaBright = 1.06;
@@ -232,6 +212,30 @@ const float puffWide = 0.12;
 const float puffTall = 0.07;
 const float cloudFollow = 0.7;
 const float dayCeiling = 0.15;
+float nightSky;
+
+vec3 starField(vec2 p, float scale, float keep, float t, float boost) {
+  vec2 g = p * scale;
+  vec2 id = floor(g);
+  float ybc = (id.y + 0.5) / scale - u_pointer.y + 0.5 * u_res.y / u_view;
+  float high = smoothstep(0.3, 0.95, ybc * u_view / u_res.y);
+  keep = clamp(1.0 - (1.0 - keep) * starAmount * (1.0 + (starTop - 1.0) * high * boost), 0.0, 1.0);
+  vec2 f = fract(g) - 0.5;
+  float r = hash(id);
+  if (r < keep) return vec3(0.0);
+  vec2 o = vec2(hash(id + 3.1), hash(id + 7.7)) - 0.5;
+  float d = length(f - o * 0.6) * u_view / scale * u_labPx;
+  float b = pow(hash(id + 1.3), 6.0) * 2.0 + 0.03;
+  float tw = 1.0 - twinkle + twinkle * sin(t * (0.6 + r * 2.0) + r * 40.0);
+  vec3 tint = mix(vec3(0.68, 0.78, 1.0), vec3(1.0, 0.86, 0.66), hash(id + 5.5));
+  float core = smoothstep(max(1.4, u_labPx * 1.1), 0.0, d);
+  return tint * b * tw * (core + exp(-d) * b * 0.18);
+}
+
+vec3 stars(vec2 p, float t) {
+  return starField(p, 30.0, 0.8, t, 0.35) + starField(p + 3.7, 70.0, 0.88, t, 0.8) * 0.75 + starField(p + 9.1, 150.0, 0.93, t, 1.0) * 0.5;
+}
+
 float fbmTaper(vec2 p, float keep) {
   float v = 0.0;
   float a = 0.5;
@@ -511,7 +515,7 @@ void main() {
   gl_FragColor = vec4(col, 1.0);
 }`;
 
-export const textShade = `
+const textShade = `
 uniform vec4 u_txt[3];
 const float textKnee = 0.1;
 const float textCeiling = 0.16;
@@ -543,10 +547,67 @@ vec3 capText(vec3 col, float near, float ceiling) {
 
 `;
 
+export const cloudGlsl = `
+const float layerBase = 2600.0;
+const float layerCell = 2400.0;
+const float cirrusBase = 8500.0;
+const float cirrusTau = 0.9;
+
+float layerDensity(vec2 q, float detailOn) {
+  float cov = clamp(u_weather.x, 0.0, 1.0);
+  if (cov < 0.02) return 0.0;
+  float n = fbm(q / layerCell);
+  for (int i = 0; i < 6; i++) {
+    vec4 w = u_wpuff[i];
+    if (w.w > 0.001) {
+      vec2 d = (q - w.xy) / w.z;
+      n += w.w * 0.3 * exp(-dot(d, d));
+    }
+  }
+  float shape = smoothstep(0.64 - 0.4 * cov, 0.84 - 0.32 * cov, n);
+  if (shape <= 0.0) return 0.0;
+  float detail = detailOn > 0.5 ? fbm3(q / (layerCell * 0.21) + 3.7) : 0.5;
+  return clamp(shape * (0.45 + 1.1 * detail) - 0.18 * (1.0 - detail), 0.0, 1.0) * smoothstep(0.02, 0.3, cov);
+}
+
+float layerTau() {
+  return mix(0.8, 2.2, clamp(u_weather.x, 0.0, 1.0));
+}
+
+float slantGain(float up) {
+  return mix(1.0, 2.5, 1.0 - smoothstep(0.05, 0.6, up));
+}
+
+float cirrusDensity(vec2 q) {
+  if (u_weather.z <= 0.0) return 0.0;
+  vec2 s = vec2(q.x * 0.8 + q.y * 0.6, -q.x * 0.6 + q.y * 0.8);
+  float n = fbm(vec2(s.x / 16000.0, s.y / 2800.0)) + (fbm3(s / 700.0) - 0.45) * 0.2;
+  return smoothstep(0.5, 0.82, n) * u_weather.z;
+}
+
+float cloudDepth(vec3 rd) {
+  if (rd.y < 0.012) return 4.0;
+  float slant = slantGain(rd.y);
+  float tau = layerDensity(rd.xz * ((layerBase - u_cam.z) / rd.y) + u_wind.xy, 1.0) * layerTau();
+  tau += cirrusDensity(rd.xz * ((cirrusBase - u_cam.z) / rd.y) + u_wind.zw) * cirrusTau;
+  return tau * slant;
+}
+`;
+
+export const spaceGlsl = `
+const float spaceDepth = 10.0;
+
+float spaceMag(float el, float day) {
+  float k = smoothstep(0.7, 1.55, el);
+  return day * spaceDepth * k * k;
+}
+`;
+
 export const homeSkyFragmentShader = `${skyCommon}
 ${textShade}
 uniform vec3 u_cam;
-uniform vec2 u_look;
+uniform mat3 u_basis;
+uniform mat3 u_gal;
 uniform vec4 u_sun;
 uniform vec3 u_sunCol;
 uniform vec3 u_amb;
@@ -558,53 +619,27 @@ uniform vec4 u_moon;
 uniform vec4 u_moon2;
 uniform vec4 u_moon3;
 uniform vec3 u_moonCol;
-
-const float cloudBase = 1500.0;
-const float cloudCeiling = 2500.0;
-const float cloudReachView = 0.62;
-const float cloudCell = 1800.0;
-const float silverLining = 0.6;
-const float edgeGlow = 1.0;
-const float cirrusAmount = 1.0;
-const float cloudSteps = 7.0;
-const float glowAmount = 1.6;
-const float streetAmount = 1.0;
-const float trafficAmount = 1.0;
-const float parkDepth = 1450.0;
+${cloudGlsl}
+${spaceGlsl}
 const float visibility = 16000.0;
-const float lampAmount = 1.0;
 const float glareText = 0.3;
 const float homeCeiling = 0.17;
+const float milkyGain = 0.2;
+const vec3 spaceColor = vec3(0.004, 0.007, 0.022);
+
+float pixAngle;
 
 vec3 camRay(vec2 fc) {
-  vec3 d = vec3((fc.x - 0.5 * u_res.x) / u_view, fc.y / u_view - u_cam.y, u_cam.x);
-  float cp = cos(u_look.y);
-  float sp = sin(u_look.y);
-  d = vec3(d.x, cp * d.y + sp * d.z, -sp * d.y + cp * d.z);
-  float cy = cos(u_look.x);
-  float sy = sin(u_look.x);
-  d = vec3(cy * d.x + sy * d.z, d.y, -sy * d.x + cy * d.z);
-  return normalize(d);
+  float k = u_cam.x / ((1.0 - u_cam.y) * u_res.y);
+  vec2 w = vec2(fc.x - 0.5 * u_res.x, fc.y - u_cam.y * u_res.y) * k;
+  float r2 = dot(w, w);
+  pixAngle = 2.0 * k / (1.0 + r2);
+  return normalize(u_basis * (vec3(2.0 * w, 1.0 - r2) / (1.0 + r2)));
 }
 
 float hgPhase(float mu, float g) {
   float g2 = g * g;
   return (1.0 - g2) / pow(max(1.0 + g2 - 2.0 * g * mu, 0.0001), 1.5);
-}
-
-float cumH(vec2 q, float lod) {
-  vec2 s = q / cloudCell;
-  float n = lod > 0.5 ? fbm3(s) + 0.047 : fbm(s);
-  float cov = clamp(u_weather.x, 0.0, 1.0);
-  for (int i = 0; i < 6; i++) {
-    vec4 w = u_wpuff[i];
-    if (w.w > 0.001) {
-      vec2 d = (q - w.xy) / w.z;
-      n += w.w * 0.3 * exp(-dot(d, d));
-    }
-  }
-  float H = clamp((n - (0.68 - 0.4 * cov)) / 0.13, 0.0, 1.0);
-  return H * (0.72 + 0.28 * noise(q / (cloudCell * 0.17) + 4.7)) * smoothstep(0.02, 0.3, cov);
 }
 
 float noise3(vec3 p) {
@@ -614,178 +649,91 @@ float noise3(vec3 p) {
   return mix(noise(p.xy + k * vec2(17.13, 31.71)), noise(p.xy + (k + 1.0) * vec2(17.13, 31.71)), f);
 }
 
-float cumField(vec3 rd, float t, float lod) {
-  vec3 pos = rd * t;
-  float hf = (pos.y + u_cam.z - cloudBase) / (cloudCeiling - cloudBase);
-  if (hf < 0.0 || hf > 1.0) return -1.0;
-  vec2 q = pos.xz + u_wind.xy;
-  float H = cumH(q, lod);
-  if (H <= 0.0) return -1.0;
-  float z = hf * (cloudCeiling - cloudBase);
-  float b = noise3(vec3(q, z) / 360.0) * 0.62 + noise3(vec3(q.yx, z) / 140.0 + 5.3) * 0.38;
-  return H - hf * hf * 0.9 - 0.03 + (b - 0.5) * mix(0.2, 0.55, hf);
-}
-
-float cumLight(vec2 q, float hf) {
-  if (hf < 0.0 || hf > 1.0) return 0.0;
-  return smoothstep(-0.04, 0.28, cumH(q, 1.0) - hf * hf * 0.9 - 0.03);
-}
-
-vec4 cumulus(vec3 rd, float ys, float px) {
-  if (rd.y < 0.004) return vec4(0.0);
-  float rise = cloudBase - u_cam.z;
-  float t0 = rise / rd.y;
-  float far = 70000.0;
-  if (t0 > far) return vec4(0.0);
-  float thick = cloudCeiling - cloudBase;
-  float t1 = min((cloudCeiling - u_cam.z) / rd.y, t0 + 3.0 * thick);
-  float n = cloudSteps;
-  float dt = (t1 - t0) / n;
-  float lod = smoothstep(9000.0, 14000.0, t0);
-  float jit = 0.25 + 0.5 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
-  float ta = t0;
-  float th = -1.0;
-  for (int i = 0; i < 10; i++) {
-    if (float(i) >= n) break;
-    float tt = t0 + dt * (float(i) + jit);
-    if (cumField(rd, tt, lod) > -0.02) {
-      float tb = tt;
-      for (int k = 0; k < 4; k++) {
-        float tm = 0.5 * (ta + tb);
-        if (cumField(rd, tm, lod) > -0.02) tb = tm; else ta = tm;
-      }
-      th = tb;
-      break;
-    }
-    ta = tt;
-  }
-  if (th < 0.0) return vec4(0.0);
-  float f0 = cumField(rd, th + 40.0, lod);
-  float f1 = cumField(rd, th + 160.0, lod);
-  float f2 = cumField(rd, th + 450.0, lod);
-  float d0 = smoothstep(-0.02, 0.2, f0);
-  float d1 = smoothstep(-0.02, 0.2, f1);
-  float d2 = smoothstep(-0.02, 0.2, f2);
-  float alpha = 1.0 - exp(-(d0 * 0.6 + d1 * 1.6 + d2 * 2.6) * 1.3);
-  vec3 pos = rd * th;
-  float hf = clamp((pos.y + u_cam.z - cloudBase) / thick, 0.0, 1.0);
-  vec2 q = pos.xz + u_wind.xy;
+vec4 thinLayer(vec3 rd, float px) {
+  if (rd.y < 0.012) return vec4(0.0);
+  float t = (layerBase - u_cam.z) / rd.y;
+  float far = 90000.0;
+  if (t > far) return vec4(0.0);
+  vec2 q = rd.xz * t + u_wind.xy;
+  float d = layerDensity(q, 1.0);
+  if (d <= 0.002) return vec4(0.0);
+  float tau = d * layerTau() * slantGain(rd.y);
+  float alpha = (1.0 - exp(-tau)) * smoothstep(far, far * 0.35, t);
   vec3 sd = u_sun.xyz;
-  vec3 ls = sd * 220.0;
-  float l1 = cumLight(q + ls.xz, hf + ls.y / thick);
-  float l2 = cumLight(q + ls.xz * 3.0, hf + ls.y * 3.0 / thick);
-  float tsun = exp(-(l1 + l2 * 1.6) * 1.5 - d1 * 0.3);
-  float ph = mix(1.0, hgPhase(dot(rd, sd), silverLining), 0.5);
-  float edge = 1.0 - d1;
-  vec3 light = u_sunCol * tsun * ph * (1.0 + edge * edgeGlow * max(ph - 1.0, 0.0) * 0.6);
-  float mph = mix(1.0, hgPhase(dot(rd, u_moon.xyz), silverLining), 0.5);
-  light += u_moonCol * (0.5 + 0.5 * tsun) * mph * (0.7 + 0.6 * edge);
-  light += u_amb * mix(0.45, 1.15, hf) * (0.85 + 0.15 * edge);
+  vec2 toward = sd.xz / max(length(sd.xz), 0.001);
+  float shade = layerDensity(q + toward * (180.0 + 260.0 * clamp(1.0 - sd.y, 0.0, 1.0)), 0.0);
+  float lit = exp(-shade * layerTau() * 0.9);
+  float mu = dot(rd, sd);
+  float ph = 0.8 * hgPhase(mu, 0.6) + 0.2 * hgPhase(mu, -0.25);
+  float edge = 1.0 - d;
+  vec3 light = u_sunCol * (0.32 + 0.22 * ph * (0.6 + 0.8 * edge)) * mix(0.45, 1.0, lit) * exp(-tau * 0.3);
+  float mph = 0.8 * hgPhase(dot(rd, u_moon.xyz), 0.6) + 0.2;
+  light += u_moonCol * (0.6 + 0.5 * mph) * (0.7 + 0.6 * edge);
+  light += u_amb * (0.95 + 0.25 * edge);
   float fd = (px - flashX) / 0.4;
-  light += underLight * (1.0 - hf) * 2.2 + vec3(0.75, 0.8, 1.0) * flashAmt * exp(-fd * fd) * 6.0 * (1.0 - 0.5 * hf);
-  alpha *= smoothstep(far, far * 0.4, t0) * smoothstep(cloudReachView + 0.14, cloudReachView - 0.14, ys);
+  light += underLight * 1.6 + vec3(0.75, 0.8, 1.0) * flashAmt * exp(-fd * fd) * 6.0;
   return vec4(light, alpha);
 }
 
 vec4 cirrus(vec3 rd) {
   if (rd.y < 0.012) return vec4(0.0);
-  float t = (8500.0 - u_cam.z) / rd.y;
-  vec2 q = rd.xz * t + u_wind.zw;
-  vec2 s = vec2(q.x * 0.8 + q.y * 0.6, -q.x * 0.6 + q.y * 0.8);
-  float n = fbm(vec2(s.x / 16000.0, s.y / 2800.0)) + (fbm3(s / 700.0) - 0.45) * 0.2;
-  float m = smoothstep(0.5, 0.82, n) * u_weather.z * cirrusAmount;
+  float t = (cirrusBase - u_cam.z) / rd.y;
+  float m = cirrusDensity(rd.xz * t + u_wind.zw);
   m *= smoothstep(0.012, 0.09, rd.y) * smoothstep(140000.0, 50000.0, t);
   if (m <= 0.0) return vec4(0.0);
-  vec3 c = u_sunCol * 0.6 * mix(1.0, hgPhase(dot(rd, u_sun.xyz), 0.55), 0.4) + u_amb * 1.15 + underLight * 0.5;
-  return vec4(c, m * 0.6);
+  float mu = dot(rd, u_sun.xyz);
+  vec3 c = u_sunCol * 0.6 * mix(1.0, hgPhase(mu, 0.55), 0.4) + u_amb * 1.15 + underLight * 0.5;
+  float a = acos(clamp(mu, -1.0, 1.0));
+  float ring = exp(-pow((a - 0.384) / 0.012, 2.0)) + 0.35 * exp(-pow((a - 0.4) / 0.03, 2.0));
+  c += u_sunCol * vec3(1.0, 0.85, 0.7) * ring * 0.35;
+  float am = acos(clamp(dot(rd, u_moon.xyz), -1.0, 1.0));
+  c += vec3(0.9, 0.92, 1.0) * exp(-pow((am - 0.384) / 0.014, 2.0)) * u_moon3.y * 0.25;
+  return vec4(c, 1.0 - exp(-m * cirrusTau * slantGain(rd.y)));
 }
 
-float lampDot(float al, float pe, vec2 dir, float sp, vec2 hd, vec2 pd, float dn, float mpp, float stretch) {
-  vec2 nrm = vec2(dir.y, -dir.x);
-  float k = u_labPx / 1.6;
-  vec2 ow = nrm * pe + dir * ((fract(al / sp) - 0.5) * sp);
-  float pt = smoothstep(1.3, 0.0, length(vec2(dot(ow, pd), dot(ow, hd) * dn * stretch) / mpp * k));
-  float spPx = sp * (abs(dot(dir, pd)) + abs(dot(dir, hd)) * dn) / mpp;
-  vec2 ln = nrm * pe;
-  float line = smoothstep(1.3, 0.0, length(vec2(dot(ln, pd), dot(ln, hd) * dn) / mpp * k)) * 1.1 / max(spPx, 1.0);
-  return mix(pt, line, smoothstep(4.0, 1.5, spPx));
-}
-
-vec3 streets(vec2 q, vec2 hd, vec2 pd, float dn, float mpp, float wet, float on) {
-  vec3 sodium = vec3(1.0, 0.55, 0.22);
-  vec3 led = vec3(0.85, 0.9, 1.0);
-  float st = mix(1.0, 0.15, wet);
-  vec3 c = vec3(0.0);
-  float tt = u_time * 9.0;
-  vec2 d1 = vec2(sin(-0.244), cos(-0.244));
-  float al1 = dot(q, d1);
-  float pe1 = dot(q, vec2(d1.y, -d1.x));
-  c += sodium * (lampDot(al1, pe1 - 11.0, d1, 32.0, hd, pd, dn, mpp, st) + lampDot(al1 + 16.0, pe1 + 11.0, d1, 32.0, hd, pd, dn, mpp, st)) * on;
-  float car1 = lampDot(al1 + tt, pe1 - 3.5, d1, 47.0, hd, pd, dn, mpp, st) * step(0.45, hash(vec2(floor((al1 + tt) / 47.0), 3.0)));
-  float car2 = lampDot(al1 - tt * 0.8, pe1 + 3.5, d1, 53.0, hd, pd, dn, mpp, st) * step(0.4, hash(vec2(floor((al1 - tt * 0.8) / 53.0), 5.0)));
-  c += (vec3(1.0, 0.95, 0.85) * car2 * 1.4 + vec3(1.0, 0.08, 0.05) * car1) * trafficAmount * on;
-  vec2 cen = vec2(sin(-0.157), cos(-0.157)) * 1980.0;
-  vec2 r = q - cen;
-  float rl = length(r);
-  vec2 rad = r / max(rl, 0.001);
-  vec2 tg = vec2(-rad.y, rad.x);
-  float ang = atan(r.y, r.x);
-  float pe2 = rl - 650.0;
-  if (abs(pe2) < 40.0) {
-    c += led * (lampDot(ang * 650.0, pe2 - 14.0, tg, 30.0, hd, pd, dn, mpp, st) + lampDot(ang * 650.0 + 15.0, pe2 + 14.0, tg, 30.0, hd, pd, dn, mpp, st)) * on;
-    float cr = lampDot(ang * 650.0 + tt, pe2 - 4.0, tg, 41.0, hd, pd, dn, mpp, st) * step(0.4, hash(vec2(floor((ang * 650.0 + tt) / 41.0), 9.0)));
-    float cw = lampDot(ang * 650.0 - tt, pe2 + 4.0, tg, 37.0, hd, pd, dn, mpp, st) * step(0.4, hash(vec2(floor((ang * 650.0 - tt) / 37.0), 11.0)));
-    c += (vec3(1.0, 0.08, 0.05) * cr + vec3(1.0, 0.95, 0.85) * cw * 1.3) * trafficAmount * on;
-  }
-  float pe3 = rl - 3300.0;
-  if (abs(pe3) < 60.0) c += sodium * (lampDot(ang * 3300.0, pe3 - 18.0, tg, 34.0, hd, pd, dn, mpp, st) + lampDot(ang * 3300.0 + 17.0, pe3 + 18.0, tg, 34.0, hd, pd, dn, mpp, st)) * on;
-  vec2 d4 = vec2(sin(0.95), cos(0.95));
-  vec2 o4 = vec2(sin(0.28), cos(0.28)) * 1500.0;
-  float al4 = dot(q - o4, d4);
-  float pe4 = dot(q - o4, vec2(d4.y, -d4.x));
-  if (abs(pe4) < 40.0 && al4 > -100.0) c += sodium * (lampDot(al4, pe4 - 10.0, d4, 30.0, hd, pd, dn, mpp, st) + lampDot(al4 + 15.0, pe4 + 10.0, d4, 30.0, hd, pd, dn, mpp, st)) * on;
-  return c * streetAmount;
-}
-
-vec3 ground(vec3 sky, vec3 rd, float sunUp) {
+vec3 ground(vec3 sky, vec3 rd) {
   float dn = max(-rd.y, 0.0004);
   float t = u_cam.z / dn;
   vec2 q = rd.xz * t;
-  float mpp = t / (u_cam.x * u_view);
-  float sn = u_ground.y;
-  vec2 hd = normalize(rd.xz);
-  vec2 pd = vec2(hd.y, -hd.x);
-  float park = smoothstep(parkDepth + 60.0, parkDepth - 60.0, t);
-  float n = mix(noise(q / 40.0) * 0.6 + noise(q / 9.0) * 0.4, 0.5, smoothstep(1.5, 8.0, mpp));
-  vec3 alb = mix(vec3(0.045, 0.05, 0.047), vec3(0.09, 0.09, 0.085), n);
-  float crown = mix(noise(q / 14.0) * 0.65 + noise(q / 5.0) * 0.35, 0.5, smoothstep(1.0, 5.0, mpp));
-  alb = mix(alb, mix(vec3(0.018, 0.032, 0.02), vec3(0.05, 0.08, 0.04), crown), park);
-  alb = mix(alb, vec3(0.8, 0.82, 0.86), sn * mix(0.92, 0.7, park));
-  float shade = mix(1.0, 0.55 + 0.45 * crown, park);
-  vec3 lit = alb * shade * (u_sunCol * max(sin(u_sun.w), 0.0) * 1.1 + u_amb * 1.3 + underLight * 3.0 * (1.0 - 0.8 * park));
-  float wet = u_ground.x * (1.0 - sn) * (1.0 - park);
+  float mpp = t * pixAngle / dn;
+  float n = mix(noise(q / 6.0) * 0.6 + noise(q / 1.7) * 0.4, 0.5, smoothstep(0.4, 3.0, mpp));
+  vec3 alb = mix(vec3(0.04, 0.05, 0.038), vec3(0.085, 0.095, 0.07), n);
+  alb = mix(alb, vec3(0.8, 0.82, 0.86), u_ground.y * 0.9);
+  vec3 lit = alb * (u_sunCol * max(sin(u_sun.w), 0.0) * 1.1 + u_amb * 1.3 + underLight * 2.0);
+  float wet = u_ground.x * (1.0 - u_ground.y);
   float fres = 0.03 + 0.97 * pow(1.0 - dn, 6.0);
-  lit = mix(lit, lit * 0.45 + sky * fres * 0.85, wet);
-  float on = 1.0 - smoothstep(0.45, 0.85, u_daylight.x);
-  if (on > 0.0) {
-    if (park < 0.99) {
-      float cell = 24.0;
-      vec2 c = q / cell;
-      vec2 id = floor(c);
-      float keepL = step(0.5, hash(id + 0.7));
-      vec2 o = (fract(c) - 0.5 - (vec2(hash(id + 1.3), hash(id + 2.9)) - 0.5) * 0.6) * cell;
-      vec2 pp = vec2(dot(o, pd), dot(o, hd) * dn * mix(1.0, 0.1, wet)) / mpp * (u_labPx / 1.6);
-      float pt = smoothstep(1.3, 0.0, length(pp)) * keepL;
-      float cellPx = cell * dn / mpp;
-      float avg = min(0.5 * 1.2 / max(cellPx * cell / mpp, 0.01), 0.6);
-      float lamps = mix(pt, avg, smoothstep(3.5, 1.2, cellPx)) * (1.0 - park);
-      lit += lampColor * lamps * 1.4 * on * lampAmount;
-      lit += alb * lampColor * on * (0.05 + 0.4 * sn) * smoothstep(0.0, 0.2, dn) * (1.0 - park);
-    }
-    lit += streets(q, hd, pd, dn, mpp, u_ground.x * (1.0 - sn), on) * 1.5;
-  }
+  lit = mix(lit, lit * 0.5 + sky * fres * 0.6, wet);
   float vis = visibility * (1.0 - 0.9 * u_weather.w) * (1.0 - 0.45 * u_fall.x) * (1.0 - 0.35 * u_fall.y);
   return mix(hz(lit), sky, 1.0 - exp(-t / vis));
+}
+
+vec3 earthShadow(vec3 col, vec3 rd, float el) {
+  float dep = -u_sun.w * 57.29578;
+  float on = smoothstep(-1.0, 1.0, dep) * smoothstep(9.0, 5.0, dep) * openSky;
+  if (on <= 0.0) return col;
+  vec2 a = normalize(rd.xz + vec2(0.0, 0.0001));
+  vec2 s = normalize(u_sun.xz + vec2(0.0, 0.0001));
+  float anti = pow(max(-dot(a, s), 0.0), 1.5) * on;
+  float edge = (dep * 0.85 + 1.2) * 0.0174533;
+  float inside = smoothstep(edge + 0.02, edge - 0.03, el) * step(0.0, el);
+  float belt = exp(-pow((el - edge - 0.05) / 0.05, 2.0));
+  col = mix(col, col * vec3(0.62, 0.66, 0.84), inside * anti * 0.7);
+  return col * mix(vec3(1.0), vec3(1.4, 1.02, 1.12), belt * anti * 0.8);
+}
+
+float milkyWay(vec3 rd) {
+  vec3 g = u_gal * rd;
+  float b = asin(clamp(g.z, -1.0, 1.0));
+  float lxy = max(length(g.xy), 0.0001);
+  float cl = g.x / lxy;
+  float sl = g.y / lxy;
+  float clump = noise3(g * 9.0 + 4.0) * 0.6 + noise3(g * 23.0) * 0.4;
+  float band = exp(-b * b / 0.02) * (0.55 + 0.9 * clump);
+  float glow = exp(-b * b / 0.1) * 0.3;
+  float center = 0.4 + 0.6 * pow(0.5 + 0.5 * cl, 2.0);
+  float bulge = exp(-(1.0 - cl) * 9.0 - b * b / 0.016) * (0.7 + 0.6 * clump);
+  float rift = exp(-pow((b + 0.012) / 0.028, 2.0)) * smoothstep(-0.15, 0.2, sl) * smoothstep(-0.2, 0.3, cl) * (0.55 + 0.45 * noise3(g * 31.0));
+  return (band * center + glow * center + bulge) * (1.0 - 0.8 * rift);
 }
 
 float bodyMask;
@@ -828,7 +776,7 @@ float mare(vec2 p) {
 vec3 sunAndMoon(vec3 rd, vec2 fc) {
   bodyMask = 0.0;
   vec3 add = vec3(0.0);
-  float pix = 1.0 / (u_view * u_cam.x);
+  float pix = pixAngle;
   vec3 r;
   vec3 u;
   vec3 s = u_sun.xyz;
@@ -842,10 +790,10 @@ vec3 sunAndMoon(vec3 rd, vec2 fc) {
     float disk = smoothstep(1.0 + edge, 1.0 - edge, rr);
     float mu = sqrt(max(1.0 - rr * rr, 0.0));
     float a = length(dv);
-    float shape = 0.5 * exp(-a / 0.0045) + 0.12 * exp(-a / 0.03) + 0.025 * exp(-a / 0.2) + 0.004 * hgPhase(cs, 0.7);
+    float shape = 0.45 * exp(-a / 0.012) + 0.12 * exp(-a / 0.05) + 0.03 * exp(-a / 0.25) + 0.004 * hgPhase(cs, 0.7);
     float cap = textCap(fc);
     add += hz(u_sunCol) * (disk * u_sunDisk.y * (0.42 + 0.58 * mu) + shape * u_sunDisk.z * cap);
-    bodyMask = max(disk, clamp((0.5 * exp(-a / 0.0045) + 0.12 * exp(-a / 0.03)) * u_sunDisk.z * 3.0, 0.0, 1.0) * cap);
+    bodyMask = max(disk, clamp((0.45 * exp(-a / 0.012) + 0.12 * exp(-a / 0.05)) * u_sunDisk.z * 3.0, 0.0, 1.0) * cap);
   }
   vec3 m = u_moon.xyz;
   float cm = dot(rd, m);
@@ -857,7 +805,7 @@ vec3 sunAndMoon(vec3 rd, vec2 fc) {
     float edge = pix / u_moon.w;
     float a = length(dv);
     vec3 moonTint = vec3(1.0, 0.96, 0.9);
-    float halo = u_moon3.y * (0.3 * exp(-a / 0.012) + 0.07 * exp(-a / 0.06) + 0.012 * exp(-a / 0.3)) * textCap(fc);
+    float halo = u_moon3.y * (0.3 * exp(-a / 0.02) + 0.07 * exp(-a / 0.08) + 0.012 * exp(-a / 0.3)) * textCap(fc);
     add += hz(moonTint) * halo;
     if (rr < 1.0 + edge) {
       float disk = smoothstep(1.0 + edge, 1.0 - edge, rr);
@@ -871,6 +819,7 @@ vec3 sunAndMoon(vec3 rd, vec2 fc) {
       vec2 sel = vec2(dot(oc, vec2(cos(q), -sin(q))), dot(oc, vec2(sin(q), cos(q))));
       float alb = mix(1.0, 0.58, mare(sel)) * (0.92 + 0.08 * noise(sel * 40.0));
       float shine = lit * alb + u_moon2.w * (1.0 - lit) * alb;
+      add *= 1.0 - disk;
       add += hz(moonTint) * u_moon3.x * shine * disk;
       bodyMask = max(bodyMask, disk);
     }
@@ -880,19 +829,16 @@ vec3 sunAndMoon(vec3 rd, vec2 fc) {
 
 void main() {
   vec2 fc = u_probe.z > 0.0 ? gl_FragCoord.xy * u_probe.zw + u_probe.xy : gl_FragCoord.xy;
-  float ys = fc.y / u_view;
   vec3 rd = camRay(fc);
   float el = asin(clamp(rd.y, -1.0, 1.0));
   float yb = max(el, 0.0) / skyFov;
   vec2 p = (fc - 0.5 * u_res) / u_view;
   vec2 ps = p + u_pointer;
-  float t = u_time * speed;
   float tm = u_cloudTime * speed;
   float ts = u_cloudShift * speed;
   float sunUp = u_daylight.x;
   float twi = u_daylight.y;
   float day = sunUp * dayLift;
-  vec3 warm = mix(vec3(1.0, 0.5, 0.6), vec3(1.0, 0.42, 0.16), u_daylight.z);
   float starKeep = 1.0 - sunUp * min(1.0, starFade * dayGain);
 
   vec3 night = vec3(0.02, 0.025, 0.05) + vec3(0.03, 0.05, 0.13) * (1.0 - clamp(yb, 0.0, 1.0)) * skyTop * 2.0;
@@ -902,31 +848,30 @@ void main() {
   float ov = u_weather.y;
   float fogA = u_weather.w;
   openSky = (1.0 - ov) * (1.0 - 0.85 * fogA);
-  nightSky = 1.0 - sunUp;
   float aod = haze * mix(0.7, 1.0, u_daylight.z);
   vec3 tau = tauRay + aerosol * aod;
   float h = max(el, 0.0);
   float sunEl = u_sun.w;
-  vec3 lampSky = mix(vec3(dot(lampColor, luma)), lampColor, 0.45);
-  float amp = pow((1.0 + 9.1 * ov) * (1.0 + 18.0 * u_fall.y) * (1.0 + 4.0 * fogA), 0.33);
-  float cityLight = 0.11 * cityGlow * amp * nightSky * glowAmount;
   vec3 band = sunTint(tau, sunEl);
   float bandLight = twi * openSky * openSky * mix(0.35, 1.65, pow(0.5 + 0.5 * dot(normalize(rd.xz + vec2(0.0, 0.0001)), normalize(u_sun.xz + vec2(0.0, 0.0001))), 2.0));
-  underLight = lampSky * cityLight + band * bandLight * 0.45 + vec3(0.9, 0.92, 0.95) * sunUp * (1.0 - twi) * 0.03;
+  underLight = band * bandLight * 0.45 + vec3(0.9, 0.92, 0.95) * sunUp * (1.0 - twi) * 0.03;
   vec3 night05 = vec3(0.02, 0.025, 0.05) + vec3(0.03, 0.05, 0.13) * 0.5 * skyTop * 2.0;
   vec3 base05 = mix(night05, mix(dayLow, dayTop, smoothstep(0.0, 1.2, 0.5)), day);
   vec3 ref = hz(clearSky(0.5 * skyFov, tau, aod));
   vec3 phys = hz(clearSky(h, tau, aod)) * dot(base05, luma) / max(dot(ref, luma), 0.0001);
-  col = mix(col, phys, sunUp * (1.0 - 0.5 * twi) * 1.0);
+  col = mix(col, phys, sunUp * (1.0 - 0.5 * twi));
   float trans = 1.0 / (1.0 + 0.1125 * (12.0 + 22.0 * u_fall.x + 30.0 * u_fall.z));
   float snowLift = 1.0 / (1.0 - 0.8 * (1.0 - trans) * u_fall.y);
   vec3 deckNight = vec3(0.03, 0.032, 0.04);
   vec3 deckDay = vec3(0.66, 0.68, 0.72) * sqrt(dayGain) * trans * snowLift * (1.0 + 2.0 * sin(h)) / 3.0 * 1.7;
-  col = mix(col, hueRotate(mix(deckNight, deckDay, sunUp), -hueShift), ov * 0.85);
-  col += stars(ps, t) * 0.55 * starKeep * (1.0 - 0.92 * ov) * smoothstep(0.0, 0.05, el);
-  col += hz(lampSky) * cityLight * mix(1.0 - exp(-0.25 * airmass(h)), 0.75, ov * 0.6);
+  col = mix(col, hueRotate(mix(deckNight, deckDay, sunUp), -hueShift), ov * 0.75);
   col += hz(band) * (0.7 * exp(-yb * 4.0) + 0.07 * exp(-yb * 1.5)) * bandLight;
-  col += hz(lampSky) * cityLight * exp(-yb * 9.0) * 1.6 * smoothstep(-0.01, 0.0, el);
+  col = earthShadow(col, rd, el);
+  float space = pow(10.0, -0.4 * spaceMag(el, sunUp * openSky));
+  col = mix(spaceColor, col, space);
+  float moonSky = clamp(u_moonCol.r * 25.0, 0.0, 1.0);
+  float dark = max(starKeep * (1.0 - twi), smoothstep(0.02, 0.002, space) * sunUp) * (1.0 - 0.85 * moonSky) * (1.0 - 0.95 * ov) * (1.0 - fogA);
+  if (dark > 0.0 && el > 0.0) col += hz(vec3(0.82, 0.84, 0.95)) * milkyWay(rd) * milkyGain * dark * smoothstep(0.0, 0.25, el);
 
   if (u_meteor.w < 1.0) {
     vec2 md = vec2(cos(u_meteor.z), sin(u_meteor.z));
@@ -935,7 +880,7 @@ void main() {
     float across = dot(rel, vec2(-md.y, md.x)) / meteorWidth;
     float trail = smoothstep(meteorTail, 0.0, behind) * step(-0.003, behind) * exp(-across * across);
     float head = exp(-dot(rel, rel) / 0.00005);
-    col += vec3(0.92, 0.96, 1.0) * (trail * 0.9 + head * 1.4) * sin(PI * u_meteor.w) * starKeep * (1.0 - ov);
+    col += vec3(0.92, 0.96, 1.0) * (trail * 0.9 + head * 1.4) * sin(PI * u_meteor.w) * max(starKeep, 1.0 - space) * (1.0 - ov);
   }
 
   float tr = mod(tm, 2000.0);
@@ -950,13 +895,14 @@ void main() {
   col += sunAndMoon(rd, fc);
   float cloudA = 0.0;
   if (u_clouds > 0.5 && rd.y > 0.0) {
+    float veil = sqrt(space);
     vec4 ci = cirrus(rd);
-    if (ci.a > 0.0) col = mix(col, hz(ci.rgb), ci.a);
-    vec4 cu = cumulus(rd, ys, p.x);
+    if (ci.a > 0.0) col = mix(col, hz(ci.rgb) * veil, ci.a);
+    vec4 cu = thinLayer(rd, p.x);
     cloudA = cu.a;
     if (cu.a > 0.0) {
-      float air = 1.0 - exp(-((cloudBase - u_cam.z) / max(rd.y, 0.003)) / (visibility * 2.2));
-      col = mix(col, mix(hz(cu.rgb), col, air), cu.a);
+      float air = 1.0 - exp(-((layerBase - u_cam.z) / max(rd.y, 0.003)) / (visibility * 2.2));
+      col = mix(col, mix(hz(cu.rgb) * veil, col, air), cu.a);
     }
   }
 
@@ -964,20 +910,19 @@ void main() {
     vec2 hd = normalize(rd.xz);
     float dist = 7000.0;
     float yAt = rd.y / max(length(rd.xz), 0.001) * dist + u_cam.z;
-    if (yAt < cloudBase) {
+    if (yAt < layerBase) {
       vec2 sq = hd * dist + u_wind.xy * 0.5;
       float shaft = smoothstep(0.42, 0.72, fbm3(sq / 4200.0 + 3.1));
       float lines = 0.6 + 0.4 * noise(vec2(atan(hd.x, hd.y) * 700.0 + yAt * u_fall.w * 0.01, yAt * 0.004 - tr * 0.6));
       vec3 shaftCol = mix(vec3(0.05, 0.055, 0.07), vec3(0.32, 0.35, 0.4), sunUp);
-      col = mix(col, hueRotate(shaftCol, -hueShift), u_fall.x * shaft * lines * smoothstep(cloudBase, cloudBase * 0.4, yAt) * 0.5);
+      col = mix(col, hueRotate(shaftCol, -hueShift), u_fall.x * shaft * lines * smoothstep(layerBase, layerBase * 0.4, yAt) * 0.5);
     }
   }
 
-  if (el < 0.0) col = ground(col, rd, sunUp);
+  if (el < 0.0) col = ground(col, rd);
   float fog = fogMix(p, yb, tm, ts);
   if (fog > 0.0) {
-    vec3 fogNight = vec3(0.07, 0.072, 0.078) + mix(vec3(dot(lampColor, luma)), lampColor, 0.25) * 0.07 * cityGlow * amp * exp(-yb * 1.2);
-    col = mix(col, hueRotate(mix(fogNight, vec3(0.47, 0.48, 0.5) * sqrt(dayGain), sunUp), -hueShift), fog);
+    col = mix(col, hueRotate(mix(vec3(0.07, 0.072, 0.078), vec3(0.47, 0.48, 0.5) * sqrt(dayGain), sunUp), -hueShift), fog);
   }
 
   if (u_fall.x > 0.0) {

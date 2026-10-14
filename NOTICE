@@ -14,3 +14,5 @@ Third-party material keeps its own license:
 
 - Inter, Geist and Geist Mono fonts in public/fonts, under the SIL Open Font License 1.1 (the license texts sit next to the fonts).
 - Icons embedded in src/lib/icon-data.ts, from the Iconify sets circle-flags (MIT), Lucide (ISC) and Simple Icons (CC0 1.0).
+- Star positions, magnitudes and colors in src/lib/star-data.ts, from the Yale Bright Star Catalogue, 5th revised edition (Hoffleit and Warren 1991), via CDS VizieR (V/50).
+- Planet positions from the JPL approximate Keplerian elements (Standish), and planet magnitudes from Mallama and Hilton (2018).

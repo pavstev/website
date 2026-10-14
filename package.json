@@ -13,7 +13,8 @@
     "icons": "node scripts/generate-icon-data.ts",
     "prepare": "husky",
     "preview": "serve dist -l 4321",
-    "profile:build": "node src/profile/cli.ts"
+    "profile:build": "node src/profile/cli.ts",
+    "stars:build": "node scripts/generate-star-data.ts"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",

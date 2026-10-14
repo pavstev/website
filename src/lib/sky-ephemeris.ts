@@ -167,7 +167,7 @@ const julianDay = (ms: number): number => ms / msPerDay + julianUnixEpoch;
 const centuries = (ms: number): number =>
   (julianDay(ms + deltaTSeconds * 1000) - j2000) / 36_525;
 
-const nutation = (
+export const nutation = (
   t: number
 ): { longitude: number; obliquity: number; trueObliquity: number } => {
   const node = 125.04452 - 1934.136261 * t;
@@ -299,7 +299,7 @@ const moonEquatorial = (ms: number): Equatorial => {
   return { dec, distanceKm: 385_000.56 + sumR / 1000, longitude, ra };
 };
 
-const siderealDeg = (ms: number, longitude: number): number => {
+export const siderealDeg = (ms: number, longitude: number): number => {
   const jd = julianDay(ms);
   const t = (jd - j2000) / 36_525;
   const nut = nutation(t);

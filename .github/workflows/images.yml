@@ -16,12 +16,15 @@ on:
       - src/lib/personal.ts
       - src/lib/sky-clock.ts
       - src/lib/sky-ephemeris.ts
+      - src/lib/sky-frame.ts
       - src/lib/sky-light.ts
-      - src/lib/sky-path.ts
+      - src/lib/sky-planets.ts
       - src/lib/sky-rays.ts
-      - src/lib/sky-scene.ts
       - src/lib/sky-shader.ts
-      - src/lib/skyline.ts
+      - src/lib/sky-stars.ts
+      - src/lib/sky-view.ts
+      - src/lib/star-data.ts
+      - src/lib/star-gl.ts
       - src/lib/theme.ts
       - src/lib/weather.ts
       - src/profile/header.ts

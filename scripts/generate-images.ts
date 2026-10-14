@@ -7,17 +7,35 @@ import { en } from "../src/lib/i18n.ts";
 import { iconData } from "../src/lib/icon-data.ts";
 import { personalData } from "../src/lib/personal.ts";
 import { nightPhase } from "../src/lib/sky-clock.ts";
-import { crawlerInstant, skyLight } from "../src/lib/sky-light.ts";
+import { equatorialToWorld, worldToGalactic } from "../src/lib/sky-frame.ts";
+import {
+  crawlerInstant,
+  skyLight,
+  viennaLatitude,
+  viennaLongitude,
+} from "../src/lib/sky-light.ts";
+import { planetsAt } from "../src/lib/sky-planets.ts";
 import {
   cornerCorona,
   cornerMeteor,
   longRaysShader,
 } from "../src/lib/sky-rays.ts";
-import { cameraFor } from "../src/lib/sky-scene.ts";
 import {
   homeSkyFragmentShader,
   skyVertexShader,
 } from "../src/lib/sky-shader.ts";
+import { decodeStars } from "../src/lib/sky-stars.ts";
+import {
+  aimYaw,
+  cameraBasis,
+  frameAim,
+  skyCamera,
+} from "../src/lib/sky-view.ts";
+import {
+  starFragmentShader,
+  starPoints,
+  starVertexShader,
+} from "../src/lib/star-gl.ts";
 import { designTokens, hexBytes, profilePalette } from "../src/lib/theme.ts";
 import { crawlerSky } from "../src/lib/weather.ts";
 import { headerHeight, headerWidth } from "../src/profile/header.ts";
@@ -43,6 +61,7 @@ interface ImageSpec {
   fragment: string;
   height: number;
   meteor: Meteor;
+  stars?: StarPass;
   type: "jpeg" | "png" | "webp";
   width: number;
 }
@@ -62,9 +81,17 @@ interface SkyInput {
   fragment: string;
   labPx: number;
   meteor: Meteor;
+  stars?: StarPass | undefined;
   time: number;
   vertex: string;
   weather: [number, number, number, number];
+}
+
+interface StarPass {
+  data: number[];
+  fragment: string;
+  uniforms: readonly Uniform[];
+  vertex: string;
 }
 
 const publicDir = "public";
@@ -85,13 +112,30 @@ type Uniform = readonly [string, readonly number[]];
 const noMeteor: Meteor = { angle: 0, progress: 2, x: 0, y: 0 };
 const noCorona: Corona = { radius: 0, x: 0, y: 0 };
 
+const crawlerLight = skyLight(crawlerInstant, crawlerSky);
+
+const homeCamera = (
+  width: number,
+  height: number
+): { basis: readonly number[]; camera: ReturnType<typeof skyCamera> } => ({
+  basis: cameraBasis(
+    aimYaw(frameAim(crawlerInstant, viennaLatitude, viennaLongitude), {
+      height,
+      width,
+    }),
+    0
+  ),
+  camera: skyCamera(width, height),
+});
+
 const homeUniforms = (width: number, height: number): Uniform[] => {
-  const light = skyLight(crawlerInstant, crawlerSky, { height, width });
-  const camera = cameraFor(width, height);
+  const light = crawlerLight;
+  const { basis, camera } = homeCamera(width, height);
   return [
-    ["u_cam", [camera.focal, camera.horizon, camera.eye]],
-    ["u_look", [0, 0]],
-    ["u_sun", [...light.shownSun, Math.asin(light.trueSun[1])]],
+    ["u_cam", [camera.top, camera.horizon, camera.eye]],
+    ["u_basis", basis],
+    ["u_gal", worldToGalactic(crawlerInstant, viennaLatitude, viennaLongitude)],
+    ["u_sun", light.sun],
     ["u_sunCol", light.sunColor],
     ["u_amb", light.ambient],
     ["u_sunDisk", light.sunDisk],
@@ -104,6 +148,34 @@ const homeUniforms = (width: number, height: number): Uniform[] => {
     ["u_wpuff", Array.from({ length: 24 }, () => 0)],
     ["u_txt", Array.from({ length: 12 }, () => 0)],
   ];
+};
+
+const homeStars = (width: number, height: number): StarPass => {
+  const { basis, camera } = homeCamera(width, height);
+  return {
+    data: [...starPoints(decodeStars(), planetsAt(crawlerInstant))],
+    fragment: starFragmentShader,
+    uniforms: [
+      [
+        "u_eq",
+        equatorialToWorld(crawlerInstant, viennaLatitude, viennaLongitude),
+      ],
+      ["u_basis", basis],
+      ["u_cam", [camera.top, camera.horizon, camera.eye]],
+      ["u_res", [width, height]],
+      ["u_sun", crawlerLight.sun],
+      ["u_moon", crawlerLight.moon],
+      ["u_moonSky", [Math.min(1, crawlerLight.moonColor[0] * 25)]],
+      ["u_day", [nightPhase.day]],
+      ["u_weather", crawlerWeather],
+      ["u_wind", [575, 172.5, 1035, 230]],
+      ["u_wpuff", Array.from({ length: 24 }, () => 0)],
+      ["u_time", [skyTime]],
+      ["u_px", [1]],
+      ["u_clouds", [1]],
+    ],
+    vertex: starVertexShader,
+  };
 };
 
 const rgba = (hex: string, alpha: number): string =>
@@ -227,14 +299,83 @@ const drawSky = (input: SkyInput): void => {
     input.daylight.twilight,
     input.daylight.dusk
   );
-  for (const [uniform, values] of input.extra) {
+  const setUniform = (
+    location: null | WebGLUniformLocation,
+    values: readonly number[]
+  ): void => {
     const [a = 0, b = 0, c = 0, d = 0] = values;
-    if (values.length > 4) gl.uniform4fv(at(uniform), new Float32Array(values));
-    else if (values.length === 4) gl.uniform4f(at(uniform), a, b, c, d);
-    else if (values.length === 3) gl.uniform3f(at(uniform), a, b, c);
-    else gl.uniform2f(at(uniform), a, b);
-  }
+    switch (values.length) {
+      case 1: {
+        gl.uniform1f(location, a);
+        return;
+      }
+      case 2: {
+        gl.uniform2f(location, a, b);
+        return;
+      }
+      case 3: {
+        gl.uniform3f(location, a, b, c);
+        return;
+      }
+      case 4: {
+        gl.uniform4f(location, a, b, c, d);
+        return;
+      }
+      case 9: {
+        gl.uniformMatrix3fv(location, false, new Float32Array(values));
+        return;
+      }
+      default: {
+        gl.uniform4fv(location, new Float32Array(values));
+      }
+    }
+  };
+  const apply = (
+    where: (name: string) => null | WebGLUniformLocation,
+    list: readonly Uniform[]
+  ): void => {
+    for (const [uniform, values] of list) setUniform(where(uniform), values);
+  };
+  apply(at, input.extra);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
+  const { stars } = input;
+  if (stars) {
+    gl.disableVertexAttribArray(position);
+    const starProgram = gl.createProgram();
+    gl.attachShader(starProgram, compile(gl.VERTEX_SHADER, stars.vertex));
+    gl.attachShader(starProgram, compile(gl.FRAGMENT_SHADER, stars.fragment));
+    gl.linkProgram(starProgram);
+    if (!gl.getProgramParameter(starProgram, gl.LINK_STATUS))
+      throw new Error(gl.getProgramInfoLog(starProgram) ?? "Link failed");
+    gl.useProgram(starProgram);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(stars.data),
+      gl.STATIC_DRAW
+    );
+    let offset = 0;
+    for (const [attribute, size] of [
+      ["a_dir", 3],
+      ["a_mag", 1],
+      ["a_col", 3],
+      ["a_twinkle", 1],
+    ] as const) {
+      const location = gl.getAttribLocation(starProgram, attribute);
+      if (location >= 0) {
+        gl.enableVertexAttribArray(location);
+        gl.vertexAttribPointer(location, size, gl.FLOAT, false, 32, offset * 4);
+      }
+      offset += size;
+    }
+    apply(
+      (uniform) => gl.getUniformLocation(starProgram, uniform),
+      stars.uniforms
+    );
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE);
+    gl.drawArrays(gl.POINTS, 0, stars.data.length / 8);
+  }
   gl.finish();
 };
 
@@ -261,6 +402,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
     fragment: spec.fragment,
     labPx: labPixelsPerCss,
     meteor: spec.meteor,
+    stars: spec.stars,
     time: skyTime,
     vertex: skyVertexShader,
     weather: crawlerWeather,
@@ -303,6 +445,7 @@ const specs: ImageSpec[] = [
     fragment: homeSkyFragmentShader,
     height: 630,
     meteor: noMeteor,
+    stars: homeStars(1200, 630),
     type: "jpeg",
     width: 1200,
   },

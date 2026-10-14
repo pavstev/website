@@ -8,8 +8,8 @@ My personal site: one contact card floating over a live WebGL sky, a small blog 
 
 ## What is in it
 
-- **A hand-written sky.** A WebGL nebula with sparkling stars and a shooting star every 2 to 14 s.
-- **Real clouds.** One three.js shader: drifting decks lit from below, silver edges, fast cirrus on top. They part around the cursor.
+- **The real Vienna sky.** A hand-written WebGL sky from the ground: the sun and moon where they truly are, 9,000 real stars, five planets and the Milky Way, with space showing at the top even by day.
+- **Live weather.** Thin clouds follow the Vienna weather, ride the wind and part around the cursor. Rain and snow fall when they fall outside.
 - **A glass bead.** It follows the cursor over the portrait (a finger after a press and hold) and magnifies the photo with chromatic edges, in the card and in the portrait dialog.
 - **A name that tunes in.** A CSS signal intro, then every 8 s a WebGL tear and a weight-morph wave across the letters.
 - **A planet per project.** Each open-source repo gets its own three.js planet, with language chips in GitHub's colors.

@@ -2,8 +2,7 @@
 
 import { type ReactElement, useEffect, useRef } from "react";
 
-import type { Skyline } from "@/lib/skyline";
-import type { SkylineGl } from "@/lib/skyline-gl";
+import type { StarGl } from "@/lib/star-gl";
 
 import { isCrawler } from "@/lib/crawler";
 import { createFrameClock } from "@/lib/frame-clock";
@@ -16,6 +15,7 @@ import {
   sceneHoldEvent,
 } from "@/lib/scene-hold";
 import { nightPhase, type SkyPhase } from "@/lib/sky-clock";
+import { equatorialToWorld, type Mat3, worldToGalactic } from "@/lib/sky-frame";
 import {
   type InkTarget,
   inkTargets,
@@ -29,7 +29,8 @@ import {
   instantOverride,
   type SkyLight,
   skyLight,
-  type SkyView,
+  viennaLatitude,
+  viennaLongitude,
 } from "@/lib/sky-light";
 import { blogLook, type SkyMode } from "@/lib/sky-preset";
 import { createSkyProbe, type ProbeBox } from "@/lib/sky-probe";
@@ -37,15 +38,9 @@ import { cornerCorona, cornerMeteor, longRaysShader } from "@/lib/sky-rays";
 import {
   addWorldPuff,
   agePuffs,
-  cameraFor,
-  easeLean,
   easeLook,
-  type Hover,
-  landmarkUniforms,
   lookTarget,
-  pickLandmark,
   puffUniforms,
-  settleLean,
   windGain,
   type WorldPuff,
   worldPuff,
@@ -54,6 +49,18 @@ import {
   homeSkyFragmentShader as HOME,
   skyVertexShader as VERTEX,
 } from "@/lib/sky-shader";
+import {
+  type Aim,
+  aimHolds,
+  aimYaw,
+  type Basis,
+  cameraBasis,
+  frameAim,
+  skyCamera,
+  type SkyCamera,
+  skyRay,
+  type ViewSize,
+} from "@/lib/sky-view";
 import { createUniformSink } from "@/lib/uniform-sink";
 import {
   crawlerSky,
@@ -63,6 +70,13 @@ import {
   weatherOverride,
 } from "@/lib/weather";
 import { isSoftwareRenderer } from "@/lib/webgl";
+
+interface HomeFrame {
+  basis: Basis;
+  camera: SkyCamera;
+  puffs: Float32Array;
+  wind: [number, number, number, number];
+}
 
 interface InkNodes {
   paint: HTMLElement | null;
@@ -137,14 +151,13 @@ const puffVisible = 0.003;
 const weatherEveryMs = 900_000;
 const weatherEaseSeconds = 3;
 const windWrapHighSeconds = 7200;
-const wheelTurnSeconds = 255;
-const wheelSpeed = 4;
-const skylineIdleMs = 2000;
+const starIdleMs = 2000;
 const settleMs = 1500;
-const homePuffZone = 0.55;
+const homePuffZone = 0.95;
 const lookShare = 0.6;
-const pointSize = 7;
-const openTargets = "main, #main-content, [data-card], [data-space]";
+const lightEveryMs = 1000;
+const panRate = 1.6;
+const panSettled = 1e-4;
 const weatherKeys: Array<keyof SkyWeather> = [
   "cover",
   "drift",
@@ -254,27 +267,26 @@ const contextOptions: WebGLContextAttributes = {
   stencil: false,
 };
 
-const homeContextOptions: WebGLContextAttributes = {
-  ...contextOptions,
-  antialias: true,
-  depth: true,
-};
-
-const groundShare = (amount: number): number => {
+const groundCover = (amount: number): number => {
   const t = Math.min(1, Math.max(0, amount / 0.1));
   return t * t * (3 - 2 * t);
 };
 
+const wrapAngle = (angle: number): number =>
+  angle - 2 * Math.PI * Math.floor((angle + Math.PI) / (2 * Math.PI));
+
+const identity: Mat3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+
 const whenIdle = (task: () => void): (() => void) => {
   if ("requestIdleCallback" in globalThis) {
     const handle = globalThis.requestIdleCallback(task, {
-      timeout: skylineIdleMs,
+      timeout: starIdleMs,
     });
     return () => {
       globalThis.cancelIdleCallback(handle);
     };
   }
-  const timer = globalThis.setTimeout(task, skylineIdleMs / 4);
+  const timer = globalThis.setTimeout(task, starIdleMs / 4);
   return () => {
     globalThis.clearTimeout(timer);
   };
@@ -346,9 +358,9 @@ const startSky = (
   const cardNode = home ? document.querySelector("[data-card]") : null;
   const widthNode = home ? document.querySelector("[data-card] .bio") : null;
   const cardRange = document.createRange();
-  const lightView = (): SkyView => {
+  const lightView = (): ViewSize => {
     const box = canvas.getBoundingClientRect();
-    const view: SkyView = { height: box.height, width: box.width };
+    const view: ViewSize = { height: box.height, width: box.width };
     const card = cardNode?.getBoundingClientRect();
     if (!card || card.width <= 0) return view;
     let { left, right } = card;
@@ -366,8 +378,20 @@ const startSky = (
     return view;
   };
   let light: SkyLight | undefined = home
-    ? skyLight(instant(), weatherTarget, lightView())
+    ? skyLight(instant(), weatherTarget)
     : undefined;
+  let aim: Aim | undefined = home
+    ? frameAim(instant(), viennaLatitude, viennaLongitude)
+    : undefined;
+  let yaw = aim ? aimYaw(aim, lightView()) : 0;
+  let shownYaw = yaw;
+  let equatorial: Mat3 = home
+    ? equatorialToWorld(instant(), viennaLatitude, viennaLongitude)
+    : identity;
+  let galactic: Mat3 = home
+    ? worldToGalactic(instant(), viennaLatitude, viennaLongitude)
+    : identity;
+  let lightAt = performance.now();
   const liveDaylight: SkyPhase = light
     ? { ...light.daylight }
     : { ...(crawler ? nightPhase : (fixedLook?.daylight ?? nightPhase)) };
@@ -375,15 +399,17 @@ const startSky = (
   const textRects = new Float32Array(targets.length * 4);
   const look: [number, number] = [0, 0];
   let pointerAt: [number, number] | undefined;
-  let pointerPx: [number, number] | undefined;
-  let hover: Hover | undefined;
   let worldPuffs: WorldPuff[] = [];
-  let wheel = 0;
-  let skyline: Skyline | undefined;
-  let skylineGl: SkylineGl | undefined;
+  const homeFrame: HomeFrame = {
+    basis: cameraBasis(0, 0),
+    camera: skyCamera(1, 1),
+    puffs: puffUniforms([]),
+    wind: [0, 0, 0, 0],
+  };
+  let starGl: StarGl | undefined;
+  let refreshPlanets: (() => void) | undefined;
   let gone = false;
-  let landmarkData: Float32Array<ArrayBuffer> = new Float32Array(0);
-  const skylineWanted = home && !still && !prefersLightLoad();
+  const starsWanted = home && !prefersLightLoad();
   const daylightTarget: SkyPhase = { ...liveDaylight };
   const daylight: SkyPhase = { ...daylightTarget };
   const meteorShown = !anchored || (!crawler && weatherTarget.overcast < 1);
@@ -453,6 +479,10 @@ const startSky = (
     if (!entry) return;
     const cssWidth = Math.max(1, canvas.clientWidth);
     const cssHeight = Math.max(1, canvas.clientHeight);
+    if (home) {
+      const box = canvas.getBoundingClientRect();
+      homeFrame.camera = skyCamera(box.width, box.height);
+    }
     const cap = Math.sqrt(maxCanvasPixels / (cssWidth * cssHeight));
     scale = Math.min(entry.scale, cap) * Math.min(window.devicePixelRatio, 1);
     const width = Math.max(1, Math.floor(cssWidth * scale));
@@ -598,16 +628,18 @@ const startSky = (
     lastPuff = [x, bottom];
     if (home) {
       const box = canvas.getBoundingClientRect();
-      const shift = (shiftMs / 1000) % windWrap;
+      const { camera } = homeFrame;
+      const ray = skyRay(
+        clientX - box.left,
+        clientY - box.top,
+        currentBasis(),
+        camera,
+        box.width,
+        box.height
+      );
       worldPuffs = addWorldPuff(
         worldPuffs,
-        worldPuff(
-          (clientX - box.left) / Math.max(1, box.width),
-          (clientY - box.top) / Math.max(1, box.height),
-          box.width / Math.max(1, box.height),
-          cameraFor(box.width, box.height),
-          [windGain[0] * shift, windGain[1] * shift]
-        )
+        worldPuff(ray, camera.eye, [homeFrame.wind[0], homeFrame.wind[1]])
       );
       return;
     }
@@ -642,62 +674,82 @@ const startSky = (
     });
   };
 
-  const refreshLight = (): void => {
+  const moveSky = (): void => {
     if (!home) return;
-    light = skyLight(instant(), weatherTarget, lightView());
-    Object.assign(liveDaylight, light.daylight);
-    Object.assign(daylightTarget, liveDaylight);
+    const now = instant();
+    light = skyLight(now, weatherTarget);
+    equatorial = equatorialToWorld(now, viennaLatitude, viennaLongitude);
+    galactic = worldToGalactic(now, viennaLatitude, viennaLongitude);
   };
 
-  const growSkyline = (): void => {
+  const refreshLight = (reaim = false): void => {
+    if (!home) return;
+    moveSky();
+    if (light) {
+      Object.assign(liveDaylight, light.daylight);
+      Object.assign(daylightTarget, liveDaylight);
+    }
+    refreshPlanets?.();
+    const next = frameAim(instant(), viennaLatitude, viennaLongitude);
+    const view = lightView();
+    if (reaim || next.kind !== aim?.kind || !aimHolds(yaw, next, view))
+      yaw = aimYaw(next, view);
+    aim = next;
+    if (reaim || !rafId) shownYaw = yaw;
+  };
+
+  const growStars = (): void => {
     void Promise.all([
-      import("@/lib/skyline"),
-      import("@/lib/skyline-gl"),
-    ]).then(([{ buildSkyline }, { createSkylineGl }]) => {
+      import("@/lib/star-gl"),
+      import("@/lib/sky-stars"),
+      import("@/lib/sky-planets"),
+    ]).then(([{ createStarGl }, { decodeStars }, { planetsAt }]) => {
       if (gone) return;
-      const city = buildSkyline();
-      skyline = city;
-      landmarkData = landmarkUniforms(city.landmarks);
-      skylineGl = createSkylineGl(gl, city, () => {
+      starGl = createStarGl(gl, decodeStars(), () => {
         if (rafId) markActive();
         else drawStill();
       });
+      refreshPlanets = (): void => starGl?.setPlanets(planetsAt(instant()));
+      refreshPlanets();
     });
   };
 
   const moveScene = (seconds: number): void => {
     let moving = easeLook(look, rafId ? lookTarget(pointerAt) : look, seconds);
-    if (skyline && pointerPx && rafId) {
-      const box = canvas.getBoundingClientRect();
-      hover = pickLandmark(
-        skyline.landmarks,
-        cameraFor(box.width, box.height),
-        look,
-        pointerPx,
-        box.width,
-        box.height
-      );
-    } else hover = undefined;
     if (rafId) {
-      if (easeLean(landmarkData, hover, seconds)) moving = true;
-      wheel =
-        (wheel + (seconds * Math.PI * 2 * wheelSpeed) / wheelTurnSeconds) %
-        (Math.PI * 2);
+      const gap = wrapAngle(yaw - shownYaw);
+      if (Math.abs(gap) > panSettled) {
+        shownYaw = wrapAngle(
+          shownYaw + gap * (1 - Math.exp(-seconds * panRate))
+        );
+        moving = true;
+      } else shownYaw = yaw;
       worldPuffs = agePuffs(worldPuffs, seconds);
       if (worldPuffs.length > 0) moving = true;
-    }
+    } else shownYaw = yaw;
     if (moving) markActive();
   };
 
+  const currentBasis = (): ReturnType<typeof cameraBasis> =>
+    cameraBasis(shownYaw + look[0], look[1]);
+
   const homeUniforms = (): void => {
     if (!light) return;
-    const box = canvas.getBoundingClientRect();
-    const camera = cameraFor(box.width, box.height);
+    const { camera } = homeFrame;
     const shift = (shiftMs / 1000) % windWrap;
-    uniforms.set("u_cam", camera.focal, camera.horizon, camera.eye);
-    uniforms.set("u_look", look[0], look[1]);
+    homeFrame.basis = currentBasis();
+    homeFrame.puffs = puffUniforms(worldPuffs);
+    homeFrame.wind = [
+      windGain[0] * shift,
+      windGain[1] * shift,
+      windGain[2] * shift,
+      windGain[3] * shift,
+    ];
+    uniforms.set("u_cam", camera.top, camera.horizon, camera.eye);
+    uniforms.matrix("u_basis", homeFrame.basis);
+    uniforms.matrix("u_gal", galactic);
     uniforms.set("u_pointer", look[0] * lookShare, look[1] * lookShare);
-    uniforms.set("u_sun", ...light.shownSun, Math.asin(light.trueSun[1]));
+    uniforms.set("u_sun", ...light.sun);
     uniforms.set("u_sunCol", ...light.sunColor);
     uniforms.set("u_amb", ...light.ambient);
     uniforms.set("u_sunDisk", ...light.sunDisk);
@@ -705,53 +757,36 @@ const startSky = (
     uniforms.set("u_moon2", ...light.moonShade);
     uniforms.set("u_moon3", ...light.moonDisk);
     uniforms.set("u_moonCol", ...light.moonColor);
-    uniforms.set(
-      "u_wind",
-      windGain[0] * shift,
-      windGain[1] * shift,
-      windGain[2] * shift,
-      windGain[3] * shift
-    );
+    uniforms.set("u_wind", ...homeFrame.wind);
     uniforms.set(
       "u_ground",
-      0.85 * groundShare(weather.rain),
-      groundShare(weather.snow)
+      0.85 * groundCover(weather.rain),
+      groundCover(weather.snow)
     );
-    uniforms.array("u_wpuff", puffUniforms(worldPuffs));
+    uniforms.array("u_wpuff", homeFrame.puffs);
     uniforms.array("u_txt", textRects);
   };
 
-  const drawSkyline = (): void => {
-    if (!skylineGl || !light) return;
-    const box = canvas.getBoundingClientRect();
-    const camera = cameraFor(box.width, box.height);
-    skylineGl.draw(
-      {
-        ambient: light.ambient,
-        aspect: canvas.width / Math.max(1, canvas.height),
-        camera: [camera.focal, camera.horizon, camera.eye],
-        look,
-        pointSize: Math.max(3, pointSize * scale),
-        sun: light.trueSun,
-        sunColor: light.sunColor,
-        text: textRects,
-        time: (clock.tick(performance.now()) / 1000) % timeWrap,
-        under: light.under,
-        view: canvas.height,
-        weather: {
-          horizon: light.skyHorizon,
-          nightOn: light.nightOn,
-          ramp: light.ramp,
-          rim: light.shownSun,
-          snow: groundShare(weather.snow),
-          visibility: light.visibility,
-          wet: 0.85 * groundShare(weather.rain),
-          zenith: light.skyZenith,
-        },
-        wheel,
-      },
-      landmarkData
-    );
+  const drawStars = (skyMs: number): void => {
+    if (!starGl || !light) return;
+    const { camera } = homeFrame;
+    starGl.draw({
+      basis: homeFrame.basis,
+      camera: [camera.top, camera.horizon, camera.eye],
+      clouds: currentLevel()?.clouds ?? false,
+      day: daylight.day,
+      equatorial,
+      height: canvas.height,
+      moon: light.moon,
+      moonSky: Math.min(1, light.moonColor[0] * 25),
+      pixel: scale,
+      puffs: homeFrame.puffs,
+      sun: light.sun,
+      time: (skyMs / 1000) % timeWrap,
+      weather: [weather.cover, weather.overcast, weather.high, weather.fog],
+      width: canvas.width,
+      wind: homeFrame.wind,
+    });
   };
 
   const restoreSky = (): void => {
@@ -793,13 +828,15 @@ const startSky = (
       for (const puff of puffs) puff.age += step / 1000;
       if (gust.energy > gustActive) markActive();
     }
-    const puffing = uploadPuffs();
-    if (rafId && puffing) markActive();
+    if (anchored) {
+      const puffing = uploadPuffs();
+      if (rafId && puffing) markActive();
+    }
     uniforms.set("u_res", canvas.width, canvas.height);
     uniforms.set("u_view", viewPixels());
     uniforms.set("u_labPx", labPixelsPerCss / scale);
     uniforms.set("u_time", (skyMs / 1000) % timeWrap);
-    uniforms.set("u_pointer", pointer.x, pointer.y);
+    if (anchored) uniforms.set("u_pointer", pointer.x, pointer.y);
     trackCorner();
     uniforms.set("u_clouds", current.clouds ? 1 : 0);
     uniforms.set("u_cloudTime", (cloudMs / 1000) % timeWrap);
@@ -807,7 +844,11 @@ const startSky = (
     if (clockLive && now - daylightAt >= daylightEveryMs) {
       refreshLight();
       daylightAt = now;
+      lightAt = now;
       if (!daylightEasing) Object.assign(daylight, liveDaylight);
+    } else if (clockLive && rafId && now - lightAt >= lightEveryMs) {
+      moveSky();
+      lightAt = now;
     }
     uniforms.set("u_daylight", daylight.day, daylight.twilight, daylight.dusk);
     uniforms.set(
@@ -840,7 +881,7 @@ const startSky = (
     }
     drawInk(now);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
-    if (home) drawSkyline();
+    if (home) drawStars(skyMs);
   };
 
   const drawStill = (): void => {
@@ -854,8 +895,6 @@ const startSky = (
     puffs.length = 0;
     worldPuffs = [];
     lastPuff = undefined;
-    hover = undefined;
-    settleLean(landmarkData);
   };
 
   const stop = (): void => {
@@ -940,16 +979,10 @@ const startSky = (
       stirClouds(event.clientX, event.clientY, 1);
     if (!hoverPointer.matches) return;
     if (home) {
-      const box = canvas.getBoundingClientRect();
-      const top = document.elementFromPoint(event.clientX, event.clientY);
       pointerAt = [
         (event.clientX / window.innerWidth) * 2 - 1,
         (event.clientY / window.innerHeight) * 2 - 1,
       ];
-      pointerPx =
-        top === null || top.matches(openTargets)
-          ? [event.clientX - box.left, event.clientY - box.top]
-          : undefined;
       return;
     }
     const aspect = window.innerWidth / Math.max(1, window.innerHeight);
@@ -962,7 +995,7 @@ const startSky = (
     resizeTimer = undefined;
     markActive();
     resize();
-    refreshLight();
+    refreshLight(true);
     if (!rafId) drawStill();
   };
   const onResize = (): void => {
@@ -974,7 +1007,6 @@ const startSky = (
     gust.inside = false;
     lastPuff = undefined;
     pointerAt = undefined;
-    pointerPx = undefined;
   };
   const onTouch = (event: TouchEvent): void => {
     const touch = event.touches[0];
@@ -1035,10 +1067,10 @@ const startSky = (
   refreshWeather();
   frame(performance.now());
   sync();
-  const cancelSkyline = skylineWanted ? whenIdle(growSkyline) : undefined;
+  const cancelStars = starsWanted ? whenIdle(growStars) : undefined;
   const settleTimer = home
     ? globalThis.setTimeout(() => {
-        refreshLight();
+        refreshLight(true);
         if (!rafId) drawStill();
       }, settleMs)
     : undefined;
@@ -1079,9 +1111,9 @@ const startSky = (
   return () => {
     gone = true;
     stop();
-    cancelSkyline?.();
+    cancelStars?.();
     globalThis.clearTimeout(settleTimer);
-    skylineGl?.dispose();
+    starGl?.dispose();
     weatherStop.abort();
     globalThis.clearInterval(weatherTimer);
     main?.removeEventListener("transitionend", onShift);
@@ -1127,10 +1159,7 @@ export const SpaceBackground = ({
       canvas.hidden = true;
       setState("fallback");
     };
-    const gl = canvas.getContext(
-      "webgl",
-      mode === "blog" ? contextOptions : homeContextOptions
-    );
+    const gl = canvas.getContext("webgl", contextOptions);
     const still = gl ? isSoftwareRenderer(gl) : false;
     const vertex = gl ? createShader(gl, gl.VERTEX_SHADER, VERTEX) : undefined;
     const fragment = gl
