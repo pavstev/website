@@ -6,9 +6,9 @@ const linkPattern = /<link\b[^>]*>/giu;
 const attributePattern =
   /([^\s"'=<>/]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gu;
 
-const attributesOf = (tag: string): Map<string, string> => {
+export const attributesOf = (tag: string): Map<string, string> => {
   const attributes = new Map<string, string>();
-  const inner = tag.replace(/^<link\b/iu, "").replace(/\/?>$/u, "");
+  const inner = tag.replace(/^<[a-z]+\b/iu, "").replace(/\/?>$/u, "");
   for (const match of inner.matchAll(attributePattern)) {
     const [, name = "", quoted, single, bare] = match;
     const key = name.toLowerCase();

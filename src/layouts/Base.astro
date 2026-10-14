@@ -32,7 +32,7 @@ const imageUrl = new URL(shareImage.url, personalData.website).href;
     <link rel="author" href={personalData.website} />
     <meta name="author" content={personalData.name} />
     <link rel="manifest" href="/manifest.webmanifest" />
-    {indexable && (
+    {indexable ? (
       <>
         <meta name="robots" content="index, follow" />
         <meta
@@ -40,11 +40,13 @@ const imageUrl = new URL(shareImage.url, personalData.website).href;
           content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1"
         />
       </>
+    ) : (
+      <meta name="robots" content="noindex" />
     )}
     {canonical && <link rel="canonical" href={canonical} />}
-    <meta property="og:title" content={en.meta.title} />
+    <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={personalData.website} />
+    {canonical && <meta property="og:url" content={canonical} />}
     <meta property="og:site_name" content={personalData.name} />
     <meta property="og:locale" content="en_US" />
     <meta property="og:image" content={imageUrl} />
@@ -57,7 +59,7 @@ const imageUrl = new URL(shareImage.url, personalData.website).href;
     <meta property="profile:last_name" content={personalData.familyName} />
     <meta property="profile:username" content={personalData.githubHandle} />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={en.meta.title} />
+    <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
     <meta name="twitter:image:alt" content={shareImage.alt} />

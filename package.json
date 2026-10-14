@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "astro": "astro",
-    "build": "export BLOG_BUILT_AT=$(node -p \"new Date().toISOString()\") && node scripts/cv-fetch.ts && node scripts/blog-build.ts && astro build && node scripts/preload-guard.ts && node scripts/cv-guard.ts",
+    "build": "export BLOG_BUILT_AT=$(node -p \"new Date().toISOString()\") && node scripts/cv-fetch.ts && node scripts/blog-build.ts && astro build && node scripts/preload-guard.ts && node scripts/meta-guard.ts && node scripts/cv-guard.ts",
     "check": "prettier --check . --cache --log-level=warn && eslint . --max-warnings=0 --cache && astro check && tsc --noEmit -p worker/tsconfig.json && node --test \"scripts/**/*.test.ts\" \"src/**/*.test.ts\" \"worker/**/*.test.ts\" && knip && pnpm build && node src/profile/cli.ts --check",
     "dev": "node scripts/cv-fetch.ts && BLOG_DRAFTS=1 node scripts/blog-build.ts && astro dev --port 4321",
     "dev:many": "export BLOG_FIXTURES=1 && pnpm dev",
