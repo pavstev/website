@@ -44,7 +44,7 @@ const jsonLd = serializeJsonLd(
     fetchpriority="high"
   />
   <script type="application/ld+json" is:inline set:html={jsonLd}></script>
-  <SpaceBackground client:load />
+  <SpaceBackground client:load transition:persist="sky" />
   <MotionToggle client:load />
   <main
     class="relative grid min-h-dvh grid-cols-1 place-items-center overflow-x-clip safe-area"

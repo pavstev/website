@@ -70,14 +70,22 @@ export const CardDrawer = ({
     const onClick = (event: MouseEvent): void => {
       if (event.target === dialog) dialog.close();
     };
+    const onLink = (event: MouseEvent): void => {
+      if (!event.defaultPrevented) return;
+      const link =
+        event.target instanceof Element ? event.target.closest("a") : null;
+      if (link?.getAttribute("href") === `#${id}`) show(true);
+    };
     dialog.addEventListener("close", onClose);
     dialog.addEventListener("click", onClick);
     globalThis.addEventListener("hashchange", onHashChange);
+    document.addEventListener("click", onLink);
     sync(false);
     return () => {
       dialog.removeEventListener("close", onClose);
       dialog.removeEventListener("click", onClick);
       globalThis.removeEventListener("hashchange", onHashChange);
+      document.removeEventListener("click", onLink);
     };
   }, [id]);
 

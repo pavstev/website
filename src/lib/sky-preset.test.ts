@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { nightPhase } from "./sky-clock.ts";
-import { blogLook, earthClouds } from "./sky-preset.ts";
+import { blogLook, imageClouds, nightPhase } from "./sky-preset.ts";
 
 describe("blogLook", () => {
   it("is the clear night of every blog page", () => {
@@ -21,11 +20,11 @@ describe("blogLook", () => {
   });
 });
 
-describe("earthClouds", () => {
-  it("is a partly cloudy Earth with no fog and a clear lower sky", () => {
-    assert.equal(earthClouds.cover, 0.6);
-    assert.equal(earthClouds.fog, 0);
-    assert.equal(earthClouds.overcast, 0);
-    assert.ok(earthClouds.high > 0 && earthClouds.high < 1);
+describe("imageClouds", () => {
+  it("is the partly cloudy look of the social images", () => {
+    assert.equal(imageClouds.cover, 0.6);
+    assert.equal(imageClouds.fog, 0);
+    assert.equal(imageClouds.overcast, 0);
+    assert.ok(imageClouds.high > 0 && imageClouds.high < 1);
   });
 });

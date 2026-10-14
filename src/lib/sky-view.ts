@@ -1,11 +1,4 @@
 import { clamp, deg } from "./math.ts";
-import { moonPosition, sunPosition } from "./sky-ephemeris.ts";
-
-export interface Aim {
-  kind: AimKind;
-  second?: Sight;
-  target: Sight;
-}
 
 export type Basis = readonly [
   number,
@@ -19,6 +12,11 @@ export type Basis = readonly [
   number,
 ];
 
+export interface Sight {
+  altitude: number;
+  azimuth: number;
+}
+
 export interface SkyCamera {
   eye: number;
   horizon: number;
@@ -31,8 +29,6 @@ export interface ViewSize {
   width: number;
 }
 
-type AimKind = "moon" | "rise" | "sun" | "twilight";
-
 interface CardRect {
   bottom: number;
   left: number;
@@ -40,25 +36,14 @@ interface CardRect {
   top: number;
 }
 
-interface Sight {
-  altitude: number;
-  azimuth: number;
-}
-
 type Vec3 = readonly [number, number, number];
 
-export const earthRadius = 6_371_000;
-export const eyeAltitude = 100_000;
-export const limbDip = Math.acos(earthRadius / (earthRadius + eyeAltitude));
+const earthRadius = 6_371_000;
+const eyeAltitude = 100_000;
+const limbDip = Math.acos(earthRadius / (earthRadius + eyeAltitude));
 const limbShare = 0.16;
 const topShare = 0.04;
-const topMargin = 24;
 const halfWidthLimit = 0.9;
-const diskGainMax = 7.5;
-const eclipseRoom = 0.95;
-const riseStepMs = 600_000;
-const riseSpanMs = 36 * 3_600_000;
-const twilightDepth = -18;
 const solveSteps = 48;
 const reachShare = 0.9;
 
@@ -137,28 +122,21 @@ export const projectSky = (
   return [width / 2 + u * unit, height - camera.horizon * height - v * unit];
 };
 
-export const skyRay = (
-  x: number,
-  y: number,
+export const projectDisk = (
+  direction: Vec3,
+  angularRadius: number,
   basis: Basis,
   camera: SkyCamera,
   width: number,
   height: number
-): Vec3 => {
-  const unit = skyUnit(camera, height);
-  const u = (x - width / 2) / unit;
-  const v = (height - camera.horizon * height - y) / unit;
-  const r2 = u * u + v * v;
-  const a = (2 * u) / (1 + r2);
-  const b = (2 * v) / (1 + r2);
-  const c = (1 - r2) / (1 + r2);
-  const right = column(basis, 0);
-  const up = column(basis, 1);
-  const forward = column(basis, 2);
+): readonly [number, number, number] | undefined => {
+  const center = projectSky(direction, basis, camera, width, height);
+  if (!center) return undefined;
+  const z = dot(direction, column(basis, 2));
   return [
-    right[0] * a + up[0] * b + forward[0] * c,
-    right[1] * a + up[1] * b + forward[1] * c,
-    right[2] * a + up[2] * b + forward[2] * c,
+    center[0],
+    center[1],
+    (angularRadius * skyUnit(camera, height)) / (1 + z),
   ];
 };
 
@@ -180,128 +158,19 @@ const offsetFor = (wanted: number, altitude: number): number => {
 
 const sideMargin = (width: number): number => Math.max(24, width * 0.05);
 
-const anchors = (view: ViewSize): [number, number] => {
+const anchor = (view: ViewSize): number => {
   const { card, width } = view;
-  if (card) {
-    const room = Math.min(width - card.right, card.left);
-    if (room >= sideMargin(width) * 2)
-      return [(card.right + width) / 2, card.left / 2];
-  }
-  return [width * 0.78, width * 0.22];
+  if (!card) return width * 0.78;
+  return Math.min(width - card.right, card.left) >= sideMargin(width) * 2
+    ? (card.right + width) / 2
+    : width - sideMargin(width) / 2;
 };
 
-const onScreen = (
-  point: [number, number] | undefined,
-  view: ViewSize
-): boolean => {
-  if (!point) return false;
-  const margin = sideMargin(view.width);
-  return (
-    point[0] > margin &&
-    point[0] < view.width - margin &&
-    point[1] > topMargin &&
-    point[1] < view.height
-  );
-};
-
-export const aimYaw = (aim: Aim, view: ViewSize): number => {
+export const aimYaw = (target: Sight, view: ViewSize): number => {
   const camera = skyCamera(view.width, view.height);
   const unit = skyUnit(camera, view.height);
-  const [preferred, other] = anchors(view).map((x) =>
-    turn(
-      aim.target.azimuth * deg -
-        offsetFor((x - view.width / 2) / unit, aim.target.altitude)
-    )
-  ) as [number, number];
-  const { second } = aim;
-  if (!second) return preferred;
-  const shows = (yaw: number): boolean =>
-    onScreen(
-      projectSky(
-        worldDirection(second.altitude, second.azimuth),
-        cameraBasis(yaw, 0),
-        camera,
-        view.width,
-        view.height
-      ),
-      view
-    );
-  return shows(preferred) || !shows(other) ? preferred : other;
-};
-
-export const aimHolds = (yaw: number, aim: Aim, view: ViewSize): boolean => {
-  const camera = skyCamera(view.width, view.height);
-  const point = projectSky(
-    worldDirection(aim.target.altitude, aim.target.azimuth),
-    cameraBasis(yaw, 0),
-    camera,
-    view.width,
-    view.height
-  );
-  if (!point || !onScreen(point, view)) return false;
-  const { card } = view;
-  if (!card) return true;
-  const room = Math.min(view.width - card.right, card.left);
-  return (
-    room < sideMargin(view.width) * 2 ||
-    point[0] < card.left ||
-    point[0] > card.right
-  );
-};
-
-const sightOf = (position: { altitude: number; azimuth: number }): Sight => ({
-  altitude: position.altitude,
-  azimuth: position.azimuth,
-});
-
-const limbDepth = -limbDip / deg;
-
-const nextRise = (
-  instant: number,
-  latitude: number,
-  longitude: number
-): number => {
-  for (let at = instant; at <= instant + riseSpanMs; at += riseStepMs) {
-    const sun = sunPosition(at, latitude, longitude);
-    if (sun.altitude + sun.angularRadius > limbDepth) return sun.azimuth;
-    const moon = moonPosition(at, latitude, longitude);
-    if (moon.altitude + moon.angularRadius > limbDepth) return moon.azimuth;
-  }
-  return sunPosition(instant, latitude, longitude).azimuth;
-};
-
-export const frameAim = (
-  instant: number,
-  latitude: number,
-  longitude: number
-): Aim => {
-  const sun = sunPosition(instant, latitude, longitude);
-  const moon = moonPosition(instant, latitude, longitude);
-  const sunUp = sun.altitude + sun.angularRadius > limbDepth;
-  const moonUp = moon.altitude + moon.angularRadius > limbDepth;
-  if (sunUp)
-    return moonUp
-      ? { kind: "sun", second: sightOf(moon), target: sightOf(sun) }
-      : { kind: "sun", target: sightOf(sun) };
-  if (moonUp) return { kind: "moon", target: sightOf(moon) };
-  if (sun.altitude > twilightDepth)
-    return { kind: "twilight", target: { altitude: 0, azimuth: sun.azimuth } };
-  return {
-    kind: "rise",
-    target: { altitude: 0, azimuth: nextRise(instant, latitude, longitude) },
-  };
-};
-
-export const diskGain = (
-  sun: Vec3,
-  moon: Vec3,
-  sunRadius: number,
-  moonRadius: number
-): number => {
-  const separation = Math.acos(clamp(dot(sun, moon), -1, 1));
-  return clamp(
-    (separation * eclipseRoom) / Math.max(sunRadius + moonRadius, 1e-6),
-    1,
-    diskGainMax
+  return turn(
+    target.azimuth * deg -
+      offsetFor((anchor(view) - view.width / 2) / unit, target.altitude)
   );
 };

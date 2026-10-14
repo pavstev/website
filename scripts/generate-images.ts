@@ -6,37 +6,13 @@ import sharp from "sharp";
 import { en } from "../src/lib/i18n.ts";
 import { iconData } from "../src/lib/icon-data.ts";
 import { personalData } from "../src/lib/personal.ts";
-import { nightPhase } from "../src/lib/sky-clock.ts";
-import { equatorialToWorld, worldToGalactic } from "../src/lib/sky-frame.ts";
-import {
-  crawlerInstant,
-  skyLight,
-  viennaLatitude,
-  viennaLongitude,
-} from "../src/lib/sky-light.ts";
-import { planetsAt } from "../src/lib/sky-planets.ts";
-import { earthClouds } from "../src/lib/sky-preset.ts";
+import { imageClouds, nightPhase } from "../src/lib/sky-preset.ts";
 import {
   cornerCorona,
   cornerMeteor,
   longRaysShader,
 } from "../src/lib/sky-rays.ts";
-import {
-  homeSkyFragmentShader,
-  skyVertexShader,
-} from "../src/lib/sky-shader.ts";
-import { decodeStars } from "../src/lib/sky-stars.ts";
-import {
-  aimYaw,
-  cameraBasis,
-  frameAim,
-  skyCamera,
-} from "../src/lib/sky-view.ts";
-import {
-  starFragmentShader,
-  starPoints,
-  starVertexShader,
-} from "../src/lib/star-gl.ts";
+import { skyVertexShader } from "../src/lib/sky-shader.ts";
 import { designTokens, hexBytes, profilePalette } from "../src/lib/theme.ts";
 import { headerHeight, headerWidth } from "../src/profile/header.ts";
 
@@ -56,12 +32,10 @@ interface ImageSpec {
   body: string;
   corona: Corona;
   daylight: Daylight;
-  extra: readonly Uniform[];
   file: string;
   fragment: string;
   height: number;
   meteor: Meteor;
-  stars?: StarPass;
   type: "jpeg" | "png" | "webp";
   width: number;
 }
@@ -77,21 +51,12 @@ interface SkyInput {
   cloudTime: number;
   corona: Corona;
   daylight: Daylight;
-  extra: readonly Uniform[];
   fragment: string;
   labPx: number;
   meteor: Meteor;
-  stars?: StarPass | undefined;
   time: number;
   vertex: string;
   weather: [number, number, number, number];
-}
-
-interface StarPass {
-  data: number[];
-  fragment: string;
-  uniforms: readonly Uniform[];
-  vertex: string;
 }
 
 const publicDir = "public";
@@ -101,77 +66,13 @@ const labPixelsPerCss = 1.2;
 const jpegQuality = 88;
 const webpQuality = 80;
 const crawlerWeather: [number, number, number, number] = [
-  earthClouds.cover,
-  earthClouds.overcast,
-  earthClouds.high,
-  earthClouds.fog,
+  imageClouds.cover,
+  imageClouds.overcast,
+  imageClouds.high,
+  imageClouds.fog,
 ];
 
-type Uniform = readonly [string, readonly number[]];
-
 const noMeteor: Meteor = { angle: 0, progress: 2, x: 0, y: 0 };
-const noCorona: Corona = { radius: 0, x: 0, y: 0 };
-
-const crawlerLight = skyLight(crawlerInstant);
-
-const homeCamera = (
-  width: number,
-  height: number
-): { basis: readonly number[]; camera: ReturnType<typeof skyCamera> } => ({
-  basis: cameraBasis(
-    aimYaw(frameAim(crawlerInstant, viennaLatitude, viennaLongitude), {
-      height,
-      width,
-    }),
-    0
-  ),
-  camera: skyCamera(width, height),
-});
-
-const homeUniforms = (width: number, height: number): Uniform[] => {
-  const light = crawlerLight;
-  const { basis, camera } = homeCamera(width, height);
-  return [
-    ["u_cam", [camera.top, camera.horizon, camera.eye]],
-    ["u_basis", basis],
-    ["u_gal", worldToGalactic(crawlerInstant, viennaLatitude, viennaLongitude)],
-    ["u_sun", light.sun],
-    ["u_sunCol", light.sunColor],
-    ["u_sunDisk", light.sunDisk],
-    ["u_moon", light.moon],
-    ["u_moon2", light.moonShade],
-    ["u_moon3", light.moonDisk],
-    ["u_moonCol", light.moonColor],
-    ["u_wind", [575, 172.5, 1035, 230]],
-    ["u_ground", [0, 0]],
-    ["u_wpuff", Array.from({ length: 24 }, () => 0)],
-    ["u_txt", Array.from({ length: 12 }, () => 0)],
-  ];
-};
-
-const homeStars = (width: number, height: number): StarPass => {
-  const { basis, camera } = homeCamera(width, height);
-  return {
-    data: [...starPoints(decodeStars(), planetsAt(crawlerInstant))],
-    fragment: starFragmentShader,
-    uniforms: [
-      [
-        "u_eq",
-        equatorialToWorld(crawlerInstant, viennaLatitude, viennaLongitude),
-      ],
-      ["u_basis", basis],
-      ["u_cam", [camera.top, camera.horizon, camera.eye]],
-      ["u_res", [width, height]],
-      ["u_sun", crawlerLight.sun],
-      ["u_moon", crawlerLight.moon],
-      ["u_moonSky", [Math.min(1, crawlerLight.moonColor[0] * 25)]],
-      ["u_day", [nightPhase.day]],
-      ["u_time", [skyTime]],
-      ["u_px", [1]],
-    ],
-    vertex: starVertexShader,
-  };
-};
 
 const rgba = (hex: string, alpha: number): string =>
   `rgba(${[...hexBytes(hex), alpha].join(", ")})`;
@@ -294,83 +195,7 @@ const drawSky = (input: SkyInput): void => {
     input.daylight.twilight,
     input.daylight.dusk
   );
-  const setUniform = (
-    location: null | WebGLUniformLocation,
-    values: readonly number[]
-  ): void => {
-    const [a = 0, b = 0, c = 0, d = 0] = values;
-    switch (values.length) {
-      case 1: {
-        gl.uniform1f(location, a);
-        return;
-      }
-      case 2: {
-        gl.uniform2f(location, a, b);
-        return;
-      }
-      case 3: {
-        gl.uniform3f(location, a, b, c);
-        return;
-      }
-      case 4: {
-        gl.uniform4f(location, a, b, c, d);
-        return;
-      }
-      case 9: {
-        gl.uniformMatrix3fv(location, false, new Float32Array(values));
-        return;
-      }
-      default: {
-        gl.uniform4fv(location, new Float32Array(values));
-      }
-    }
-  };
-  const apply = (
-    where: (name: string) => null | WebGLUniformLocation,
-    list: readonly Uniform[]
-  ): void => {
-    for (const [uniform, values] of list) setUniform(where(uniform), values);
-  };
-  apply(at, input.extra);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
-  const { stars } = input;
-  if (stars) {
-    gl.disableVertexAttribArray(position);
-    const starProgram = gl.createProgram();
-    gl.attachShader(starProgram, compile(gl.VERTEX_SHADER, stars.vertex));
-    gl.attachShader(starProgram, compile(gl.FRAGMENT_SHADER, stars.fragment));
-    gl.linkProgram(starProgram);
-    if (!gl.getProgramParameter(starProgram, gl.LINK_STATUS))
-      throw new Error(gl.getProgramInfoLog(starProgram) ?? "Link failed");
-    gl.useProgram(starProgram);
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(stars.data),
-      gl.STATIC_DRAW
-    );
-    let offset = 0;
-    for (const [attribute, size] of [
-      ["a_dir", 3],
-      ["a_mag", 1],
-      ["a_col", 3],
-      ["a_twinkle", 1],
-    ] as const) {
-      const location = gl.getAttribLocation(starProgram, attribute);
-      if (location >= 0) {
-        gl.enableVertexAttribArray(location);
-        gl.vertexAttribPointer(location, size, gl.FLOAT, false, 32, offset * 4);
-      }
-      offset += size;
-    }
-    apply(
-      (uniform) => gl.getUniformLocation(starProgram, uniform),
-      stars.uniforms
-    );
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE);
-    gl.drawArrays(gl.POINTS, 0, stars.data.length / 8);
-  }
   gl.finish();
 };
 
@@ -393,11 +218,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
     cloudTime,
     corona: spec.corona,
     daylight: spec.daylight,
-    extra: spec.extra,
     fragment: spec.fragment,
     labPx: labPixelsPerCss,
     meteor: spec.meteor,
-    stars: spec.stars,
     time: skyTime,
     vertex: skyVertexShader,
     weather: crawlerWeather,
@@ -433,14 +256,12 @@ const portrait = await dataUrl(
 const specs: ImageSpec[] = [
   {
     body: ogBody(portrait),
-    corona: noCorona,
+    corona: cornerCorona(630),
     daylight: nightPhase,
-    extra: homeUniforms(1200, 630),
     file: path.join(publicDir, "og-image.jpg"),
-    fragment: homeSkyFragmentShader,
+    fragment: longRaysShader,
     height: 630,
     meteor: noMeteor,
-    stars: homeStars(1200, 630),
     type: "jpeg",
     width: 1200,
   },
@@ -448,7 +269,6 @@ const specs: ImageSpec[] = [
     body: "",
     corona: cornerCorona(396),
     daylight: nightPhase,
-    extra: [],
     file: path.join(publicDir, "linkedin-cover.png"),
     fragment: longRaysShader,
     height: 396,
@@ -460,7 +280,6 @@ const specs: ImageSpec[] = [
     body: "",
     corona: cornerCorona(headerHeight),
     daylight: nightPhase,
-    extra: [],
     file: path.join("src", "profile", "header-sky.webp"),
     fragment: longRaysShader,
     height: headerHeight,

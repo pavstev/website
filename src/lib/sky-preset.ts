@@ -1,5 +1,3 @@
-import { nightPhase, type SkyPhase } from "./sky-clock.ts";
-
 export interface SkyClouds {
   cover: number;
   fog: number;
@@ -14,7 +12,15 @@ export interface SkyLook {
 
 export type SkyMode = "blog" | "home";
 
-export const earthClouds: Readonly<SkyClouds> = {
+export interface SkyPhase {
+  day: number;
+  dusk: number;
+  twilight: number;
+}
+
+export const nightPhase: Readonly<SkyPhase> = { day: 0, dusk: 0, twilight: 0 };
+
+export const imageClouds: Readonly<SkyClouds> = {
   cover: 0.6,
   fog: 0,
   high: 0.5,
