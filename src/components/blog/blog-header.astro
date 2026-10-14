@@ -22,7 +22,12 @@ const { slug, title, toc = false } = Astro.props;
 >
   <div aria-hidden="true" class="blog-bar-glass"></div>
   <div class="blog-bar-row">
-    <a class="blog-brand focus-ring" href="/" title={en.blog.home}>
+    <a
+      class="blog-brand focus-ring"
+      data-astro-reload
+      href="/"
+      title={en.blog.home}
+    >
       <AuthorPhoto alt="" class="blog-brand-photo" sizes="2rem" />
       <span class="blog-brand-name">{personalData.name}</span>
     </a>

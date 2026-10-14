@@ -24,6 +24,7 @@ export const SiteFooter = ({
             <span aria-hidden="true"> · </span>
             <a
               className="focus-ring"
+              data-astro-reload=""
               href="/blog/feed.xml"
               type="application/rss+xml"
             >

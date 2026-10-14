@@ -43,6 +43,7 @@ const links = [
       <li>
         <a
           class="blog-side-link focus-ring"
+          data-astro-reload={link.external ? undefined : ""}
           href={link.href}
           rel={link.external ? "me noopener noreferrer" : undefined}
           target={link.external ? "_blank" : undefined}

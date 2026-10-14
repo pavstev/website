@@ -1,6 +1,8 @@
 ---
 import "@/styles/globals.css";
 
+import { ClientRouter } from "astro:transitions";
+
 import { PageDock } from "@/components/page-dock";
 import { SpaceBackground } from "@/components/space-background";
 import {
@@ -101,14 +103,22 @@ const contact = await getContact(personalData.githubHandle);
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
     <link href="/sitemap.xml" rel="sitemap" />
     <script is:inline set:html={headScript}></script>
+    <ClientRouter fallback="swap" />
+    <script>
+      import "@/lib/blog/router-hooks";
+    </script>
   </head>
   <body>
     <div data-blog="">
-      <SpaceBackground client:load mode="blog" />
+      <SpaceBackground client:load mode="blog" transition:persist="blog-sky" />
       <slot />
     </div>
     <div class="blog-dock">
-      <PageDock client:load email={contact.email} />
+      <PageDock
+        client:load
+        email={contact.email}
+        transition:persist="blog-dock"
+      />
     </div>
   </body>
 </html>
