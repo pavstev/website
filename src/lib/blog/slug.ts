@@ -15,3 +15,8 @@ export const postSlug = (pathname: string): string | undefined => {
   const slug = postPath.exec(pathname)?.[1];
   return slug !== undefined && isSlug(slug) ? slug : undefined;
 };
+
+export const isBlogPage = (pathname: string): boolean =>
+  pathname === "/blog" ||
+  (pathname.startsWith("/blog/") &&
+    !(pathname.split("/").at(-1) ?? "").includes("."));

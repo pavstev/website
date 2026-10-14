@@ -489,6 +489,8 @@ const startSky = (
       nodes.paint =
         document.querySelectorAll<HTMLElement>(target.paint)[target.index] ??
         null;
+      const held = lifts[slot] ?? 0;
+      if (held > 0) nodes.paint?.style.setProperty("--lift", held.toFixed(2));
     }
     if (!nodes.probe) return undefined;
     textRange.selectNodeContents(nodes.probe);
@@ -1000,7 +1002,12 @@ const startSky = (
     if (!rafId) wakeProbe(scrollQuietMs);
   };
   const onShift = (event: TransitionEvent): void => {
-    if (!rafId && event.target === event.currentTarget) drawStill();
+    if (
+      !rafId &&
+      event.target instanceof Element &&
+      event.target.id === "main-content"
+    )
+      drawStill();
   };
   const onHold = (entries: IntersectionObserverEntry[]): void => {
     const entry = entries.at(-1);
@@ -1044,8 +1051,7 @@ const startSky = (
     globalThis.addEventListener(sceneHoldEvent, onDriftChange);
     reduceMotion.addEventListener("change", onDriftChange);
   }
-  const main = document.querySelector<HTMLElement>("#main-content");
-  main?.addEventListener("transitionend", onShift);
+  document.addEventListener("transitionend", onShift);
   window.addEventListener("resize", onResize);
   window.addEventListener("scroll", onScroll, { passive: true });
   globalThis.addEventListener("pointermove", onPointer, { passive: true });
@@ -1065,7 +1071,7 @@ const startSky = (
     cancelStars?.();
     globalThis.clearTimeout(settleTimer);
     starGl?.dispose();
-    main?.removeEventListener("transitionend", onShift);
+    document.removeEventListener("transitionend", onShift);
     if (resizeTimer !== undefined) globalThis.clearTimeout(resizeTimer);
     if (probeTimer !== undefined) globalThis.clearTimeout(probeTimer);
     if (readTimer !== undefined) globalThis.clearTimeout(readTimer);

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { isSlug, postSlug } from "./slug.ts";
+import { isBlogPage, isSlug, postSlug } from "./slug.ts";
 
 describe("isSlug", () => {
   for (const slug of ["a", "a-b", "how-i-use-ai", "a1-2b", "a".repeat(80)]) {
@@ -46,6 +46,33 @@ describe("postSlug", () => {
   ]) {
     it(`ignores ${JSON.stringify(path)}`, () => {
       assert.equal(postSlug(path), undefined);
+    });
+  }
+});
+
+describe("isBlogPage", () => {
+  for (const path of [
+    "/blog",
+    "/blog/how-i-use-ai",
+    "/blog/tag/ai",
+    "/blog/tag/ai/page/2",
+    "/blog/page/2",
+  ]) {
+    it(`accepts ${JSON.stringify(path)}`, () => {
+      assert.equal(isBlogPage(path), true);
+    });
+  }
+
+  for (const path of [
+    "/",
+    "/blogger",
+    "/blog/feed.xml",
+    "/blog/feed.json",
+    "/resume.pdf",
+    "/cv.json",
+  ]) {
+    it(`rejects ${JSON.stringify(path)}`, () => {
+      assert.equal(isBlogPage(path), false);
     });
   }
 });

@@ -105,7 +105,11 @@ const contact = await getContact(personalData.githubHandle);
     <script is:inline set:html={headScript}></script>
     <ClientRouter fallback="swap" />
     <script>
-      import "@/lib/blog/router-hooks";
+      import { morphTitles } from "@/lib/blog/title-morph";
+      import { keepPageFlags } from "@/lib/router-flags";
+
+      keepPageFlags();
+      morphTitles();
     </script>
   </head>
   <body>

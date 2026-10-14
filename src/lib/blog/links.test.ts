@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { isExternalHref } from "./links.ts";
+import { isExternalHref, leavesBlog } from "./links.ts";
 
 describe("isExternalHref", () => {
   it("treats the site itself as internal", () => {
@@ -30,6 +30,39 @@ describe("isExternalHref", () => {
       "https://github.com/pavstev",
     ]) {
       assert.equal(isExternalHref(href), true, href);
+    }
+  });
+});
+
+describe("leavesBlog", () => {
+  it("flags internal links to pages and files outside the blog pages", () => {
+    for (const href of [
+      "/",
+      "/resume.pdf",
+      "/cv.json",
+      "/llms.txt",
+      "/blog/feed.xml",
+      "/blog/feed.json",
+      "https://stevanpavlovic.com/",
+      "//stevanpavlovic.com/resume.pdf",
+    ]) {
+      assert.equal(leavesBlog(href), true, href);
+    }
+  });
+
+  it("keeps blog pages, anchors, mail and other origins as they are", () => {
+    for (const href of [
+      "/blog",
+      "/blog/other",
+      "/blog/tag/ai",
+      "/blog/page/2",
+      "/blog/other#notes",
+      "#notes",
+      "other",
+      "mailto:hi@example.com",
+      "https://github.com/pavstev",
+    ]) {
+      assert.equal(leavesBlog(href), false, href);
     }
   });
 });
