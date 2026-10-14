@@ -26,7 +26,7 @@ on:
       - src/lib/star-data.ts
       - src/lib/star-gl.ts
       - src/lib/theme.ts
-      - src/lib/weather.ts
+      - src/lib/sky-preset.ts
       - src/profile/header.ts
       - src/profile/text.ts
   workflow_dispatch:

@@ -5,11 +5,15 @@ import {
   moonPosition,
   sunPosition,
 } from "./sky-ephemeris.ts";
-import { diskGain, worldDirection } from "./sky-view.ts";
-import { type SkyWeather } from "./weather.ts";
+import {
+  diskGain,
+  earthRadius,
+  eyeAltitude,
+  limbDip,
+  worldDirection,
+} from "./sky-view.ts";
 
 export interface SkyLight {
-  ambient: Vec3;
   daylight: SkyPhase;
   moon: Vec4;
   moonColor: Vec3;
@@ -32,14 +36,12 @@ const sunStrength = 1;
 const moonlight = 1;
 const earthshine = 1;
 const glare = 1;
-const cirrus = 1;
 const tauRay: Vec3 = [0.046, 0.108, 0.265];
 const aerosol: Vec3 = [0.759, 1, 1.337];
-const warm: Vec3 = [1, 0.48, 0.32];
-const nightAmbient: Vec3 = [0.006, 0.008, 0.015];
-const veilFloor = 0.25;
-const moonVeilFloor = 0.3;
-const belowHorizon = -3;
+const scaleHeight = 8000;
+const horizonMass = 35.4;
+const tangentSigma = 225_700;
+const tintDivisor = 3.2;
 
 const map3 = (fn: (index: 0 | 1 | 2) => number): Vec3 => [fn(0), fn(1), fn(2)];
 
@@ -48,12 +50,19 @@ const airmass = (height: number): number => {
   return 1 / (Math.sin(e) + 0.50572 * (e / deg + 6.07995) ** -1.6364);
 };
 
-const sunTint = (tau: Vec3, elevation: number): Vec3 => {
-  const t = map3((i) =>
-    Math.exp(
-      -tau[i] * (airmass(elevation) / 3.2 + Math.max(-elevation, 0) * 46)
-    )
-  );
+export const pathMass = (elevation: number): number => {
+  const density = Math.exp(-eyeAltitude / scaleHeight);
+  if (elevation >= 0) return density * airmass(elevation);
+  const radius = earthRadius + eyeAltitude;
+  const tangent = radius * Math.cos(elevation) - earthRadius;
+  if (tangent <= 0) return 2 * horizonMass;
+  const reach = radius * Math.sin(-elevation);
+  const near = Math.sqrt(1 - Math.exp(-0.6366 * (reach / tangentSigma) ** 2));
+  return horizonMass * Math.exp(-tangent / scaleHeight) * (1 + near);
+};
+
+const sunTint = (tau: Vec3, mass: number): Vec3 => {
+  const t = map3((i) => Math.exp((-tau[i] * mass) / tintDivisor));
   const top = Math.max(t[0], t[1], t[2], 1e-4);
   return map3((i) => t[i] / top);
 };
@@ -68,7 +77,7 @@ export const phaseFromSun = (altitude: number, azimuth: number): SkyPhase => {
   };
 };
 
-export const skyLight = (instant: number, weather: SkyWeather): SkyLight => {
+export const skyLight = (instant: number): SkyLight => {
   const sun = sunPosition(instant, viennaLatitude, viennaLongitude);
   const moon = moonPosition(instant, viennaLatitude, viennaLongitude);
   const lit = moonIllumination(instant, viennaLatitude, viennaLongitude);
@@ -83,79 +92,45 @@ export const skyLight = (instant: number, weather: SkyWeather): SkyLight => {
   const sunEl = sun.altitude * deg;
   const moonEl = moon.altitude * deg;
   const daylight = phaseFromSun(sun.altitude, sun.azimuth);
-  const ov = weather.overcast;
-  const { fog } = weather;
   const aod = haze * (0.7 + 0.3 * daylight.dusk);
   const tau = map3((i) => tauRay[i] + aerosol[i] * aod);
-  const tint = sunTint(tau, sunEl);
-  const sunPower =
-    2.5 *
-    sunStrength *
-    smoothstep(-0.07, 0.04, sunEl) *
-    (1 - 0.9 * ov) *
-    (1 - 0.75 * fog);
+  const sunMass = pathMass(sunEl);
+  const moonMass = pathMass(moonEl);
+  const sunShown = sunEl + sun.angularRadius * deg > -limbDip;
+  const moonShown = moonEl + moon.angularRadius * deg > -limbDip;
+  const tint = sunTint(tau, sunMass);
+  const sunPower = 2.5 * sunStrength * (sunShown ? 1 : 0);
   const sunColor = map3((i) => tint[i] * sunPower);
   const dayK = smoothstep(-0.14, 0.22, sunEl);
-  const dayAmbient: Vec3 = [
-    0.26 + 0.14 * ov,
-    0.33 + 0.08 * ov,
-    0.46 - 0.03 * ov,
-  ];
-  const dayScale =
-    (0.75 + 0.25 * sunStrength) *
-    (1 - 0.25 * weather.rain) *
-    (1 + 0.6 * weather.snow * ov);
   const { fraction } = lit;
-  const moonUp = smoothstep(-0.01, 0.12, moonEl) * (1 - dayK);
-  const moonPower =
-    0.05 * moonlight * fraction ** 1.5 * moonUp * (1 - 0.6 * ov);
+  const moonUp =
+    smoothstep(-limbDip - 0.01, -limbDip + 0.12, moonEl) * (1 - dayK);
+  const moonPower = 0.05 * moonlight * fraction ** 1.5 * moonUp;
   const moonColor: Vec3 = [
     0.85 * moonPower,
     0.92 * moonPower,
     1.05 * moonPower,
   ];
-  const ambient = map3(
-    (i) =>
-      dayAmbient[i] * dayScale * dayK +
-      nightAmbient[i] * (1 - dayK) +
-      warm[i] * daylight.twilight * 0.07 * (1 - ov) +
-      moonColor[i] * 0.5
-  );
-  const flat = (altitude: number): number =>
-    1 - 0.18 * Math.exp(-Math.max(altitude, 0) / 1.6);
-  const cover = smoothstep(0.5, 0.95, ov);
-  const sunShown = sun.altitude > belowHorizon;
+  const flat = (above: number): number =>
+    1 - 0.3 * Math.exp(-Math.max(above, 0) / (1.6 * deg));
   const sunDisk: Vec4 = sunShown
     ? [
         sun.angularRadius * deg * gain,
-        6 * Math.exp(-0.1 * airmass(sunEl)) * (1 - (1 - veilFloor) * cover),
-        glare *
-          (0.35 + 1.2 * aod + 0.8 * fog) *
-          (1 + 0.15 * Math.min(airmass(sunEl), 12)) *
-          (1 - 0.6 * cover),
-        flat(sun.altitude),
+        6 * Math.exp(-0.1 * sunMass),
+        glare * 0.5 * (1 + 0.15 * Math.min(sunMass, 12)),
+        flat(sunEl + limbDip),
       ]
     : [sun.angularRadius * deg * gain, 0, 0, 1];
   const dayVisible = smoothstep(0.05, 0.25, fraction);
-  const moonBright =
-    moon.altitude > belowHorizon
-      ? (3.2 * (1 - dayK) + 0.5 * dayVisible * dayK) *
-        (1 - (1 - moonVeilFloor) * smoothstep(0.55, 0.95, ov)) *
-        (1 - 0.5 * fog)
-      : 0;
-  const halo =
-    (glare *
-      (0.12 + 1.6 * aod + 1.2 * fog + 0.5 * weather.high * cirrus + 0.5 * ov) *
-      fraction *
-      (1 - dayK) *
-      moonBright) /
-    3.2;
+  const moonBright = moonShown
+    ? 3.2 * (1 - 0.45 * dayK) * Math.exp(-0.1 * moonMass)
+    : 0;
+  const halo = (glare * 0.25 * fraction * (1 - dayK) * moonBright) / 3.2;
   return {
-    ambient,
     daylight,
     moon: [...moonDir, moon.angularRadius * deg * gain],
     moonColor,
-    moonDisk: [moonBright, halo, dayVisible, flat(moon.altitude)],
+    moonDisk: [moonBright, halo, dayVisible, flat(moonEl + limbDip)],
     moonShade: [
       Math.cos(lit.phaseAngle * deg),
       lit.brightLimbFromZenith * deg,

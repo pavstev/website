@@ -15,6 +15,7 @@ import {
   viennaLongitude,
 } from "../src/lib/sky-light.ts";
 import { planetsAt } from "../src/lib/sky-planets.ts";
+import { earthClouds } from "../src/lib/sky-preset.ts";
 import {
   cornerCorona,
   cornerMeteor,
@@ -37,7 +38,6 @@ import {
   starVertexShader,
 } from "../src/lib/star-gl.ts";
 import { designTokens, hexBytes, profilePalette } from "../src/lib/theme.ts";
-import { crawlerSky } from "../src/lib/weather.ts";
 import { headerHeight, headerWidth } from "../src/profile/header.ts";
 
 interface Corona {
@@ -101,10 +101,10 @@ const labPixelsPerCss = 1.2;
 const jpegQuality = 88;
 const webpQuality = 80;
 const crawlerWeather: [number, number, number, number] = [
-  crawlerSky.cover,
-  crawlerSky.overcast,
-  crawlerSky.high,
-  crawlerSky.fog,
+  earthClouds.cover,
+  earthClouds.overcast,
+  earthClouds.high,
+  earthClouds.fog,
 ];
 
 type Uniform = readonly [string, readonly number[]];
@@ -112,7 +112,7 @@ type Uniform = readonly [string, readonly number[]];
 const noMeteor: Meteor = { angle: 0, progress: 2, x: 0, y: 0 };
 const noCorona: Corona = { radius: 0, x: 0, y: 0 };
 
-const crawlerLight = skyLight(crawlerInstant, crawlerSky);
+const crawlerLight = skyLight(crawlerInstant);
 
 const homeCamera = (
   width: number,
@@ -137,7 +137,6 @@ const homeUniforms = (width: number, height: number): Uniform[] => {
     ["u_gal", worldToGalactic(crawlerInstant, viennaLatitude, viennaLongitude)],
     ["u_sun", light.sun],
     ["u_sunCol", light.sunColor],
-    ["u_amb", light.ambient],
     ["u_sunDisk", light.sunDisk],
     ["u_moon", light.moon],
     ["u_moon2", light.moonShade],
@@ -167,12 +166,8 @@ const homeStars = (width: number, height: number): StarPass => {
       ["u_moon", crawlerLight.moon],
       ["u_moonSky", [Math.min(1, crawlerLight.moonColor[0] * 25)]],
       ["u_day", [nightPhase.day]],
-      ["u_weather", crawlerWeather],
-      ["u_wind", [575, 172.5, 1035, 230]],
-      ["u_wpuff", Array.from({ length: 24 }, () => 0)],
       ["u_time", [skyTime]],
       ["u_px", [1]],
-      ["u_clouds", [1]],
     ],
     vertex: starVertexShader,
   };

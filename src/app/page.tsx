@@ -11,7 +11,6 @@ import { Profile } from "@/components/profile";
 import { ResumeTip } from "@/components/resume-tip";
 import { SiteFooter } from "@/components/site-footer";
 import { SpaceBackground } from "@/components/space-background";
-import { WeatherBadge } from "@/components/weather-badge";
 import { pageRobots } from "@/lib/blog/build-env";
 import { getCv } from "@/lib/cv";
 import { getContact, getRepos } from "@/lib/github";
@@ -70,9 +69,7 @@ export default async function Page(): Promise<ReactElement> {
             </div>
           </div>
           <CardSections products={products} repos={repos} />
-          <SiteFooter className="card-footer fade-up mt-(--card-gap-footer) delay-4">
-            <WeatherBadge />
-          </SiteFooter>
+          <SiteFooter className="card-footer fade-up mt-(--card-gap-footer) delay-4" />
         </div>
         <EffectsInit />
       </main>

@@ -10,7 +10,7 @@
     "directory": "dist",
     "not_found_handling": "404-page",
     "binding": "ASSETS",
-    "run_worker_first": ["/mcp", "/mcp/*", "/weather"],
+    "run_worker_first": ["/mcp", "/mcp/*"],
   },
   "ratelimits": [
     {

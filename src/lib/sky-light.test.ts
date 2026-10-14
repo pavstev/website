@@ -1,15 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { instantOverride, phaseFromSun, skyLight } from "./sky-light.ts";
-import { weatherPresets } from "./weather.ts";
+import {
+  instantOverride,
+  pathMass,
+  phaseFromSun,
+  skyLight,
+} from "./sky-light.ts";
+import { limbDip } from "./sky-view.ts";
 
 const noon = Date.parse("2026-10-13T13:00:00+02:00");
 const night = Date.parse("2026-10-25T23:00:00+01:00");
 
 describe("skyLight", () => {
   it("lights the day from the true sun", () => {
-    const light = skyLight(noon, weatherPresets.clear);
+    const light = skyLight(noon);
     assert.ok(light.daylight.day > 0.9);
     assert.ok((light.sunDisk[1] ?? 0) > 0);
     assert.ok(light.sun[1] > 0);
@@ -20,7 +25,7 @@ describe("skyLight", () => {
   });
 
   it("shows the moon at night and hides the sun", () => {
-    const light = skyLight(night, weatherPresets.clear);
+    const light = skyLight(night);
     assert.equal(light.daylight.day, 0);
     assert.ok(light.moonDisk[0] > 3);
     assert.ok(light.moon[1] > 0);
@@ -28,16 +33,34 @@ describe("skyLight", () => {
   });
 
   it("draws the disks three times larger than true", () => {
-    const light = skyLight(noon, weatherPresets.clear);
+    const light = skyLight(noon);
     assert.ok(Math.abs(light.sunDisk[0] - 3 * 0.267 * (Math.PI / 180)) < 2e-4);
   });
 
-  it("keeps a watery sun under a full overcast", () => {
-    const clear = skyLight(noon, weatherPresets.clear);
-    const grey = skyLight(noon, weatherPresets.overcast);
-    assert.ok((grey.sunDisk[1] ?? 0) > 0.2 * (clear.sunDisk[1] ?? 0));
-    assert.ok((grey.sunDisk[1] ?? 1) < 0.5 * (clear.sunDisk[1] ?? 0));
-    assert.ok(grey.sunColor[0] < 1);
+  it("does not let the weather touch the sun, as the eye is above the clouds", () => {
+    const light = skyLight(noon);
+    assert.ok((light.sunDisk[1] ?? 0) > 5);
+    assert.ok(light.sunColor[0] > 2 && light.sunColor[1] > 2);
+  });
+
+  it("still shows the sun above the limb after it set on the ground", () => {
+    const after = Date.parse("2026-10-14T17:00:00Z");
+    const light = skyLight(after);
+    assert.ok(light.sun[3] < 0 && light.sun[3] > -limbDip);
+    assert.ok((light.sunDisk[1] ?? 0) > 0);
+    assert.ok(light.sunColor[0] > 2 * light.sunColor[2]);
+  });
+});
+
+describe("path mass", () => {
+  it("is nothing above the horizon and a thick slab at the limb", () => {
+    assert.ok(pathMass(0.3) < 1e-4);
+    assert.ok(Math.abs(pathMass(-limbDip + 1e-6) - 70.8) < 1);
+    assert.ok(pathMass(-limbDip + 0.01) < pathMass(-limbDip + 0.001));
+  });
+
+  it("is thin well above the limb", () => {
+    assert.ok(pathMass(-0.05) < 0.1);
   });
 });
 

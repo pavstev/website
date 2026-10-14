@@ -125,7 +125,7 @@ describe("readingTime", () => {
 });
 
 describe("the committed posts", () => {
-  it("how-i-built-this-website: 2,659 prose + 11 code words, 2 figures, 4 visuals = 779.9 s, 13 min", () => {
+  it("how-i-built-this-website: 2,735 prose + 11 code words, 2 figures, 4 visuals, 14 min", () => {
     const reading = readingOf(postBody("how-i-built-this-website"));
     assert.deepEqual(
       [
@@ -136,7 +136,7 @@ describe("the committed posts", () => {
         reading.minutes,
         reading.words,
       ],
-      [2659, 11, 2, 4, 13, 2670]
+      [2735, 11, 2, 4, 14, 2746]
     );
   });
 

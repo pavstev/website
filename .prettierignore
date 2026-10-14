@@ -8,3 +8,4 @@ src/lib/cv-feed.fixture.json
 public/blog-media
 public/blog
 public/build.json
+.claude/worktrees

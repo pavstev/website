@@ -1,10 +1,12 @@
+import Link from "next/link";
 import { type ReactElement, type ReactNode, ViewTransition } from "react";
 
-import { BackButton } from "@/components/blog/back-button";
+import { AuthorPhoto } from "@/components/blog/author-photo";
 import { BarSpy } from "@/components/blog/bar-spy";
 import { Icon } from "@/components/icon";
 import { MotionToggle } from "@/components/motion-toggle";
 import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
 
 interface BlogHeaderProps {
   children?: ReactNode;
@@ -28,15 +30,27 @@ export const BlogHeader = ({
   );
   return (
     <>
-      <div className="blog-bar" data-blog-bar="">
+      <div
+        className="blog-bar"
+        data-blog-bar=""
+        data-sub={slug === undefined ? undefined : ""}
+      >
         <div aria-hidden="true" className="blog-bar-glass" />
         <div className="blog-bar-row">
-          <BackButton>
-            <Icon name="lucide:arrow-left" size="0.75rem" />
-          </BackButton>
-          <p aria-hidden="true" className="blog-bar-title">
-            {title}
-          </p>
+          <Link
+            className="blog-brand focus-ring"
+            href="/"
+            prefetch={false}
+            title={en.blog.home}
+          >
+            <AuthorPhoto alt="" className="blog-brand-photo" sizes="2rem" />
+            <span className="blog-brand-name">{personalData.name}</span>
+          </Link>
+          <nav aria-label={en.blog.navLabel} className="blog-bar-nav">
+            <Link className="blog-bar-link focus-ring" href="/blog">
+              {en.blog.heading}
+            </Link>
+          </nav>
           {toc && (
             <button
               aria-controls="toc-drawer"
@@ -56,6 +70,11 @@ export const BlogHeader = ({
             <MotionToggle variant="bar" />
           </div>
         </div>
+        {slug !== undefined && (
+          <p aria-hidden="true" className="blog-bar-title">
+            {title}
+          </p>
+        )}
       </div>
       <BarSpy />
       <header className="blog-header" data-sky-header="">

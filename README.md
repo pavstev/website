@@ -8,8 +8,8 @@ My personal site: one contact card floating over a live WebGL sky, a small blog 
 
 ## What is in it
 
-- **The real Vienna sky.** A hand-written WebGL sky from the ground: the sun and moon where they truly are, 9,000 real stars, five planets and the Milky Way, with space showing at the top even by day.
-- **Live weather.** Thin clouds follow the Vienna weather, ride the wind and part around the cursor. Rain and snow fall when they fall outside.
+- **The real Vienna sky.** A hand-written WebGL sky seen from 100 km up, the edge of space: the sun and moon where they truly are, 9,000 real stars, five planets and the Milky Way above the curved Earth, which slides by below, tilts and speeds up with the cursor.
+- **Shooting stars.** Two at a time, with a bright head and a cooling trail. Move the mouse fast and one fires.
 - **A glass bead.** It follows the cursor over the portrait (a finger after a press and hold) and magnifies the photo with chromatic edges, in the card and in the portrait dialog.
 - **A name that tunes in.** A CSS signal intro, then every 8 s a WebGL tear and a weight-morph wave across the letters.
 - **A planet per project.** Each open-source repo gets its own three.js planet, with language chips in GitHub's colors.
@@ -26,11 +26,11 @@ flowchart LR
   data["personal.ts, products.ts, i18n.ts, content/blog, GitHub API, CV feed"] --> build["pnpm build"] --> dist["dist/: page, blog, feeds, sitemap, llms.txt, cv.json, resume.pdf"]
   visitor["Visitor"] --> cf["Cloudflare"]
   cf -- "other paths" --> dist
-  cf -- "/mcp, /weather" --> worker["worker/"]
+  cf -- "/mcp" --> worker["worker/"]
   worker -. "cv.json, llms.txt, feed.json" .-> dist
 ```
 
-The page is a Next.js 16 static export. The Worker in `worker/` runs only for `/mcp` and `/weather`. `POST /mcp` is a read-only MCP server with eight tools (`profile`, `experience`, `skills`, `projects`, `products`, `contact`, `posts`, `post`) behind a per-IP rate limit. It reads `/cv.json`, `/llms.txt` and `/blog/feed.json` from the static assets. `/weather` gives the sky the current Vienna weather. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
+The page is a Next.js 16 static export. The Worker in `worker/` runs only for `/mcp`. `POST /mcp` is a read-only MCP server with eight tools (`profile`, `experience`, `skills`, `projects`, `products`, `contact`, `posts`, `post`) behind a per-IP rate limit. It reads `/cv.json`, `/llms.txt` and `/blog/feed.json` from the static assets. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
 
 ## Getting started
 

@@ -8,7 +8,7 @@ import {
   cameraBasis,
   diskGain,
   frameAim,
-  groundShare,
+  limbDip,
   projectSky,
   skyCamera,
   skyRay,
@@ -37,20 +37,50 @@ describe("camera", () => {
     assert.ok(skyCamera(2560, 1080).top < 0.8);
   });
 
-  it("keeps the horizon straight at the ground share", () => {
+  it("rolls the view around the line of sight and keeps it a rotation", () => {
+    const flat = cameraBasis(0.4, 0.1);
+    const rolled = cameraBasis(0.4, 0.1, 0.08);
+    assert.deepEqual(rolled.slice(6), flat.slice(6));
+    for (const index of [0, 1, 2]) {
+      const [x = 0, y = 0, z = 0] = rolled.slice(index * 3, index * 3 + 3);
+      assert.ok(close(Math.hypot(x, y, z), 1, 1e-9));
+    }
+    const camera = skyCamera(1440, 900);
+    const west = projectSky(worldDirection(0, -20), rolled, camera, 1440, 900);
+    const east = projectSky(worldDirection(0, 20), rolled, camera, 1440, 900);
+    assert.ok(west && east && Math.abs(west[1] - east[1]) > 5);
+  });
+
+  it("keeps the horizon straight and puts the limb 16% above the bottom", () => {
     const camera = skyCamera(1440, 900);
     const basis = cameraBasis(1.2, 0);
+    const yawDegrees = 1.2 / (Math.PI / 180);
     for (const azimuth of [-60, -20, 0, 30, 70]) {
       const point = projectSky(
-        worldDirection(0, 1.2 / (Math.PI / 180) + azimuth),
+        worldDirection(0, yawDegrees + azimuth),
         basis,
         camera,
         1440,
         900
       );
       assert.ok(point);
-      assert.ok(close(point[1], 900 * (1 - groundShare), 1e-6));
+      assert.ok(close(point[1], 900 * (1 - camera.horizon), 1e-6));
     }
+    const limb = projectSky(
+      worldDirection(-limbDip / (Math.PI / 180), yawDegrees),
+      basis,
+      camera,
+      1440,
+      900
+    );
+    assert.ok(limb);
+    assert.ok(close(limb[1], 900 * 0.84, 1e-6));
+    assert.ok(camera.horizon > 0.16);
+  });
+
+  it("looks down from 100 km: the limb sits about ten degrees below the horizon", () => {
+    assert.ok(close(limbDip / (Math.PI / 180), 10.1, 0.1));
+    assert.equal(skyCamera(1440, 900).eye, 100_000);
   });
 
   it("turns a pixel into a ray and back", () => {
@@ -107,7 +137,7 @@ describe("aim", () => {
   it("frames the moon at night and faces the dusk glow", () => {
     const fullMoon = Date.parse("2026-12-21T20:00:00Z");
     assert.equal(frameAim(fullMoon, ...vienna).kind, "moon");
-    const dusk = Date.parse("2026-10-01T16:45:00Z");
+    const dusk = Date.parse("2026-10-10T17:40:00Z");
     const aim = frameAim(dusk, ...vienna);
     assert.equal(aim.kind, "twilight");
     const sun = sunPosition(dusk, ...vienna);

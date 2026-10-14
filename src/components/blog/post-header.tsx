@@ -1,5 +1,7 @@
 import type { ReactElement } from "react";
 
+import Link from "next/link";
+
 import { BlogHeader } from "@/components/blog/blog-header";
 import { PostDate } from "@/components/blog/post-date";
 import { PostTags } from "@/components/blog/post-tags";
@@ -17,6 +19,10 @@ export const PostHeader = ({ post, toc }: PostHeaderProps): ReactElement => (
   <BlogHeader
     meta={
       <>
+        <Link className="blog-crumb focus-ring" href="/blog">
+          {en.blog.heading}
+        </Link>
+        <span aria-hidden="true"> · </span>
         <span className="sr-only">{en.blog.published} </span>
         <PostDate iso={post.date} />
         <span aria-hidden="true"> · </span>

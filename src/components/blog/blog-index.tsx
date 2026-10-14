@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 
 import { BlogHeader } from "@/components/blog/blog-header";
+import { BlogSide } from "@/components/blog/blog-side";
 import { Pagination } from "@/components/blog/pagination";
 import { PostList } from "@/components/blog/post-list";
 import { TagRow } from "@/components/blog/tag-row";
@@ -51,15 +52,18 @@ export const BlogIndex = ({
         }
         title={heading}
       />
-      <section aria-labelledby="blog-title" className="blog-index">
-        <TagRow current={listing.tag?.slug} tags={listing.tags} />
-        <PostList posts={listing.posts} />
-        <Pagination
-          base={listing.base}
-          count={listing.count}
-          page={listing.page}
-        />
-      </section>
+      <div className="post-layout">
+        <BlogSide />
+        <section aria-labelledby="blog-title" className="blog-index">
+          <TagRow current={listing.tag?.slug} tags={listing.tags} />
+          <PostList posts={listing.posts} />
+          <Pagination
+            base={listing.base}
+            count={listing.count}
+            page={listing.page}
+          />
+        </section>
+      </div>
       <SiteFooter className="blog-footer" rss />
     </main>
   </>

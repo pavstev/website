@@ -1,6 +1,6 @@
 ---
 title: How I built this website
-description: Eight days, three redesigns and a sky that shows the live Vienna weather. How I rebuilt this site with Next.js, raw WebGL and Claude Code.
+description: Eight days, three redesigns and a sky made from real stars. How I rebuilt this site with Next.js, raw WebGL and Claude Code.
 date: 2026-10-13T12:00:00+02:00
 draft: false
 tags: [Next.js, WebGL, Cloudflare, Claude Code]
@@ -8,7 +8,7 @@ tags: [Next.js, WebGL, Cloudflare, Claude Code]
 
 On Monday, 5 October, my personal site was a static Astro site with about twenty URLs and a résumé pipeline that started a headless browser to print a PDF. It worked, but it was more site than I needed.
 
-Eight days later the site is one contact card over a sky that shows the weather in Vienna right now. It builds my résumé from another app I wrote and answers AI agents on a public MCP endpoint. On the way I threw out a light theme, a galaxy, a holographic foil, a wind simulation and a chat panel.
+Eight days later the site is one contact card over a sky that follows the real sun, moon and stars. It builds my résumé from another app I wrote and answers AI agents on a public MCP endpoint. On the way I threw out a light theme, a galaxy, a holographic foil, a wind simulation and a chat panel.
 
 I built almost all of it with Claude Code. This post is the plain version: what I chose, what I reversed, the bugs that taught me something, and the numbers.
 
@@ -42,7 +42,7 @@ The same day brought small things that now define the card. The flag next to "Vi
 
 8 October brought 48 commits, the most of any day since the public repo started on the 7th. Three things landed that turned a page into a small system.
 
-First, a Cloudflare Worker. The site is static, and only two paths run code: `/mcp`, and since the 12th, `/weather`. `/mcp` is a stateless MCP server. It launched with six read-only tools (profile, experience, skills, projects, products, contact), and this blog added two, `posts` and `post`. It is limited to 20 requests per minute per IP. An AI agent gets the same facts the page shows. Claude built it with 31 subagents in three parallel lanes in about an hour.
+First, a Cloudflare Worker. The site is static, and only one path runs code: `/mcp`. For two days a second path, `/weather`, ran too (see below), and I took it out again. `/mcp` is a stateless MCP server. It launched with six read-only tools (profile, experience, skills, projects, products, contact), and this blog added two, `posts` and `post`. It is limited to 20 requests per minute per IP. An AI agent gets the same facts the page shows. Claude built it with 31 subagents in three parallel lanes in about an hour.
 
 Second, my résumé now comes from [hirista](https://hirista.app), the job search app I build. At build time a script fetches its CV feed, and `/resume.pdf` is rendered from it with `@react-pdf/renderer`: four pages, about 143 KB. Saving my résumé in hirista calls a deploy hook, and this site rebuilds. A fixture file is shared byte for byte between the two repos, so a change to the feed shape breaks tests on both sides.
 
@@ -58,7 +58,7 @@ So I added a committed snapshot of the résumé. The commit hook builds from it 
 
 <Diagram
   name="site-pipeline"
-  caption="From a push to the live site: Workers Builds fetches the CV feed, builds the blog and the pages, and publishes static files with a Worker in front of /mcp and /weather."
+  caption="From a push to the live site: Workers Builds fetches the CV feed, builds the blog and the pages, and publishes static files with a Worker in front of /mcp."
 />
 
 ## 12 October: the sky day
@@ -75,14 +75,16 @@ The clouds took three tries. One version ran a stable-fluids wind simulation tha
 
 ### The real weather
 
-Then came the weather. A Worker route, `/weather`, asks Open-Meteo for the current cloud cover, weather code, rain, snow, visibility and wind in Vienna. The Cloudflare cache keeps one good answer for 15 minutes per data center, so each data center asks at most 96 times a day. A failure answers `null`, never a 5xx, so the sky keeps a default look. I use the data under its licence and credit it on the home page: [Weather data by Open-Meteo.com](https://open-meteo.com/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Then came the weather, for two days. A Worker route, `/weather`, asked Open-Meteo for the current cloud cover, weather code, rain, snow, visibility and wind in Vienna. The Cloudflare cache kept one good answer for 15 minutes per data center, so each data center asked at most 96 times a day. A failure answered `null`, never a 5xx, so the sky kept a default look. I used the data under its licence and credited it on the home page: [Weather data by Open-Meteo.com](https://open-meteo.com/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
-The shader turns that answer into seven looks: clear, partly cloudy, overcast, fog, rain, snow and storm. The clouds move with the real wind. You can force a look with `?weather=snow` or any of the other six.
+The shader turned that answer into seven looks: clear, partly cloudy, overcast, fog, rain, snow and storm. The clouds moved with the real wind. You could force a look with `?weather=snow` or any of the other six.
+
+I removed all of it on the 14th. The sky now looks at the Earth from 100 km up, where a cloud is a small white smear and the weather in Vienna is hard to see. A data source and a credit line are not worth that. The route, the credit and the seven looks are gone, and the Earth keeps one partly cloudy look.
 
 <Figure
   src="sky-storm.webp"
   alt="The site's sky in the storm preset: a near-black overcast sky, the eclipsed sun with a white corona at the upper right, thin rain streaks across the frame and a dark gray cloud bank along the bottom."
-  caption="Storm: the same shader with the storm preset. Live, a lightning flash now and then lights the clouds near a random spot."
+  caption="Storm: the same shader with the storm preset. A lightning flash now and then lit the clouds near a random spot."
 />
 
 <Figure
@@ -110,7 +112,7 @@ On the last morning I wrote "the rays are glitchy on the scrolling". The sky can
 
 The fix is a second WebGL context. When the page can scroll, the corona is drawn into its own layer that scrolls with the portrait, blended over the sky with `screen`. The split is exact by math. The shader's tone map is `1 - exp(-1.15 x)`, and the `screen` blend of two tone-mapped parts equals the tone map of their sum. So the layer draws only the corona, the sky canvas leaves it out, and at rest the two match the old single canvas within screenshot noise.
 
-The harder problem was text. The sky changes with the hour and the weather, and I did not want dark boxes or shadows behind the words. So the text reads the sky. A probe draws the sky shader into a small framebuffer, 24 by 6 samples behind each text block, and reads it back on the next frame so it never waits on the GPU. It runs at most once a second. Each text has a contrast target: 6.9:1 for the bio, 3:1 for the large name, 4.5:1 for the rest. The text lifts toward white in steps of 0.05 until it meets its target. It rises at once and falls only after a clear change, so it never flickers. In CSS it is one line:
+The harder problem was text. The sky changes with the hour, and I did not want dark boxes or shadows behind the words. So the text reads the sky. A probe draws the sky shader into a small framebuffer, 24 by 6 samples behind each text block, and reads it back on the next frame so it never waits on the GPU. It runs at most once a second. Each text has a contrast target: 6.9:1 for the bio, 3:1 for the large name, 4.5:1 for the rest. The text lifts toward white in steps of 0.05 until it meets its target. It rises at once and falls only after a clear change, so it never flickers. In CSS it is one line:
 
 ```css
 color: color-mix(in srgb, var(--ink), white calc(var(--lift) * 100%));
@@ -168,5 +170,5 @@ And delete things. The light theme, the galaxy, the foil, the wind, the chat: ea
 
 <Note>
   The sky behind this blog is the same shader as the home page, fixed to a clear
-  night. On the home page it shows the weather in Vienna right now.
+  night. On the home page it is the real sky, seen from 100 km up.
 </Note>

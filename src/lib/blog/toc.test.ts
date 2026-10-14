@@ -7,7 +7,7 @@ import { unified } from "unified";
 import { VFile } from "vfile";
 
 import { rehypeHeadingAnchors } from "./anchors.ts";
-import { currentSection, rehypeToc } from "./toc.ts";
+import { branchOf, currentSection, rehypeToc, type TocItem } from "./toc.ts";
 
 const tocOf = async (markdown: string): Promise<unknown> => {
   const file = new VFile(markdown);
@@ -50,5 +50,22 @@ describe("currentSection", () => {
   it("returns -1 above the first heading", () => {
     assert.equal(currentSection([400, 900], 240), -1);
     assert.equal(currentSection([], 240), -1);
+  });
+});
+
+describe("branchOf", () => {
+  const items: TocItem[] = [
+    { depth: 2, id: "a", text: "A" },
+    { depth: 3, id: "b", text: "B" },
+    { depth: 3, id: "c", text: "C" },
+    { depth: 2, id: "d", text: "D" },
+    { depth: 3, id: "e", text: "E" },
+  ];
+
+  it("joins a sub-heading to its trunk, and ends the trunk at the last one", () => {
+    assert.deepEqual(
+      items.map((_, index) => branchOf(items, index)),
+      [undefined, "mid", "last", undefined, "last"]
+    );
   });
 });

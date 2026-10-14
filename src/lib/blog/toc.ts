@@ -54,3 +54,13 @@ export const tocLine = 0.3;
 
 export const currentSection = (tops: readonly number[], line: number): number =>
   tops.findLastIndex((top) => top <= line);
+
+export const branchOf = (
+  items: readonly TocItem[],
+  index: number
+): "last" | "mid" | undefined =>
+  items[index]?.depth === 3
+    ? items[index + 1]?.depth === 3
+      ? "mid"
+      : "last"
+    : undefined;

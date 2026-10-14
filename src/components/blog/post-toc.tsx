@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 import { TocDrawer } from "@/components/blog/toc-drawer";
 import { Icon } from "@/components/icon";
-import { type TocItem } from "@/lib/blog/toc";
+import { branchOf, type TocItem } from "@/lib/blog/toc";
 import { en } from "@/lib/i18n";
 
 interface PostTocProps {
@@ -11,8 +11,13 @@ interface PostTocProps {
 
 const tocList = (items: readonly TocItem[]): ReactElement => (
   <ol className="toc-list">
-    {items.map((item) => (
-      <li className="toc-item" data-depth={item.depth} key={item.id}>
+    {items.map((item, index) => (
+      <li
+        className="toc-item"
+        data-branch={branchOf(items, index)}
+        data-depth={item.depth}
+        key={item.id}
+      >
         <a className="toc-link focus-ring" href={`#${item.id}`}>
           {item.text}
         </a>

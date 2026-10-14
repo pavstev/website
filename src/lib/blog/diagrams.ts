@@ -19,7 +19,7 @@ interface DiagramStep {
 
 export const diagramMeta: Record<DiagramName, DiagramMeta> = {
   "site-pipeline": {
-    desc: "A git push goes to GitHub. Cloudflare Workers Builds then runs three steps in order: the CV fetch, the blog build and the Next.js build. Out come the static assets, every page, feed and image, plus one Worker that answers /mcp and /weather.",
+    desc: "A git push goes to GitHub. Cloudflare Workers Builds then runs three steps in order: the CV fetch, the blog build and the Next.js build. Out come the static assets, every page, feed and image, plus one Worker that answers /mcp.",
     title: "From git push to the live site",
   },
   "skill-map": {
@@ -27,7 +27,7 @@ export const diagramMeta: Record<DiagramName, DiagramMeta> = {
     title: "My skills by phase",
   },
   "sky-layers": {
-    desc: "Three layers, back to front. The sky canvas is fixed and draws the stars, the clouds and the weather. The corona layer scrolls with the page, so the rays stay on the portrait. On top sits the text: a probe reads the sky behind each line and lifts text-sky until it reads.",
+    desc: "Three layers, back to front. The sky canvas is fixed and draws the stars, the Earth and its clouds. The corona layer scrolls with the page, so the rays stay on the portrait. On top sits the text: a probe reads the sky behind each line and lifts text-sky until it reads.",
     title: "The three layers of the sky",
   },
   "work-loop": {
@@ -43,7 +43,7 @@ export const sitePipeline = {
   },
   outputs: [
     { detail: "pages, feeds, images", label: "Static assets" },
-    { detail: "/mcp and /weather", label: "Worker" },
+    { detail: "/mcp", label: "Worker" },
   ],
   sources: [
     { detail: "main or a preview branch", label: "git push" },
@@ -59,7 +59,7 @@ export const skyLayers = {
   layers: [
     { detail: "lifted by the probe", label: "Text" },
     { detail: "scrolls with the page", label: "Corona layer" },
-    { detail: "fixed, stars, clouds, weather", label: "Sky canvas" },
+    { detail: "fixed, stars, Earth, clouds", label: "Sky canvas" },
   ],
   probe: "probe",
   utility: "text-sky",

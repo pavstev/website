@@ -1,4 +1,5 @@
-import { deg } from "./math.ts";
+import { deg, smoothstep } from "./math.ts";
+import { earthRadius } from "./sky-view.ts";
 
 export interface WorldPuff {
   age: number;
@@ -15,10 +16,17 @@ const puffPeak = 0.9;
 const puffSettleSeconds = 4;
 const puffFloor = 0.01;
 export const cloudLayer = 2600;
-const puffReach = 12_000;
-const lookYawDegrees = 1.5;
-const lookPitchShare = 0.35;
+const deckCell = 2400;
+const puffShare = 0.5;
+const lookYawDegrees = 2;
+const lookPitchDegrees = 1.6;
+const lookRollDegrees = 4.5;
 const lookRate = 4;
+const orbitSpeed = 2400;
+const orbitSide = 0.9;
+const orbitAhead = 0.45;
+const orbitBoostMax = 7;
+export const orbitWrap = 100_000_000;
 
 export const windGain = [25, 7.5, 45, 10] as const;
 
@@ -27,20 +35,31 @@ export const puffStrength = (puff: WorldPuff): number =>
     ? (puffPeak * puff.age) / puffRiseSeconds
     : puffPeak * Math.exp(-(puff.age - puffRiseSeconds) / puffSettleSeconds);
 
+const deckScale = (altitude: number): number =>
+  1 + 7 * smoothstep(5000, 120_000, altitude);
+
 export const worldPuff = (
   ray: Vec3,
-  eye: number,
+  altitude: number,
   wind: readonly [number, number]
-): WorldPuff => {
-  const rise = Math.max(ray[1], 0.02);
-  const reach = Math.min((cloudLayer - eye) / rise, puffReach);
-  const flat = Math.hypot(ray[0], ray[2]) || 1;
-  const along = Math.sqrt(Math.max(reach * reach - (cloudLayer - eye) ** 2, 0));
+): undefined | WorldPuff => {
+  const eyeRadius = earthRadius + altitude;
+  const deckRadius = earthRadius + cloudLayer;
+  const down = -ray[1];
+  const flat = Math.hypot(ray[0], ray[2]);
+  const limit = deckRadius / eyeRadius;
+  if (down <= 0 || flat >= limit) return undefined;
+  const distance =
+    eyeRadius * (down - Math.sqrt(Math.max(limit * limit - flat * flat, 0)));
+  const x = ray[0] * distance;
+  const z = ray[2] * distance;
+  const ring = Math.hypot(x, z) || 1;
+  const reach = Math.atan2(ring, eyeRadius + ray[1] * distance) * earthRadius;
   return {
     age: 0,
-    radius: 600 + reach * 0.06,
-    x: (ray[0] / flat) * along + wind[0],
-    z: (ray[2] / flat) * along + wind[1],
+    radius: deckCell * deckScale(altitude) * puffShare,
+    x: (x / ring) * reach + wind[0],
+    z: (z / ring) * reach + wind[1],
   };
 };
 
@@ -71,25 +90,49 @@ export const puffUniforms = (
   return data;
 };
 
+export type Look = [number, number, number];
+
 export const lookTarget = (
   pointer: readonly [number, number] | undefined
-): [number, number] =>
+): Look =>
   pointer
     ? [
         pointer[0] * lookYawDegrees * deg,
-        -pointer[1] * lookYawDegrees * lookPitchShare * deg,
+        -pointer[1] * lookPitchDegrees * deg,
+        pointer[0] * lookRollDegrees * deg,
       ]
-    : [0, 0];
+    : [0, 0, 0];
 
 export const easeLook = (
-  look: [number, number],
-  target: readonly [number, number],
+  look: Look,
+  target: Readonly<Look>,
   seconds: number
 ): boolean => {
   const e = 1 - Math.exp(-seconds * lookRate);
-  look[0] += (target[0] - look[0]) * e;
-  look[1] += (target[1] - look[1]) * e;
-  return (
-    Math.abs(target[0] - look[0]) > 1e-5 || Math.abs(target[1] - look[1]) > 1e-5
-  );
+  let moving = false;
+  for (const index of [0, 1, 2] as const) {
+    look[index] += (target[index] - look[index]) * e;
+    if (Math.abs(target[index] - look[index]) > 1e-5) moving = true;
+  }
+  return moving;
+};
+
+export const orbitBoost = (energy: number): number => {
+  const e = Math.min(Math.max(energy, 0), 1);
+  return orbitBoostMax * e * e * (3 - 2 * e);
+};
+
+export const orbitStep = (
+  orbit: [number, number],
+  yaw: number,
+  seconds: number,
+  boost: number
+): void => {
+  const reach = orbitSpeed * (1 + boost) * seconds;
+  const sy = Math.sin(yaw);
+  const cy = Math.cos(yaw);
+  orbit[0] =
+    (orbit[0] + reach * (cy * orbitSide + sy * orbitAhead)) % orbitWrap;
+  orbit[1] =
+    (orbit[1] + reach * (cy * orbitAhead - sy * orbitSide)) % orbitWrap;
 };

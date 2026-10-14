@@ -47,8 +47,12 @@ interface Sight {
 
 type Vec3 = readonly [number, number, number];
 
-const eyeHeight = 2;
-export const groundShare = 0.04;
+export const earthRadius = 6_371_000;
+export const eyeAltitude = 100_000;
+export const limbDip = Math.acos(earthRadius / (earthRadius + eyeAltitude));
+const limbShare = 0.16;
+const topShare = 0.04;
+const topMargin = 24;
 const halfWidthLimit = 0.9;
 const diskGainMax = 3;
 const eclipseRoom = 0.95;
@@ -64,14 +68,18 @@ const dot = (a: Vec3, b: Vec3): number =>
 const turn = (angle: number): number =>
   angle - 2 * Math.PI * Math.floor((angle + Math.PI) / (2 * Math.PI));
 
-export const skyCamera = (width: number, height: number): SkyCamera => ({
-  eye: eyeHeight,
-  horizon: groundShare,
-  top: Math.min(
+export const skyCamera = (width: number, height: number): SkyCamera => {
+  const top = Math.min(
     1,
-    (2 * halfWidthLimit * (1 - groundShare) * height) / Math.max(width, 1)
-  ),
-});
+    (2 * halfWidthLimit * (1 - topShare) * height) / Math.max(width, 1)
+  );
+  const k = Math.tan(limbDip / 2) / top;
+  return {
+    eye: eyeAltitude,
+    horizon: (limbShare + k) / (1 + k),
+    top,
+  };
+};
 
 const skyUnit = (camera: SkyCamera, height: number): number =>
   ((1 - camera.horizon) * height) / camera.top;
@@ -86,12 +94,26 @@ export const worldDirection = (altitude: number, azimuth: number): Vec3 => {
   ];
 };
 
-export const cameraBasis = (yaw: number, pitch: number): Basis => {
+export const cameraBasis = (yaw: number, pitch: number, roll = 0): Basis => {
   const sy = Math.sin(yaw);
   const cy = Math.cos(yaw);
   const sp = Math.sin(pitch);
   const cp = Math.cos(pitch);
-  return [cy, 0, -sy, -sy * sp, cp, -cy * sp, sy * cp, sp, cy * cp];
+  const sr = Math.sin(roll);
+  const cr = Math.cos(roll);
+  const right: Vec3 = [cy, 0, -sy];
+  const up: Vec3 = [-sy * sp, cp, -cy * sp];
+  return [
+    right[0] * cr + up[0] * sr,
+    right[1] * cr + up[1] * sr,
+    right[2] * cr + up[2] * sr,
+    up[0] * cr - right[0] * sr,
+    up[1] * cr - right[1] * sr,
+    up[2] * cr - right[2] * sr,
+    sy * cp,
+    sp,
+    cy * cp,
+  ];
 };
 
 const column = (basis: Basis, index: 0 | 1 | 2): Vec3 => [
@@ -177,7 +199,7 @@ const onScreen = (
   return (
     point[0] > margin &&
     point[0] < view.width - margin &&
-    point[1] > margin &&
+    point[1] > topMargin &&
     point[1] < view.height
   );
 };
@@ -210,7 +232,7 @@ export const aimYaw = (aim: Aim, view: ViewSize): number => {
 export const aimHolds = (yaw: number, aim: Aim, view: ViewSize): boolean => {
   const camera = skyCamera(view.width, view.height);
   const point = projectSky(
-    worldDirection(Math.max(aim.target.altitude, 0), aim.target.azimuth),
+    worldDirection(aim.target.altitude, aim.target.azimuth),
     cameraBasis(yaw, 0),
     camera,
     view.width,
@@ -232,6 +254,8 @@ const sightOf = (position: { altitude: number; azimuth: number }): Sight => ({
   azimuth: position.azimuth,
 });
 
+const limbDepth = -limbDip / deg;
+
 const nextRise = (
   instant: number,
   latitude: number,
@@ -239,9 +263,9 @@ const nextRise = (
 ): number => {
   for (let at = instant; at <= instant + riseSpanMs; at += riseStepMs) {
     const sun = sunPosition(at, latitude, longitude);
-    if (sun.altitude + sun.angularRadius > 0) return sun.azimuth;
+    if (sun.altitude + sun.angularRadius > limbDepth) return sun.azimuth;
     const moon = moonPosition(at, latitude, longitude);
-    if (moon.altitude + moon.angularRadius > 0) return moon.azimuth;
+    if (moon.altitude + moon.angularRadius > limbDepth) return moon.azimuth;
   }
   return sunPosition(instant, latitude, longitude).azimuth;
 };
@@ -253,8 +277,8 @@ export const frameAim = (
 ): Aim => {
   const sun = sunPosition(instant, latitude, longitude);
   const moon = moonPosition(instant, latitude, longitude);
-  const sunUp = sun.altitude + sun.angularRadius > 0;
-  const moonUp = moon.altitude + moon.angularRadius > 0;
+  const sunUp = sun.altitude + sun.angularRadius > limbDepth;
+  const moonUp = moon.altitude + moon.angularRadius > limbDepth;
   if (sunUp)
     return moonUp
       ? { kind: "sun", second: sightOf(moon), target: sightOf(sun) }
