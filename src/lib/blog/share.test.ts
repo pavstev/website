@@ -1,10 +1,9 @@
-import { ImageResponse } from "next/og.js";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { postMeta } from "./post-fixture.ts";
 import { type PostMeta } from "./schema.ts";
-import { shareFonts, shareSize, shareTree } from "./share.ts";
+import { renderShareSvg, shareFonts, shareTree } from "./share.ts";
 
 const postWith = (title: string, readingMinutes: number): PostMeta =>
   postMeta({
@@ -67,12 +66,8 @@ describe("shareTree", () => {
       }
     );
     const post = postWith("Sky & <code>", 3);
-    const response = new ImageResponse(shareTree(post, ""), {
-      ...shareSize,
-      fonts: shareFonts().list,
-    });
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    assert.ok(bytes.length > 1000);
+    const svg = await renderShareSvg(shareTree(post, ""), shareFonts());
+    assert.ok(svg.length > 1000);
     assert.deepEqual(requested, []);
   });
 });

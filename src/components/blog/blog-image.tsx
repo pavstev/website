@@ -1,6 +1,5 @@
 import type { CSSProperties, ReactElement } from "react";
 
-import { BlurImage } from "@/components/blog/blur-image";
 import { mediaEntry, mediaPath } from "@/lib/blog/media";
 
 interface BlogImageProps {
@@ -48,7 +47,7 @@ export const BlogImage = ({
         srcSet={srcSet(entry.webp, entry.widths)}
         type="image/webp"
       />
-      <BlurImage
+      <img
         alt={alt}
         className="blog-image"
         height={entry.height}

@@ -1,4 +1,6 @@
-.next
+.astro
+_notes
+_ref
 .profile-out
 dist
 pnpm-lock.yaml

@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { createElement, type ReactElement } from "react";
+import satori from "satori";
 
 import { en } from "../i18n.ts";
 import { designTokens, inkPalette } from "../theme.ts";
@@ -19,21 +21,22 @@ interface ShareFont {
   weight: 400 | 600;
 }
 
-interface ShareNode {
-  key: null;
-  props: Record<string, unknown>;
-  type: string;
-}
+type ShareNode = ReactElement;
 
 const node = (
   type: string,
   props: Record<string, unknown>,
   children?: ShareNode | ShareNode[] | string
-): ShareNode => ({
-  key: null,
-  props: children === undefined ? props : { ...props, children },
-  type,
-});
+): ShareNode =>
+  createElement(
+    type,
+    props,
+    ...(children === undefined
+      ? []
+      : Array.isArray(children)
+        ? children
+        : [children])
+  );
 
 const fontFamily = "Inter, Inter Ext";
 
@@ -84,7 +87,6 @@ export const shareTree = (post: PostMeta, background: string): ShareNode => {
         fontFamily,
         height: "100%",
         justifyContent: "flex-end",
-        padding: "72px",
         position: "relative",
         width: "100%",
       },
@@ -100,7 +102,9 @@ export const shareTree = (post: PostMeta, background: string): ShareNode => {
             fontSize: titleSize(post.title),
             fontWeight: 600,
             lineHeight: 1.1,
+            marginLeft: "72px",
             maxWidth: "820px",
+            position: "relative",
           },
         },
         post.title
@@ -113,7 +117,10 @@ export const shareTree = (post: PostMeta, background: string): ShareNode => {
             display: "flex",
             fontSize: 28,
             fontWeight: 400,
+            marginBottom: "72px",
+            marginLeft: "72px",
             marginTop: "24px",
+            position: "relative",
           },
         },
         en.blog.shareLine
@@ -123,3 +130,8 @@ export const shareTree = (post: PostMeta, background: string): ShareNode => {
     ]
   );
 };
+
+export const renderShareSvg = (
+  tree: ShareNode,
+  fonts: ShareFonts
+): Promise<string> => satori(tree, { ...shareSize, fonts: fonts.list });

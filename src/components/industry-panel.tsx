@@ -1,20 +1,21 @@
 import type { ReactElement } from "react";
 
+import type { Industry, IndustryJob } from "@/lib/industries";
+
 import { Icon } from "@/components/icon";
 import { TopicHeading } from "@/components/topic-heading";
 import { TopicPanel } from "@/components/topic-panel";
-import { getCv } from "@/lib/cv";
 import { en } from "@/lib/i18n";
-import { type Industry, industryJob } from "@/lib/industries";
 
 interface IndustryPanelProps {
   industry: Industry;
+  job: IndustryJob;
 }
 
-export const IndustryPanel = async ({
+export const IndustryPanel = ({
   industry,
-}: IndustryPanelProps): Promise<ReactElement> => {
-  const job = industryJob(await getCv(), industry.key);
+  job,
+}: IndustryPanelProps): ReactElement => {
   const titleId = `${industry.panelId}-title`;
   const company =
     job.site === "" ? (

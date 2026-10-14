@@ -1,0 +1,47 @@
+---
+import { pageHref } from "@/lib/blog/pagination";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  base: string;
+  count: number;
+  page: number;
+}
+
+const { base, count, page } = Astro.props;
+
+const pageLabel = (value: number): string =>
+  en.blog.page.replace("{n}", () => String(value));
+const pages = Array.from({ length: count }, (_, index) => index + 1);
+---
+
+{count > 1 && (
+  <nav aria-label={en.blog.pagination} class="blog-pagination">
+    {page > 1 && (
+      <a class="focus-ring" href={pageHref(base, page - 1)} rel="prev">
+        {en.blog.previousPage}
+      </a>
+    )}
+    {pages.map((number) =>
+      number === page ? (
+        <span aria-current="page">
+          <span class="sr-only">{pageLabel(number)}</span>
+          <span aria-hidden="true">{number}</span>
+        </span>
+      ) : (
+        <a
+          aria-label={pageLabel(number)}
+          class="focus-ring"
+          href={pageHref(base, number)}
+        >
+          {number}
+        </a>
+      )
+    )}
+    {page < count && (
+      <a class="focus-ring" href={pageHref(base, page + 1)} rel="next">
+        {en.blog.nextPage}
+      </a>
+    )}
+  </nav>
+)}

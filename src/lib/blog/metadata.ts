@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
-
 import { en } from "../i18n.ts";
 import { personalData } from "../personal.ts";
 import { pageRobots } from "./build-env.ts";
+import { postTitle } from "./format.ts";
 import { readMedia, shareKey } from "./media.ts";
+import { modifiedOf } from "./modified.ts";
+import { type FeedLinks, type PageMetadata } from "./page-metadata.ts";
 import { type PostMeta } from "./schema.ts";
 
 export const blogUrl = `${personalData.website}/blog`;
 
-export const feedTypes = {
+const feedTypes: FeedLinks = {
   "application/feed+json": [
     { title: en.blog.blogName, url: "/blog/feed.json" },
   ],
@@ -54,7 +55,7 @@ export const listMetadata = ({
   description,
   title,
   url,
-}: ListMetadata): Metadata => ({
+}: ListMetadata): PageMetadata => ({
   alternates: { canonical: url, types: feedTypes },
   description,
   openGraph: {
@@ -75,3 +76,34 @@ export const listMetadata = ({
     title,
   },
 });
+
+export const postMetadata = (meta: PostMeta): PageMetadata => {
+  const title = postTitle(meta.title);
+  const image = postShareImage(meta);
+  return {
+    alternates: { canonical: meta.url, types: feedTypes },
+    description: meta.description,
+    keywords: meta.tags,
+    openGraph: {
+      authors: [personalData.website],
+      description: meta.description,
+      images: [image],
+      locale: "en_US",
+      modifiedTime: modifiedOf(meta),
+      publishedTime: meta.date,
+      siteName: personalData.name,
+      tags: meta.tags,
+      title,
+      type: "article",
+      url: meta.url,
+    },
+    robots: pageRobots,
+    title,
+    twitter: {
+      card: "summary_large_image",
+      description: meta.description,
+      images: [{ alt: image.alt, url: image.url }],
+      title,
+    },
+  };
+};

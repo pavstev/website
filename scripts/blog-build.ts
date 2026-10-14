@@ -1,4 +1,3 @@
-import { ImageResponse } from "next/og.js";
 import { execFileSync } from "node:child_process";
 import {
   copyFileSync,
@@ -38,6 +37,7 @@ import {
 import { toMarkdown } from "../src/lib/blog/plain.ts";
 import { type PostSource, visibleSources } from "../src/lib/blog/posts.ts";
 import {
+  renderShareSvg,
   type ShareFonts,
   shareFonts,
   shareSize,
@@ -195,11 +195,11 @@ const renderShare = async (
   source: PostSource,
   fonts: ShareFonts
 ): Promise<MediaEntry> => {
-  const response = new ImageResponse(
+  const svg = await renderShareSvg(
     shareTree(source.meta, await coverData(source)),
-    { ...shareSize, fonts: fonts.list }
+    fonts
   );
-  const bytes = new Uint8Array(await response.arrayBuffer());
+  const bytes = new Uint8Array(await sharp(Buffer.from(svg)).png().toBuffer());
   const url = saveMedia(
     out,
     source.slug,

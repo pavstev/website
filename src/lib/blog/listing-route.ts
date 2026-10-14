@@ -1,7 +1,4 @@
-import type { Metadata } from "next";
-
 import { en } from "../i18n.ts";
-import { showDrafts } from "./build-env.ts";
 import { postTitle } from "./format.ts";
 import {
   blogListing,
@@ -12,8 +9,8 @@ import {
   tagParams,
 } from "./listing.ts";
 import { listMetadata } from "./metadata.ts";
+import { type PageMetadata } from "./page-metadata.ts";
 import { parsePage } from "./pagination.ts";
-import { listPosts } from "./posts.ts";
 import { type PostMeta } from "./schema.ts";
 
 export interface ListingPage {
@@ -87,16 +84,9 @@ export const listingPage = (
       };
 };
 
-export const findListingPage = (
-  params: ListingParams
-): ListingPage | undefined =>
-  listingPage(listPosts({ drafts: showDrafts() }), params);
-
-export const listingMetadata = (page: ListingPage | undefined): Metadata =>
-  page === undefined
-    ? {}
-    : listMetadata({
-        description: page.description,
-        title: postTitle(page.heading),
-        url: page.listing.url,
-      });
+export const listingMetadata = (page: ListingPage): PageMetadata =>
+  listMetadata({
+    description: page.description,
+    title: postTitle(page.heading),
+    url: page.listing.url,
+  });

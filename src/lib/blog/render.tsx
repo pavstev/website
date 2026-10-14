@@ -1,7 +1,8 @@
-import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { evaluate } from "@mdx-js/mdx";
 import rehypeShiki from "@shikijs/rehype";
+import { renderToStaticMarkup } from "react-dom/server";
 import * as runtime from "react/jsx-runtime";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
@@ -72,7 +73,7 @@ interface NoteProps {
 
 export const renderPost = async (
   source: PostSource
-): Promise<{ content: ReactElement; toc: TocItem[] }> => {
+): Promise<{ html: string; toc: TocItem[] }> => {
   const { slug } = source;
   let firstImage = true;
   const takeFirst = (): boolean => {
@@ -126,7 +127,7 @@ export const renderPost = async (
     Note: ({ children }: NoteProps) => <Note>{children}</Note>,
   };
   return {
-    content: <Content components={components} />,
+    html: renderToStaticMarkup(<Content components={components} />),
     toc: file.data.toc ?? [],
   };
 };

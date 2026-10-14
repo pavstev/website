@@ -1,3 +1,27 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
 *.tsbuildinfo
 .DS_Store
 .claude/skills/
@@ -7,14 +31,13 @@
 .dev.vars
 .env*
 .eslintcache
-.next/
 .profile-out/
 .superpowers/
 .wrangler/
 dist/
-next-env.d.ts
 node_modules/
 public/blog-media/
 public/blog/
 public/build.json
 .cv/
+.astro/

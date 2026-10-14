@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-A contact card over a WebGL sky seen from 100 km up, a blog of MDX posts (`/blog`) under the same sky, a plain 404, and a Worker for `/mcp`.
+A contact card over a WebGL sky seen from 100 km up, a blog of MDX posts (`/blog`) under the same sky, a plain 404, and a Worker for `/mcp`. This is the Astro port of the Next.js site: same UI, same content, same Worker.
 
 ## Tech Stack
 
-Next.js 16 App Router (`output: "export"` to `dist/`), Tailwind v4, pnpm 12 on Node 24, one Cloudflare Worker for `/mcp`. The long notes (CV feed, GitHub data, fonts, icons, static files, products, profile mirror, LinkedIn sync, Worker, blog, previews, IndexNow, checks, CI, deploy) are in `docs/architecture.md`: read the bullet for the area you change.
+Astro 7 (`output: "static"`, `build.format: "file"`, so `/blog` is `dist/blog.html`) with React 19 islands through `@astrojs/react`, Tailwind v4 through `@tailwindcss/vite`, pnpm 12 on Node 24, one Cloudflare Worker for `/mcp`. The long notes (CV feed, GitHub data, fonts, icons, static files, products, profile mirror, LinkedIn sync, Worker, blog, previews, IndexNow, checks, CI, deploy) are in `docs/architecture.md`: read the bullet for the area you change.
 
 Path rules in `.claude/rules/` load when you touch matching files: `card.md` (card, section buttons, drawers, topics), `motion.md` (pause button, dock, privacy, head script), `globe.md` (Vienna globe), `sky.md` (sky, planets, shaders), `blog.md` (posts, blog code, how to add a post).
 
@@ -19,12 +19,13 @@ Path rules in `.claude/rules/` load when you touch matching files: `card.md` (ca
 ## Commands
 
 ```bash
-pnpm dev       # CV fetch, blog prebuild, then next dev → http://localhost:4321 (drafts show)
+pnpm dev       # CV fetch, blog prebuild, then astro dev → http://localhost:4321 (drafts show)
 pnpm dev:many  # the same plus 30 generated test posts (BLOG_FIXTURES=1), for pagination and tags
-pnpm build     # CV fetch, blog prebuild, next build, CV guard → ./dist
-pnpm preview   # serve ./dist on port 4321
-pnpm check     # every check, read-only  ← REQUIRED before done (also the husky pre-commit hook and CI)
+pnpm build     # CV fetch, blog prebuild, astro build, preload guard, CV guard → ./dist
+pnpm preview   # astro preview: serve ./dist on port 4321
+pnpm check     # prettier, eslint, astro check, worker tsc, tests, knip, build, profile  ← REQUIRED before done (also the husky pre-commit hook and CI)
 pnpm fix       # prettier --write + eslint --fix
+pnpm astro check   # types over .ts, .tsx and .astro (part of pnpm check)
 pnpm icons     # re-extract src/lib/icon-data.ts
 pnpm stars:build <catalog.gz>  # repack src/lib/star-data.ts from the BSC5 catalog (CDS VizieR V/50)
 pnpm profile:build  # build the GitHub profile files into ./.profile-out
@@ -48,12 +49,13 @@ TypeScript strict, explicit return types on exports, `import { type Foo }`, keba
 ## Layout
 
 ```text
-src/app/          layout.tsx (metadata, Open Graph `profile`), page.tsx (JSON-LD, sky, the card), not-found.tsx, robots.ts, sitemap.xml/route.ts, manifest.ts, llms.txt/route.ts, cv.json/route.ts, resume.pdf/route.ts
-src/app/blog/     layout.tsx, page.tsx (the index), [slug]/page.tsx (a post), [slug]/[...rest]/page.tsx (/blog/page/<n>, /blog/tag/<slug>, /blog/tag/<slug>/page/<n>), feed.xml/route.ts, feed.json/route.ts
-src/components/   profile + portrait + portrait-expander, compound-text, download-button, resume-tip, contact-links, card-sections (the projects, products and blog buttons), card-drawer (the projects and products drawers), repo-strip, product-strip, product-mark, site-footer (the card and the blog footer),
+src/pages/        index.astro (JSON-LD, sky, the card), 404.astro, robots.txt.ts, sitemap.xml.ts, manifest.webmanifest.ts, llms.txt.ts, cv.json.ts, resume.pdf.ts
+src/pages/blog/   the index (blog.html), post pages, /blog/page/<n> and /blog/tag/<slug> listings, feed.xml and feed.json endpoints
+src/layouts/      Base.astro (metadata, Open Graph `profile`, head script, sky), BlogLayout.astro
+src/components/   React islands and shared parts: profile + portrait + portrait-expander, compound-text, download-button, resume-tip, contact-links, card-sections (the projects, products and blog buttons), card-drawer (the projects and products drawers), repo-strip, product-strip, product-mark, site-footer (the card and the blog footer),
                   page-dock, motion-toggle, privacy-note, space-background, effects-init, icon,
                   topic-trigger, topic-panel, topic-heading, industry-panel, city-panel, city-heading, city-globe-launcher, city-globe-stage, vienna-arms
-src/components/blog/  blog-header (the sticky bar and the header for the index and posts), author-photo, blog-side (the branding sidebar), bar-spy, blog-index (the shared index view), post-list, post-date (date, relative text, tip), pagination, tag-row, post-header, post-body, post-toc, toc-spy, toc-drawer, post-nav, post-tags, blog-link, blog-image, blur-image, figure, image-zoom, note, chart (+ chart-rows, chart-line, chart-table), diagram (+ diagrams/)
+src/components/blog/  blog-header.astro (the sticky bar and the header for the index and posts), author-photo.astro, blog-side.astro (the branding sidebar), bar-spy, blog-index.astro (the shared index view), post-list.astro, post-date (date, relative text, tip), pagination.astro, tag-row.astro, post-header.astro, post-body.astro, post-toc.astro, toc-spy, toc-drawer, post-nav.astro, post-tags.astro, blog-link, blog-image, figure, post-effects (image load and zoom), note, chart (+ chart-rows, chart-line, chart-table), diagram (+ diagrams/)
 src/lib/          personal, sitemap (the sitemap.xml writer), products, product-marks, i18n, bio, industries, github (repos, languages, contact, getProject), cv (the CV feed, getCv), cv-feed.fixture.json (hirista's contract fixture), cv-llms, cv-sample (test data), linkedin-fields, resume-pdf, resume-file, readme-html, resume-facts, anchored-popovers, repo-tags-fit, privacy-ack, motion-pause (pause flag, head script, stillQuery), scene-hold, save-data, uniform-sink (cached uniform setter), sky-light (sun, moon and light from the real clock, `?at=`, the air mass to the limb), sky-ephemeris (sun and moon positions and phase), sky-view (the 100 km eye, the limb, the stereographic view and where it faces), sky-scene (world puffs on the cloud deck, pointer look), sky-frame (equatorial and galactic matrices), sky-stars (star colors, star list decode), star-data (BSC5 stars, generated by `pnpm stars:build`), sky-planets (the five naked-eye planets), star-gl (the star points program, Earth occlusion and extinction), city, city-globe, globe-data, globe-labels, sun, world-cities, repo-planets, planet-gl, planet-stage (the shared WebGL context, size, clear state and frame loop), logo-planet, logo-motion, theme (hex for theme-color, sky palette, productPalette, inkPalette), sky-clock, sky-preset (sky modes, the blog look and the Earth's cloud look), sky-rays (the LinkedIn cover rays and shooting star path, shared by the post header and the image generator), sky-ink (text over the sky: targets, lift), sky-probe (reads the sky behind text), crawler (bot user agents get the night sky), github,
                   frame-clock, intro, portrait-effects, portrait-bead, portrait-expand, contact-links, download-ring,
                   pill-aurora, cursor, webgl, icon-data
@@ -73,7 +75,7 @@ scripts/          cv-fetch.ts, blog-build.ts, preload-guard.ts and cv-guard.ts (
 ## SEO
 
 - `src/lib/structured-data.ts` builds one JSON-LD `@graph` (typed with `schema-dts`): `WebSite`, `ProfilePage`, `Person` (name without diacritics and the GitHub handle as `alternateName`, Vienna, `knowsAbout`, languages, `sameAs`, résumé as `subjectOf`), one `SoftwareSourceCode` per repo in the strip (`@id` `https://stevanpavlovic.com/#repo-<name>`) and one node per product (`@id` `https://stevanpavlovic.com/#product-<key>`, `WebApplication` for hirista, `SoftwareApplication` for Safety Real Time, with `name`, `url`, the tile line as `description`, `applicationCategory` and the person as `creator`). The product nodes carry no dates (they describe his role, not the product), no `offers` or ratings and no Organization; Search Console may call them not eligible for software rich results, which is accepted. Mark up only facts the page, the résumé or the linked profiles show. Never add `worksFor`. `serializeJsonLd` escapes `<` as `\u003c` (`String.raw` in the source); check the raw bytes after editing it, as edit tools can turn the escape back into a literal `<` and make the replace a no-op.
-- Dates: the sitemap `lastmod` and the `ProfilePage` `dateModified` are both the CV feed's `updatedAt` (hirista moves it on every résumé save), never the build time (blog entries use the post's `updated ?? date`, written with its own offset); Google and Bing ignore a `lastmod` that only says when the sitemap was made. URLs: Next prints the root as `https://stevanpavlovic.com` (no slash) in `canonical` and `og:url`, so the sitemap, the JSON-LD `url` fields and the `llms.txt` link use that form too; only the `@id` values keep the `/#fragment` form.
+- Dates: the sitemap `lastmod` and the `ProfilePage` `dateModified` are both the CV feed's `updatedAt` (hirista moves it on every résumé save), never the build time (blog entries use the post's `updated ?? date`, written with its own offset); Google and Bing ignore a `lastmod` that only says when the sitemap was made. URLs: the canonical root is `https://stevanpavlovic.com` (no slash) in `canonical` and `og:url`, so the sitemap, the JSON-LD `url` fields and the `llms.txt` link use that form too; only the `@id` values keep the `/#fragment` form.
 - GitHub and LinkedIn links carry `rel="me"`. The meta description names Vienna; the title does not, by the user's choice.
 - IndexNow: `public/ee32ef309c036fb4c6b716d08e9bf922.txt` holds the key (public by design, with a header rule that detaches the CSP). After a content change, tell Bing and other engines with `curl -X POST https://api.indexnow.org/IndexNow -H 'Content-Type: application/json' -d '{"host":"stevanpavlovic.com","key":"ee32ef309c036fb4c6b716d08e9bf922","keyLocation":"https://stevanpavlovic.com/ee32ef309c036fb4c6b716d08e9bf922.txt","urlList":["https://stevanpavlovic.com/"]}'`. Google does not use IndexNow; it needs Search Console.
 - Cloudflare lets AI crawlers in, training crawlers (`GPTBot`, `ClaudeBot`, `CCBot`) included: Security, Settings, "Configure AI bot policies" has Training on Allow, and AI Crawl Control blocks only `Bytespider`. So Cloudflare prepends no `Disallow` rules to `robots.txt`. That is a dashboard setting, not code.
@@ -86,15 +88,14 @@ WCAG 2.1 AA; the pause button covers 2.2.2 (Pause, Stop, Hide). Focus rings via 
 
 - Visual work: `frontend-design`. three.js globe and the WebGL planets: `threejs-skill-router`, check with `threejs-visual-validation`.
 - Performance: `cloudflare:web-perf`. SEO and metadata: `seo`. Accessibility: `design:accessibility-review`.
-- Hosting config: `cloudflare:wrangler`. Runtime check: `next-dev-loop` against `pnpm dev`; screenshots: `playwright-cli`.
+- Hosting config: `cloudflare:wrangler`. Runtime check: `pnpm dev` (Astro dev server); screenshots: `playwright-cli`.
 - Measure with Lighthouse, axe-core and Playwright from outside the repo; keep test scripts, reports and screenshots tooling out of it (only the README hero image lives in `.github/assets/`; the one exception is `scripts/generate-images.ts`, which makes the social images in CI). Before done: `superpowers:verification-before-completion`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## Astro notes
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- Docs: <https://docs.astro.build>. Pages and endpoints: [routing](https://docs.astro.build/en/guides/routing/); React islands: [framework components](https://docs.astro.build/en/guides/framework-components/).
+- `astro dev --background` runs the dev server in the background; manage it with `astro dev stop`, `astro dev status` and `astro dev logs`.
+- Astro components render at build time and ship no JavaScript. A React component is an island only with a `client:` directive. Browser code reads `import.meta.env`, never `process.env`.
+- `public/_headers` makes `/_astro/*` (hashed bundles) immutable. The CSP keeps `'unsafe-inline'` for scripts and styles because Astro inlines its island loader and small scripts.

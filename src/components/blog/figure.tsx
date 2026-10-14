@@ -1,9 +1,7 @@
 import type { ReactElement } from "react";
 
 import { BlogImage } from "@/components/blog/blog-image";
-import { ImageZoom } from "@/components/blog/image-zoom";
 import { mediaEntry } from "@/lib/blog/media";
-import { en } from "@/lib/i18n";
 
 interface FigureProps {
   alt: string;
@@ -29,15 +27,10 @@ export const Figure = ({
       {entry === undefined ? (
         image
       ) : (
-        <ImageZoom
-          alt={alt}
-          height={entry.height}
-          label={en.blog.zoomImage.replace("{alt}", () => alt)}
-          src={entry.fallback}
-          width={entry.width}
-        >
-          {image}
-        </ImageZoom>
+        <>
+          <div className="image-zoom focus-ring">{image}</div>
+          <dialog aria-label={alt} className="image-zoom-dialog" />
+        </>
       )}
       {caption !== undefined && caption !== "" && (
         <figcaption>{caption}</figcaption>

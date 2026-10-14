@@ -1,0 +1,57 @@
+---
+import AuthorPhoto from "@/components/blog/author-photo.astro";
+import { Icon } from "@/components/icon";
+import { getContact } from "@/lib/github";
+import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
+
+const contact = await getContact(personalData.githubHandle);
+const links = [
+  {
+    external: true,
+    href: personalData.github,
+    icon: "simple-icons:github",
+    label: en.card.github,
+  },
+  {
+    external: true,
+    href: contact.linkedin,
+    icon: "simple-icons:linkedin",
+    label: en.card.linkedin,
+  },
+  {
+    external: false,
+    href: `mailto:${contact.email}`,
+    icon: "lucide:mail",
+    label: en.card.email,
+  },
+  {
+    external: false,
+    href: "/resume.pdf",
+    icon: "lucide:download",
+    label: en.card.resume,
+  },
+];
+---
+
+<aside aria-label={en.blog.sideLabel} class="blog-side">
+  <AuthorPhoto alt={en.card.portraitAlt} class="blog-side-photo" sizes="6rem" />
+  <p class="blog-side-name">{personalData.name}</p>
+  <p class="blog-side-role">{en.blog.sideRole}</p>
+  <ul class="blog-side-links">
+    {links.map((link) => (
+      <li>
+        <a
+          class="blog-side-link focus-ring"
+          href={link.href}
+          rel={link.external ? "me noopener noreferrer" : undefined}
+          target={link.external ? "_blank" : undefined}
+        >
+          <Icon name={link.icon} size="1rem" />
+          <span>{link.label}</span>
+          {link.external && <span class="sr-only"> {en.card.newTab}</span>}
+        </a>
+      </li>
+    ))}
+  </ul>
+</aside>

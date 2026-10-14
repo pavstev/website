@@ -1,0 +1,28 @@
+---
+interface Props {
+  alt: string;
+  class: string;
+  sizes: string;
+}
+
+const { alt, class: className, sizes } = Astro.props;
+
+const photo = {
+  size: 224,
+  srcSet:
+    "/portraits/portrait-224.webp 224w, /portraits/portrait-336.webp 336w, /portraits/portrait-448.webp 448w",
+  url: "/portraits/portrait-336.webp",
+};
+---
+
+<img
+  alt={alt}
+  class={className}
+  decoding="async"
+  height={photo.size}
+  loading="lazy"
+  sizes={sizes}
+  src={photo.url}
+  srcset={photo.srcSet}
+  width={photo.size}
+/>

@@ -2,8 +2,8 @@ import type { Linter } from "eslint";
 
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
 import markdown from "@eslint/markdown";
-import nextPlugin from "@next/eslint-plugin-next";
 import prettierConfig from "eslint-config-prettier/flat";
+import astroPlugin from "eslint-plugin-astro";
 import betterTailwindcssPlugin from "eslint-plugin-better-tailwindcss";
 import importX from "eslint-plugin-import-x";
 import perfectionistPlugin from "eslint-plugin-perfectionist";
@@ -45,22 +45,14 @@ const eslintConfig = defineConfig([
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
   {
-    ...(securityPlugin.configs?.["recommended"] as Linter.Config),
+    ...(securityPlugin.configs.recommended as Linter.Config),
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
   {
     ...perfectionistPlugin.configs["recommended-natural"],
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
-  {
-    files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
-    plugins: { "@next/next": nextPlugin },
-    rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs["core-web-vitals"].rules,
-      "@next/next/no-img-element": "off",
-    },
-  },
+  ...astroPlugin.configs["flat/recommended"],
   {
     ...reactHooksPlugin.configs.flat.recommended,
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
@@ -70,12 +62,15 @@ const eslintConfig = defineConfig([
     },
   },
   globalIgnores([
+    "_notes/**",
+    "_ref/**",
     ".agents/**",
+    ".astro/**",
     ".claude/**",
-    ".next/**",
     ".profile-out/**",
     ".superpowers/**",
     ".wrangler/**",
+    "astro.config.mjs",
     "dist/**",
     "postcss.config.mjs",
     "scripts/postcss-color-mix.mjs",

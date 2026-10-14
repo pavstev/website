@@ -1,0 +1,37 @@
+---
+import PostTags from "@/components/blog/post-tags.astro";
+import { PostDate } from "@/components/blog/post-date";
+import { minutesLabel } from "@/lib/blog/format";
+import { isScheduled } from "@/lib/blog/schedule";
+import { type PostMeta } from "@/lib/blog/schema";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  posts: readonly PostMeta[];
+}
+
+const { posts } = Astro.props;
+---
+
+<ol class="post-list">
+  {posts.map((post) => (
+    <li class="post-row" data-post-slug={post.slug}>
+      <h2 class="post-row-title text-sky">
+        <a class="post-row-link focus-ring" href={`/blog/${post.slug}`}>
+          {post.title}
+        </a>
+      </h2>
+      <p class="post-row-meta type-chip text-sky">
+        <PostDate client:load iso={post.date} />{" "}
+        <span aria-hidden="true">·</span>{" "}
+        <span>{minutesLabel(post.readingMinutes)}</span>
+        {post.draft && <span class="post-draft"> {en.blog.draft}</span>}
+        {!post.draft && isScheduled(post.date) && (
+          <span class="post-draft"> {en.blog.scheduled}</span>
+        )}
+      </p>
+      <p class="post-row-text text-sky">{post.description}</p>
+      <PostTags tags={post.tags} unlabeled />
+    </li>
+  ))}
+</ol>

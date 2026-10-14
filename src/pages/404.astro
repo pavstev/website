@@ -1,0 +1,20 @@
+---
+import Base from "@/layouts/Base.astro";
+import { en } from "@/lib/i18n";
+---
+
+<Base title={en.notFound.title}>
+  <main class="grid min-h-dvh place-items-center overflow-x-clip safe-area text-center">
+    <div class="container-page grid justify-items-center gap-4">
+      <h1 class="type-display text-balance text-foreground">
+        {en.notFound.title}
+      </h1>
+      <a
+        class="focus-ring inline-flex min-h-11 items-center text-primary underline"
+        href="/"
+      >
+        {en.notFound.home}
+      </a>
+    </div>
+  </main>
+</Base>

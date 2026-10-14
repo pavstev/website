@@ -1,0 +1,97 @@
+---
+import { CardDrawer } from "@/components/card-drawer";
+import { Icon } from "@/components/icon";
+import { ProductMark } from "@/components/product-mark";
+import { ProductStrip } from "@/components/product-strip";
+import { RepoStrip } from "@/components/repo-strip";
+import type { Repo } from "@/lib/github";
+import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
+import type { Product } from "@/lib/products";
+import { countHeading } from "@/lib/template";
+
+interface Props {
+  products: readonly Product[];
+  repos: Repo[];
+}
+
+const { products, repos } = Astro.props;
+const projectsTitle = countHeading(repos.length, en.repos);
+const productsTitle = countHeading(products.length, en.products);
+---
+
+<ul
+  aria-label={en.card.sections}
+  class="section-row fade-up relative z-1 mt-(--card-gap-sections) delay-3"
+  data-proximity=""
+  data-sections=""
+>
+  {repos.length > 0 ? (
+    <li class="section-item" data-tone="purple">
+      <a
+        aria-haspopup="dialog"
+        class="section-link contact-link focus-ring"
+        href="#projects"
+      >
+        <span aria-hidden="true" class="section-icon">
+          <span class="section-planet" />
+        </span>
+        <span class="section-label">{projectsTitle}</span>
+      </a>
+    </li>
+  ) : null}
+  {products.length > 0 ? (
+    <li class="section-item" data-tone="green">
+      <a
+        aria-haspopup="dialog"
+        class="section-link contact-link focus-ring"
+        href="#products"
+      >
+        <span aria-hidden="true" class="section-icon section-marks">
+          {products.slice(0, 2).map((product) => (
+            <ProductMark productKey={product.key} />
+          ))}
+        </span>
+        <span class="section-label">{productsTitle}</span>
+      </a>
+    </li>
+  ) : null}
+  <li class="section-item" data-tone="gold">
+    <a class="section-link contact-link focus-ring" href="/blog">
+      <span aria-hidden="true" class="section-icon contact-icon">
+        <Icon name="lucide:notebook-pen" size="1.125rem" />
+      </span>
+      <span class="section-label">{en.card.blog}</span>
+    </a>
+  </li>
+</ul>
+{repos.length > 0 ? (
+  <CardDrawer
+    client:idle={{ timeout: 1000 }}
+    closeLabel={en.repos.close}
+    id="projects"
+    title={projectsTitle}
+  >
+    <span hidden id="projects-new-tab">
+      {en.repos.newTab}
+    </span>
+    <RepoStrip
+      allUrl={`${personalData.github}?tab=repositories`}
+      newTabId="projects-new-tab"
+      repos={repos}
+    />
+  </CardDrawer>
+) : null}
+{products.length > 0 ? (
+  <CardDrawer
+    client:idle={{ timeout: 1000 }}
+    closeLabel={en.products.close}
+    id="products"
+    title={productsTitle}
+  >
+    <span hidden id="products-new-tab">
+      {en.repos.newTab}
+    </span>
+    <ProductStrip newTabId="products-new-tab" products={products} />
+  </CardDrawer>
+) : null}

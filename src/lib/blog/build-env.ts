@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { type Robots } from "./page-metadata.ts";
 
 export interface BuildEnv {
   BLOG_BUILT_AT?: string | undefined;
@@ -26,7 +26,7 @@ export const builtInstant = (env: BuildEnv = process.env): Date | undefined => {
   return Number.isNaN(instant.getTime()) ? undefined : instant;
 };
 
-export const pageRobots: NonNullable<Metadata["robots"]> = {
+export const pageRobots: Robots = {
   follow: true,
   googleBot: {
     follow: true,

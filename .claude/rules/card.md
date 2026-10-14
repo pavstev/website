@@ -1,7 +1,7 @@
 ---
 paths:
-  - "src/app/page.tsx"
-  - "src/app/layout.tsx"
+  - "src/pages/index.astro"
+  - "src/layouts/Base.astro"
   - "src/styles/globals.css"
   - "src/components/profile.tsx"
   - "src/components/portrait.tsx"

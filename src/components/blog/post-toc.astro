@@ -1,0 +1,62 @@
+---
+import { Icon } from "@/components/icon";
+import { TocDrawer } from "@/components/blog/toc-drawer";
+import { branchOf, type TocItem } from "@/lib/blog/toc";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  items: readonly TocItem[];
+}
+
+const { items } = Astro.props;
+---
+
+{items.length > 0 && (
+  <nav aria-label={en.blog.toc} class="post-toc">
+    <details class="toc-details">
+      <summary class="toc-summary focus-ring">{en.blog.toc}</summary>
+      <ol class="toc-list">
+        {items.map((item, index) => (
+          <li
+            class="toc-item"
+            data-branch={branchOf(items, index)}
+            data-depth={item.depth}
+          >
+            <a class="toc-link focus-ring" href={`#${item.id}`}>
+              {item.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </details>
+    <button
+      aria-controls="toc-drawer"
+      aria-haspopup="dialog"
+      class="toc-open focus-ring"
+      data-toc-open=""
+      type="button"
+    >
+      <Icon name="lucide:list" size="1rem" />
+      {en.blog.toc}
+    </button>
+    <div class="toc-aside">
+      <p aria-hidden="true" class="toc-title type-chip">
+        {en.blog.toc}
+      </p>
+      <ol class="toc-list">
+        {items.map((item, index) => (
+          <li
+            class="toc-item"
+            data-branch={branchOf(items, index)}
+            data-depth={item.depth}
+          >
+            <a class="toc-link focus-ring" href={`#${item.id}`}>
+              {item.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+    <TocDrawer client:load items={items} />
+  </nav>
+)}

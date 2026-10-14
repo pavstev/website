@@ -1,0 +1,68 @@
+---
+import AuthorPhoto from "@/components/blog/author-photo.astro";
+import { BarSpy } from "@/components/blog/bar-spy";
+import { Icon } from "@/components/icon";
+import { MotionToggle } from "@/components/motion-toggle";
+import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
+
+interface Props {
+  slug?: string;
+  title: string;
+  toc?: boolean;
+}
+
+const { slug, title, toc = false } = Astro.props;
+---
+
+<div
+  class="blog-bar"
+  data-blog-bar=""
+  data-sub={slug === undefined ? undefined : ""}
+>
+  <div aria-hidden="true" class="blog-bar-glass"></div>
+  <div class="blog-bar-row">
+    <a class="blog-brand focus-ring" href="/" title={en.blog.home}>
+      <AuthorPhoto alt="" class="blog-brand-photo" sizes="2rem" />
+      <span class="blog-brand-name">{personalData.name}</span>
+    </a>
+    <nav aria-label={en.blog.navLabel} class="blog-bar-nav">
+      <a class="blog-bar-link focus-ring" href="/blog">
+        {en.blog.heading}
+      </a>
+    </nav>
+    {toc && (
+      <button
+        aria-controls="toc-drawer"
+        aria-haspopup="dialog"
+        aria-label={en.blog.toc}
+        class="blog-bar-toc focus-ring"
+        data-toc-open=""
+        type="button"
+      >
+        <Icon name="lucide:list" size="1rem" />
+        <span aria-hidden="true" class="blog-bar-toc-label">
+          {en.blog.toc}
+        </span>
+      </button>
+    )}
+    <div class="blog-bar-slot" data-bar-slot="">
+      <MotionToggle client:load variant="bar" />
+    </div>
+  </div>
+  {slug !== undefined && (
+    <p aria-hidden="true" class="blog-bar-title">
+      {title}
+    </p>
+  )}
+</div>
+<BarSpy client:load />
+<header class="blog-header" data-sky-header="">
+  <p class="blog-header-meta type-chip text-sky">
+    <slot name="meta" />
+  </p>
+  <h1 class="blog-title text-sky" id="blog-title">
+    {title}
+  </h1>
+  <slot />
+</header>

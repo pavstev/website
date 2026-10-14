@@ -1,7 +1,8 @@
 ---
 paths:
   - "content/blog/**"
-  - "src/app/blog/**"
+  - "src/pages/blog/**"
+  - "src/layouts/BlogLayout.astro"
   - "src/components/blog/**"
   - "src/lib/blog/**"
   - "scripts/blog-build.ts"
@@ -63,7 +64,7 @@ Dates in outputs (sitemap `lastmod`, RSS, JSON Feed, JSON-LD, Open Graph) are th
 
 ## Tags and pages
 
-Tag chips link to `/blog/tag/<slug>` (`tagSlug`: "Claude Code" is `claude-code`, "Next.js" is `next-js`). Two spellings that map to one slug fail the build: pick one. `/blog` shows 10 posts, then `/blog/page/2`, and so on; tags paginate the same way (`/blog/tag/<slug>/page/2`). There is no `/blog/page/1`. All listing URLs come from one route, `src/app/blog/[slug]/[...rest]/page.tsx`, because a static export cannot build a dynamic route with no params; so `page` and `tag` are reserved post slugs. Listings are indexable, self-canonical and in the sitemap; feeds stay the full list.
+Tag chips link to `/blog/tag/<slug>` (`tagSlug`: "Claude Code" is `claude-code`, "Next.js" is `next-js`). Two spellings that map to one slug fail the build: pick one. `/blog` shows 10 posts, then `/blog/page/2`, and so on; tags paginate the same way (`/blog/tag/<slug>/page/2`). There is no `/blog/page/1`. All listing URLs come from one route, `src/layouts/Blog/[slug]/[...rest]/page.tsx`, because a static export cannot build a dynamic route with no params; so `page` and `tag` are reserved post slugs. Listings are indexable, self-canonical and in the sitemap; feeds stay the full list.
 
 ## Many posts locally
 
@@ -83,7 +84,7 @@ Tag chips link to `/blog/tag/<slug>` (`tagSlug`: "Claude Code" is `claude-code`,
 - Run `pnpm exec prettier --write content/blog` after editing a post; it wraps long JSX props.
 - Satori (share images) cannot read WebP. `coverData` in `scripts/blog-build.ts` converts the cover with sharp first; keep that if you touch it. Share images load Inter `latin` and `latin-ext` (400 and 600, from `@fontsource/inter`, under the names "Inter" and "Inter Ext") so `next/og` never fetches a font from Google during a build; a title with a glyph outside both subsets would make it fetch again, and `share.test.ts` fails when any request goes out.
 - Headless Chromium counts as a crawler (`isCrawler`) and always gets the cloudy night sky with no parallax. Browser tests of the blog sky need a normal desktop `userAgent`; on the home page `?at=<ISO instant>` also stops the crawler rule.
-- The blog sky (`SpaceBackground mode="blog"`) mounts once, in `src/app/blog/layout.tsx`, as the first child of `[data-blog]`, and stays mounted across blog routes. Never mount a second one in a page. New blog routes get the sky for free; give them the shared `BlogHeader` (`src/components/blog/blog-header.tsx`) so the bar, the title morph and the ink targets work.
+- The blog sky (`SpaceBackground mode="blog"`) mounts once, in `src/layouts/BlogLayout.astro`, as the first child of `[data-blog]`, and stays mounted across blog routes. Never mount a second one in a page. New blog routes get the sky for free; give them the shared `BlogHeader` (`src/components/blog/blog-header.astro`) so the bar, the title morph and the ink targets work.
 - The sky behind text: only the header title and meta line sit on the bright part of the sky and carry `text-sky` with ink targets (`postInkTargets` and `blogIndexInkTargets`, the same `[data-sky-header] .blog-title` and `.blog-header-meta`). The cards have their own glass, and the prose sits on the faded sky (at least 9.9:1 measured). New text in the header needs `text-sky`, a target in `sky-ink.ts` and an `--ink` base in `globals.css`.
 - The sticky bar is `--bar-h` (3rem) tall, plus `--bar-sub-h` (2.25rem) on a post, where the title shows in a second row (`--bar-total`, set on `.post-main`). In-page jumps land below it through `scroll-padding-top` on `html:has(.post-main)` (5.75rem) and `scroll-margin-top` on the prose headings; keep both if you change the bar height.
 - The bar's right end (`[data-bar-slot]`) holds the pause button (`<MotionToggle variant="bar" />`); the blog layout renders no corner pause button. There is no back button: the brand link (`/`) and the "Blog" link (`/blog`) replace it, and the name and nav fade in with `data-stuck`. Images in the bar and the sidebar (`AuthorPhoto`) stay `loading="lazy"`, or `scripts/preload-guard.ts` fails a post page. Wide layouts (`@container page (min-width: 80em)`, never a viewport media query, so zoomed text keeps the TOC reachable) show `BlogSide` on the left and the TOC rail on the right, with no line left of the rail and tree lines on nested h3 items (`data-branch`, `branchOf` in `src/lib/blog/toc.ts`). The TOC has three forms in one `nav.post-toc`: the rail, the drawer (`toc-drawer.tsx`, opened by any `[data-toc-open]` button) and the `<details>` list without JS; `toc-spy.tsx` marks the active link in all of them.

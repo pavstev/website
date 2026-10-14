@@ -1,13 +1,9 @@
 import { type CSSProperties, Fragment, type ReactElement } from "react";
 
-import { CityPanel } from "@/components/city-panel";
 import { CompoundText } from "@/components/compound-text";
-import { IndustryPanel } from "@/components/industry-panel";
-import { Portrait } from "@/components/portrait";
 import { TopicTrigger } from "@/components/topic-trigger";
 import { splitBio } from "@/lib/bio";
 import { cityPanelId, cityStrings } from "@/lib/city";
-import { en } from "@/lib/i18n";
 import { industries } from "@/lib/industries";
 import { personalData } from "@/lib/personal";
 
@@ -55,9 +51,6 @@ const nameWords = groupWords(personalData.name);
 
 export const Profile = (): ReactElement => (
   <>
-    <div className="relative z-10">
-      <Portrait alt={en.card.portraitAlt} />
-    </div>
     <h1
       className="name-signal type-display text-balance text-sky"
       data-name=""
@@ -107,9 +100,5 @@ export const Profile = (): ReactElement => (
         )
       )}
     </p>
-    <CityPanel />
-    {industries.map((industry) => (
-      <IndustryPanel industry={industry} key={industry.key} />
-    ))}
   </>
 );

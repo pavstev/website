@@ -30,7 +30,7 @@ flowchart LR
   worker -. "cv.json, llms.txt, feed.json" .-> dist
 ```
 
-The page is a Next.js 16 static export. The Worker in `worker/` runs only for `/mcp`. `POST /mcp` is a read-only MCP server with eight tools (`profile`, `experience`, `skills`, `projects`, `products`, `contact`, `posts`, `post`) behind a per-IP rate limit. It reads `/cv.json`, `/llms.txt` and `/blog/feed.json` from the static assets. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
+The site is an Astro 7 static build (React 19 islands for the sky and the card, Tailwind v4), written to `dist/` with one HTML file per page. The Worker in `worker/` runs only for `/mcp`. `POST /mcp` is a read-only MCP server with eight tools (`profile`, `experience`, `skills`, `projects`, `products`, `contact`, `posts`, `post`) behind a per-IP rate limit. It reads `/cv.json`, `/llms.txt` and `/blog/feed.json` from the static assets. The build makes `/cv.json` and `/resume.pdf` from a private CV feed in my job-search app (hirista), with the phone number removed. If the feed is down, the build uses the live `/cv.json`; a wrong token or bad data fails it.
 
 ## Getting started
 
@@ -45,8 +45,8 @@ pnpm dev   # http://localhost:4321
 | -------------------- | ------------------------------------------------------------------------------------ |
 | `pnpm dev`           | Fetches the CV, builds the blog media, then a dev server on port 4321 (drafts show)  |
 | `pnpm build`         | Fetches the CV, builds the blog media and `dist/`, then checks the CV did not change |
-| `pnpm preview`       | Serves `dist/` on port 4321                                                          |
-| `pnpm check`         | Format, lint, types (site and Worker), tests, unused code, build, profile            |
+| `pnpm preview`       | Serves `dist/` with `astro preview` on port 4321                                     |
+| `pnpm check`         | Format, lint, `astro check`, Worker types, tests, unused code, build, profile        |
 | `pnpm fix`           | Applies Prettier and ESLint fixes                                                    |
 | `pnpm icons`         | Rebuilds `src/lib/icon-data.ts`                                                      |
 | `pnpm profile:build` | Builds the GitHub profile into `.profile-out/` (`--check` also checks links)         |
@@ -65,7 +65,7 @@ gh secret set PROFILE_DEPLOY_KEY -R pavstev/website < /tmp/profile_sync && rm /t
 
 ## Deploy
 
-Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). Cloudflare runs `pnpm run build` and needs `GITHUB_TOKEN`, `CV_FEED_URL` and `CV_FEED_TOKEN` as build variables; CI needs the two CV feed values as GitHub Actions secrets (and Dependabot secrets). Saving a résumé in hirista starts a new build. The `workers.dev` URL and branch previews are off. A blog post with a future `date` goes live at 00:00 Vienna time on that day: `.github/workflows/blog-publish.yml` checks every hour and, when a post is due, starts a build through a Cloudflare deploy hook (the secret `CLOUDFLARE_DEPLOY_HOOK`). Nobody deploys by hand.
+Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`; hashed bundles in `dist/_astro/` are cached for a year by `public/_headers`). Cloudflare runs `pnpm run build` and needs `GITHUB_TOKEN`, `CV_FEED_URL` and `CV_FEED_TOKEN` as build variables; CI needs the two CV feed values as GitHub Actions secrets (and Dependabot secrets). Saving a résumé in hirista starts a new build. The `workers.dev` URL and branch previews are off. A blog post with a future `date` goes live at 00:00 Vienna time on that day: `.github/workflows/blog-publish.yml` checks every 15 minutes and, when a post is due, starts a build through a Cloudflare deploy hook (the secret `CLOUDFLARE_DEPLOY_HOOK`). Nobody deploys by hand.
 
 ## Contact
 

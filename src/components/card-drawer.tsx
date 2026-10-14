@@ -8,11 +8,11 @@ import {
   useState,
 } from "react";
 
+import { Icon } from "@/components/icon";
 import { RepoPlanetsCanvas } from "@/components/repo-planets-canvas";
 
 interface CardDrawerProps {
-  children: ReactNode;
-  closeIcon: ReactNode;
+  children?: ReactNode;
   closeLabel: string;
   id: string;
   title: string;
@@ -23,7 +23,6 @@ const pageUrl = (): string =>
 
 export const CardDrawer = ({
   children,
-  closeIcon,
   closeLabel,
   id,
   title,
@@ -103,7 +102,7 @@ export const CardDrawer = ({
             }}
             type="button"
           >
-            {closeIcon}
+            <Icon aria-hidden name="lucide:x" size="1.125rem" />
           </button>
         </header>
         <div className="drawer-body">

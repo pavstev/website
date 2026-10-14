@@ -24,7 +24,7 @@ const config: KnipConfig = {
     "content/blog/*/index.mdx",
     "src/lib/blog/fixtures/**/*.mdx",
     "scripts/**/*.ts",
-    "src/**/*.{css,ts,tsx}",
+    "src/**/*.{astro,css,ts,tsx}",
     "worker/**/*.ts",
   ],
   rules: {
