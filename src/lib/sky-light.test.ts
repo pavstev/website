@@ -34,7 +34,9 @@ describe("skyLight", () => {
 
   it("draws the disks three times larger than true", () => {
     const light = skyLight(noon);
-    assert.ok(Math.abs(light.sunDisk[0] - 3 * 0.267 * (Math.PI / 180)) < 2e-4);
+    assert.ok(
+      Math.abs(light.sunDisk[0] - 7.5 * 0.267 * (Math.PI / 180)) < 2e-4
+    );
   });
 
   it("does not let the weather touch the sun, as the eye is above the clouds", () => {

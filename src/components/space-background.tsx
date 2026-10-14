@@ -729,6 +729,7 @@ const startSky = (
       moonSky: Math.min(1, light.moonColor[0] * 25),
       pixel: scale,
       sun: light.sun,
+      text: textRects,
       time: (skyMs / 1000) % timeWrap,
       width: canvas.width,
     });

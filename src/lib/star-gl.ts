@@ -13,6 +13,7 @@ export interface StarFrame {
   moonSky: number;
   pixel: number;
   sun: readonly [number, number, number, number];
+  text: Float32Array;
   time: number;
   width: number;
 }
@@ -49,7 +50,9 @@ uniform float u_moonSky;
 uniform float u_day;
 uniform float u_time;
 uniform float u_px;
+uniform vec4 u_txt[3];
 varying vec3 v_col;
+varying float v_shine;
 const float earthR = 6371000.0;
 const float deckBase = 2600.0;
 const float scaleH = 8000.0;
@@ -65,10 +68,23 @@ float log10(float x) {
   return log(x) / 2.302585;
 }
 
+float textNear(vec2 fc, float feather) {
+  float k = 0.0;
+  for (int i = 0; i < 3; i++) {
+    vec4 b = u_txt[i];
+    if (b.z > b.x) {
+      vec2 q = max(max(b.xy - fc, fc - b.zw), 0.0);
+      k = max(k, 1.0 - smoothstep(0.0, feather, length(q)));
+    }
+  }
+  return k;
+}
+
 void main() {
   gl_PointSize = 0.0;
   gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
   v_col = vec3(0.0);
+  v_shine = 0.0;
   vec3 w = u_eq * a_dir;
   float eyeR = earthR + u_cam.z;
   float sinN = length(w.xz);
@@ -85,7 +101,7 @@ void main() {
     float near = sqrt(1.0 - exp(-0.6366 * reach * reach / (tangentSigma * tangentSigma)));
     mass = horizonMass * exp(-max(eyeR * sinN - earthR, 0.0) / scaleH) * (1.0 + near);
   }
-  float sky = pow(10.0, -0.4 * (21.8 - 6.0 * u_day));
+  float sky = pow(10.0, -0.4 * (21.8 - 3.2 * u_day));
   sky += pow(10.0, -0.4 * 19.6) * u_moonSky * (1.0 + 6.0 * exp(-moonAngle / 0.18));
   float sunAngle = acos(clamp(dot(w, u_sun.xyz), -1.0, 1.0));
   sky += pow(10.0, -0.4 * 8.0) * u_day * exp(-sunAngle / 0.08);
@@ -97,23 +113,29 @@ void main() {
   if (seen <= 0.0) return;
   float lead = clamp((limit - m) / 5.5, 0.0, 1.6);
   float wave = sin(u_time * (2.5 + fract(a_dir.x * 913.7) * 5.0) + a_dir.y * 517.3);
-  float tw = 1.0 + a_twinkle * 0.32 * wave * clamp(mass / 12.0, 0.0, 1.0);
-  v_col = a_col * seen * (0.3 + 1.1 * min(lead, 1.2)) * tw;
+  float tw = 1.0 + a_twinkle * (0.14 + 0.3 * clamp(mass / 12.0, 0.0, 1.0)) * wave;
+  v_col = a_col * seen * (0.4 + 1.3 * min(lead, 1.2)) * tw;
   float unit = (1.0 - u_cam.y) * u_res.y / u_cam.x;
   vec2 uv = c.xy / (1.0 + c.z);
   vec2 px = vec2(0.5 * u_res.x + uv.x * unit, u_cam.y * u_res.y + uv.y * unit);
-  gl_PointSize = max((3.2 + 4.0 * pow(lead / 1.6, 1.3)) * u_px * 1.3, 3.0);
+  float quiet = 1.0 - textNear(px, 56.0 * u_res.y / 900.0);
+  v_col *= 1.0 - 0.72 * (1.0 - quiet);
+  v_shine = smoothstep(0.5, 1.25, lead) * seen * quiet * (0.8 + 0.2 * wave);
+  gl_PointSize = max((4.0 + 6.0 * pow(lead / 1.6, 1.3) + 12.0 * v_shine) * u_px * 1.3, 3.5);
   gl_Position = vec4(px / u_res * 2.0 - 1.0, 0.0, 1.0);
 }`;
 
 export const starFragmentShader = `
 precision mediump float;
 varying vec3 v_col;
+varying float v_shine;
 void main() {
   vec2 q = gl_PointCoord - 0.5;
   float r = length(q) * 2.0;
-  float spot = exp(-r * r * 4.0) * smoothstep(1.0, 0.6, r);
-  gl_FragColor = vec4(v_col * spot, 1.0);
+  float spot = (exp(-r * r * 4.0) + 0.22 * exp(-r * r * 1.1)) * smoothstep(1.0, 0.55, r);
+  float arm = exp(-abs(q.x) * 70.0) * exp(-abs(q.y) * 7.0) + exp(-abs(q.y) * 70.0) * exp(-abs(q.x) * 7.0);
+  float glint = v_shine * arm * smoothstep(1.0, 0.4, r);
+  gl_FragColor = vec4(v_col * (spot + 0.9 * glint), 1.0);
 }`;
 
 const planetBlock = (planets: readonly PlanetSight[]): Float32Array => {
@@ -242,6 +264,7 @@ export const createStarGl = (
     uniforms.set("u_day", frame.day);
     uniforms.set("u_time", frame.time);
     uniforms.set("u_px", frame.pixel);
+    uniforms.array("u_txt", frame.text);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
     gl.drawArrays(gl.POINTS, 0, count);

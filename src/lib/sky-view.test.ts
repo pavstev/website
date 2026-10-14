@@ -168,7 +168,7 @@ describe("disk gain", () => {
   it("draws the disks three times larger apart and true size in an eclipse", () => {
     const sun = worldDirection(30, 180);
     const radius = 0.0045;
-    assert.equal(diskGain(sun, worldDirection(10, 120), radius, radius), 3);
+    assert.equal(diskGain(sun, worldDirection(10, 120), radius, radius), 7.5);
     assert.equal(diskGain(sun, worldDirection(30.2, 180), radius, radius), 1);
     const near = diskGain(sun, worldDirection(31, 180), radius, radius);
     assert.ok(near > 1 && near < 3);

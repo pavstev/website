@@ -679,6 +679,20 @@ vec3 sunAndMoon(vec3 rd, vec2 fc, float vis) {
     float shape = 0.45 * exp(-a / 0.012) + 0.12 * exp(-a / 0.05) + 0.01 * exp(-a / 0.2);
     float cap = textCap(fc);
     add += hz(u_sunCol) * (disk * vis * u_sunDisk.y * (0.42 + 0.58 * mu) + shape * u_sunDisk.z * cap);
+    vec3 sc = vec3(dot(s, u_basis[0]), dot(s, u_basis[1]), dot(s, u_basis[2]));
+    vec2 sunPx = vec2(0.5 * u_res.x, u_cam.y * u_res.y) + sc.xy / (1.0 + sc.z) * ((1.0 - u_cam.y) * u_res.y / u_cam.x);
+    vec2 dir = normalize(fc - sunPx + vec2(0.0001, 0.0));
+    float t = u_time;
+    float out1 = max(rr - 1.0, 0.0);
+    float rise = smoothstep(0.95, 1.35, rr);
+    float angle = noise(dir * 18.0 + vec2(t * 0.05, -t * 0.04));
+    float lengthMix = noise(dir * 5.0 + vec2(-t * 0.03, t * 0.025) + 4.0) * (0.5 + 0.8 * noise(dir * 11.0 + 2.0));
+    float thin = smoothstep(0.6, 0.93, angle) * (0.75 + 0.25 * sin(t * 0.9 + angle * 40.0));
+    float reachR = 1.2 + 9.0 * lengthMix * lengthMix * 2.2;
+    float rays = thin * exp(-out1 / reachR) * smoothstep(1.05, 1.6, rr);
+    vec3 tint = mix(vec3(1.0, 0.87, 0.68), vec3(0.8, 0.89, 1.0), smoothstep(0.0, 6.0, out1));
+    float halo = 0.42 * exp(-out1 / 0.45) + 0.11 * exp(-out1 / 2.0) + 0.03 * exp(-out1 / 8.0);
+    add += hz(u_sunCol * tint) * (rays * 0.5 + halo) * rise * u_sunDisk.z * vis;
     bodyMask = max(disk * vis, clamp((0.45 * exp(-a / 0.012) + 0.12 * exp(-a / 0.05)) * u_sunDisk.z * 3.0, 0.0, 1.0) * cap);
   }
   vec3 m = u_moon.xyz;
