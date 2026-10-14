@@ -435,6 +435,11 @@
     height: 100lvh;
     pointer-events: none;
     background: var(--background);
+    transition: opacity var(--duration-slower) var(--ease-smooth);
+  }
+
+  canvas[data-space][data-space-state="init"] {
+    opacity: 0;
   }
 
   [data-blog-sky] {
@@ -496,6 +501,12 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+astro-island,
+astro-slot,
+astro-static-slot {
+  display: contents;
 }
 
 html {
@@ -4568,6 +4579,10 @@ html:has(.post-main) {
 }
 
 .blog-crumb {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  margin-block: -0.25rem;
   color: inherit;
   text-decoration: underline;
   text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);

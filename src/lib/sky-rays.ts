@@ -20,8 +20,8 @@ const tunedRays: Readonly<Record<RayKnob, number>> = {
 };
 
 const longRays: Readonly<Record<RayKnob, number>> = {
-  coronaBright: 1.3,
-  coronaSize: 1.6,
+  coronaBright: 1.05,
+  coronaSize: 1.35,
 };
 
 const raySource = 0.43;

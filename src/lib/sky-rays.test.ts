@@ -6,8 +6,8 @@ import { skyFragmentShader } from "./sky-shader.ts";
 
 describe("longRaysShader", () => {
   it("swaps in the LinkedIn cover rays", () => {
-    assert.match(longRaysShader, /const float coronaSize = 1\.60;/);
-    assert.match(longRaysShader, /const float coronaBright = 1\.30;/);
+    assert.match(longRaysShader, /const float coronaSize = 1\.35;/);
+    assert.match(longRaysShader, /const float coronaBright = 1\.05;/);
     assert.doesNotMatch(longRaysShader, /coronaSize = 0\.48;/);
   });
 
@@ -18,8 +18,8 @@ describe("longRaysShader", () => {
 
   it("changes nothing but the two ray lines", () => {
     const back = longRaysShader
-      .replace("coronaSize = 1.60;", "coronaSize = 0.48;")
-      .replace("coronaBright = 1.30;", "coronaBright = 1.06;");
+      .replace("coronaSize = 1.35;", "coronaSize = 0.48;")
+      .replace("coronaBright = 1.05;", "coronaBright = 1.06;");
     assert.equal(back, skyFragmentShader);
   });
 });
