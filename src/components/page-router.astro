@@ -1,0 +1,12 @@
+---
+import { ClientRouter } from "astro:transitions";
+---
+
+<ClientRouter fallback="swap" />
+<script>
+  import { morphTitles } from "@/lib/blog/title-morph";
+  import { keepPageFlags } from "@/lib/router-flags";
+
+  keepPageFlags();
+  morphTitles();
+</script>

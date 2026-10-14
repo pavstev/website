@@ -43,6 +43,7 @@ export const DownloadButton = ({
         aria-describedby={describedBy}
         aria-label={en.card.downloadPdf}
         className="download-pill focus-ring relative inline-flex h-11 items-center justify-center-safe overflow-hidden rounded-lg pr-5 pl-3.5 font-sans text-[0.875rem] font-semibold whitespace-nowrap text-foreground no-underline select-none"
+        data-astro-prefetch="false"
         download="Stevan_Pavlovic_Resume.pdf"
         href="/resume.pdf"
         ref={ref}

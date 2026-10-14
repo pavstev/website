@@ -1,8 +1,7 @@
 ---
 import "@/styles/globals.css";
 
-import { ClientRouter } from "astro:transitions";
-
+import PageRouter from "@/components/page-router.astro";
 import { PageDock } from "@/components/page-dock";
 import { SpaceBackground } from "@/components/space-background";
 import {
@@ -103,18 +102,11 @@ const contact = await getContact(personalData.githubHandle);
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
     <link href="/sitemap.xml" rel="sitemap" />
     <script is:inline set:html={headScript}></script>
-    <ClientRouter fallback="swap" />
-    <script>
-      import { morphTitles } from "@/lib/blog/title-morph";
-      import { keepPageFlags } from "@/lib/router-flags";
-
-      keepPageFlags();
-      morphTitles();
-    </script>
+    <PageRouter />
   </head>
   <body>
     <div data-blog="">
-      <SpaceBackground client:load mode="blog" transition:persist="blog-sky" />
+      <SpaceBackground client:load transition:persist="sky" />
       <slot />
     </div>
     <div class="blog-dock">

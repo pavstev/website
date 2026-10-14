@@ -14,8 +14,7 @@
     "icons": "node scripts/generate-icon-data.ts",
     "prepare": "husky",
     "preview": "astro preview --port 4321",
-    "profile:build": "node src/profile/cli.ts",
-    "stars:build": "node scripts/generate-star-data.ts"
+    "profile:build": "node src/profile/cli.ts"
   },
   "dependencies": {
     "@astrojs/react": "^7.0.1",

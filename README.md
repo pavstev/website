@@ -8,8 +8,8 @@ My personal site: one contact card floating over a live WebGL sky, a small blog 
 
 ## What is in it
 
-- **The real Vienna sky.** A hand-written WebGL sky seen from 100 km up, the edge of space: the sun and moon where they truly are, 9,000 real stars, five planets and the Milky Way above the curved Earth, which slides by below, tilts and speeds up with the cursor.
-- **Shooting stars.** Two at a time, with a bright head and a cooling trail. Move the mouse fast and one fires.
+- **One sky.** A hand-written WebGL night sky behind the card and the blog. The real Vienna sun sits where it truly is; going to the blog, it glides to the top-left corner and becomes the blog's corona.
+- **Shooting stars.** One every few seconds from the top-left, with a bright head and a cooling trail.
 - **A glass bead.** It follows the cursor over the portrait (a finger after a press and hold) and magnifies the photo with chromatic edges, in the card and in the portrait dialog.
 - **A name that tunes in.** A CSS signal intro, then every 8 s a WebGL tear and a weight-morph wave across the letters.
 - **A planet per project.** Each open-source repo gets its own three.js planet, with language chips in GitHub's colors.

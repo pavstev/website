@@ -1,6 +1,7 @@
 ---
 import "@/styles/globals.css";
 
+import PageRouter from "@/components/page-router.astro";
 import { shareImage } from "@/lib/blog/metadata";
 import { en } from "@/lib/i18n";
 import { headScript } from "@/lib/motion-pause";
@@ -73,6 +74,7 @@ const imageUrl = new URL(shareImage.url, personalData.website).href;
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
     <script is:inline set:html={headScript}></script>
+    <PageRouter />
     <link href="/sitemap.xml" rel="sitemap" />
     <slot name="head" />
   </head>

@@ -490,6 +490,41 @@
       color-mix(in oklab, var(--background) 94%, transparent)
     );
   }
+
+  [data-blog-sky][data-sky-tween] {
+    translate: 0 var(--sky-shift, 0px) !important;
+    animation: none !important;
+  }
+
+  [data-blog-sky][data-sky-tween] > [data-sky-fade] {
+    opacity: var(--sky-fade-now, 0) !important;
+    animation: none !important;
+  }
+}
+
+@keyframes sky-arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+:root[data-sky-leave] #main-content,
+:root[data-sky-leave] .motion-item,
+:root[data-sky-leave] .page-dock,
+:root[data-sky-leave] .blog-dock {
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 200ms var(--ease-smooth),
+    padding-bottom var(--duration-slow) var(--ease-smooth);
+}
+
+:root[data-sky-arrive] #main-content,
+:root[data-sky-arrive] .motion-item,
+:root[data-sky-arrive] .page-dock,
+:root[data-sky-arrive] .blog-dock {
+  animation: sky-arrive 400ms var(--ease-smooth) var(--sky-arrive-delay, 0ms)
+    both;
 }
 
 @keyframes fade-up {
@@ -5940,4 +5975,11 @@ html:has(.image-zoom-dialog[open]) {
 :root[data-motion-paused]::view-transition-new(*) {
   animation-delay: 0s !important;
   animation-duration: 0s !important;
+}
+
+:root[data-sky-leave]::view-transition-old(root),
+:root[data-sky-leave]::view-transition-new(root),
+:root[data-sky-arrive]::view-transition-old(root),
+:root[data-sky-arrive]::view-transition-new(root) {
+  animation: none;
 }

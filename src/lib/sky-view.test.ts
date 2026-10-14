@@ -3,19 +3,16 @@ import { describe, it } from "node:test";
 
 import { sunPosition } from "./sky-ephemeris.ts";
 import {
-  aimHolds,
   aimYaw,
   cameraBasis,
-  diskGain,
-  frameAim,
-  limbDip,
+  projectDisk,
   projectSky,
   skyCamera,
-  skyRay,
   worldDirection,
 } from "./sky-view.ts";
 
 const vienna = [48.2082, 16.3738] as const;
+const limbDip = Math.acos(6_371_000 / 6_471_000);
 const laptop = {
   card: { bottom: 640, left: 520, right: 920, top: 180 },
   height: 900,
@@ -78,54 +75,54 @@ describe("camera", () => {
     assert.ok(camera.horizon > 0.16);
   });
 
-  it("looks down from 100 km: the limb sits about ten degrees below the horizon", () => {
-    assert.ok(close(limbDip / (Math.PI / 180), 10.1, 0.1));
-    assert.equal(skyCamera(1440, 900).eye, 100_000);
-  });
-
-  it("turns a pixel into a ray and back", () => {
+  it("projects a disk with its center and a radius that grows off axis", () => {
     const camera = skyCamera(1440, 900);
-    const basis = cameraBasis(2.1, 0.01);
-    for (const [x, y] of [
-      [100, 50],
-      [720, 400],
-      [1300, 860],
-    ] as const) {
-      const ray = skyRay(x, y, basis, camera, 1440, 900);
-      assert.ok(close(Math.hypot(...ray), 1, 1e-9));
-      const back = projectSky(ray, basis, camera, 1440, 900);
-      assert.ok(back);
-      assert.ok(close(back[0], x, 1e-6) && close(back[1], y, 1e-6));
-    }
+    const basis = cameraBasis(0, 0);
+    const ahead = projectDisk(
+      worldDirection(20, 0),
+      0.01,
+      basis,
+      camera,
+      1440,
+      900
+    );
+    const aside = projectDisk(
+      worldDirection(20, 50),
+      0.01,
+      basis,
+      camera,
+      1440,
+      900
+    );
+    assert.ok(ahead && aside);
+    assert.deepEqual(
+      ahead.slice(0, 2),
+      projectSky(worldDirection(20, 0), basis, camera, 1440, 900)
+    );
+    assert.ok(aside[2] > ahead[2]);
   });
 });
 
 describe("aim", () => {
   it("frames the noon sun beside the card at its true height", () => {
-    const noon = Date.parse("2026-06-21T11:00:00Z");
-    const aim = frameAim(noon, ...vienna);
-    assert.equal(aim.kind, "sun");
-    const yaw = aimYaw(aim, laptop);
-    const camera = skyCamera(laptop.width, laptop.height);
+    const sun = sunPosition(Date.parse("2026-06-21T11:00:00Z"), ...vienna);
     const point = projectSky(
-      worldDirection(aim.target.altitude, aim.target.azimuth),
-      cameraBasis(yaw, 0),
-      camera,
+      worldDirection(sun.altitude, sun.azimuth),
+      cameraBasis(aimYaw(sun, laptop), 0),
+      skyCamera(laptop.width, laptop.height),
       laptop.width,
       laptop.height
     );
     assert.ok(point);
     assert.ok(point[0] > laptop.card.right && point[0] < laptop.width);
     assert.ok(point[1] > 0 && point[1] < laptop.card.bottom);
-    assert.ok(aimHolds(yaw, aim, laptop));
   });
 
   it("puts a low sun in the middle of the free side", () => {
-    const morning = Date.parse("2026-10-14T06:30:00Z");
-    const aim = frameAim(morning, ...vienna);
+    const sun = sunPosition(Date.parse("2026-10-14T06:30:00Z"), ...vienna);
     const point = projectSky(
-      worldDirection(aim.target.altitude, aim.target.azimuth),
-      cameraBasis(aimYaw(aim, laptop), 0),
+      worldDirection(sun.altitude, sun.azimuth),
+      cameraBasis(aimYaw(sun, laptop), 0),
       skyCamera(laptop.width, laptop.height),
       laptop.width,
       laptop.height
@@ -134,43 +131,17 @@ describe("aim", () => {
     assert.ok(close(point[0], (laptop.card.right + laptop.width) / 2, 0.5));
   });
 
-  it("frames the moon at night and faces the dusk glow", () => {
-    const fullMoon = Date.parse("2026-12-21T20:00:00Z");
-    assert.equal(frameAim(fullMoon, ...vienna).kind, "moon");
-    const dusk = Date.parse("2026-10-10T17:40:00Z");
-    const aim = frameAim(dusk, ...vienna);
-    assert.equal(aim.kind, "twilight");
-    const sun = sunPosition(dusk, ...vienna);
-    assert.ok(close(aim.target.azimuth, sun.azimuth, 1e-9));
-  });
-
-  it("looks where the next body rises on a dark night", () => {
-    const dark = Date.parse("2026-01-20T22:00:00Z");
-    const aim = frameAim(dark, ...vienna);
-    assert.equal(aim.kind, "rise");
-    assert.ok(aim.target.azimuth > 30 && aim.target.azimuth < 150);
-  });
-
-  it("keeps a phone aim on the screen", () => {
-    const aim = frameAim(Date.parse("2026-10-14T10:00:00Z"), ...vienna);
-    const yaw = aimYaw(aim, phone);
-    assert.ok(aimHolds(yaw, aim, phone));
-  });
-
-  it("re-aims once the body leaves the frame", () => {
-    const aim = frameAim(Date.parse("2026-10-14T10:00:00Z"), ...vienna);
-    const yaw = aimYaw(aim, laptop);
-    assert.equal(aimHolds(yaw + Math.PI, aim, laptop), false);
-  });
-});
-
-describe("disk gain", () => {
-  it("draws the disks three times larger apart and true size in an eclipse", () => {
-    const sun = worldDirection(30, 180);
-    const radius = 0.0045;
-    assert.equal(diskGain(sun, worldDirection(10, 120), radius, radius), 7.5);
-    assert.equal(diskGain(sun, worldDirection(30.2, 180), radius, radius), 1);
-    const near = diskGain(sun, worldDirection(31, 180), radius, radius);
-    assert.ok(near > 1 && near < 3);
+  it("keeps a phone sun on the screen", () => {
+    const sun = sunPosition(Date.parse("2026-10-14T10:00:00Z"), ...vienna);
+    const point = projectSky(
+      worldDirection(sun.altitude, sun.azimuth),
+      cameraBasis(aimYaw(sun, phone), 0),
+      skyCamera(phone.width, phone.height),
+      phone.width,
+      phone.height
+    );
+    assert.ok(point);
+    assert.ok(point[0] > 0 && point[0] < phone.width);
+    assert.ok(point[1] > 0 && point[1] < phone.height);
   });
 });
