@@ -1,0 +1,48 @@
+---
+import { en } from "@/lib/i18n";
+import { getContact } from "@/lib/github";
+import { personalData } from "@/lib/personal";
+
+const contact = await getContact(personalData.githubHandle);
+const links = [
+  {
+    external: true,
+    href: personalData.github,
+    label: en.card.github,
+  },
+  {
+    external: true,
+    href: contact.linkedin,
+    label: en.card.linkedin,
+  },
+  {
+    external: false,
+    href: `mailto:${contact.email}`,
+    label: en.card.email,
+  },
+  {
+    external: false,
+    href: "/resume.pdf",
+    label: en.card.resume,
+  },
+];
+---
+
+<span class="footer-links">
+  {links.map((link, index) => (
+    <>
+      {index > 0 && <span aria-hidden="true"> · </span>}
+      <a
+        class="focus-ring"
+        data-astro-reload={link.external ? undefined : ""}
+        href={link.href}
+        rel={link.external ? "me noopener noreferrer" : undefined}
+        target={link.external ? "_blank" : undefined}
+      >
+        {link.label}
+        {link.external && <span class="sr-only"> {en.card.newTab}</span>}
+      </a>
+    </>
+  ))}
+</span>
+<br />

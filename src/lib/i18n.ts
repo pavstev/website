@@ -16,8 +16,6 @@ export const en = {
     crumbHome: "Home",
     crumbsLabel: "Breadcrumb",
     draft: "Draft",
-    footerLabel: "About the author",
-    footerRole: "Software engineer and tech lead.",
     footnoteBack: "Back to the text",
     footnotes: "Notes",
     heading: "Blog",
