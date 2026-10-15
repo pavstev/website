@@ -193,7 +193,14 @@ export const en = {
     work: "Work",
   },
   notFound: {
-    home: "Back to home",
+    crumb: "Not found",
+    description: "This page is not on the map.",
+    eyebrow: "Error 404",
+    fact: "The nearest star is 4.2 light-years away. Home is one click.",
+    fallbackPath: "this address",
+    heading: "Lost in space",
+    lede: "Nothing lives at {path}. The sun looked. So did the stars. The moon just shrugged.",
+    links: "Fly to",
     title: "Page not found",
   },
   privacy: {

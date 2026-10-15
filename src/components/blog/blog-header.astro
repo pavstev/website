@@ -5,7 +5,8 @@ import { Icon } from "@/components/icon";
 import { ReadingProgress } from "@/components/ui/reading-progress";
 import { type Crumb, crumbIsLink } from "@/lib/blog/crumbs";
 import { en } from "@/lib/i18n";
-import { navCurrent, navItems } from "@/lib/nav";
+import { blogLive } from "@/lib/blog/live";
+import { navCurrent, navFor } from "@/lib/nav";
 import { personalData } from "@/lib/personal";
 
 interface Props {
@@ -92,7 +93,7 @@ const { crumbs, slug, title, toc = false } = Astro.props;
     <div class="blog-bar-slot" data-bar-slot="">
       <nav aria-label={en.nav.label} class="blog-nav">
         <ul class="blog-nav-list">
-          {navItems.map((item) => (
+          {navFor(blogLive()).map((item) => (
             <li class="blog-nav-item">
               <a
                 aria-current={navCurrent(Astro.url.pathname, item.path)}

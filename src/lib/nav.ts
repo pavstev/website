@@ -11,6 +11,9 @@ export const navItems: NavItem[] = [
   { label: en.nav.blog, path: "/blog" },
 ];
 
+export const navFor = (blogLive: boolean): NavItem[] =>
+  blogLive ? navItems : navItems.filter((item) => item.path !== "/blog");
+
 const clean = (pathname: string): string => {
   const trimmed = pathname.replace(/\.html$/u, "").replace(/\/+$/u, "");
   return trimmed === "" ? "/" : trimmed;

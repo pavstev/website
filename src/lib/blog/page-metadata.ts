@@ -9,7 +9,7 @@ export interface FeedLinks {
 }
 
 export interface PageMetadata {
-  alternates: { canonical: string; types: FeedLinks };
+  alternates: { canonical?: string; types: FeedLinks };
   description: string;
   keywords?: readonly string[];
   openGraph: {
@@ -23,7 +23,7 @@ export interface PageMetadata {
     tags?: readonly string[];
     title: string;
     type: "article" | "website";
-    url: string;
+    url?: string;
   };
   robots: Robots;
   title: string;

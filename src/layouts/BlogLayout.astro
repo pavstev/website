@@ -45,7 +45,9 @@ const contact = await getContact(personalData.githubHandle);
     )}
     <meta name="robots" content={robotsContent(robots)} />
     <meta name="googlebot" content={googleBotContent(robots)} />
-    <link rel="canonical" href={alternates.canonical} />
+    {alternates.canonical !== undefined && (
+      <link rel="canonical" href={alternates.canonical} />
+    )}
     {Object.entries(alternates.types).flatMap(([type, links]) =>
       links.map((link: FeedLink) => (
         <link
@@ -58,7 +60,9 @@ const contact = await getContact(personalData.githubHandle);
     )}
     <meta property="og:title" content={openGraph.title} />
     <meta property="og:description" content={openGraph.description} />
-    <meta property="og:url" content={openGraph.url} />
+    {openGraph.url !== undefined && (
+      <meta property="og:url" content={openGraph.url} />
+    )}
     <meta property="og:site_name" content={openGraph.siteName} />
     <meta property="og:locale" content={openGraph.locale} />
     {openGraph.images.flatMap((image) => [

@@ -1,12 +1,16 @@
 ---
 import { Icon } from "@/components/icon";
+import { blogLive } from "@/lib/blog/live";
 import { en } from "@/lib/i18n";
 
-const sections = [
+const all = [
   { href: "/about", icon: "lucide:user-round", label: en.card.about },
   { href: "/work", icon: "lucide:briefcase", label: en.card.work },
   { href: "/blog", icon: "lucide:notebook-pen", label: en.card.blog },
 ];
+const sections = blogLive()
+  ? all
+  : all.filter((section) => section.href !== "/blog");
 ---
 
 <ul

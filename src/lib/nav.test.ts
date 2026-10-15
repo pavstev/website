@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { navCurrent, navItems } from "./nav.ts";
+import { navCurrent, navFor, navItems } from "./nav.ts";
 
 describe("navItems", () => {
   it("lists About, Work and Blog in that order", () => {
@@ -38,5 +38,18 @@ describe("navCurrent", () => {
     assert.equal(navCurrent("/about", "/work"), undefined);
     assert.equal(navCurrent("/blogger", "/blog"), undefined);
     assert.equal(navCurrent("/", "/blog"), undefined);
+  });
+});
+
+describe("navFor", () => {
+  it("keeps the Blog link while a post is live", () => {
+    assert.deepEqual(navFor(true), navItems);
+  });
+
+  it("drops the Blog link when no post is live", () => {
+    assert.deepEqual(
+      navFor(false).map(({ path }) => path),
+      ["/about", "/work"]
+    );
   });
 });

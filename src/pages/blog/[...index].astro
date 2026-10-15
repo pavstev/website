@@ -4,9 +4,14 @@ import BlogLayout from "@/layouts/BlogLayout.astro";
 import { showDrafts } from "@/lib/blog/build-env";
 import { blogListing } from "@/lib/blog/listing";
 import { blogUrl, listMetadata } from "@/lib/blog/metadata";
+import { blogLive } from "@/lib/blog/live";
 import { listPosts } from "@/lib/blog/posts";
 import { en } from "@/lib/i18n";
 import { blogGraph, serializeJsonLd } from "@/lib/structured-data";
+
+export const getStaticPaths = (): Array<{
+  params: { index: string | undefined };
+}> => (blogLive() ? [{ params: { index: undefined } }] : []);
 
 const metadata = listMetadata({
   description: en.blog.metaDescription,

@@ -2,6 +2,7 @@ import { en } from "../i18n.ts";
 import { personalData } from "../personal.ts";
 import { pageRobots } from "./build-env.ts";
 import { postTitle } from "./format.ts";
+import { blogLive } from "./live.ts";
 import { readMedia, shareKey } from "./media.ts";
 import { modifiedOf } from "./modified.ts";
 import { type FeedLinks, type PageMetadata } from "./page-metadata.ts";
@@ -9,12 +10,17 @@ import { type PostMeta } from "./schema.ts";
 
 export const blogUrl = `${personalData.website}/blog`;
 
-const feedTypes: FeedLinks = {
-  "application/feed+json": [
-    { title: en.blog.blogName, url: "/blog/feed.json" },
-  ],
-  "application/rss+xml": [{ title: en.blog.blogName, url: "/blog/feed.xml" }],
-};
+const feedTypes = (): FeedLinks =>
+  blogLive()
+    ? {
+        "application/feed+json": [
+          { title: en.blog.blogName, url: "/blog/feed.json" },
+        ],
+        "application/rss+xml": [
+          { title: en.blog.blogName, url: "/blog/feed.xml" },
+        ],
+      }
+    : { "application/feed+json": [], "application/rss+xml": [] };
 
 interface ShareImage {
   alt: string;
@@ -56,7 +62,7 @@ export const listMetadata = ({
   title,
   url,
 }: ListMetadata): PageMetadata => ({
-  alternates: { canonical: url, types: feedTypes },
+  alternates: { canonical: url, types: feedTypes() },
   description,
   openGraph: {
     description,
@@ -77,11 +83,39 @@ export const listMetadata = ({
   },
 });
 
+export const notFoundMetadata = ({
+  description,
+  title,
+}: Omit<ListMetadata, "url">): PageMetadata => ({
+  alternates: { types: feedTypes() },
+  description,
+  openGraph: {
+    description,
+    images: [shareImage],
+    locale: "en_US",
+    siteName: personalData.name,
+    title,
+    type: "website",
+  },
+  robots: {
+    ...pageRobots,
+    googleBot: { ...pageRobots.googleBot, index: false },
+    index: false,
+  },
+  title,
+  twitter: {
+    card: "summary_large_image",
+    description,
+    images: [{ alt: shareImage.alt, url: shareImage.url }],
+    title,
+  },
+});
+
 export const postMetadata = (meta: PostMeta): PageMetadata => {
   const title = postTitle(meta.title);
   const image = postShareImage(meta);
   return {
-    alternates: { canonical: meta.url, types: feedTypes },
+    alternates: { canonical: meta.url, types: feedTypes() },
     description: meta.description,
     keywords: meta.tags,
     openGraph: {

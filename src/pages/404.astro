@@ -1,22 +1,83 @@
 ---
-import "@/styles/globals.css";
-
-import Base from "@/layouts/Base.astro";
+import BlogHeader from "@/components/blog/blog-header.astro";
+import { Icon } from "@/components/icon";
+import SiteFooter from "@/components/site-footer.astro";
+import BlogLayout from "@/layouts/BlogLayout.astro";
+import { pageCrumbs } from "@/lib/blog/crumbs";
+import { blogLive } from "@/lib/blog/live";
+import { notFoundMetadata } from "@/lib/blog/metadata";
 import { en } from "@/lib/i18n";
+import { navFor } from "@/lib/nav";
+
+const metadata = notFoundMetadata({
+  description: en.notFound.description,
+  title: en.notFound.title,
+});
+const [before = "", after = ""] = en.notFound.lede.split("{path}");
+const icons = {
+  "/about": "lucide:user-round",
+  "/blog": "lucide:notebook-pen",
+  "/work": "lucide:briefcase",
+};
+const links = [
+  { href: "/", icon: "lucide:star", label: en.blog.crumbHome },
+  ...navFor(blogLive()).map((item) => ({
+    href: item.path,
+    icon: icons[item.path as keyof typeof icons],
+    label: item.label,
+  })),
+];
 ---
 
-<Base title={en.notFound.title}>
-  <main class="grid min-h-dvh place-items-center overflow-x-clip safe-area text-center">
-    <div class="container-page grid justify-items-center gap-3">
-      <h1 class="type-display text-balance font-semibold text-foreground">
-        {en.notFound.title}
-      </h1>
-      <a
-        class="focus-ring type-body inline-flex min-h-11 items-center rounded-(--ui-radius) px-3 text-primary underline underline-offset-4"
-        href="/"
-      >
-        {en.notFound.home}
-      </a>
+<BlogLayout metadata={metadata}>
+  <main class="blog-main" id="main-content">
+    <BlogHeader
+      crumbs={pageCrumbs(en.notFound.crumb, "/404")}
+      title={en.notFound.heading}
+    >
+      <Fragment slot="meta">
+        <span>{en.notFound.eyebrow}</span>
+      </Fragment>
+    </BlogHeader>
+    <div class="post-layout">
+      <div class="not-found">
+        <p class="not-found-lede">
+          {before}
+          <code class="not-found-path" data-lost-path="">
+            {en.notFound.fallbackPath}
+          </code>
+          {after}
+        </p>
+        <p class="not-found-fact">{en.notFound.fact}</p>
+        <nav aria-label={en.notFound.links}>
+          <ul class="not-found-links">
+            {links.map((link) => (
+              <li>
+                <a
+                  class="keycap-host focus-ring"
+                  data-css-press=""
+                  href={link.href}
+                >
+                  <span aria-hidden="true" class="keycap-base"></span>
+                  <span class="keycap">
+                    <Icon name={link.icon} size="0.9375rem" />
+                    {link.label}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
     </div>
+    <SiteFooter className="blog-footer" links rss />
   </main>
-</Base>
+</BlogLayout>
+
+<script>
+  const slot = document.querySelector("[data-lost-path]");
+  const path = window.location.pathname;
+  if (slot !== null && path !== "/404" && path !== "/404.html") {
+    slot.textContent = path.length > 48 ? `${path.slice(0, 47)}…` : path;
+  }
+</script>

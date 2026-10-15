@@ -1,6 +1,7 @@
 ---
 import FooterLinks from "@/components/footer-links.astro";
 import { MotionSwitch } from "@/components/motion-switch";
+import { blogLive } from "@/lib/blog/live";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
 
@@ -19,7 +20,7 @@ const hasChildren = Astro.slots.has("default");
   <p class="tabular text-sky">
     {links && <FooterLinks />}© {year}{" "}
     <span class="whitespace-nowrap">{personalData.name}</span>
-    {rss && (
+    {rss && blogLive() && (
       <>
         <span aria-hidden="true"> · </span>
         <a
