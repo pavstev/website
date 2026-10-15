@@ -10,6 +10,7 @@ on:
       - public/portraits/portrait-800.webp
       - public/stevan-pavlovic.jpeg
       - scripts/linkedin-sync.ts
+      - src/data/cv.json
       - src/lib/cv.ts
       - src/lib/i18n.ts
       - src/lib/linkedin-fields.ts

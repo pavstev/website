@@ -2,7 +2,7 @@
   "basics": {
     "email": "pavlovicmstevan@gmail.com",
     "githubHandle": "pavstev",
-    "headline": "Backend & Distributed-Systems Engineer · Tech Lead",
+    "headline": "Software Engineer · Tech Lead",
     "linkedinHandle": "stevanpavlovic",
     "location": "Vienna, Austria",
     "name": "Stevan Pavlović",
@@ -454,6 +454,6 @@
       }
     ]
   },
-  "summary": "Backend and distributed-systems engineer in Vienna. Eleven years of building event-driven services on Node.js, NestJS, Kafka, PostgreSQL and Redis across fintech, betting, healthtech and fleet logistics. I lead small teams from the first commit to zero-downtime production, and I care about correctness, clear interfaces and tools that stay out of the way.",
-  "updatedAt": "2026-10-12T09:03:17.113Z"
+  "summary": "Software engineer in Vienna. Eleven years of building event-driven services on Node.js, NestJS, Kafka, PostgreSQL and Redis across fintech, betting, healthtech and fleet logistics. I lead small teams from the first commit to zero-downtime production, and I care about correctness, clear interfaces and tools that stay out of the way.",
+  "updatedAt": "2026-10-15T16:30:00.000+02:00"
 }

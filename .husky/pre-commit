@@ -1,1 +1,1 @@
-CV_SNAPSHOT=1 pnpm check
+pnpm check

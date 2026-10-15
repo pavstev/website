@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import { fetchLive } from "../src/lib/cv.ts";
+import { getCv } from "../src/lib/cv.ts";
 import {
   buildSnapshot,
   changeTitle,
@@ -43,8 +43,6 @@ const repository = process.env["GITHUB_REPOSITORY"] ?? "pavstev/website";
 const coverFile = "public/linkedin-cover.png";
 const portraitFile = path.join("public", personalData.portrait.url);
 const portraitJpegFile = "public/stevan-pavlovic.jpeg";
-const liveCvUrl = `${personalData.website}/cv.json`;
-const fetchTimeoutMs = 20_000;
 const issueBodyLimit = 60_000;
 const firstTitle = "Align LinkedIn with stevanpavlovic.com once";
 
@@ -86,7 +84,7 @@ const hashes = {
 };
 
 const after = buildSnapshot({
-  cv: await fetchLive(liveCvUrl, fetch, fetchTimeoutMs),
+  cv: await getCv(),
   hashes,
   person: personalData,
   products,

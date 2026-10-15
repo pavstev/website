@@ -27,7 +27,6 @@ pnpm-debug.log*
 .claude/skills/
 .agents/
 .blog/
-.cv/
 .dev.vars
 .env*
 .eslintcache
@@ -39,5 +38,4 @@ node_modules/
 public/blog-media/
 public/blog/
 public/build.json
-.cv/
 .astro/

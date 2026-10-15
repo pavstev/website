@@ -6,8 +6,6 @@ const config: KnipConfig = {
     "src/lib/blog/fixtures/**/*.mdx",
     "scripts/blog-build.ts",
     "scripts/blog-publish.ts",
-    "scripts/cv-fetch.ts",
-    "scripts/cv-guard.ts",
     "scripts/generate-globe-data.ts",
     "scripts/generate-images.ts",
     "scripts/indexnow.ts",

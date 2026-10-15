@@ -3,7 +3,6 @@
 @source "../";
 @source not "../**/*.test.{ts,tsx}";
 @source not "../profile";
-@source not "../lib/cv-feed.fixture.json";
 
 @font-face {
   font-family: "Inter Variable";
