@@ -44,7 +44,7 @@ const { items } = Astro.props;
       <p aria-hidden="true" class="toc-title">
         {en.blog.toc}
       </p>
-      <TocSpy client:load />
+      <TocSpy client:idle={{ timeout: 1000 }} />
       <ol class="toc-list">
         {items.map((item, index) => (
           <li
@@ -59,6 +59,6 @@ const { items } = Astro.props;
         ))}
       </ol>
     </div>
-    <TocDrawer client:load items={items} />
+    <TocDrawer client:idle={{ timeout: 1000 }} items={items} />
   </nav>
 )}

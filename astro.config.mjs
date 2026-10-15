@@ -33,6 +33,7 @@ export default defineConfig({
   devToolbar: { enabled: false },
   integrations: [react(), islandStyleToCss()],
   output: "static",
+  prefetch: false,
   site: "https://stevanpavlovic.com",
   trailingSlash: "never",
   vite: {

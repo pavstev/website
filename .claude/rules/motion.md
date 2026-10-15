@@ -2,6 +2,8 @@
 paths:
   - "src/layouts/Base.astro"
   - "src/styles/globals.css"
+  - "src/styles/card.css"
+  - "src/styles/blog.css"
   - "src/components/motion-toggle.tsx"
   - "src/components/page-dock.tsx"
   - "src/components/privacy-note.tsx"

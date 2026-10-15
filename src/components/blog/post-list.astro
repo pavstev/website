@@ -22,7 +22,7 @@ const { posts } = Astro.props;
         </a>
       </h2>
       <p class="post-row-meta">
-        <PostDate client:load iso={post.date} />{" "}
+        <PostDate client:idle={{ timeout: 1000 }} iso={post.date} />{" "}
         <span aria-hidden="true">·</span>{" "}
         <span>{minutesLabel(post.readingMinutes)}</span>
         {post.draft && <span class="post-draft"> {en.blog.draft}</span>}

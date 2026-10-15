@@ -24,14 +24,15 @@ const { post, toc } = Astro.props;
 >
   <Fragment slot="meta">
     <span class="sr-only">{en.blog.published} </span>
-    <PostDate client:load iso={post.date} />
+    <PostDate client:idle={{ timeout: 1000 }} iso={post.date} />
     <span aria-hidden="true"> · </span>
     <span>{minutesLabel(post.readingMinutes)}</span>
     {post.updated !== undefined && (
       <>
         <span aria-hidden="true"> · </span>
         <span>
-          {en.blog.updated} <PostDate client:load iso={post.updated} />
+          {en.blog.updated}{" "}
+          <PostDate client:idle={{ timeout: 1000 }} iso={post.updated} />
         </span>
       </>
     )}

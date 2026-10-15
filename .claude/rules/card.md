@@ -4,6 +4,7 @@ paths:
   - "src/pages/404.astro"
   - "src/layouts/Base.astro"
   - "src/styles/globals.css"
+  - "src/styles/card.css"
   - "src/components/profile.tsx"
   - "src/components/portrait.tsx"
   - "src/components/portrait-expander.tsx"

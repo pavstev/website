@@ -3,6 +3,7 @@ paths:
   - "content/blog/**"
   - "src/pages/blog/**"
   - "src/layouts/BlogLayout.astro"
+  - "src/styles/blog.css"
   - "src/components/blog/**"
   - "src/lib/blog/**"
   - "scripts/blog-build.ts"

@@ -5,8 +5,10 @@ import { ClientRouter } from "astro:transitions";
 <ClientRouter fallback="swap" />
 <script>
   import { morphTitles } from "@/lib/blog/title-morph";
+  import { startLinkPrefetch } from "@/lib/link-prefetch";
   import { keepPageFlags } from "@/lib/router-flags";
 
   keepPageFlags();
   morphTitles();
+  startLinkPrefetch();
 </script>

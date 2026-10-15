@@ -36,7 +36,7 @@ pnpm profile:build  # build the GitHub profile files into ./.profile-out
 - **Run `pnpm check` before declaring done.**
 - **No `eslint-disable`**: zero-warning policy.
 - **No `any`** → use `unknown` or generics. **No `!`** non-null assertions.
-- **No hardcoded hex/hsl** outside `globals.css` or `src/lib/theme.ts`.
+- **No hardcoded hex/hsl** outside `src/styles/*.css` or `src/lib/theme.ts`.
 - **No inline UI strings** → `src/lib/i18n.ts` (one exception: diagram copy lives in `src/lib/blog/diagrams.ts`, post content that the Node-side Markdown converter loads).
 - **Tailwind v4 paren syntax** (`bg-(--surface)`) over bracket syntax.
 - **Never edit generated files** in `dist/`. **Never commit `.env`.** **Never deploy by hand.** **Never edit `pavstev/pavstev` by hand** (the Action overwrites it).
@@ -59,7 +59,7 @@ src/lib/          personal, sitemap (the sitemap.xml writer), products, product-
                   frame-clock, intro, portrait-effects, portrait-bead, portrait-expand, contact-links, download-ring,
                   cursor, webgl, icon-data
 src/lib/blog/     schema, posts, schedule (go-live instant, scheduled posts), dates (Vienna date, relative date, tip lines), reading (reading time), tags, pagination, listing and listing-route (index, tag and page listings), fixture-posts (30 dev-only test posts), build-env (drafts, fixtures, robots), format (reading time label, post title), links (external link test), render (`evaluate()`), plain (Markdown and feed HTML), toc, anchors, media (hashed names, manifest), share (share images), metadata, feeds, chart-data, chart-layout, diagrams (diagram copy lives here, not in i18n), diagram-ink, title-morph (the card to post title morph over `ClientRouter`), tests
-src/styles/       globals.css (tokens, one dark palette + print, type utilities, card styles, blog styles)
+src/styles/       globals.css (shared: tokens, one dark palette, fonts, type utilities, sky, materials, keycaps, tips, drawers, dock, privacy, pause button), card.css (card-only rules, starts with `@import "./globals.css"`), blog.css (blog-only rules, same import)
 content/blog/     <slug>/index.mdx, data/*.json for charts, stills and cover.webp per post
 public/           stevan-pavlovic.jpeg, portraits/, fonts/, favicons, og-image.jpg and linkedin-cover.png (both generated in CI), _headers; generated and gitignored: blog-media/, blog/ (Markdown copies), build.json
 src/profile/      types, text, icons, header (+ header-sky.webp, made by generate-images in CI), readme, render (pure), validate, cli, tests
