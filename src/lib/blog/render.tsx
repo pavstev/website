@@ -12,6 +12,7 @@ import { VFile } from "vfile";
 import { BlogImage } from "@/components/blog/blog-image";
 import { BlogLink } from "@/components/blog/blog-link";
 import { Chart } from "@/components/blog/chart";
+import { CodeBlock } from "@/components/blog/code-block";
 import { Diagram } from "@/components/blog/diagram";
 import { Figure } from "@/components/blog/figure";
 import { Note } from "@/components/blog/note";
@@ -125,6 +126,7 @@ export const renderPost = async (
       <BlogImage alt={alt} priority={takeFirst()} slug={slug} src={src} />
     ),
     Note: ({ children }: NoteProps) => <Note>{children}</Note>,
+    pre: (props: ComponentPropsWithoutRef<"pre">) => <CodeBlock {...props} />,
   };
   return {
     html: renderToStaticMarkup(<Content components={components} />),

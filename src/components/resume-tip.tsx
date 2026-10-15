@@ -8,7 +8,6 @@ import { fillCount, pluralForm } from "@/lib/template";
 const lineWidths = [58, 92, 80, 88, 64];
 
 interface ResumeTipProps {
-  detailId: string;
   facts: ResumeFacts;
 }
 
@@ -24,29 +23,20 @@ const describe = ({ kilobytes, pages }: ResumeFacts): string =>
       en.card.resumeSize.replace("{size}", () => String(kilobytes))
     );
 
-export const ResumeTip = ({
-  detailId,
-  facts,
-}: ResumeTipProps): ReactElement => (
-  <span className="resume-tip" role="tooltip">
-    <span className="resume-sheet">
-      <span aria-hidden="true" className="resume-page">
-        {lineWidths.map((width, index) => (
-          <span
-            className="resume-line"
-            key={width}
-            style={
-              { "--i": index, "--w": `${String(width)}%` } as CSSProperties
-            }
-          />
-        ))}
-      </span>
-      <span className="resume-tip-text">
-        <span className="resume-tip-name">{en.card.resume}</span>
-        <span className="resume-tip-detail" id={detailId}>
-          {describe(facts)}
-        </span>
-      </span>
+export const ResumeTip = ({ facts }: ResumeTipProps): ReactElement => (
+  <span className="resume-sheet">
+    <span aria-hidden="true" className="resume-page">
+      {lineWidths.map((width, index) => (
+        <span
+          className="resume-line"
+          key={width}
+          style={{ "--i": index, "--w": `${String(width)}%` } as CSSProperties}
+        />
+      ))}
+    </span>
+    <span className="resume-tip-text">
+      <span className="resume-tip-name">{en.card.resume}</span>
+      <span className="resume-tip-detail">{describe(facts)}</span>
     </span>
   </span>
 );

@@ -3,12 +3,12 @@
 import {
   type ReactElement,
   useEffect,
-  useId,
   useRef,
   useState,
   useSyncExternalStore,
 } from "react";
 
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   dateLabel,
   fullDateTime,
@@ -74,7 +74,6 @@ const tipLines = (iso: string, zone: string): string =>
     : `${fullDateTime(iso, zone)}\n${viennaLine(iso)}`;
 
 export const PostDate = ({ iso }: PostDateProps): ReactElement => {
-  const tipId = useId();
   const label = useSyncExternalStore(
     subscribeClock,
     () => dateLabel(iso, new Date(clockNow), readerZone()),
@@ -85,28 +84,18 @@ export const PostDate = ({ iso }: PostDateProps): ReactElement => {
     () => tipLines(iso, readerZone()),
     () => tipLines(iso, viennaZone)
   );
-  const [hover, setHover] = useState(false);
-  const [focus, setFocus] = useState(false);
   const [pinned, setPinned] = useState(false);
-  const rootRef = useRef<HTMLSpanElement>(null);
-  const open = hover || focus || pinned;
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const pointerRef = useRef("");
 
   useEffect(() => {
-    if (!open) return;
+    if (!pinned) return;
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== "Escape") return;
-      setHover(false);
-      setFocus(false);
-      setPinned(false);
+      if (event.key === "Escape") setPinned(false);
     };
     const onPointerDown = (event: PointerEvent): void => {
-      if (
-        event.target instanceof Node &&
-        rootRef.current?.contains(event.target)
-      ) {
-        return;
-      }
-      setHover(false);
+      const own = buttonRef.current?.closest(".post-date");
+      if (event.target instanceof Node && own?.contains(event.target)) return;
       setPinned(false);
     };
     document.addEventListener("keydown", onKeyDown);
@@ -115,39 +104,33 @@ export const PostDate = ({ iso }: PostDateProps): ReactElement => {
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [open]);
+  }, [pinned]);
 
   return (
-    <span
+    <Tooltip
+      align="start"
       className="post-date"
-      data-open={open ? "" : undefined}
-      onPointerEnter={(event) => {
-        if (event.pointerType === "mouse") setHover(true);
-      }}
-      onPointerLeave={(event) => {
-        if (event.pointerType === "mouse") setHover(false);
-      }}
-      ref={rootRef}
+      label={tip}
+      pinned={pinned}
+      tipClassName="post-date-tip"
     >
       <button
-        aria-describedby={tipId}
         className="post-date-trigger focus-ring"
         onBlur={() => {
-          setFocus(false);
+          setPinned(false);
         }}
         onClick={() => {
-          setPinned((value) => !value);
+          if (pointerRef.current !== "mouse") setPinned((value) => !value);
+          pointerRef.current = "";
         }}
-        onFocus={(event) => {
-          if (event.currentTarget.matches(":focus-visible")) setFocus(true);
+        onPointerDown={(event) => {
+          pointerRef.current = event.pointerType;
         }}
+        ref={buttonRef}
         type="button"
       >
         <time dateTime={iso}>{label}</time>
       </button>
-      <span className="contact-tip post-date-tip" id={tipId} role="tooltip">
-        {tip}
-      </span>
-    </span>
+    </Tooltip>
   );
 };

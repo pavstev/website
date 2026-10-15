@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 
-import { initAnchoredPopovers } from "./anchored-popovers.ts";
+import { initAnchoredPopovers, popoverOrigin } from "./anchored-popovers.ts";
 
 interface FakePanel extends EventTarget {
   dataset: Record<string, string>;
+  getAnimations: () => Array<{ finished: Promise<unknown> }>;
   hidePopover: () => void;
   id: string;
   matches: (selector: string) => boolean;
@@ -34,6 +35,8 @@ const toggleEvent = (type: string, open: boolean): Event =>
 
 let wide = true;
 
+let animations: Array<{ finished: Promise<unknown> }> = [];
+
 const stopTracking = (): void => undefined;
 
 const untracked = (): (() => void) => stopTracking;
@@ -44,6 +47,7 @@ const build = (hoverOpen: string, anchored = ""): Fixture => {
   let moves = 0;
   const panel = Object.assign(new EventTarget(), {
     dataset: { anchored },
+    getAnimations: (): Array<{ finished: Promise<unknown> }> => animations,
     hidePopover: (): void => {
       panel.dispatchEvent(toggleEvent("beforetoggle", false));
       open = false;
@@ -114,6 +118,7 @@ const isOpen = (fixture: Fixture): boolean =>
 describe("initAnchoredPopovers hover cards", () => {
   beforeEach(() => {
     wide = true;
+    animations = [];
     Object.assign(globalThis, {
       CSS: { escape: (value: string) => value },
       matchMedia: (query: string) => ({
@@ -265,5 +270,90 @@ describe("initAnchoredPopovers hover cards", () => {
     assert.equal(isOpen(fixture), true);
     assert.equal(fixture.clickTrigger(1), false);
     fixture.dispose();
+  });
+});
+
+const settle = (): Promise<void> =>
+  new Promise((resolve) => {
+    setImmediate(resolve);
+  });
+
+describe("initAnchoredPopovers exit", () => {
+  beforeEach(() => {
+    wide = true;
+    animations = [];
+    Object.assign(globalThis, {
+      CSS: { escape: (value: string) => value },
+      matchMedia: () => ({ matches: true }),
+    });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, "CSS");
+    Reflect.deleteProperty(globalThis, "matchMedia");
+  });
+
+  it("keeps the panel placed until its exit animation has finished", async () => {
+    const fixture = build("pin");
+    fixture.panel.showPopover();
+    assert.equal("floating" in fixture.panel.dataset, true);
+    const exit = Promise.withResolvers<undefined>();
+    animations = [{ finished: exit.promise }];
+    fixture.panel.hidePopover();
+    await settle();
+    assert.equal("floating" in fixture.panel.dataset, true);
+    exit.resolve(undefined);
+    await settle();
+    assert.equal("floating" in fixture.panel.dataset, false);
+    fixture.dispose();
+  });
+
+  it("keeps the placement when the panel opens again during the exit", async () => {
+    const fixture = build("pin");
+    fixture.panel.showPopover();
+    const exit = Promise.withResolvers<undefined>();
+    animations = [{ finished: exit.promise }];
+    fixture.panel.hidePopover();
+    fixture.panel.showPopover();
+    exit.resolve(undefined);
+    await settle();
+    assert.equal("floating" in fixture.panel.dataset, true);
+    fixture.dispose();
+  });
+
+  it("releases at once when the animation list is empty", async () => {
+    const fixture = build("pin");
+    fixture.panel.showPopover();
+    fixture.panel.hidePopover();
+    await settle();
+    assert.equal("floating" in fixture.panel.dataset, false);
+    fixture.dispose();
+  });
+});
+
+describe("popoverOrigin", () => {
+  it("points at the trigger from a panel below it", () => {
+    assert.equal(
+      popoverOrigin("bottom", 40, { height: 120, width: 200 }),
+      "40px 0px"
+    );
+  });
+
+  it("points at the trigger from a panel above it", () => {
+    assert.equal(
+      popoverOrigin("top", 90.4, { height: 120, width: 200 }),
+      "90px 120px"
+    );
+  });
+
+  it("keeps the point inside the panel", () => {
+    assert.equal(
+      popoverOrigin("bottom", -30, { height: 120, width: 200 }),
+      "0px 0px"
+    );
+    assert.equal(
+      popoverOrigin("top", 500, { height: 120, width: 200 }),
+      "200px 120px"
+    );
   });
 });

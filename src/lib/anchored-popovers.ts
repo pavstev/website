@@ -28,6 +28,21 @@ const safePadding = (panel: HTMLElement): Padding => {
   };
 };
 
+interface Size {
+  height: number;
+  width: number;
+}
+
+export const popoverOrigin = (
+  side: string,
+  anchorX: number,
+  { height, width }: Size
+): string => {
+  const x = Math.min(Math.max(anchorX, 0), width);
+  const y = side === "top" ? height : 0;
+  return `${String(Math.round(x))}px ${String(Math.round(y))}px`;
+};
+
 interface HoverTiming {
   closeMs: number;
   openMs: number;
@@ -49,6 +64,9 @@ const placementOf = (panel: HTMLElement): Placement => {
   return value === "top" || value === "bottom-start" ? value : "bottom";
 };
 
+const sideOf = (placement: Placement): string =>
+  placement.split("-", 1)[0] ?? "bottom";
+
 const attach = (
   trigger: HTMLElement,
   panel: HTMLElement,
@@ -56,13 +74,16 @@ const attach = (
   track: Track
 ): (() => void) => {
   let stop: (() => void) | undefined;
+  let version = 0;
   const release = (): void => {
     stop?.();
     stop = undefined;
     delete panel.dataset["floating"];
+    delete panel.dataset["side"];
     panel.style.removeProperty("left");
     panel.style.removeProperty("top");
     panel.style.removeProperty("max-height");
+    panel.style.removeProperty("--pop-origin");
   };
   const place = (): void => {
     const padding = safePadding(panel);
@@ -81,30 +102,52 @@ const attach = (
       placement: placementOf(panel),
       strategy: "fixed",
     }).then(({ placement, x, y }) => {
+      const side = sideOf(placement);
+      const anchor = trigger.getBoundingClientRect();
       panel.style.left = `${String(Math.round(x))}px`;
       panel.style.top = `${String(Math.round(y))}px`;
-      panel.dataset["side"] = placement.split("-", 1)[0] ?? "bottom";
+      panel.style.setProperty(
+        "--pop-origin",
+        popoverOrigin(side, anchor.left + anchor.width / 2 - x, {
+          height: panel.offsetHeight,
+          width: panel.offsetWidth,
+        })
+      );
+      panel.dataset["side"] = side;
     });
   };
   const onToggle = (event: Event): void => {
     const open = (event as ToggleEvent).newState === "open";
+    version += 1;
     if (open && floats(panel, wide)) {
+      stop?.();
       panel.dataset["floating"] = "";
       stop = track(trigger, panel, place);
-    } else {
+    } else if (open) {
       release();
+    } else {
+      const current = version;
+      void Promise.allSettled(
+        panel.getAnimations().map((animation) => animation.finished)
+      ).then(() => {
+        if (current === version) release();
+      });
     }
   };
   const onBeforeToggle = (event: Event): void => {
     const open = (event as ToggleEvent).newState === "open";
     trigger.toggleAttribute("data-open", open);
     trigger.setAttribute("aria-expanded", String(open));
+    if (open && floats(panel, wide)) {
+      panel.dataset["side"] = sideOf(placementOf(panel));
+    }
   };
   panel.addEventListener("beforetoggle", onBeforeToggle);
   panel.addEventListener("toggle", onToggle);
   return () => {
     panel.removeEventListener("beforetoggle", onBeforeToggle);
     panel.removeEventListener("toggle", onToggle);
+    version += 1;
     delete trigger.dataset["open"];
     release();
   };

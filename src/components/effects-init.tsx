@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { initAnchoredPopovers } from "@/lib/anchored-popovers";
 import { initContactLinks } from "@/lib/contact-links";
-import { initCursorEffects, initPointerLight } from "@/lib/cursor";
+import { initCursorEffects } from "@/lib/cursor";
 import { initIntro } from "@/lib/intro";
 import { initNameGlitch } from "@/lib/name-glitch";
 import { initPortraitEffects } from "@/lib/portrait-effects";
@@ -21,7 +21,6 @@ export const EffectsInit = (): null => {
     if (card) disposers.push(initIntro(card));
     if (name) disposers.push(initNameGlitch(name));
     if (contacts) disposers.push(initContactLinks(contacts));
-    if (card) disposers.push(initPointerLight(card));
     disposers.push(
       initCursorEffects(),
       initAnchoredPopovers(document),

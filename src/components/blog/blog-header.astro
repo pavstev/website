@@ -3,6 +3,7 @@ import AuthorPhoto from "@/components/blog/author-photo.astro";
 import { BarSpy } from "@/components/blog/bar-spy";
 import { Icon } from "@/components/icon";
 import { MotionToggle } from "@/components/motion-toggle";
+import { ReadingProgress } from "@/components/ui/reading-progress";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
 
@@ -21,6 +22,16 @@ const { slug, title, toc = false } = Astro.props;
   data-sub={slug === undefined ? undefined : ""}
 >
   <div aria-hidden="true" class="blog-bar-glass"></div>
+  {slug !== undefined && (
+    <ReadingProgress
+      client:load
+      className="reading-progress"
+      fillClassName="reading-progress-fill"
+      label={en.blog.readingProgress}
+      target=".prose-blog"
+      valueText={en.blog.readingProgressValue}
+    />
+  )}
   <div class="blog-bar-row">
     <a class="blog-brand focus-ring" href="/" title={en.blog.home}>
       <AuthorPhoto alt="" class="blog-brand-photo" sizes="2rem" />
@@ -36,13 +47,17 @@ const { slug, title, toc = false } = Astro.props;
         aria-controls="toc-drawer"
         aria-haspopup="dialog"
         aria-label={en.blog.toc}
-        class="blog-bar-toc focus-ring"
+        class="blog-bar-toc keycap-host focus-ring"
+        data-css-press=""
         data-toc-open=""
         type="button"
       >
-        <Icon name="lucide:list" size="1rem" />
-        <span aria-hidden="true" class="blog-bar-toc-label">
-          {en.blog.toc}
+        <span aria-hidden="true" class="keycap-base"></span>
+        <span class="keycap">
+          <Icon name="lucide:list" size="0.9375rem" />
+          <span aria-hidden="true" class="blog-bar-toc-label">
+            {en.blog.toc}
+          </span>
         </span>
       </button>
     )}

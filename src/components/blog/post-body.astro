@@ -2,7 +2,6 @@
 import BlogSide from "@/components/blog/blog-side.astro";
 import PostToc from "@/components/blog/post-toc.astro";
 import { PostEffects } from "@/components/blog/post-effects";
-import { TocSpy } from "@/components/blog/toc-spy";
 import { type TocItem } from "@/lib/blog/toc";
 
 interface Props {
@@ -17,6 +16,5 @@ const { html, toc } = Astro.props;
   <BlogSide />
   <PostToc items={toc} />
   <article class="prose-blog" set:html={html} />
-  {toc.length > 0 && <TocSpy client:load />}
   <PostEffects client:load />
 </div>

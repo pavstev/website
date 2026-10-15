@@ -30,13 +30,16 @@ const productsTitle = countHeading(products.length, en.products);
     <li class="section-item" data-tone="purple">
       <a
         aria-haspopup="dialog"
-        class="section-link contact-link focus-ring"
+        class="section-link keycap-host focus-ring"
         href="#projects"
       >
-        <span aria-hidden="true" class="section-icon">
-          <span class="section-planet" />
+        <span aria-hidden="true" class="keycap-base" />
+        <span class="keycap">
+          <span aria-hidden="true" class="section-icon">
+            <span class="section-planet" />
+          </span>
+          <span class="section-label">{projectsTitle}</span>
         </span>
-        <span class="section-label">{projectsTitle}</span>
       </a>
     </li>
   ) : null}
@@ -44,24 +47,30 @@ const productsTitle = countHeading(products.length, en.products);
     <li class="section-item" data-tone="green">
       <a
         aria-haspopup="dialog"
-        class="section-link contact-link focus-ring"
+        class="section-link keycap-host focus-ring"
         href="#products"
       >
-        <span aria-hidden="true" class="section-icon section-marks">
-          {products.slice(0, 2).map((product) => (
-            <ProductMark productKey={product.key} />
-          ))}
+        <span aria-hidden="true" class="keycap-base" />
+        <span class="keycap">
+          <span aria-hidden="true" class="section-icon section-marks">
+            {products.slice(0, 2).map((product) => (
+              <ProductMark productKey={product.key} />
+            ))}
+          </span>
+          <span class="section-label">{productsTitle}</span>
         </span>
-        <span class="section-label">{productsTitle}</span>
       </a>
     </li>
   ) : null}
   <li class="section-item" data-tone="gold">
-    <a class="section-link contact-link focus-ring" href="/blog">
-      <span aria-hidden="true" class="section-icon contact-icon">
-        <Icon name="lucide:notebook-pen" size="1.125rem" />
+    <a class="section-link keycap-host focus-ring" href="/blog">
+      <span aria-hidden="true" class="keycap-base" />
+      <span class="keycap">
+        <span aria-hidden="true" class="section-icon contact-icon">
+          <Icon name="lucide:notebook-pen" size="0.9375rem" />
+        </span>
+        <span class="section-label">{en.card.blog}</span>
       </span>
-      <span class="section-label">{en.card.blog}</span>
     </a>
   </li>
 </ul>

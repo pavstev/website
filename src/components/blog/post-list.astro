@@ -15,13 +15,13 @@ const { posts } = Astro.props;
 
 <ol class="post-list">
   {posts.map((post) => (
-    <li class="post-row" data-post-slug={post.slug}>
-      <h2 class="post-row-title text-sky">
+    <li class="post-row mat-panel" data-post-slug={post.slug}>
+      <h2 class="post-row-title">
         <a class="post-row-link focus-ring" href={`/blog/${post.slug}`}>
           {post.title}
         </a>
       </h2>
-      <p class="post-row-meta type-chip text-sky">
+      <p class="post-row-meta">
         <PostDate client:load iso={post.date} />{" "}
         <span aria-hidden="true">·</span>{" "}
         <span>{minutesLabel(post.readingMinutes)}</span>
@@ -30,7 +30,7 @@ const { posts } = Astro.props;
           <span class="post-draft"> {en.blog.scheduled}</span>
         )}
       </p>
-      <p class="post-row-text text-sky">{post.description}</p>
+      <p class="post-row-text">{post.description}</p>
       <PostTags tags={post.tags} unlabeled />
     </li>
   ))}

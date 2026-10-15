@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { CloseGlyph } from "@/components/ui/close-glyph";
 import {
   blankPixel,
   createPortraitExpander,
@@ -18,7 +19,6 @@ import {
 interface PortraitExpanderProps {
   alt: string;
   children: ReactNode;
-  closeIcon: ReactNode;
   closeLabel: string;
   dialogLabel: string;
   expandLabel: string;
@@ -28,7 +28,6 @@ interface PortraitExpanderProps {
 export const PortraitExpander = ({
   alt,
   children,
-  closeIcon,
   closeLabel,
   dialogLabel,
   expandLabel,
@@ -159,7 +158,7 @@ export const PortraitExpander = ({
               ref={closeRef}
               type="button"
             >
-              {closeIcon}
+              <CloseGlyph size={15} />
             </button>
           </span>
         </div>

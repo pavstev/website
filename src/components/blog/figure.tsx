@@ -27,10 +27,7 @@ export const Figure = ({
       {entry === undefined ? (
         image
       ) : (
-        <>
-          <div className="image-zoom focus-ring">{image}</div>
-          <dialog aria-label={alt} className="image-zoom-dialog" />
-        </>
+        <div className="image-zoom focus-ring">{image}</div>
       )}
       {caption !== undefined && caption !== "" && (
         <figcaption>{caption}</figcaption>

@@ -22,7 +22,7 @@ export const TopicPanel = ({
 }: TopicPanelProps): ReactElement => (
   <div
     aria-labelledby={titleId}
-    className="topic-panel"
+    className="topic-panel mat-pop"
     data-anchored=""
     data-topic={topic}
     id={id}

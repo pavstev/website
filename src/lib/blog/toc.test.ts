@@ -7,7 +7,7 @@ import { unified } from "unified";
 import { VFile } from "vfile";
 
 import { rehypeHeadingAnchors } from "./anchors.ts";
-import { branchOf, currentSection, rehypeToc, type TocItem } from "./toc.ts";
+import { branchOf, rehypeToc, spySection, type TocItem } from "./toc.ts";
 
 const tocOf = async (markdown: string): Promise<unknown> => {
   const file = new VFile(markdown);
@@ -40,16 +40,32 @@ describe("rehypeToc", () => {
   });
 });
 
-describe("currentSection", () => {
-  it("picks the last heading at or above the line", () => {
-    assert.equal(currentSection([-900, -200, 100, 700], 240), 2);
-    assert.equal(currentSection([-900, -200, 300, 700], 240), 1);
-    assert.equal(currentSection([-900, -200, 240], 240), 2);
+describe("spySection", () => {
+  it("picks the last heading at or above the line at the top of the page", () => {
+    assert.equal(spySection([-900, -200, 90, 700], 92, 800, 0), 2);
+    assert.equal(spySection([-900, -200, 300, 700], 92, 800, 0), 1);
+    assert.equal(spySection([-900, -200, 93], 92, 800, 0), 2);
   });
 
   it("returns -1 above the first heading", () => {
-    assert.equal(currentSection([400, 900], 240), -1);
-    assert.equal(currentSection([], 240), -1);
+    assert.equal(spySection([400, 900], 92, 800, 0), -1);
+    assert.equal(spySection([], 92, 800, 0), -1);
+  });
+
+  it("lowers the line as the page scrolls, so the last short sections count", () => {
+    assert.equal(spySection([-300, 200, 500, 700], 92, 800, 0), 0);
+    assert.equal(spySection([-300, 200, 500, 700], 92, 800, 0.5), 1);
+    assert.equal(spySection([-300, 200, 500, 700], 92, 800, 0.7), 2);
+    assert.equal(spySection([-300, 200, 500, 700], 92, 800, 0.9), 3);
+  });
+
+  it("takes the last heading at the end of the page", () => {
+    assert.equal(spySection([-300, 200, 900], 92, 800, 1), 2);
+    assert.equal(spySection([], 92, 800, 1), -1);
+  });
+
+  it("treats an overscroll above the top as the top", () => {
+    assert.equal(spySection([-300, 200], 92, 800, -0.2), 0);
   });
 });
 

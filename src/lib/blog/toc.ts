@@ -50,10 +50,21 @@ const collectToc = (tree: Root, file: VFile): void => {
 
 export const rehypeToc = (): typeof collectToc => collectToc;
 
-export const tocLine = 0.3;
-
-export const currentSection = (tops: readonly number[], line: number): number =>
+const currentSection = (tops: readonly number[], line: number): number =>
   tops.findLastIndex((top) => top <= line);
+
+export const spySection = (
+  tops: readonly number[],
+  offset: number,
+  viewport: number,
+  ratio: number
+): number =>
+  ratio >= 1
+    ? tops.length - 1
+    : currentSection(
+        tops,
+        offset + 1 + Math.max(0, ratio) * Math.max(0, viewport - offset - 1)
+      );
 
 export const branchOf = (
   items: readonly TocItem[],

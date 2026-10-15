@@ -14,6 +14,7 @@ import {
   pageHref,
   pageSize,
   pageSlice,
+  pageWindow,
   parsePage,
 } from "./pagination.ts";
 import { postMeta } from "./post-fixture.ts";
@@ -50,6 +51,49 @@ describe("pagination", () => {
     assert.equal(pageSlice(numbers, 4), undefined);
     assert.equal(pageSlice(numbers, 1.5), undefined);
     assert.deepEqual(pageSlice([], 1)?.items, []);
+  });
+
+  it("shows every page when they all fit the window", () => {
+    assert.deepEqual(pageWindow(1, 1), [1]);
+    assert.deepEqual(pageWindow(2, 3), [1, 2, 3]);
+    assert.deepEqual(pageWindow(4, 7), [1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it("keeps the first pages and one gap near the start", () => {
+    assert.deepEqual(pageWindow(1, 12), [1, 2, 3, 4, 5, "gap-r", 12]);
+    assert.deepEqual(pageWindow(3, 12), [1, 2, 3, 4, 5, "gap-r", 12]);
+  });
+
+  it("keeps the last pages and one gap near the end", () => {
+    assert.deepEqual(pageWindow(12, 12), [1, "gap-l", 8, 9, 10, 11, 12]);
+    assert.deepEqual(pageWindow(10, 12), [1, "gap-l", 8, 9, 10, 11, 12]);
+  });
+
+  it("puts the neighbors between two gaps in the middle", () => {
+    assert.deepEqual(pageWindow(6, 12), [1, "gap-l", 5, 6, 7, "gap-r", 12]);
+    assert.deepEqual(pageWindow(4, 12), [1, "gap-l", 3, 4, 5, "gap-r", 12]);
+    assert.deepEqual(pageWindow(9, 12), [1, "gap-l", 8, 9, 10, "gap-r", 12]);
+  });
+
+  it("always returns the same number of slots once the pages overflow", () => {
+    for (let page = 1; page <= 20; page += 1)
+      assert.equal(pageWindow(page, 20).length, 7);
+  });
+
+  it("honors wider siblings and boundaries", () => {
+    assert.deepEqual(pageWindow(10, 20, 2, 2), [
+      1,
+      2,
+      "gap-l",
+      8,
+      9,
+      10,
+      11,
+      12,
+      "gap-r",
+      19,
+      20,
+    ]);
   });
 
   it("reads only plain positive page numbers", () => {

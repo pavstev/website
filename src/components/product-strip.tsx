@@ -19,8 +19,7 @@ export const ProductStrip = ({
       return (
         <li className="min-w-0" key={product.key}>
           <div
-            className="repo-tile product-tile"
-            data-pointer-light=""
+            className="repo-tile product-tile mat-row"
             style={{ "--lang": product.palette.tint } as CSSProperties}
           >
             <ProductMark productKey={product.key} />

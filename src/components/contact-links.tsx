@@ -3,6 +3,8 @@ import type { ReactElement } from "react";
 import type { Contact } from "@/lib/github";
 
 import { Icon } from "@/components/icon";
+import { Tooltip } from "@/components/ui/tooltip";
+import { contactAvoid } from "@/lib/contact-links";
 import { en } from "@/lib/i18n";
 import { personalData as personal } from "@/lib/personal";
 
@@ -50,31 +52,30 @@ export const ContactLinks = ({
     >
       {contacts.map((contact) => (
         <li className="contact-item" data-tone={contact.tone} key={contact.id}>
-          <a
-            aria-describedby={`contact-detail-${contact.id}`}
-            aria-label={contact.label}
-            className="contact-link focus-ring inline-flex size-11 items-center justify-center rounded-lg"
-            href={contact.href}
-            rel={contact.external ? "me noopener noreferrer" : undefined}
-            target={contact.external ? "_blank" : undefined}
+          <Tooltip
+            avoid={contactAvoid}
+            label={
+              <>
+                <span className="contact-tip-name">{contact.label}</span>{" "}
+                <span className="contact-tip-detail">{contact.detail}</span>
+              </>
+            }
           >
-            <span aria-hidden="true" className="contact-icon">
-              <Icon name={contact.icon} size="1.1em" />
-            </span>
-          </a>
-          <span
-            className="contact-tip"
-            id={`contact-tip-${contact.id}`}
-            role="tooltip"
-          >
-            <span className="contact-tip-name">{contact.label}</span>{" "}
-            <span
-              className="contact-tip-detail"
-              id={`contact-detail-${contact.id}`}
+            <a
+              aria-label={contact.label}
+              className="contact-link keycap-host focus-ring size-9"
+              href={contact.href}
+              rel={contact.external ? "me noopener noreferrer" : undefined}
+              target={contact.external ? "_blank" : undefined}
             >
-              {contact.detail}
-            </span>
-          </span>
+              <span aria-hidden="true" className="keycap-base" />
+              <span className="keycap">
+                <span aria-hidden="true" className="contact-icon">
+                  <Icon name={contact.icon} size="0.9375rem" />
+                </span>
+              </span>
+            </a>
+          </Tooltip>
         </li>
       ))}
     </ul>

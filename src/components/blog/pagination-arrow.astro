@@ -1,0 +1,38 @@
+---
+interface Props {
+  flip?: boolean;
+  href?: string | undefined;
+  label: string;
+  rel: "next" | "prev";
+}
+
+const { flip = false, href, label, rel } = Astro.props;
+const Tag = href === undefined ? "span" : "a";
+---
+
+<Tag
+  aria-hidden={href === undefined ? "true" : undefined}
+  aria-label={href === undefined ? undefined : label}
+  class:list={["blog-pagination-arrow", { "focus-ring": href !== undefined }]}
+  data-disabled={href === undefined ? "" : undefined}
+  href={href}
+  rel={href === undefined ? undefined : rel}
+>
+  <svg
+    aria-hidden="true"
+    data-flip={flip ? "" : undefined}
+    focusable="false"
+    height="12"
+    viewBox="0 0 12 12"
+    width="12"
+  >
+    <path
+      d="M4.75 2.75 8 6l-3.25 3.25"
+      fill="none"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="1.6"
+    ></path>
+  </svg>
+</Tag>

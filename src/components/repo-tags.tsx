@@ -67,7 +67,7 @@ export const RepoTags = ({
             {en.repos.more.replace("{count}", () => String(guess))}
           </button>
           <div
-            className="repo-tags-panel"
+            className="repo-tags-panel mat-pop"
             data-anchored="always"
             data-placement="bottom-start"
             id={id}

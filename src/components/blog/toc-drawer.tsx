@@ -1,8 +1,8 @@
 "use client";
 
-import { type ReactElement, useEffect, useRef } from "react";
+import { type ReactElement, useEffect, useRef, useState } from "react";
 
-import { Icon } from "@/components/icon";
+import { Drawer } from "@/components/ui/drawer";
 import { branchOf, type TocItem } from "@/lib/blog/toc";
 import { en } from "@/lib/i18n";
 
@@ -13,91 +13,71 @@ interface TocDrawerProps {
 const openerSelector = "[data-toc-open]";
 
 export const TocDrawer = ({ items }: TocDrawerProps): ReactElement => {
-  const ref = useRef<HTMLDialogElement>(null);
+  const [open, setOpen] = useState(false);
+  const opener = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
     const openers = [...document.querySelectorAll<HTMLElement>(openerSelector)];
+    for (const node of openers) node.setAttribute("aria-expanded", "false");
     const onOpen = (event: MouseEvent): void => {
       const target =
         event.target instanceof Element
-          ? event.target.closest(openerSelector)
+          ? event.target.closest<HTMLElement>(openerSelector)
           : null;
-      if (!target || dialog.open) return;
-      dialog.showModal();
-      for (const opener of openers)
-        opener.setAttribute("aria-expanded", "true");
+      if (!target) return;
+      opener.current = target;
+      setOpen(true);
     };
-    const onClose = (): void => {
-      for (const opener of openers)
-        opener.setAttribute("aria-expanded", "false");
-    };
-    for (const opener of openers) opener.setAttribute("aria-expanded", "false");
     document.addEventListener("click", onOpen);
-    dialog.addEventListener("close", onClose);
     return () => {
       document.removeEventListener("click", onOpen);
-      dialog.removeEventListener("close", onClose);
-      if (dialog.open) dialog.close();
     };
   }, []);
 
-  const close = (): void => {
-    ref.current?.close();
-  };
+  useEffect(() => {
+    for (const node of document.querySelectorAll(openerSelector))
+      node.setAttribute("aria-expanded", open ? "true" : "false");
+  }, [open]);
 
   return (
-    <dialog
-      aria-labelledby="toc-drawer-title"
+    <Drawer
       className="toc-drawer"
+      closeLabel={en.blog.tocClose}
       id="toc-drawer"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) close();
+      onClosed={() => {
+        if (opener.current?.isConnected)
+          opener.current.focus({ preventScroll: true });
       }}
-      ref={ref}
+      onOpenChange={setOpen}
+      open={open}
+      title={en.blog.toc}
     >
-      <div className="toc-drawer-panel">
-        <div className="toc-drawer-head">
-          <h2 className="toc-drawer-title type-chip" id="toc-drawer-title">
-            {en.blog.toc}
-          </h2>
-          <button
-            aria-label={en.blog.tocClose}
-            className="toc-drawer-close focus-ring"
-            onClick={close}
-            type="button"
+      <ol className="toc-list">
+        {items.map((item, index) => (
+          <li
+            className="toc-item"
+            data-branch={branchOf(items, index)}
+            data-depth={item.depth}
+            key={item.id}
           >
-            <Icon name="lucide:x" size="1rem" />
-          </button>
-        </div>
-        <ol className="toc-list">
-          {items.map((item, index) => (
-            <li
-              className="toc-item"
-              data-branch={branchOf(items, index)}
-              data-depth={item.depth}
-              key={item.id}
+            <a
+              className="toc-link focus-ring"
+              href={`#${item.id}`}
+              onClick={(event) => {
+                event.preventDefault();
+                setOpen(false);
+                if (globalThis.location.hash === `#${item.id}`)
+                  document
+                    .querySelector(`#${CSS.escape(item.id)}`)
+                    ?.scrollIntoView();
+                else globalThis.location.hash = item.id;
+              }}
             >
-              <a
-                className="toc-link focus-ring"
-                href={`#${item.id}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  close();
-                  if (globalThis.location.hash === `#${item.id}`)
-                    document
-                      .querySelector(`#${CSS.escape(item.id)}`)
-                      ?.scrollIntoView();
-                  else globalThis.location.hash = item.id;
-                }}
-              >
-                {item.text}
-              </a>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </dialog>
+              {item.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </Drawer>
   );
 };

@@ -1,6 +1,5 @@
 import type { ReactElement } from "react";
 
-import { Icon } from "@/components/icon";
 import { PortraitExpander } from "@/components/portrait-expander";
 import { en } from "@/lib/i18n";
 
@@ -20,7 +19,6 @@ interface PortraitProps {
 export const Portrait = ({ alt }: PortraitProps): ReactElement => (
   <PortraitExpander
     alt={alt}
-    closeIcon={<Icon aria-hidden name="lucide:x" size="1.125rem" />}
     closeLabel={en.card.portraitClose}
     dialogLabel={en.card.portraitDialog}
     expandLabel={en.card.portraitExpand}

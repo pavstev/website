@@ -3,13 +3,14 @@
 import {
   type ReactElement,
   type ReactNode,
+  useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
 
-import { Icon } from "@/components/icon";
 import { RepoPlanetsCanvas } from "@/components/repo-planets-canvas";
+import { Drawer } from "@/components/ui/drawer";
 
 interface CardDrawerProps {
   children?: ReactNode;
@@ -21,54 +22,50 @@ interface CardDrawerProps {
 const pageUrl = (): string =>
   `${globalThis.location.pathname}${globalThis.location.search}`;
 
+const isHere = (id: string): boolean =>
+  decodeURIComponent(globalThis.location.hash.slice(1)) === id;
+
 export const CardDrawer = ({
   children,
   closeLabel,
   id,
   title,
 }: CardDrawerProps): ReactElement => {
-  const ref = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
+  const [shown, setShown] = useState(false);
+  const flags = useRef({ open: false, pushed: false });
+
+  const close = useCallback((): void => {
+    if (!flags.current.open) return;
+    flags.current.open = false;
+    setOpen(false);
+    if (isHere(id)) {
+      if (flags.current.pushed) globalThis.history.back();
+      else {
+        globalThis.history.replaceState(
+          globalThis.history.state,
+          "",
+          pageUrl()
+        );
+      }
+    }
+    flags.current.pushed = false;
+  }, [id]);
 
   useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    const here = (): boolean =>
-      decodeURIComponent(globalThis.location.hash.slice(1)) === id;
-    let pushed = false;
     const show = (fromPage: boolean): void => {
-      if (dialog.open) return;
-      pushed = fromPage;
-      dialog.showModal();
-      dialog.querySelector<HTMLElement>(".drawer-close")?.focus();
+      if (flags.current.open) return;
+      flags.current.open = true;
+      flags.current.pushed = fromPage;
       setOpen(true);
+      setShown(true);
     };
     const sync = (fromPage: boolean): void => {
-      if (here()) show(fromPage);
-      else if (dialog.open) dialog.close();
+      if (isHere(id)) show(fromPage);
+      else close();
     };
     const onHashChange = (): void => {
       sync(true);
-    };
-    const onClose = (): void => {
-      setOpen(false);
-      if (here()) {
-        if (pushed) globalThis.history.back();
-        else {
-          globalThis.history.replaceState(
-            globalThis.history.state,
-            "",
-            pageUrl()
-          );
-        }
-      }
-      pushed = false;
-      document
-        .querySelector<HTMLElement>(`a[href="#${CSS.escape(id)}"]`)
-        ?.focus();
-    };
-    const onClick = (event: MouseEvent): void => {
-      if (event.target === dialog) dialog.close();
     };
     const onLink = (event: MouseEvent): void => {
       if (!event.defaultPrevented) return;
@@ -76,50 +73,37 @@ export const CardDrawer = ({
         event.target instanceof Element ? event.target.closest("a") : null;
       if (link?.getAttribute("href") === `#${id}`) show(true);
     };
-    dialog.addEventListener("close", onClose);
-    dialog.addEventListener("click", onClick);
     globalThis.addEventListener("hashchange", onHashChange);
     document.addEventListener("click", onLink);
     sync(false);
     return () => {
-      dialog.removeEventListener("close", onClose);
-      dialog.removeEventListener("click", onClick);
       globalThis.removeEventListener("hashchange", onHashChange);
       document.removeEventListener("click", onLink);
     };
-  }, [id]);
+  }, [close, id]);
 
   return (
-    <dialog
-      aria-labelledby={`${id}-title`}
+    <Drawer
       className="card-drawer"
-      data-drawer={id}
+      closeLabel={closeLabel}
       id={id}
-      ref={ref}
+      onClosed={() => {
+        setShown(false);
+        document
+          .querySelector<HTMLElement>(`a[href="#${CSS.escape(id)}"]`)
+          ?.focus();
+      }}
+      onOpenChange={(next) => {
+        if (!next) close();
+      }}
+      open={open}
+      sheet
+      title={title}
     >
-      <div className="drawer-sheet">
-        <header className="drawer-head">
-          <h2 className="drawer-title" id={`${id}-title`}>
-            {title}
-          </h2>
-          <button
-            aria-label={closeLabel}
-            className="drawer-close topic-close focus-ring"
-            onClick={() => {
-              ref.current?.close();
-            }}
-            type="button"
-          >
-            <Icon aria-hidden name="lucide:x" size="1.125rem" />
-          </button>
-        </header>
-        <div className="drawer-body">
-          <div className="drawer-stage" data-strips="">
-            {children}
-            <RepoPlanetsCanvas active={open} />
-          </div>
-        </div>
+      <div className="drawer-stage" data-strips="">
+        {children}
+        <RepoPlanetsCanvas active={shown} />
       </div>
-    </dialog>
+    </Drawer>
   );
 };

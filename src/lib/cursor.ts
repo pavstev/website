@@ -1,8 +1,7 @@
-import { createListeners } from "@/lib/listeners";
 import { finePointerQuery } from "@/lib/media";
 import { stillQuery } from "@/lib/motion-pause";
 
-const proximitySelector = "[data-proximity] :is(.contact-link, .download-pill)";
+const proximitySelector = "[data-proximity] .keycap-host";
 const proximityRadius = 80;
 const proximityGain = 0.18;
 
@@ -150,57 +149,5 @@ export const initCursorEffects = (): (() => void) => {
     reduce.removeEventListener("change", sync);
     stop?.();
     stop = undefined;
-  };
-};
-
-export const initPointerLight = (scope: HTMLElement): (() => void) => {
-  const fine = globalThis.matchMedia(finePointerQuery);
-  const reduce = stillQuery();
-  const elements = [
-    ...scope.querySelectorAll<HTMLElement>("[data-pointer-light]"),
-  ];
-  const rects = new Map<HTMLElement, DOMRect | null>();
-  const listeners = createListeners({ passive: true });
-  const { on } = listeners;
-
-  const clear = (element: HTMLElement): void => {
-    element.style.removeProperty("--mx");
-    element.style.removeProperty("--my");
-  };
-
-  for (const element of elements) {
-    on(element, "pointerenter", () => {
-      rects.set(element, null);
-    });
-    on(element, "pointermove", (event) => {
-      const pointer = event as PointerEvent;
-      if (
-        !rects.has(element) ||
-        pointer.pointerType !== "mouse" ||
-        !fine.matches ||
-        reduce.matches
-      )
-        return;
-      const rect = rects.get(element) ?? element.getBoundingClientRect();
-      rects.set(element, rect);
-      const x = ((pointer.clientX - rect.left) / rect.width) * 100;
-      const y = ((pointer.clientY - rect.top) / rect.height) * 100;
-      element.style.setProperty("--mx", `${x.toFixed(1)}%`);
-      element.style.setProperty("--my", `${y.toFixed(1)}%`);
-    });
-    on(element, "pointerleave", () => {
-      rects.delete(element);
-      clear(element);
-    });
-  }
-
-  on(globalThis, "scroll", () => {
-    for (const element of rects.keys()) rects.set(element, null);
-  });
-
-  return () => {
-    listeners.dispose();
-    for (const element of elements) clear(element);
-    rects.clear();
   };
 };

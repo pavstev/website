@@ -25,9 +25,12 @@ const { newer, older } = Astro.props;
       <span class="post-nav-title">{older.title}</span>
     </a>
   )}
-  <a class="post-nav-all contact-link focus-ring" href="/blog">
-    <Icon name="lucide:layout-grid" size="0.875rem" />
-    {en.blog.back}
+  <a class="post-nav-all keycap-host focus-ring" data-css-press="" href="/blog">
+    <span aria-hidden="true" class="keycap-base"></span>
+    <span class="keycap">
+      <Icon name="lucide:layout-grid" size="0.9375rem" />
+      {en.blog.back}
+    </span>
   </a>
   {newer === undefined ? (
     <span class="post-nav-gap" />

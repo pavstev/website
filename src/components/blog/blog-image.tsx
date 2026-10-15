@@ -1,5 +1,6 @@
-import type { CSSProperties, ReactElement } from "react";
+import type { ReactElement } from "react";
 
+import { BlurUpImage } from "@/components/ui/blur-up-image";
 import { mediaEntry, mediaPath } from "@/lib/blog/media";
 
 interface BlogImageProps {
@@ -36,26 +37,32 @@ export const BlogImage = ({
     );
   }
   return (
-    <picture>
-      <source
-        sizes={sizes}
-        srcSet={srcSet(entry.avif, entry.widths)}
-        type="image/avif"
-      />
-      <source
-        sizes={sizes}
-        srcSet={srcSet(entry.webp, entry.widths)}
-        type="image/webp"
-      />
-      <img
-        alt={alt}
-        className="blog-image"
-        height={entry.height}
-        src={entry.fallback}
-        style={{ "--blur": `url("${entry.blur}")` } as CSSProperties}
-        width={entry.width}
-        {...loading}
-      />
-    </picture>
+    <BlurUpImage
+      eager={priority}
+      height={entry.height}
+      placeholder={entry.blur}
+      width={entry.width}
+    >
+      <picture>
+        <source
+          sizes={sizes}
+          srcSet={srcSet(entry.avif, entry.widths)}
+          type="image/avif"
+        />
+        <source
+          sizes={sizes}
+          srcSet={srcSet(entry.webp, entry.widths)}
+          type="image/webp"
+        />
+        <img
+          alt={alt}
+          className="blog-image"
+          height={entry.height}
+          src={entry.fallback}
+          width={entry.width}
+          {...loading}
+        />
+      </picture>
+    </BlurUpImage>
   );
 };

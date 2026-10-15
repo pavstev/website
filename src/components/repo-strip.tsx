@@ -36,7 +36,7 @@ export const RepoStrip = ({
     <ul className="repo-grid" data-repos="">
       {repos.map((repo, index) => (
         <li className="min-w-0" key={repo.url}>
-          <div className="repo-tile" data-pointer-light="" style={tone(repo)}>
+          <div className="repo-tile mat-row" style={tone(repo)}>
             <span
               aria-hidden="true"
               className="repo-planet"
@@ -93,7 +93,7 @@ export const RepoStrip = ({
     </ul>
     <p className="drawer-more">
       <a
-        className="drawer-more-link focus-ring"
+        className="drawer-more-link mat-cap focus-ring"
         href={allUrl}
         rel="noopener noreferrer"
         target="_blank"

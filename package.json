@@ -25,6 +25,7 @@
     "@react-pdf/renderer": "^4.9.0",
     "@shikijs/rehype": "^4.5.0",
     "astro": "^7.3.8",
+    "motion": "^12.43.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "rehype-slug": "^6.0.0",

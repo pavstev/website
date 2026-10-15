@@ -14,3 +14,4 @@ Third-party material keeps its own license:
 
 - Inter, Geist and Geist Mono fonts in public/fonts, under the SIL Open Font License 1.1 (the license texts sit next to the fonts).
 - Icons embedded in src/lib/icon-data.ts, from the Iconify sets circle-flags (MIT), Lucide (ISC) and Simple Icons (CC0 1.0).
+- Interaction code in src/components/ui, ported from interior.dev (github.com/ddoemonn/interior), MIT License, Copyright (c) 2026 ozzy.

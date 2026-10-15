@@ -5,7 +5,7 @@ interface NoteProps {
 }
 
 export const Note = ({ children }: NoteProps): ReactElement => (
-  <div className="blog-note" role="note">
+  <div className="blog-note mat-panel" role="note">
     {children}
   </div>
 );

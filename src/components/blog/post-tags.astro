@@ -16,7 +16,7 @@ const { class: className = "", tags, unlabeled = false } = Astro.props;
   class={`post-tags ${className}`.trim()}
 >
   {tags.map((tag) => (
-    <li class="post-tag type-chip">
+    <li class="post-tag">
       <a class="post-tag-link focus-ring" href={tagHref(tag)}>
         {tag}
       </a>

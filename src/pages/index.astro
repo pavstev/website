@@ -1,14 +1,13 @@
 ---
+import { CardActions } from "@/components/card-actions";
 import CardSections from "@/components/card-sections.astro";
 import { CityPanel } from "@/components/city-panel";
-import { ContactLinks } from "@/components/contact-links";
 import { EffectsInit } from "@/components/effects-init";
 import { IndustryPanel } from "@/components/industry-panel";
 import { MotionToggle } from "@/components/motion-toggle";
 import { PageDock } from "@/components/page-dock";
 import { Portrait } from "@/components/portrait";
 import { Profile } from "@/components/profile";
-import { ResumeDownload } from "@/components/resume-download";
 import { SiteFooter } from "@/components/site-footer";
 import { SpaceBackground } from "@/components/space-background";
 import Base from "@/layouts/Base.astro";
@@ -20,8 +19,6 @@ import { personalData } from "@/lib/personal";
 import { products } from "@/lib/products";
 import { getResumeFacts } from "@/lib/resume-facts";
 import { serializeJsonLd, structuredData } from "@/lib/structured-data";
-
-const resumeDetailId = "resume-detail";
 
 const [repos, contact, resume, cv] = await Promise.all([
   getRepos(personalData.githubHandle),
@@ -69,14 +66,11 @@ const jsonLd = serializeJsonLd(
         class="fade-up contact-row relative z-2 mt-(--card-gap-actions) flex w-full flex-wrap items-center justify-center gap-3 delay-2"
         data-proximity=""
       >
-        <ResumeDownload
+        <CardActions
           client:idle={{ timeout: 1000 }}
-          detailId={resumeDetailId}
+          contact={contact}
           facts={resume}
         />
-        <div class="contact-group flex items-center justify-center gap-3">
-          <ContactLinks contact={contact} />
-        </div>
       </div>
       <CardSections products={products} repos={repos} />
       <SiteFooter className="card-footer fade-up mt-(--card-gap-footer) delay-4" />
