@@ -4,7 +4,9 @@ interface PageFlag {
 }
 
 const isPageFlag = (name: string): boolean =>
-  name.startsWith("data-") && !name.startsWith("data-astro-");
+  name.startsWith("data-") &&
+  !name.startsWith("data-astro-") &&
+  !name.startsWith("data-scroll");
 
 export const carriedFlags = (attributes: Iterable<PageFlag>): PageFlag[] =>
   [...attributes].filter(({ name }) => isPageFlag(name));

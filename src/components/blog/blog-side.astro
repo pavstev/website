@@ -1,5 +1,4 @@
 ---
-import AuthorPhoto from "@/components/blog/author-photo.astro";
 import { Icon } from "@/components/icon";
 import { getContact } from "@/lib/github";
 import { en } from "@/lib/i18n";
@@ -35,7 +34,6 @@ const links = [
 ---
 
 <aside aria-label={en.blog.sideLabel} class="blog-side">
-  <AuthorPhoto alt={en.card.portraitAlt} class="blog-side-photo" sizes="6rem" />
   <p class="blog-side-name">{personalData.name}</p>
   <p class="blog-side-role">{en.blog.sideRole}</p>
   <ul class="blog-side-links">

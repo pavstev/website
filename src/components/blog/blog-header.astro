@@ -6,6 +6,7 @@ import { MotionToggle } from "@/components/motion-toggle";
 import { ReadingProgress } from "@/components/ui/reading-progress";
 import { type Crumb, crumbIsLink } from "@/lib/blog/crumbs";
 import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
 
 interface Props {
   crumbs: Crumb[];
@@ -57,7 +58,7 @@ const { crumbs, slug, title, toc = false } = Astro.props;
                   />
                 )}
                 <span class={index === 0 ? "blog-crumbs-home" : undefined}>
-                  {crumb.label}
+                  {index === 0 ? personalData.name : crumb.label}
                 </span>
               </a>
             ) : (

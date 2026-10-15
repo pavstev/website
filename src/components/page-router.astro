@@ -7,8 +7,10 @@ import { ClientRouter } from "astro:transitions";
   import { morphTitles } from "@/lib/blog/title-morph";
   import { startLinkPrefetch } from "@/lib/link-prefetch";
   import { keepPageFlags } from "@/lib/router-flags";
+  import { watchScrollFade } from "@/lib/scroll-fade";
 
   keepPageFlags();
+  watchScrollFade();
   morphTitles();
   startLinkPrefetch();
 </script>

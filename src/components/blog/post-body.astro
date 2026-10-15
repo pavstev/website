@@ -13,8 +13,10 @@ const { html, toc } = Astro.props;
 ---
 
 <div class="post-layout">
-  <BlogSide />
-  <PostToc items={toc} />
+  <div class="post-rail">
+    <PostToc items={toc} />
+    <BlogSide />
+  </div>
   <article class="prose-blog" set:html={html} />
   <PostEffects client:load />
 </div>

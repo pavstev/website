@@ -45,7 +45,9 @@ const countLabel = (total: number): string =>
     </Fragment>
   </BlogHeader>
   <div class="post-layout">
-    <BlogSide />
+    <div class="post-rail">
+      <BlogSide />
+    </div>
     <section aria-labelledby="blog-title" class="blog-index">
       <TagRow current={listing.tag?.slug} tags={listing.tags} />
       <PostList posts={listing.posts} />

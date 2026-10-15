@@ -38,6 +38,14 @@ describe("carriedFlags", () => {
     assert.deepEqual(flags, []);
   });
 
+  it("leaves the scroll bar flags on the page that set them", () => {
+    const flags = carriedFlags([
+      { name: "data-scrolled", value: "" },
+      { name: "data-scrolling", value: "" },
+    ]);
+    assert.deepEqual(flags, []);
+  });
+
   it("accepts any iterable", () => {
     const flags = carriedFlags(new Set([{ name: "data-js", value: "" }]));
     assert.equal(flags.length, 1);
