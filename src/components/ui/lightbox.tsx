@@ -1,5 +1,3 @@
-"use client";
-
 import { animate, AnimatePresence, motion, useMotionValue } from "motion/react";
 import {
   type ReactElement,

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 
 import { initAnchoredPopovers } from "@/lib/anchored-popovers";

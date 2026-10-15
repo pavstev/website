@@ -1,5 +1,3 @@
-"use client";
-
 import { type ReactElement, useEffect } from "react";
 
 import { ScrollSpyThumb, useScrollSpy } from "@/components/ui/scroll-spy";

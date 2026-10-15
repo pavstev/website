@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 
 import { type CondenseRange, useCondense } from "@/components/ui/sticky-header";

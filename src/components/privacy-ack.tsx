@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactElement } from "react";
 
 import { en } from "@/lib/i18n";

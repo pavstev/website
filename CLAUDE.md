@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-A contact card over a WebGL night sky with the real Vienna sun, a blog of MDX posts (`/blog`) under the same sky (the sun glides to the blog's corner on the way there), a plain 404, and a Worker for `/mcp`. This is the Astro port of the Next.js site: same UI, same content, same Worker.
+A contact card over a WebGL night sky with the real Vienna sun, a blog of MDX posts (`/blog`) under the same sky (the sun glides to the blog's corner on the way there), a plain 404, and a Worker for `/mcp`.
 
 ## Tech Stack
 
@@ -89,8 +89,6 @@ WCAG 2.1 AA; the pause button covers 2.2.2 (Pause, Stop, Hide). Focus rings via 
 - Performance: `cloudflare:web-perf`. SEO and metadata: `seo`. Accessibility: `design:accessibility-review`.
 - Hosting config: `cloudflare:wrangler`. Runtime check: `pnpm dev` (Astro dev server); screenshots: `playwright-cli`.
 - Measure with Lighthouse, axe-core and Playwright from outside the repo; keep test scripts, reports and screenshots tooling out of it (only the README hero image lives in `.github/assets/`; the one exception is `scripts/generate-images.ts`, which makes the social images in CI). Before done: `superpowers:verification-before-completion`.
-
-<!-- BEGIN:nextjs-agent-rules -->
 
 ## Astro notes
 
