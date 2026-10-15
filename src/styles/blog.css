@@ -43,7 +43,7 @@
   margin-block: 0 var(--privacy-y);
 }
 
-[data-blog] .post-main {
+[data-blog] .post-main:has(.blog-bar[data-sub]) {
   --bar-total: calc(var(--bar-h) + var(--bar-sub-h));
 }
 
@@ -51,8 +51,12 @@
   padding-bottom: 0;
 }
 
-html:has(.post-main) {
+html:has(.post-main .blog-bar[data-sub]) {
   scroll-padding-top: calc(3rem + 0.75rem + 0.5rem);
+}
+
+html:has(.post-main):not(:has(.blog-bar[data-sub])) {
+  scroll-padding-top: calc(3rem + 0.5rem);
 }
 
 .blog-footer {
@@ -176,7 +180,8 @@ html:has(.post-main) {
   margin-inline: 0.25rem auto;
 }
 
-.blog-crumbs-list {
+.blog-crumbs-list,
+.blog-nav-list {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -241,12 +246,12 @@ html:has(.post-main) {
   color: var(--ui-ink);
 }
 
-.blog-crumbs-link[aria-current="page"],
+.blog-crumbs-link[aria-current],
 .blog-crumbs-here {
   color: var(--ui-ink);
 }
 
-.blog-crumbs-link[aria-current="page"] {
+.blog-crumbs-link[aria-current] {
   background: var(--ui-well);
   font-weight: 600;
 }
@@ -336,8 +341,27 @@ html:has(.post-main) {
 
 .blog-bar-slot {
   flex-shrink: 0;
-  width: 2.75rem;
-  height: 2.75rem;
+  margin-inline-end: 0.25rem;
+}
+
+.blog-nav-list {
+  flex-shrink: 0;
+}
+
+.blog-nav-item {
+  display: flex;
+}
+
+@container bar (max-width: 40em) {
+  .blog-nav-list .blog-crumbs-link {
+    padding-inline: 0.375rem;
+  }
+}
+
+@container bar (max-width: 19em) {
+  .blog-bar-slot {
+    display: none;
+  }
 }
 
 .blog-header {
@@ -399,7 +423,8 @@ html:has(.post-main) {
     background: Canvas;
   }
 
-  .blog-crumbs-list {
+  .blog-crumbs-list,
+  .blog-nav-list {
     border-color: CanvasText;
     background: Canvas;
     box-shadow: none;
@@ -416,7 +441,7 @@ html:has(.post-main) {
     color: CanvasText;
   }
 
-  .blog-crumbs-link[aria-current="page"] {
+  .blog-crumbs-link[aria-current] {
     border: 1px solid Highlight;
     background: Canvas;
     color: CanvasText;
@@ -508,6 +533,401 @@ html:has(.post-main) {
 @media (forced-colors: active) {
   .post-row {
     border: 1px solid CanvasText;
+  }
+}
+
+.work-page {
+  gap: 2.5rem;
+}
+
+.work-section {
+  width: 100%;
+  text-align: start;
+}
+
+.work-heading {
+  scroll-margin-top: calc(var(--bar-h) + 0.75rem);
+  color: var(--ui-ink);
+  font-family: var(--font-ui);
+  font-size: 1.3125rem;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.work-row {
+  --repo-planet-size: 2.25rem;
+  --lang: var(--muted-foreground);
+  display: grid;
+  grid-template-columns: var(--repo-planet-size) minmax(0, 1fr);
+  align-items: start;
+  column-gap: 1rem;
+}
+
+.work-row.product-row {
+  --repo-planet-size: 2.5rem;
+}
+
+@media (max-width: 15em) {
+  .work-row {
+    --repo-planet-size: 1.5rem;
+    column-gap: 0.625rem;
+  }
+
+  .work-row.product-row {
+    --repo-planet-size: 1.75rem;
+  }
+}
+
+.work-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.work-row-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
+  min-width: 0;
+}
+
+.work-row .post-row-text {
+  margin-top: 0;
+}
+
+.work-row-period {
+  flex-basis: 100%;
+  color: var(--ui-ink-3);
+  font-family: var(--font-mono);
+  font-size: 0.65625rem;
+  letter-spacing: 0.06em;
+  line-height: 1.25;
+}
+
+.repo-planet {
+  position: relative;
+  width: var(--repo-planet-size);
+  height: var(--repo-planet-size);
+  rotate: var(--p-tilt, 0deg);
+  border: 1px solid color-mix(in oklab, var(--lang) 40%, transparent);
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 68% 30%,
+    color-mix(in oklab, var(--lang) 6%, var(--background)) 50%,
+    color-mix(in oklab, var(--lang) 22%, var(--background))
+  );
+  box-shadow:
+    inset 0.375rem -0.375rem 0.625rem -0.25rem
+      color-mix(in oklab, var(--lang) 50%, transparent),
+    0 0 1.25rem color-mix(in oklab, var(--lang) 16%, transparent);
+}
+
+.repo-planet[data-kind="ring"]::before {
+  content: "";
+  position: absolute;
+  inset: 40% -26%;
+  border: 1px solid color-mix(in oklab, var(--lang) 55%, transparent);
+  border-radius: 50%;
+  box-shadow: 0 0 0.75rem color-mix(in oklab, var(--lang) 25%, transparent);
+  rotate: -16deg;
+}
+
+.repo-planet[data-kind="bands"] {
+  background:
+    repeating-linear-gradient(
+      20deg,
+      color-mix(in oklab, var(--lang) 16%, transparent) 0 5%,
+      transparent 5% 12%
+    ),
+    radial-gradient(
+      circle at 68% 30%,
+      color-mix(in oklab, var(--lang) 4%, var(--background)) 55%,
+      color-mix(in oklab, var(--lang) 18%, var(--background))
+    );
+}
+
+.repo-planet[data-kind="moon"]::after {
+  content: "";
+  position: absolute;
+  bottom: -14%;
+  left: 2%;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 70% 30%,
+    color-mix(in oklab, var(--lang) 55%, var(--foreground)),
+    color-mix(in oklab, var(--lang) 20%, var(--background)) 70%
+  );
+  box-shadow: 0 0 0.5rem color-mix(in oklab, var(--lang) 35%, transparent);
+}
+
+.repo-planet[data-kind="craters"] {
+  background:
+    radial-gradient(
+      circle at 30% 72%,
+      color-mix(in oklab, var(--lang) 22%, transparent) 0 6%,
+      transparent 7%
+    ),
+    radial-gradient(
+      circle at 54% 86%,
+      color-mix(in oklab, var(--lang) 18%, transparent) 0 4%,
+      transparent 5%
+    ),
+    radial-gradient(
+      circle at 16% 54%,
+      color-mix(in oklab, var(--lang) 18%, transparent) 0 3%,
+      transparent 4%
+    ),
+    radial-gradient(
+      circle at 68% 30%,
+      color-mix(in oklab, var(--lang) 4%, var(--background)) 55%,
+      color-mix(in oklab, var(--lang) 18%, var(--background))
+    );
+}
+
+.logo-planet {
+  display: block;
+  width: var(--repo-planet-size);
+  height: var(--repo-planet-size);
+  forced-color-adjust: none;
+}
+
+.logo-planet svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--lang) 40%, transparent),
+    0 0 1.25rem color-mix(in oklab, var(--lang) 16%, transparent);
+}
+
+.logo-planet circle {
+  fill: var(--logo-disc);
+}
+
+.logo-planet [data-ink="mark"] {
+  fill: var(--logo-mark);
+}
+
+.logo-planet [data-ink="accent"] {
+  fill: var(--logo-accent);
+}
+
+@media (forced-colors: active) {
+  .repo-planet {
+    border: 1px solid CanvasText;
+    background: none;
+    box-shadow: none;
+  }
+
+  .repo-planet::before,
+  .repo-planet::after {
+    display: none;
+  }
+}
+
+.repo-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.repo-tags-row {
+  display: flex;
+  flex: 0 1 auto;
+  gap: 0.375rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.repo-chip[hidden],
+.repo-more[hidden] {
+  display: none;
+}
+
+.repo-chip {
+  --chip: var(--muted-foreground);
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-width: 0;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border: 1px solid color-mix(in oklab, var(--chip) 38%, transparent);
+  border-radius: var(--ui-radius-sm);
+  background: color-mix(in oklab, var(--chip) 12%, transparent);
+  color: color-mix(in oklab, var(--chip) 45%, var(--foreground));
+  font-family: var(--font-ui);
+  font-size: 0.78125rem;
+  font-weight: 500;
+  line-height: 1.375rem;
+  white-space: nowrap;
+}
+
+.repo-chip[data-kind="topic"] {
+  border-color: transparent;
+  background: var(--github-accent-muted);
+  color: var(--github-accent);
+}
+
+.repo-tags-row[data-squeeze] > .repo-chip:first-child {
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repo-more {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 2;
+  min-width: 2rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px dashed color-mix(in oklab, var(--lang) 35%, var(--border));
+  border-radius: var(--ui-radius-sm);
+  color: var(--foreground-soft);
+  font-family: var(--font-ui);
+  font-size: 0.71875rem;
+  font-weight: 500;
+  line-height: 1rem;
+  letter-spacing: normal;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-normal) var(--ease-smooth),
+    color var(--duration-normal) var(--ease-smooth),
+    background-color var(--duration-normal) var(--ease-smooth);
+}
+
+@media (pointer: coarse) {
+  .repo-more::after {
+    position: absolute;
+    inset: calc(-0.625rem - 1px) calc(-0.375rem - 1px);
+    content: "";
+  }
+}
+
+.repo-more:hover,
+.repo-more:focus-visible,
+.work-row:has(.repo-tags-panel:popover-open) .repo-more {
+  border-style: solid;
+  border-color: color-mix(in oklab, var(--lang) 70%, transparent);
+  background: color-mix(in oklab, var(--lang) 16%, transparent);
+  color: var(--foreground);
+}
+
+.repo-tags-panel {
+  position: fixed;
+  inset: auto;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 1.5rem));
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border-radius: var(--ui-radius-pop);
+  color: var(--ui-ink);
+  font-family: var(--font-ui);
+  letter-spacing: normal;
+}
+
+@media (forced-colors: active) {
+  .repo-tags-panel {
+    border: 1px solid CanvasText;
+    color: CanvasText;
+  }
+}
+
+.repo-tags-title {
+  margin-bottom: 0.375rem;
+  color: var(--ui-ink-3);
+  font-family: var(--font-ui);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1rem;
+  text-transform: uppercase;
+}
+
+.repo-tags-list + .repo-tags-title {
+  margin-top: 0.75rem;
+}
+
+.repo-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.repo-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-inline-start: auto;
+  color: var(--ui-ink-3);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.repo-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.work-more {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.875rem;
+}
+
+.work-more-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.875rem;
+  border-radius: 9px;
+  color: var(--ui-ink);
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-decoration: none;
+  transition:
+    translate 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 150ms ease;
+}
+
+.work-more-link::after {
+  content: "";
+  position: absolute;
+  inset: -0.25rem 0;
+}
+
+.work-more-link:active {
+  translate: 0 1px;
+}
+
+.work-more-link:focus-visible {
+  outline-color: var(--ui-accent);
+  outline-offset: 1px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .work-more-link:hover {
+    background: color-mix(in oklab, var(--ui-panel) 93%, var(--ui-ink));
+  }
+}
+
+@media (forced-colors: active) {
+  .work-more-link {
+    border: 1px solid ButtonText;
   }
 }
 

@@ -153,7 +153,7 @@ describe("sitemapEntries", () => {
     site,
   };
 
-  it("lists the home page, the blog index and each visible post", () => {
+  it("lists the home page, the about and work pages, the blog index and each visible post", () => {
     const entries = sitemapEntries({
       ...input,
       posts: listPosts({ drafts: false }, valid),
@@ -162,6 +162,8 @@ describe("sitemapEntries", () => {
       entries.map((entry) => entry.loc),
       [
         site,
+        `${site}/about`,
+        `${site}/work`,
         `${site}/blog`,
         `${site}/blog/alpha`,
         `${site}/blog/beta`,
@@ -170,10 +172,12 @@ describe("sitemapEntries", () => {
       ]
     );
     assert.equal(entries[0]?.lastmod, "2026-10-12T09:03:17.113Z");
-    assert.deepEqual(entries[2]?.images, [
+    assert.equal(entries[1]?.lastmod, undefined);
+    assert.equal(entries[2]?.lastmod, undefined);
+    assert.deepEqual(entries[4]?.images, [
       `${site}/blog-media/alpha/share.png`,
     ]);
-    assert.deepEqual(entries[3]?.images, []);
+    assert.deepEqual(entries[5]?.images, []);
   });
 
   it("leaves drafts out of a production build and keeps them in a draft build", () => {
@@ -190,8 +194,9 @@ describe("sitemapEntries", () => {
   it("uses the newest post date for the blog index", () => {
     const posts = listPosts({ drafts: false }, valid);
     const entries = sitemapEntries({ ...input, posts });
-    assert.equal(entries[1]?.lastmod, "2026-10-13T07:45:00+02:00");
-    assert.ok(posts.some((post) => modifiedOf(post) === entries[1]?.lastmod));
+    assert.equal(entries[3]?.loc, `${site}/blog`);
+    assert.equal(entries[3]?.lastmod, "2026-10-13T07:45:00+02:00");
+    assert.ok(posts.some((post) => modifiedOf(post) === entries[3]?.lastmod));
   });
 
   it("lists later pages and tag pages with their newest post as lastmod", () => {
@@ -204,7 +209,7 @@ describe("sitemapEntries", () => {
       })
     ).toReversed();
     const entries = sitemapEntries({ ...input, posts: many });
-    const listings = entries.slice(2 + many.length);
+    const listings = entries.slice(4 + many.length);
     assert.deepEqual(
       listings.map((entry) => [entry.loc, entry.lastmod]),
       [
@@ -224,7 +229,7 @@ describe("sitemapEntries", () => {
     const entries = sitemapEntries({ ...input, posts: [] });
     assert.deepEqual(
       entries.map((entry) => entry.loc),
-      [site]
+      [site, `${site}/about`, `${site}/work`]
     );
   });
 });

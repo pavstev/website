@@ -6,11 +6,10 @@ import CardSections from "@/components/card-sections.astro";
 import { CityPanel } from "@/components/city-panel";
 import { EffectsInit } from "@/components/effects-init";
 import { IndustryPanel } from "@/components/industry-panel";
-import { MotionToggle } from "@/components/motion-toggle";
 import { PageDock } from "@/components/page-dock";
 import { Portrait } from "@/components/portrait";
 import { Profile } from "@/components/profile";
-import { SiteFooter } from "@/components/site-footer";
+import SiteFooter from "@/components/site-footer.astro";
 import { SpaceBackground } from "@/components/space-background";
 import Base from "@/layouts/Base.astro";
 import { getCv } from "@/lib/cv";
@@ -44,7 +43,6 @@ const jsonLd = serializeJsonLd(
   />
   <script type="application/ld+json" is:inline set:html={jsonLd}></script>
   <SpaceBackground client:load transition:persist="sky" />
-  <MotionToggle client:load />
   <main
     class="relative grid min-h-dvh grid-cols-1 place-items-center overflow-x-clip safe-area"
     id="main-content"
@@ -74,7 +72,7 @@ const jsonLd = serializeJsonLd(
           facts={resume}
         />
       </div>
-      <CardSections products={products} repos={repos} />
+      <CardSections />
       <SiteFooter className="card-footer fade-up mt-(--card-gap-footer) delay-4" />
     </div>
     <EffectsInit client:load />

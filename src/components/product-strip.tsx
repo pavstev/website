@@ -13,42 +13,40 @@ export const ProductStrip = ({
   newTabId,
   products,
 }: ProductStripProps): ReactElement => (
-  <ul className="product-grid" data-products="">
+  <ol className="post-list work-list" data-products="">
     {products.map((product) => {
       const [role, period] = productMetaParts(product);
       return (
-        <li className="min-w-0" key={product.key}>
-          <div
-            className="repo-tile product-tile mat-row"
-            style={{ "--lang": product.palette.tint } as CSSProperties}
-          >
-            <ProductMark productKey={product.key} />
-            <div className="repo-body">
-              <div className="product-top">
+        <li
+          className="post-row work-row product-row mat-panel"
+          key={product.key}
+          style={{ "--lang": product.palette.tint } as CSSProperties}
+        >
+          <ProductMark productKey={product.key} />
+          <div className="work-row-body">
+            <div className="work-row-top">
+              <h3 className="post-row-title">
                 <a
                   aria-describedby={`${newTabId} product-line-${product.key}`}
-                  className="repo-name repo-link"
+                  className="post-row-link focus-ring"
                   href={product.url}
                   rel="noopener noreferrer"
                   target="_blank"
                 >
                   {product.name}
                 </a>
-                <span className="product-meta">
-                  <span className="whitespace-nowrap">{role}</span>{" "}
-                  <span className="whitespace-nowrap">{period}</span>
-                </span>
-              </div>
-              <p
-                className="repo-desc product-line"
-                id={`product-line-${product.key}`}
-              >
-                <CompoundText text={product.line} />
-              </p>
+              </h3>
+              <span className="work-row-period">
+                <span className="whitespace-nowrap">{role}</span>{" "}
+                <span className="whitespace-nowrap">{period}</span>
+              </span>
             </div>
+            <p className="post-row-text" id={`product-line-${product.key}`}>
+              <CompoundText text={product.line} />
+            </p>
           </div>
         </li>
       );
     })}
-  </ul>
+  </ol>
 );

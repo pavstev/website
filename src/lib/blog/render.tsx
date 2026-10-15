@@ -73,7 +73,7 @@ interface NoteProps {
 }
 
 export const renderPost = async (
-  source: PostSource
+  source: Pick<PostSource, "body" | "dir" | "slug">
 ): Promise<{ html: string; toc: TocItem[] }> => {
   const { slug } = source;
   let firstImage = true;

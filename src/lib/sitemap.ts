@@ -9,6 +9,7 @@ import {
 import { modifiedOf } from "./blog/modified.ts";
 import { lastModified } from "./blog/posts.ts";
 import { type PostMeta } from "./blog/schema.ts";
+import { pagePaths } from "./blog/slug.ts";
 
 export interface SitemapEntry {
   images: readonly string[];
@@ -59,6 +60,11 @@ export const sitemapEntries = ({
   const blogModified = lastModified(posts);
   return [
     { images: homeImages, lastmod: homeModified, loc: site },
+    ...pagePaths.map((path) => ({
+      images: [],
+      lastmod: undefined,
+      loc: `${site}${path}`,
+    })),
     ...(blogModified === undefined
       ? []
       : [

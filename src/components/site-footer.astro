@@ -1,0 +1,40 @@
+---
+import { MotionSwitch } from "@/components/motion-switch";
+import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
+
+interface Props {
+  className: string;
+  rss?: boolean;
+}
+
+const { className, rss = false } = Astro.props;
+const year = new Date().getFullYear();
+const hasChildren = Astro.slots.has("default");
+---
+
+<div class={`${className} type-chip`}>
+  <p class="tabular text-sky">
+    © {year} <span class="whitespace-nowrap">{personalData.name}</span>
+    {rss && (
+      <>
+        <span aria-hidden="true"> · </span>
+        <a
+          class="focus-ring"
+          data-astro-reload=""
+          href="/blog/feed.xml"
+          type="application/rss+xml"
+        >
+          {en.blog.rss}
+        </a>
+      </>
+    )}
+    <MotionSwitch client:load />
+    {hasChildren && (
+      <>
+        <br />
+        <slot />
+      </>
+    )}
+  </p>
+</div>

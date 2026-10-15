@@ -33,67 +33,71 @@ export const RepoStrip = ({
   repos,
 }: RepoStripProps): ReactElement => (
   <>
-    <ul className="repo-grid" data-repos="">
+    <ol className="post-list work-list" data-repos="">
       {repos.map((repo, index) => (
-        <li className="min-w-0" key={repo.url}>
-          <div className="repo-tile mat-row" style={tone(repo)}>
-            <span
-              aria-hidden="true"
-              className="repo-planet"
-              data-kind={planetKinds[index % planetKinds.length]}
-              style={planetStyle(repo.name)}
-            />
-            <div className="repo-body">
-              <div className="repo-top">
+        <li
+          className="post-row work-row mat-panel"
+          key={repo.url}
+          style={tone(repo)}
+        >
+          <span
+            aria-hidden="true"
+            className="repo-planet"
+            data-kind={planetKinds[index % planetKinds.length]}
+            style={planetStyle(repo.name)}
+          />
+          <div className="work-row-body">
+            <div className="work-row-top">
+              <h3 className="post-row-title">
                 <a
                   aria-describedby={newTabId}
-                  className="repo-name repo-link"
+                  className="post-row-link focus-ring"
                   href={repo.url}
                   rel="noopener noreferrer"
                   target="_blank"
                 >
                   {repo.name}
                 </a>
-                <RepoTags
-                  id={`repo-tags-${String(index)}`}
-                  languages={repo.languages}
-                  name={repo.name}
-                  topics={repo.topics}
-                />
-                {repo.stars > 0 || repo.forks > 0 ? (
-                  <span className="repo-meta">
-                    {repo.stars > 0 ? (
-                      <span className="repo-fact">
-                        <Icon aria-hidden name="lucide:star" size="0.875rem" />
-                        <span className="tabular">{repo.stars}</span>
-                        <span className="sr-only">{en.repos.starsLabel}</span>
-                      </span>
-                    ) : null}
-                    {repo.forks > 0 ? (
-                      <span className="repo-fact">
-                        <Icon
-                          aria-hidden
-                          name="lucide:git-fork"
-                          size="0.875rem"
-                        />
-                        <span className="tabular">{repo.forks}</span>
-                        <span className="sr-only">{en.repos.forksLabel}</span>
-                      </span>
-                    ) : null}
-                  </span>
-                ) : null}
-              </div>
-              <p className="repo-desc">
-                <CompoundText text={repo.description} />
-              </p>
+              </h3>
+              {repo.stars > 0 || repo.forks > 0 ? (
+                <span className="repo-meta">
+                  {repo.stars > 0 ? (
+                    <span className="repo-fact">
+                      <Icon aria-hidden name="lucide:star" size="0.875rem" />
+                      <span className="tabular">{repo.stars}</span>
+                      <span className="sr-only">{en.repos.starsLabel}</span>
+                    </span>
+                  ) : null}
+                  {repo.forks > 0 ? (
+                    <span className="repo-fact">
+                      <Icon
+                        aria-hidden
+                        name="lucide:git-fork"
+                        size="0.875rem"
+                      />
+                      <span className="tabular">{repo.forks}</span>
+                      <span className="sr-only">{en.repos.forksLabel}</span>
+                    </span>
+                  ) : null}
+                </span>
+              ) : null}
             </div>
+            <RepoTags
+              id={`repo-tags-${String(index)}`}
+              languages={repo.languages}
+              name={repo.name}
+              topics={repo.topics}
+            />
+            <p className="post-row-text">
+              <CompoundText text={repo.description} />
+            </p>
           </div>
         </li>
       ))}
-    </ul>
-    <p className="drawer-more">
+    </ol>
+    <p className="work-more">
       <a
-        className="drawer-more-link mat-cap focus-ring"
+        className="work-more-link mat-cap focus-ring"
         href={allUrl}
         rel="noopener noreferrer"
         target="_blank"

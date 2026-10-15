@@ -20,15 +20,18 @@ const corner = { radius: 280, x: -280, y: -280 };
 const screen = { height: 900, width: 1440 };
 
 describe("routeMode", () => {
-  it("maps blog routes to the blog sky", () => {
+  it("maps blog, work and about routes to the blog sky", () => {
     assert.equal(routeMode("/blog"), "blog");
     assert.equal(routeMode("/blog/how-i-use-ai"), "blog");
     assert.equal(routeMode("/blog/tag/ai/page/2"), "blog");
+    assert.equal(routeMode("/work"), "blog");
+    assert.equal(routeMode("/about"), "blog");
   });
 
   it("maps everything else to the home sky", () => {
     assert.equal(routeMode("/"), "home");
     assert.equal(routeMode("/blog/feed.xml"), "home");
+    assert.equal(routeMode("/workshop"), "home");
   });
 });
 
@@ -36,6 +39,8 @@ describe("linkMode", () => {
   it("names the sky of a link target, or none", () => {
     assert.equal(linkMode("/"), "home");
     assert.equal(linkMode("/blog/page/2"), "blog");
+    assert.equal(linkMode("/work"), "blog");
+    assert.equal(linkMode("/about"), "blog");
     assert.equal(linkMode("/resume.pdf"), undefined);
     assert.equal(linkMode("/blog/feed.xml"), undefined);
   });

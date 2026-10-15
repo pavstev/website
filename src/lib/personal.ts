@@ -8,6 +8,8 @@ export const personalData = {
   githubHandle: "pavstev",
   givenName: "Stevan",
   knowsAbout: [
+    "Software engineering",
+    "AI-assisted software development",
     "Backend engineering",
     "Distributed systems",
     "Event-driven architecture",
@@ -28,8 +30,8 @@ export const personalData = {
   name: "Stevan Pavlović",
   portrait: { height: 800, url: "/portraits/portrait-800.webp", width: 800 },
   summary:
-    "Hi! I’m a backend and distributed-systems engineer living in Vienna. For eleven years I have built systems people rely on, in fintech, betting, healthtech and fleet logistics. I like small teams, clear interfaces and software that stays quiet in production.",
-  title: "Backend & Distributed-Systems Engineer · Tech Lead",
+    "Hi, I’m Stevan. I have been a software engineer for more than eleven years, across many stacks and teams. Since 2024 I have worked as an AI-powered engineer, and I ship faster than ever. My work runs in fintech, betting, healthtech and fleet logistics. I live in Vienna.",
+  title: "Software Engineer · Tech Lead",
   website: "https://stevanpavlovic.com",
 } as const;
 

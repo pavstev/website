@@ -56,6 +56,8 @@ describe("leavesBlog", () => {
       "/blog/other",
       "/blog/tag/ai",
       "/blog/page/2",
+      "/work",
+      "/about#care",
       "/blog/other#notes",
       "#notes",
       "other",

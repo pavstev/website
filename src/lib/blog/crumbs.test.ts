@@ -8,6 +8,7 @@ import {
   crumbIsLink,
   crumbTrail,
   listingCrumbs,
+  pageCrumbs,
   postCrumbs,
 } from "./crumbs.ts";
 import { postMeta } from "./post-fixture.ts";
@@ -31,6 +32,19 @@ describe("crumbTrail", () => {
       trail.map((crumb) => crumb.current),
       [false, false, true]
     );
+  });
+});
+
+describe("pageCrumbs", () => {
+  it("is Home and the page with the page current and not a link", () => {
+    const trail = pageCrumbs("Work", "/work");
+    assert.deepEqual(rows(trail), [
+      ["Home", "/", false],
+      ["Work", "/work", true],
+    ]);
+    const [home, here] = trail;
+    assert.ok(home !== undefined && crumbIsLink(home));
+    assert.ok(here !== undefined && !crumbIsLink(here));
   });
 });
 

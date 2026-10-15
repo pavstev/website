@@ -1,4 +1,8 @@
 export const en = {
+  about: {
+    crumb: "About",
+    metaTitle: "About me · Stevan Pavlović",
+  },
   blog: {
     anchor: "Link to the section {heading}",
     back: "All posts",
@@ -23,7 +27,7 @@ export const en = {
     lightboxZoomIn: "Zoom in",
     lightboxZoomOut: "Zoom out",
     metaDescription:
-      "Posts by Stevan Pavlović, a backend engineer in Vienna, about how this website was built and how he works with AI.",
+      "Posts by Stevan Pavlović, a software engineer, about how this website was built and how he works with AI.",
     metaTitle: "Blog · Stevan Pavlović",
     minutesRead: "{n} min read",
     newTab: "(opens in a new tab)",
@@ -45,7 +49,7 @@ export const en = {
     scheduled: "Scheduled",
     shareLine: "{blog} · {minutes}",
     sideLabel: "About the author",
-    sideRole: "Backend and distributed-systems engineer in Vienna.",
+    sideRole: "Software engineer and tech lead.",
     tableAscending: "ascending",
     tableDescending: "descending",
     tableOriginal: "Original order restored. {n} rows.",
@@ -53,7 +57,7 @@ export const en = {
     tagCount: "{tag}, {n} posts",
     tagCountOne: "{tag}, 1 post",
     tagDescription:
-      "Posts by Stevan Pavlović, a backend engineer in Vienna, tagged {tag}.",
+      "Posts by Stevan Pavlović, a software engineer, tagged {tag}.",
     tagPageTitle: "Posts tagged {tag}, page {n}",
     tags: "Tags",
     tagTitle: "Posts tagged {tag}",
@@ -64,6 +68,7 @@ export const en = {
     zoomImage: "Open full size: {alt}",
   },
   card: {
+    about: "About",
     blog: "Blog",
     close: "Close",
     contactLabel: "Contact",
@@ -84,7 +89,8 @@ export const en = {
     resumePagesOne: "{count}\u{A0}page",
     resumePagesOther: "{count}\u{A0}pages",
     resumeSize: "{size}\u{A0}KB",
-    sections: "Projects, products and blog",
+    sections: "About, work and blog",
+    work: "Work",
   },
   city: {
     armsLabel: "Coat of arms of {city}: a white cross on a red shield",
@@ -146,7 +152,8 @@ export const en = {
   },
   llms: {
     about:
-      "Backend and distributed-systems engineer and tech lead, living in {city}, {country}. Eleven years of building systems people rely on, in fintech, betting, healthtech and fleet logistics.",
+      "Software engineer and tech lead, living in {city}, {country}. More than eleven years across many stacks and teams, in fintech, betting, healthtech and fleet logistics.",
+    aboutPage: "About: who I am and what I care about",
     alsoWritten: "Also written as {name}.",
     blog: "Blog",
     blogFeedJson: "Blog feed (JSON Feed)",
@@ -166,23 +173,26 @@ export const en = {
     resume: "Résumé (PDF): full work history",
     skills: "Skills",
     topics: "Topics",
-    website: "Website: contact card and open-source projects",
+    website: "Website: contact card",
+    workPage: "Work: open-source projects and products",
   },
   meta: {
     description:
-      "Stevan Pavlović is a backend and distributed-systems engineer and tech lead in Vienna, Austria, with 11+ years in fintech, betting, healthtech and logistics.",
-    imageAlt: "Stevan Pavlović, backend engineer in Vienna",
+      "Stevan Pavlović is a software engineer and tech lead in Vienna, Austria, with 11+ years across many stacks in fintech, betting, healthtech and logistics.",
+    imageAlt: "Stevan Pavlović, software engineer",
     resume: "Résumé of Stevan Pavlović",
     shortName: "Stevan",
-    title: "Stevan Pavlović · Backend & distributed-systems engineer",
+    title: "Stevan Pavlović · Software engineer",
   },
   motion: {
-    pause: "Pause motion",
-    play: "Play motion",
-    tipPause: "Pause the moving sky",
-    tipPauseDetail: "Stops the sky, clouds, rays and planets.",
-    tipPlay: "Play the moving sky",
-    tipPlayDetail: "Starts the sky, clouds, rays and planets again.",
+    start: "Start motion",
+    stop: "Stop motion",
+  },
+  nav: {
+    about: "About",
+    blog: "Blog",
+    label: "Pages",
+    work: "Work",
   },
   notFound: {
     home: "Back to home",
@@ -199,7 +209,6 @@ export const en = {
     stored: "Your OK is saved on this device, so this note stays hidden.",
   },
   products: {
-    close: "Close products",
     headingOne: "{count} product",
     headingOther: "{count} products",
     items: {
@@ -234,7 +243,6 @@ export const en = {
   },
   repos: {
     all: "All repos on GitHub",
-    close: "Close projects",
     forksLabel: "forks",
     headingOne: "{count} open source project",
     headingOther: "{count} open source projects",
@@ -263,5 +271,13 @@ export const en = {
   },
   socialImages: {
     place: "{city}, {country}",
+  },
+  work: {
+    heading: "Work",
+    metaDescription:
+      "Open source projects and products built by Stevan Pavlović, a software engineer.",
+    metaTitle: "Work · Stevan Pavlović",
+    productsHeading: "Products",
+    projectsHeading: "Open source projects",
   },
 } as const;

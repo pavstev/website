@@ -20,3 +20,8 @@ export const isBlogPage = (pathname: string): boolean =>
   pathname === "/blog" ||
   (pathname.startsWith("/blog/") &&
     !(pathname.split("/").at(-1) ?? "").includes("."));
+
+export const pagePaths: readonly string[] = ["/about", "/work"];
+
+export const isSitePage = (pathname: string): boolean =>
+  isBlogPage(pathname) || pagePaths.includes(pathname);

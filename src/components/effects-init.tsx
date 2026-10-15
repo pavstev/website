@@ -6,7 +6,6 @@ import { initCursorEffects } from "@/lib/cursor";
 import { initIntro } from "@/lib/intro";
 import { initNameGlitch } from "@/lib/name-glitch";
 import { initPortraitEffects } from "@/lib/portrait-effects";
-import { initTagFit } from "@/lib/repo-tags-fit";
 
 export const EffectsInit = (): null => {
   useEffect(() => {
@@ -19,11 +18,7 @@ export const EffectsInit = (): null => {
     if (card) disposers.push(initIntro(card));
     if (name) disposers.push(initNameGlitch(name));
     if (contacts) disposers.push(initContactLinks(contacts));
-    disposers.push(
-      initCursorEffects(),
-      initAnchoredPopovers(document),
-      initTagFit(document)
-    );
+    disposers.push(initCursorEffects(), initAnchoredPopovers(document));
     return () => {
       for (const dispose of disposers) dispose();
     };

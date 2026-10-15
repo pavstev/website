@@ -1,23 +1,12 @@
 ---
-import { CardDrawer } from "@/components/card-drawer";
 import { Icon } from "@/components/icon";
-import { ProductMark } from "@/components/product-mark";
-import { ProductStrip } from "@/components/product-strip";
-import { RepoStrip } from "@/components/repo-strip";
-import type { Repo } from "@/lib/github";
 import { en } from "@/lib/i18n";
-import { personalData } from "@/lib/personal";
-import type { Product } from "@/lib/products";
-import { countHeading } from "@/lib/template";
 
-interface Props {
-  products: readonly Product[];
-  repos: Repo[];
-}
-
-const { products, repos } = Astro.props;
-const projectsTitle = countHeading(repos.length, en.repos);
-const productsTitle = countHeading(products.length, en.products);
+const sections = [
+  { href: "/about", icon: "lucide:user-round", label: en.card.about },
+  { href: "/work", icon: "lucide:briefcase", label: en.card.work },
+  { href: "/blog", icon: "lucide:notebook-pen", label: en.card.blog },
+];
 ---
 
 <ul
@@ -26,81 +15,17 @@ const productsTitle = countHeading(products.length, en.products);
   data-proximity=""
   data-sections=""
 >
-  {repos.length > 0 ? (
-    <li class="section-item" data-tone="purple">
-      <a
-        aria-haspopup="dialog"
-        class="section-link keycap-host focus-ring"
-        href="#projects"
-      >
+  {sections.map((section) => (
+    <li class="section-item">
+      <a class="section-link keycap-host focus-ring" href={section.href}>
         <span aria-hidden="true" class="keycap-base" />
         <span class="keycap">
-          <span aria-hidden="true" class="section-icon">
-            <span class="section-planet" />
+          <span aria-hidden="true" class="section-icon contact-icon">
+            <Icon name={section.icon} size="0.9375rem" />
           </span>
-          <span class="section-label">{projectsTitle}</span>
+          <span class="section-label">{section.label}</span>
         </span>
       </a>
     </li>
-  ) : null}
-  {products.length > 0 ? (
-    <li class="section-item" data-tone="green">
-      <a
-        aria-haspopup="dialog"
-        class="section-link keycap-host focus-ring"
-        href="#products"
-      >
-        <span aria-hidden="true" class="keycap-base" />
-        <span class="keycap">
-          <span aria-hidden="true" class="section-icon section-marks">
-            {products.slice(0, 2).map((product) => (
-              <ProductMark productKey={product.key} />
-            ))}
-          </span>
-          <span class="section-label">{productsTitle}</span>
-        </span>
-      </a>
-    </li>
-  ) : null}
-  <li class="section-item" data-tone="gold">
-    <a class="section-link keycap-host focus-ring" href="/blog">
-      <span aria-hidden="true" class="keycap-base" />
-      <span class="keycap">
-        <span aria-hidden="true" class="section-icon contact-icon">
-          <Icon name="lucide:notebook-pen" size="0.9375rem" />
-        </span>
-        <span class="section-label">{en.card.blog}</span>
-      </span>
-    </a>
-  </li>
+  ))}
 </ul>
-{repos.length > 0 ? (
-  <CardDrawer
-    client:idle={{ timeout: 1000 }}
-    closeLabel={en.repos.close}
-    id="projects"
-    title={projectsTitle}
-  >
-    <span hidden id="projects-new-tab">
-      {en.repos.newTab}
-    </span>
-    <RepoStrip
-      allUrl={`${personalData.github}?tab=repositories`}
-      newTabId="projects-new-tab"
-      repos={repos}
-    />
-  </CardDrawer>
-) : null}
-{products.length > 0 ? (
-  <CardDrawer
-    client:idle={{ timeout: 1000 }}
-    closeLabel={en.products.close}
-    id="products"
-    title={productsTitle}
-  >
-    <span hidden id="products-new-tab">
-      {en.repos.newTab}
-    </span>
-    <ProductStrip newTabId="products-new-tab" products={products} />
-  </CardDrawer>
-) : null}

@@ -26,6 +26,11 @@ export const crumbTrail = (here?: Here): Crumb[] => {
   }));
 };
 
+export const pageCrumbs = (label: string, path: string): Crumb[] => [
+  { current: false, label: en.blog.crumbHome, path: "/" },
+  { current: true, label, path },
+];
+
 export const postCrumbs = (post: Pick<PostMeta, "slug" | "title">): Crumb[] =>
   crumbTrail({ label: post.title, path: `${blogPath}/${post.slug}` });
 

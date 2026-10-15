@@ -1,4 +1,4 @@
-import { isBlogPage } from "./blog/slug.ts";
+import { isSitePage } from "./blog/slug.ts";
 import { clamp01, smoothstep } from "./math.ts";
 import { type SkyMode } from "./sky-preset.ts";
 import { type Spot } from "./sky-sun.ts";
@@ -28,11 +28,11 @@ export const easeInOut = (value: number): number => {
 };
 
 export const routeMode = (pathname: string): SkyMode =>
-  isBlogPage(pathname) ? "blog" : "home";
+  isSitePage(pathname) ? "blog" : "home";
 
 export const linkMode = (pathname: string): SkyMode | undefined => {
   if (pathname === "/") return "home";
-  return isBlogPage(pathname) ? "blog" : undefined;
+  return isSitePage(pathname) ? "blog" : undefined;
 };
 
 export const tweenProgress = (elapsed: number, forward: boolean): number => {
