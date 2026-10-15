@@ -1,19 +1,22 @@
 ---
+import FooterProfile from "@/components/footer-profile.astro";
 import { MotionSwitch } from "@/components/motion-switch";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
 
 interface Props {
   className: string;
+  profile?: boolean;
   rss?: boolean;
 }
 
-const { className, rss = false } = Astro.props;
+const { className, profile = false, rss = false } = Astro.props;
 const year = new Date().getFullYear();
 const hasChildren = Astro.slots.has("default");
 ---
 
-<div class={`${className} type-chip`}>
+<div class={`${className} type-chip`} data-profile={profile ? "" : undefined}>
+  {profile && <FooterProfile />}
   <p class="tabular text-sky">
     © {year} <span class="whitespace-nowrap">{personalData.name}</span>
     {rss && (

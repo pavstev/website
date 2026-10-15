@@ -14,7 +14,6 @@ import {
 } from "../src/lib/sky-rays.ts";
 import { skyVertexShader } from "../src/lib/sky-shader.ts";
 import { designTokens, hexBytes, profilePalette } from "../src/lib/theme.ts";
-import { headerHeight, headerWidth } from "../src/profile/header.ts";
 
 interface Corona {
   radius: number;
@@ -275,17 +274,6 @@ const specs: ImageSpec[] = [
     meteor: { ...cornerMeteor, progress: 0.55 },
     type: "png",
     width: 1584,
-  },
-  {
-    body: "",
-    corona: cornerCorona(headerHeight),
-    daylight: nightPhase,
-    file: path.join("src", "profile", "header-sky.webp"),
-    fragment: longRaysShader,
-    height: headerHeight,
-    meteor: { ...cornerMeteor, progress: 0.55, x: -2.1, y: 0.32 },
-    type: "webp",
-    width: headerWidth,
   },
 ];
 

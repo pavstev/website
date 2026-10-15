@@ -5,10 +5,7 @@ import type { Repo } from "@/lib/github";
 import { CompoundText } from "@/components/compound-text";
 import { Icon } from "@/components/icon";
 import { RepoTags } from "@/components/repo-tags";
-import { seedOf } from "@/lib/hash";
 import { en } from "@/lib/i18n";
-
-const planetKinds = ["ring", "bands", "moon", "craters"] as const;
 
 const tone = (repo: Repo): CSSProperties | undefined => {
   const color = (
@@ -17,9 +14,6 @@ const tone = (repo: Repo): CSSProperties | undefined => {
   )?.color;
   return color ? ({ "--lang": color } as CSSProperties) : undefined;
 };
-
-const planetStyle = (name: string): CSSProperties =>
-  ({ "--p-tilt": `${String((seedOf(name) % 81) - 40)}deg` }) as CSSProperties;
 
 interface RepoStripProps {
   allUrl: string;
@@ -40,12 +34,6 @@ export const RepoStrip = ({
           key={repo.url}
           style={tone(repo)}
         >
-          <span
-            aria-hidden="true"
-            className="repo-planet"
-            data-kind={planetKinds[index % planetKinds.length]}
-            style={planetStyle(repo.name)}
-          />
           <div className="work-row-body">
             <div className="work-row-top">
               <h3 className="post-row-title">

@@ -1,5 +1,4 @@
 ---
-import BlogSide from "@/components/blog/blog-side.astro";
 import PostToc from "@/components/blog/post-toc.astro";
 import { PostEffects } from "@/components/blog/post-effects";
 import { type TocItem } from "@/lib/blog/toc";
@@ -13,10 +12,11 @@ const { html, toc } = Astro.props;
 ---
 
 <div class="post-layout">
-  <div class="post-rail">
-    <PostToc items={toc} />
-    <BlogSide />
-  </div>
+  {toc.length > 0 && (
+    <div class="post-rail">
+      <PostToc items={toc} />
+    </div>
+  )}
   <article class="prose-blog" set:html={html} />
   <PostEffects client:load />
 </div>

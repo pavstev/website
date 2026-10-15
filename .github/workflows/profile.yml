@@ -6,16 +6,10 @@ on:
     paths:
       - .github/workflows/profile.yml
       - .nvmrc
-      - public/fonts/inter-*
-      - public/fonts/geist-latin-*
-      - public/fonts/geist-extra-*
       - src/lib/github.ts
       - src/lib/i18n.ts
-      - src/lib/icon-data.ts
       - src/lib/personal.ts
       - src/lib/products.ts
-      - src/lib/template.ts
-      - src/lib/theme.ts
       - src/profile/**
       - tsconfig.json
   schedule:
@@ -98,7 +92,7 @@ jobs:
         if: inputs.dry_run && steps.diff.outputs.changed == 'true'
         working-directory: mirror
         run: |
-          git diff --cached -- . ':!assets/header.svg'
+          git diff --cached
           echo "Dry run: nothing was pushed." >> "$GITHUB_STEP_SUMMARY"
       - name: Commit and push
         if: github.ref == 'refs/heads/main' && !inputs.dry_run && steps.diff.outputs.changed == 'true'

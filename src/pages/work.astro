@@ -1,6 +1,5 @@
 ---
 import BlogHeader from "@/components/blog/blog-header.astro";
-import BlogSide from "@/components/blog/blog-side.astro";
 import { ProductStrip } from "@/components/product-strip";
 import { RepoStrip } from "@/components/repo-strip";
 import SiteFooter from "@/components/site-footer.astro";
@@ -29,19 +28,24 @@ const metadata = listMetadata({
       title={en.work.heading}
     >
       <Fragment slot="meta">
-        <span>{countHeading(repos.length, en.repos)}</span>
-        <span aria-hidden="true"> · </span>
         <span>{countHeading(products.length, en.products)}</span>
+        <span aria-hidden="true"> · </span>
+        <span>{countHeading(repos.length, en.repos)}</span>
       </Fragment>
     </BlogHeader>
     <div class="post-layout">
-      <div class="post-rail">
-        <BlogSide />
-      </div>
       <div class="blog-index work-page">
         <span hidden id="work-new-tab">
           {en.repos.newTab}
         </span>
+        {products.length > 0 && (
+          <section aria-labelledby="products" class="work-section">
+            <h2 class="work-heading" id="products">
+              {en.work.productsHeading}
+            </h2>
+            <ProductStrip newTabId="work-new-tab" products={products} />
+          </section>
+        )}
         {repos.length > 0 && (
           <section aria-labelledby="projects" class="work-section">
             <h2 class="work-heading" id="projects">
@@ -54,17 +58,9 @@ const metadata = listMetadata({
             />
           </section>
         )}
-        {products.length > 0 && (
-          <section aria-labelledby="products" class="work-section">
-            <h2 class="work-heading" id="products">
-              {en.work.productsHeading}
-            </h2>
-            <ProductStrip newTabId="work-new-tab" products={products} />
-          </section>
-        )}
       </div>
     </div>
-    <SiteFooter className="blog-footer" rss />
+    <SiteFooter className="blog-footer" profile rss />
     <WorkEffects client:idle={{ timeout: 1000 }} />
   </main>
 </BlogLayout>

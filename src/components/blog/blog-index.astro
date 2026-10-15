@@ -1,6 +1,5 @@
 ---
 import BlogHeader from "@/components/blog/blog-header.astro";
-import BlogSide from "@/components/blog/blog-side.astro";
 import Pagination from "@/components/blog/pagination.astro";
 import PostList from "@/components/blog/post-list.astro";
 import TagRow from "@/components/blog/tag-row.astro";
@@ -45,9 +44,6 @@ const countLabel = (total: number): string =>
     </Fragment>
   </BlogHeader>
   <div class="post-layout">
-    <div class="post-rail">
-      <BlogSide />
-    </div>
     <section aria-labelledby="blog-title" class="blog-index">
       <TagRow current={listing.tag?.slug} tags={listing.tags} />
       <PostList posts={listing.posts} />
@@ -58,5 +54,5 @@ const countLabel = (total: number): string =>
       />
     </section>
   </div>
-  <SiteFooter className="blog-footer" rss />
+  <SiteFooter className="blog-footer" profile rss />
 </main>

@@ -33,14 +33,16 @@ const links = [
 ];
 ---
 
-<aside aria-label={en.blog.sideLabel} class="blog-side">
-  <p class="blog-side-name">{personalData.name}</p>
-  <p class="blog-side-role">{en.blog.sideRole}</p>
-  <ul class="blog-side-links">
+<section aria-label={en.blog.footerLabel} class="footer-profile">
+  <div class="footer-profile-id">
+    <p class="footer-profile-name">{personalData.name}</p>
+    <p class="footer-profile-role">{en.blog.footerRole}</p>
+  </div>
+  <ul class="footer-profile-links">
     {links.map((link) => (
       <li>
         <a
-          class="blog-side-link focus-ring"
+          class="footer-profile-link focus-ring"
           data-astro-reload={link.external ? undefined : ""}
           href={link.href}
           rel={link.external ? "me noopener noreferrer" : undefined}
@@ -53,4 +55,4 @@ const links = [
       </li>
     ))}
   </ul>
-</aside>
+</section>

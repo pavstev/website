@@ -1,36 +1,18 @@
-import {
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { getContact, getRepos } from "../lib/github.ts";
 import { en } from "../lib/i18n.ts";
-import { iconData } from "../lib/icon-data.ts";
 import { personalData } from "../lib/personal.ts";
 import { productMeta, products } from "../lib/products.ts";
-import { resumeUrl } from "./icons.ts";
 import { reachable } from "./reachable.ts";
+import { resumeUrl } from "./readme.ts";
 import { renderProfile } from "./render.ts";
-import { compareText } from "./text.ts";
 import { validateProfile } from "./validate.ts";
 
 const root = process.cwd();
 const outDir = path.join(root, ".profile-out");
-const fontDir = path.join(root, "public", "fonts");
 const checkMode = process.argv.includes("--check");
-
-const readFont = (prefix: string): Uint8Array => {
-  const name = readdirSync(fontDir)
-    .filter((file) => file.startsWith(prefix) && file.endsWith(".woff2"))
-    .toSorted(compareText)
-    .at(-1);
-  if (!name) throw new Error(`No font file starting with "${prefix}"`);
-  return readFileSync(path.join(fontDir, name));
-};
 
 const [repos, contact] = await Promise.all([
   getRepos(personalData.githubHandle),
@@ -38,13 +20,6 @@ const [repos, contact] = await Promise.all([
 ]);
 const person = { ...personalData, linkedin: contact.linkedin };
 const files = renderProfile({
-  fonts: {
-    extra: readFont("inter-extra-wght-"),
-    latin: readFont("inter-latin-wght-"),
-    nameExtra: readFont("geist-extra-600-"),
-    nameLatin: readFont("geist-latin-600-"),
-  },
-  icons: iconData,
   personal: person,
   products: products.map((product) => ({
     line: product.line,
@@ -53,7 +28,6 @@ const files = renderProfile({
     url: product.url,
   })),
   repos,
-  sky: readFileSync(path.join(root, "src", "profile", "header-sky.webp")),
   strings: en,
 });
 
@@ -61,7 +35,7 @@ const errors = validateProfile(files, { generated: en.profile.generated });
 if (checkMode && errors.length === 0) {
   errors.push(
     ...(await reachable(personalData.website)),
-    ...(await reachable(resumeUrl(person)))
+    ...(await reachable(resumeUrl(person.website)))
   );
 }
 

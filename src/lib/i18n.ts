@@ -16,6 +16,8 @@ export const en = {
     crumbHome: "Home",
     crumbsLabel: "Breadcrumb",
     draft: "Draft",
+    footerLabel: "About the author",
+    footerRole: "Software engineer and tech lead.",
     footnoteBack: "Back to the text",
     footnotes: "Notes",
     heading: "Blog",
@@ -48,8 +50,6 @@ export const en = {
     rss: "RSS feed",
     scheduled: "Scheduled",
     shareLine: "{blog} · {minutes}",
-    sideLabel: "About the author",
-    sideRole: "Software engineer and tech lead.",
     tableAscending: "ascending",
     tableDescending: "descending",
     tableOriginal: "Original order restored. {n} rows.",
@@ -221,10 +221,16 @@ export const en = {
     llmsHeading: "Products",
   },
   profile: {
+    columnBuiltWith: "Built with",
+    columnProduct: "Product",
+    columnProject: "Project",
+    columnRole: "Role",
+    columnStars: "Stars",
+    columnWhat: "What it is",
     contributingContent: "Bio, links and location: `src/lib/personal.ts`",
     contributingIntro:
       "This repository is generated. Do not edit it by hand: a GitHub Action overwrites every file here.",
-    contributingLayout: "Layout, header and icons: `src/profile/`",
+    contributingLayout: "Layout: `src/profile/`",
     contributingPreview:
       "Run `pnpm profile:build` in that repository to preview the result in `.profile-out/`.",
     contributingSource:

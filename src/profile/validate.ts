@@ -4,17 +4,7 @@ export interface ValidateOptions {
   generated: string;
 }
 
-const maxHeaderBytes = 120_000;
-
-const requiredPaths = ["README.md", "CONTRIBUTING.md", "assets/header.svg"];
-const svgNamespace = "http://www.w3.org/2000/svg";
-
-const attributes = (tag: string): Map<string, string> =>
-  new Map(
-    tag
-      .matchAll(/\s(alt|href|src)="([^"]*)"/g)
-      .map(([, name = "", value = ""]) => [name, value] as const)
-  );
+const requiredPaths = ["README.md", "CONTRIBUTING.md"];
 
 const markdownLinks = (text: string): string[] =>
   text
@@ -33,64 +23,17 @@ const checkUrl = (url: string, label: string): string[] => {
   }
 };
 
-const checkImages = (readme: string, paths: ReadonlySet<string>): string[] => {
+const checkReadme = (readme: string, options: ValidateOptions): string[] => {
   const errors: string[] = [];
-  for (const [tag] of readme.matchAll(/<img\b[^>]*>/g)) {
-    const found = attributes(tag);
-    const src = found.get("src") ?? "";
-    if (!src) errors.push(`README.md: image without src: ${tag}`);
-    else if (!/^https?:/.test(src) && !paths.has(src)) {
-      errors.push(`README.md: image "${src}" is missing from the output`);
-    }
-    if ((found.get("alt") ?? "").trim() === "") {
-      errors.push(`README.md: image "${src}" has no alt text`);
-    }
-  }
-  return errors;
-};
-
-const checkReadme = (
-  readme: string,
-  paths: ReadonlySet<string>,
-  options: ValidateOptions
-): string[] => {
-  const errors = checkImages(readme, paths);
   if (!readme.startsWith(`<!-- ${options.generated} -->\n`)) {
     errors.push("README.md: first line is not the generated notice");
   }
-  const links = [
-    ...readme
-      .matchAll(/<a\b[^>]*>/g)
-      .map(([tag]) => attributes(tag).get("href") ?? ""),
-    ...markdownLinks(readme),
-  ];
+  const links = markdownLinks(readme);
   for (const url of links) errors.push(...checkUrl(url, "README.md link"));
-  if (/<p\b[^>]*>\s*<\/p>/.test(readme)) {
-    errors.push("README.md: empty paragraph");
-  }
-  if (!/^## .+\n\n- .+/m.test(readme)) {
+  if (!/^## .+\n\n\| .+\n\| :--/m.test(readme)) {
     errors.push("README.md: the projects section is empty");
   }
-  return errors;
-};
-
-const checkSvg = (file: ProfileFile): string[] => {
-  const errors: string[] = [];
-  const { contents, path } = file;
-  if (!contents.startsWith("<svg ")) errors.push(`${path}: not an SVG`);
-  if (!contents.includes(`xmlns="${svgNamespace}"`)) {
-    errors.push(`${path}: missing xmlns`);
-  }
-  if (/<script\b/i.test(contents)) errors.push(`${path}: contains a script`);
-  if (/(?:href=|url\()["']?https?:/i.test(contents)) {
-    errors.push(`${path}: loads something from another host`);
-  }
-  const size = Buffer.byteLength(contents);
-  if (path === "assets/header.svg" && size > maxHeaderBytes) {
-    errors.push(
-      `${path}: ${String(size)} bytes is over ${String(maxHeaderBytes)}`
-    );
-  }
+  if (/<img\b/i.test(readme)) errors.push("README.md: contains an image");
   return errors;
 };
 
@@ -109,9 +52,8 @@ export const validateProfile = (
     if (!file.contents.endsWith("\n") || file.contents.endsWith("\n\n")) {
       errors.push(`${file.path}: must end with exactly one newline`);
     }
-    if (file.path.endsWith(".svg")) errors.push(...checkSvg(file));
   }
   const readme = files.find((file) => file.path === "README.md");
-  if (readme) errors.push(...checkReadme(readme.contents, paths, options));
+  if (readme) errors.push(...checkReadme(readme.contents, options));
   return errors;
 };

@@ -28,30 +28,23 @@ describe("validateProfile", () => {
     );
   });
 
-  it("reports an image that is missing from the output", () => {
+  it("reports a missing file", () => {
     const errors = errorsFor((files) =>
-      files.filter((file) => file.path !== "assets/flag-at.svg")
+      files.filter((file) => file.path !== "CONTRIBUTING.md")
     );
-    assert.ok(errors.some((error) => error.includes("assets/flag-at.svg")));
+    assert.ok(errors.some((error) => error.includes("CONTRIBUTING.md")));
   });
 
-  it("reports an image without alt text", () => {
+  it("reports an image", () => {
     const errors = errorsFor((files) =>
-      edit(files, "README.md", (text) =>
-        text.replace('alt="Website"', 'alt=""')
-      )
+      edit(files, "README.md", (text) => `${text}<img src="a.svg" alt="a">\n`)
     );
-    assert.ok(errors.some((error) => error.includes("no alt text")));
+    assert.ok(errors.some((error) => error.includes("image")));
   });
 
-  it("reports an empty projects section", () => {
+  it("reports a README without a table", () => {
     const errors = errorsFor((files) =>
-      edit(
-        files,
-        "README.md",
-        (text) =>
-          `${text.split("## 2 open source projects", 1)[0] ?? ""}## 2 open source projects\n`
-      )
+      edit(files, "README.md", (text) => text.replaceAll("| :--", "| --"))
     );
     assert.ok(errors.some((error) => error.includes("projects section")));
   });
@@ -61,19 +54,6 @@ describe("validateProfile", () => {
       edit(files, "README.md", (text) => text.replace(/^<!--.*-->\n/, ""))
     );
     assert.ok(errors.some((error) => error.includes("generated notice")));
-  });
-
-  it("reports scripts and outside hosts in an SVG", () => {
-    const errors = errorsFor((files) =>
-      edit(files, "assets/flag-at.svg", (text) =>
-        text.replace(
-          "</svg>",
-          '<script>1</script><image href="https://x.test/a.png"/></svg>'
-        )
-      )
-    );
-    assert.ok(errors.some((error) => error.includes("script")));
-    assert.ok(errors.some((error) => error.includes("another host")));
   });
 
   it("reports a link that is not https", () => {

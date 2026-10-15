@@ -1,34 +1,15 @@
 import type { Repo } from "../lib/github.ts";
 
-export interface IconData {
-  body: string;
-  height: number;
-  width: number;
-}
-
 export interface ProfileFile {
   contents: string;
   path: string;
 }
 
 export interface ProfileInput {
-  fonts: ProfileFonts;
-  icons: Readonly<Record<string, IconData>>;
   personal: ProfilePerson;
   products: ProfileProduct[];
   repos: readonly Repo[];
-  sky: Uint8Array;
   strings: ProfileStrings;
-}
-
-export interface ProfilePerson {
-  city: string;
-  country: string;
-  linkedin: string;
-  name: string;
-  summary: string;
-  title: string;
-  website: string;
 }
 
 export interface ProfileProduct {
@@ -38,17 +19,23 @@ export interface ProfileProduct {
   url: string;
 }
 
-interface ProfileFonts {
-  extra: Uint8Array;
-  latin: Uint8Array;
-  nameExtra: Uint8Array;
-  nameLatin: Uint8Array;
+interface ProfilePerson {
+  linkedin: string;
+  name: string;
+  summary: string;
+  title: string;
+  website: string;
 }
 
 interface ProfileStrings {
   card: { linkedin: string };
-  products: { headingOne: string; headingOther: string };
   profile: {
+    columnBuiltWith: string;
+    columnProduct: string;
+    columnProject: string;
+    columnRole: string;
+    columnStars: string;
+    columnWhat: string;
     contributingContent: string;
     contributingIntro: string;
     contributingLayout: string;
@@ -60,5 +47,5 @@ interface ProfileStrings {
     resume: string;
     website: string;
   };
-  repos: { headingOne: string; headingOther: string };
+  work: { productsHeading: string; projectsHeading: string };
 }

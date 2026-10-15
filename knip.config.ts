@@ -9,7 +9,6 @@ const config: KnipConfig = {
     "scripts/generate-globe-data.ts",
     "scripts/generate-images.ts",
     "scripts/indexnow.ts",
-    "scripts/linkedin-sync.ts",
     "scripts/preload-guard.ts",
     "scripts/**/*.test.ts",
     "src/profile/**/*.test.ts",

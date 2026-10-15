@@ -1,37 +1,7 @@
 import type { ProfileInput } from "./types.ts";
 
 export const fixture: ProfileInput = {
-  fonts: {
-    extra: new Uint8Array([4, 5, 6]),
-    latin: new Uint8Array([1, 2, 3]),
-    nameExtra: new Uint8Array([10, 11, 12]),
-    nameLatin: new Uint8Array([7, 8, 9]),
-  },
-  icons: {
-    "circle-flags:at": {
-      body: '<path fill="#d80027" d="M0 0h512v512H0z"/>',
-      height: 512,
-      width: 512,
-    },
-    "lucide:download": {
-      body: '<path stroke="currentColor" d="M12 15V3"/>',
-      height: 24,
-      width: 24,
-    },
-    "lucide:globe": {
-      body: '<circle cx="12" cy="12" r="10" stroke="currentColor"/>',
-      height: 24,
-      width: 24,
-    },
-    "simple-icons:linkedin": {
-      body: '<path fill="currentColor" d="M0 0h24v24H0z"/>',
-      height: 24,
-      width: 24,
-    },
-  },
   personal: {
-    city: "Vienna",
-    country: "Austria",
     linkedin: "https://www.linkedin.com/in/ada/",
     name: "Ada Example",
     summary: "Hi! I build engines in Vienna. I like small teams & clear APIs.",
@@ -73,14 +43,15 @@ export const fixture: ProfileInput = {
       url: "https://github.com/ada/engine-two",
     },
   ],
-  sky: new Uint8Array([13, 14, 15]),
   strings: {
     card: { linkedin: "LinkedIn" },
-    products: {
-      headingOne: "{count} product",
-      headingOther: "{count} products",
-    },
     profile: {
+      columnBuiltWith: "Built with",
+      columnProduct: "Product",
+      columnProject: "Project",
+      columnRole: "Role",
+      columnStars: "Stars",
+      columnWhat: "What it is",
       contributingContent: "Bio: `a`",
       contributingIntro: "Generated. Do not edit.",
       contributingLayout: "Layout: `b`",
@@ -92,9 +63,9 @@ export const fixture: ProfileInput = {
       resume: "Résumé (PDF)",
       website: "Website",
     },
-    repos: {
-      headingOne: "{count} open source project",
-      headingOther: "{count} open source projects",
+    work: {
+      productsHeading: "Products",
+      projectsHeading: "Open source projects",
     },
   },
 };
