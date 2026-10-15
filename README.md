@@ -11,11 +11,11 @@ My personal site: one contact card floating over a live WebGL sky, a small blog 
 - **One sky.** A hand-written WebGL night sky behind the card and the blog. The real Vienna sun sits where it truly is; going to the blog, it glides to the top-left corner and becomes the blog's corona.
 - **Shooting stars.** One every few seconds from the top-left, with a bright head and a cooling trail.
 - **A glass bead.** It follows the cursor over the portrait (a finger after a press and hold) and magnifies the photo with chromatic edges, in the card and in the portrait dialog.
-- **A name that tunes in.** A CSS signal intro, then every 8 s a WebGL tear and a weight-morph wave across the letters.
+- **A name that tunes in.** A CSS signal intro, then every 8 s a WebGL tear with a color split and scan lines.
 - **A work page.** [/work](https://stevanpavlovic.com/work) lists the open-source repos, each with a CSS planet and language chips in GitHub's colors.
 - **One product beside the code.** Safety Real Time sits under the repos on /work. Its logo is a flat mark in a ring.
 - **Vienna on a globe.** Click "Vienna" in the bio for the coat of arms, a few facts and a three.js globe that loads only then.
-- **A blog under the same sky.** [/blog](https://stevanpavlovic.com/blog) puts one moon around my portrait for each post and links posts that share a tag. Each post has its own sky in the header. Posts are MDX with charts, diagrams and shader stills, optimized at build time, with RSS and JSON feeds and a Markdown copy for AI tools.
+- **A blog under the same sky.** [/blog](https://stevanpavlovic.com/blog) lists the posts as rows under the same night sky, with tag pages and a table of contents beside each post. Posts are MDX with charts, diagrams and shader stills, optimized at build time, with RSS and JSON feeds and a Markdown copy for AI tools.
 - **Kind to your device.** Every loop drops to 30 fps when idle, pauses when hidden, degrades on slow frames and draws one still frame under reduced motion or a software renderer. A "Stop motion" button in the footer stills everything and remembers it.
 - **No cookies.** Cloudflare Web Analytics counts visits without them, and a small chip says so once.
 

@@ -19,7 +19,7 @@ interface DiagramStep {
 
 export const diagramMeta: Record<DiagramName, DiagramMeta> = {
   "site-pipeline": {
-    desc: "A git push goes to GitHub. Cloudflare Workers Builds then runs three steps in order: the CV fetch, the blog build and the Astro build. Out come the static assets, every page, feed and image, plus one Worker that answers /mcp.",
+    desc: "A git push goes to GitHub. Cloudflare Workers Builds then runs two steps in order: the blog build and the Astro build. Out come the static assets, every page, feed and image, plus one Worker that answers /mcp.",
     title: "From git push to the live site",
   },
   "skill-map": {
@@ -39,7 +39,7 @@ export const diagramMeta: Record<DiagramName, DiagramMeta> = {
 export const sitePipeline = {
   builds: {
     label: "Workers Builds",
-    steps: ["CV fetch", "blog build", "astro build"],
+    steps: ["blog build", "astro build"],
   },
   outputs: [
     { detail: "pages, feeds, images", label: "Static assets" },
