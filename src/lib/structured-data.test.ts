@@ -39,21 +39,10 @@ describe("structuredData", () => {
         "ProfilePage",
         "Person",
         "SoftwareSourceCode",
-        "WebApplication",
         "SoftwareApplication",
       ]
     );
     assert.deepEqual(graph.slice(4), [
-      {
-        "@id": "https://stevanpavlovic.com/#product-hirista",
-        "@type": "WebApplication",
-        applicationCategory: "BusinessApplication",
-        creator: { "@id": person },
-        description:
-          "Every saved job scored, every application prepared. You press send.",
-        name: "hirista",
-        url: "https://hirista.app",
-      },
       {
         "@id": "https://stevanpavlovic.com/#product-safety-real-time",
         "@type": "SoftwareApplication",

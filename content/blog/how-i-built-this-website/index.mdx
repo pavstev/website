@@ -2,13 +2,14 @@
 title: How I built this website
 description: Eight days, three redesigns and a sky made from real stars. How I rebuilt this site with Next.js, raw WebGL and Claude Code.
 date: 2026-10-13T12:00:00+02:00
+updated: 2026-10-15T18:00:00+02:00
 draft: false
 tags: [Next.js, WebGL, Cloudflare, Claude Code]
 ---
 
 On Monday, 5 October, my personal site was a static Astro site with about twenty URLs and a résumé pipeline that started a headless browser to print a PDF. It worked, but it was more site than I needed.
 
-Eight days later the site is one contact card over a sky that follows the real sun, moon and stars. It builds my résumé from another app I wrote and answers AI agents on a public MCP endpoint. On the way I threw out a light theme, a galaxy, a holographic foil, a wind simulation and a chat panel.
+Eight days later the site is one contact card over a sky that follows the real sun, moon and stars. For its first week it built my résumé from another app I wrote, and it answers AI agents on a public MCP endpoint. On the way I threw out a light theme, a galaxy, a holographic foil, a wind simulation and a chat panel.
 
 I built almost all of it with Claude Code. This post is the plain version: what I chose, what I reversed, the bugs that taught me something, and the numbers.
 
@@ -44,7 +45,7 @@ The same day brought small things that now define the card. The flag next to "Vi
 
 First, a Cloudflare Worker. The site is static, and only one path runs code: `/mcp`. For two days a second path, `/weather`, ran too (see below), and I took it out again. `/mcp` is a stateless MCP server. It launched with six read-only tools (profile, experience, skills, projects, products, contact), and this blog added two, `posts` and `post`. It is limited to 20 requests per minute per IP. An AI agent gets the same facts the page shows. Claude built it with 31 subagents in three parallel lanes in about an hour.
 
-Second, my résumé now comes from [hirista](https://hirista.app), the job search app I build. At build time a script fetches its CV feed, and `/resume.pdf` is rendered from it with `@react-pdf/renderer`: four pages, about 143 KB. Saving my résumé in hirista calls a deploy hook, and this site rebuilds. A fixture file is shared byte for byte between the two repos, so a change to the feed shape breaks tests on both sides.
+Second, my résumé came from hirista, the job search app I was building. At build time a script fetched its CV feed, and `/resume.pdf` was rendered from it with `@react-pdf/renderer`: four pages, about 143 KB. Saving my résumé in hirista called a deploy hook, and this site rebuilt. A fixture file was shared byte for byte between the two repos, so a change to the feed shape broke tests on both sides. I removed the feed on 15 October 2026; the résumé now lives in this repo as a committed file, and the PDF is still rendered from it at build time.
 
 Third, a products column with hirista and Safety Real Time. Their logos are small planets that turn in from the night side like a sunrise and then wobble. The page now had a lot of motion, so one small orbit-shaped button pauses all of it and remembers the choice.
 
@@ -54,11 +55,11 @@ That day I also shipped an "Ask me" chat on Workers AI with a bot check in front
 
 On 10 October hirista moved to a new database that started empty. The feed answered 404 and every build of this site failed. That was on purpose: I would rather fail a build than publish an empty résumé. It still blocked every deploy.
 
-So I added a committed snapshot of the résumé. The commit hook builds from it without calling the feed, and CI and Cloudflare can switch to it in an emergency. A fallback to the live `/cv.json` happens only on a timeout, a network error or a 5xx.
+So I added a committed snapshot of the résumé. The commit hook built from it without calling the feed, and CI and Cloudflare could switch to it in an emergency. A fallback to the live `/cv.json` happened only on a timeout, a network error or a 5xx. Five days later the snapshot became the résumé itself.
 
 <Diagram
   name="site-pipeline"
-  caption="From a push to the live site: Workers Builds fetches the CV feed, builds the blog and the pages, and publishes static files with a Worker in front of /mcp."
+  caption="From a push to the live site, as it ran until 15 October: Workers Builds fetched the CV feed, built the blog and the pages, and published static files with a Worker in front of /mcp."
 />
 
 ## 12 October: the sky day

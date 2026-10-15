@@ -98,14 +98,17 @@ describe("cvLlmsSections", () => {
     assert.deepEqual(
       withProjects([
         {
-          name: "hirista",
-          overview: "Job search.",
-          websiteUrl: "https://www.hirista.app/",
+          name: "Fleet",
+          overview: "Fleet safety.",
+          websiteUrl: "https://www.safetyrealtime.com/",
         },
-        { name: "No-break space", websiteUrl: "https://hirista.app\u{A0}" },
+        {
+          name: "No-break space",
+          websiteUrl: "https://safetyrealtime.com\u{A0}",
+        },
         {
           name: "Byte order mark",
-          websiteUrl: "\u{FEFF}https://www.hirista.app/",
+          websiteUrl: "\u{FEFF}https://www.safetyrealtime.com/",
         },
         { name: "Ledger", websiteUrl: "https://example.com/ledger" },
       ]),

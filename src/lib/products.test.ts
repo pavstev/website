@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { describe, it } from "node:test";
 
+import { en } from "./i18n.ts";
 import { productMarks } from "./product-marks.ts";
 import {
   isProductUrl,
@@ -10,9 +11,10 @@ import {
   productMetaParts,
   products,
 } from "./products.ts";
+import { countHeading } from "./template.ts";
 
 describe("products", () => {
-  it("lists hirista, then Safety Real Time", () => {
+  it("lists Safety Real Time", () => {
     assert.deepEqual(
       products.map((product) => [
         product.key,
@@ -21,7 +23,6 @@ describe("products", () => {
         product.url,
       ]),
       [
-        ["hirista", "hirista", "WebApplication", "https://hirista.app"],
         [
           "safety-real-time",
           "Safety Real Time",
@@ -30,6 +31,9 @@ describe("products", () => {
         ],
       ]
     );
+  });
+  it("counts in the singular", () => {
+    assert.equal(countHeading(products.length, en.products), "1 product");
   });
   it("has unique keys, https links and lines of at most 80 characters", () => {
     assert.equal(
@@ -47,16 +51,13 @@ describe("products", () => {
   it("joins role and period", () => {
     assert.deepEqual(
       products.map((product) => productMeta(product)),
-      ["Solo founder · 2026", "Co-founder & CTO · since 2022"]
+      ["Co-founder & CTO · since 2022"]
     );
   });
   it("splits the meta after the dot, so a tile wraps it only there", () => {
     assert.deepEqual(
       products.map((product) => productMetaParts(product)),
-      [
-        ["Solo founder ·", "2026"],
-        ["Co-founder & CTO ·", "since 2022"],
-      ]
+      [["Co-founder & CTO ·", "since 2022"]]
     );
     for (const product of products) {
       assert.equal(productMetaParts(product).join(" "), productMeta(product));
@@ -64,22 +65,21 @@ describe("products", () => {
   });
   it("writes one llms.txt line per product", () => {
     assert.deepEqual(productLlmsLines(products), [
-      "- [hirista](https://hirista.app): Solo founder · 2026. Every saved job scored, every application prepared. You press send.",
       "- [Safety Real Time](https://safetyrealtime.com): Co-founder & CTO · since 2022. Keeps trucking fleets inspected, compliant and visible in real time.",
     ]);
   });
   it("matches a product host with or without www", () => {
     for (const url of [
-      "https://hirista.app",
-      "https://www.hirista.app/jobs",
+      "https://safetyrealtime.com",
       "https://www.safetyrealtime.com/",
+      "https://www.safetyrealtime.com/fleet",
     ]) {
       assert.equal(isProductUrl(url), true, url);
     }
     for (const url of [
-      "https://app.hirista.app",
-      "https://example.com/hirista.app",
-      "hirista.app",
+      "https://app.safetyrealtime.com",
+      "https://example.com/safetyrealtime.com",
+      "safetyrealtime.com",
       "",
     ]) {
       assert.equal(isProductUrl(url), false, url);
@@ -94,12 +94,6 @@ describe("products", () => {
         mark.layers.map((layer) => layer.ink),
       ]),
       [
-        [
-          "hirista",
-          "0 0 24 24",
-          { scale: 0.88, x: 1.22, y: 2.06 },
-          ["mark", "accent"],
-        ],
         [
           "safety-real-time",
           "0 0 100 100",

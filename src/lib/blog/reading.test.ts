@@ -125,7 +125,7 @@ describe("readingTime", () => {
 });
 
 describe("the committed posts", () => {
-  it("how-i-built-this-website: 2,742 prose + 11 code words, 2 figures, 4 visuals, 14 min", () => {
+  it("how-i-built-this-website: 2,792 prose + 11 code words, 2 figures, 4 visuals, 14 min", () => {
     const reading = readingOf(postBody("how-i-built-this-website"));
     assert.deepEqual(
       [
@@ -136,11 +136,11 @@ describe("the committed posts", () => {
         reading.minutes,
         reading.words,
       ],
-      [2742, 11, 2, 4, 14, 2753]
+      [2792, 11, 2, 4, 14, 2803]
     );
   });
 
-  it("how-i-use-ai: 2,561 prose words, no code, no images, 5 visuals = 745.6 s, 13 min", () => {
+  it("how-i-use-ai: 2,577 prose words, no code, no images, 5 visuals = 749.7 s, 13 min", () => {
     const reading = readingOf(postBody("how-i-use-ai"));
     assert.deepEqual(
       [
@@ -151,7 +151,7 @@ describe("the committed posts", () => {
         reading.minutes,
         reading.words,
       ],
-      [2561, 0, 0, 5, 13, 2561]
+      [2577, 0, 0, 5, 13, 2577]
     );
   });
 });

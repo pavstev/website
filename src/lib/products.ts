@@ -31,7 +31,6 @@ const entry = (
 });
 
 export const products: readonly Product[] = [
-  entry("hirista", "hirista", "WebApplication", "https://hirista.app"),
   entry(
     "safety-real-time",
     "Safety Real Time",

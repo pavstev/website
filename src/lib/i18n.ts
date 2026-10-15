@@ -212,11 +212,6 @@ export const en = {
     headingOne: "{count} product",
     headingOther: "{count} products",
     items: {
-      hirista: {
-        line: "Every saved job scored, every application prepared. You press send.",
-        period: "2026",
-        role: "Solo founder",
-      },
       "safety-real-time": {
         line: "Keeps trucking fleets inspected, compliant and visible in real time.",
         period: "since 2022",

@@ -72,11 +72,11 @@ const baseInput: LinkedinInput = {
   },
   products: [
     {
-      line: "Scores every job.",
-      name: "Hirista",
+      line: "Plans trips for you.",
+      name: "Tripkit",
       period: "2026",
       role: "Founder",
-      url: "https://hirista.example",
+      url: "https://tripkit.example",
     },
   ],
 };
@@ -108,7 +108,7 @@ describe("buildSnapshot", () => {
       "skills:Backend",
       "languages",
       "projects:Ledger",
-      "featured:Hirista",
+      "featured:Tripkit",
     ]);
   });
 
@@ -256,9 +256,9 @@ describe("diffSnapshots", () => {
     assert.deepEqual(
       changedFields({
         ...baseInput,
-        products: [{ ...product, line: "Scores every job twice." }],
+        products: [{ ...product, line: "Plans trips for you twice." }],
       }),
-      ["featured:Hirista"]
+      ["featured:Tripkit"]
     );
   });
 
@@ -269,14 +269,14 @@ describe("diffSnapshots", () => {
     );
     assert.equal(added.length, 1);
     assert.equal(added[0]?.before, null);
-    assert.ok(added[0]?.after?.includes("Hirista"));
+    assert.ok(added[0]?.after?.includes("Tripkit"));
     const removed = diffSnapshots(
       buildSnapshot(baseInput),
       buildSnapshot({ ...baseInput, products: [] })
     );
     assert.equal(removed.length, 1);
     assert.equal(removed[0]?.after, null);
-    assert.ok(removed[0]?.before?.includes("Hirista"));
+    assert.ok(removed[0]?.before?.includes("Tripkit"));
   });
 
   it("names the place to click for each change", () => {

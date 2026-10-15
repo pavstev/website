@@ -42,12 +42,6 @@ export const inkPalette = {
 } as const;
 
 export const productPalette = {
-  hirista: {
-    accent: "#f79900",
-    disc: "#1c1410",
-    mark: "#efebe2",
-    tint: "#f79900",
-  },
   "safety-real-time": {
     accent: "#32d74b",
     disc: "#070908",

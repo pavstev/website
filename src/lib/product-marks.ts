@@ -12,17 +12,6 @@ interface MarkLayer {
 }
 
 export const productMarks: Record<ProductKey, ProductMark> = {
-  hirista: {
-    layers: [
-      { d: "M6 3.5H10.6V9.5L7.6 6.5H6Z", ink: "mark" },
-      {
-        d: "M7.6 7.8L10.6 10.8A5.2 5.2 0 0 1 18 15.51V19.1H15V15.51A2.2 2.2 0 0 0 10.6 15.51V19.1H7.6Z",
-        ink: "accent",
-      },
-    ],
-    transform: { scale: 0.88, x: 1.22, y: 2.06 },
-    viewBox: "0 0 24 24",
-  },
   "safety-real-time": {
     layers: [
       {
