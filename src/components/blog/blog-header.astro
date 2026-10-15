@@ -4,16 +4,17 @@ import { BarSpy } from "@/components/blog/bar-spy";
 import { Icon } from "@/components/icon";
 import { MotionToggle } from "@/components/motion-toggle";
 import { ReadingProgress } from "@/components/ui/reading-progress";
+import { type Crumb, crumbIsLink } from "@/lib/blog/crumbs";
 import { en } from "@/lib/i18n";
-import { personalData } from "@/lib/personal";
 
 interface Props {
+  crumbs: Crumb[];
   slug?: string;
   title: string;
   toc?: boolean;
 }
 
-const { slug, title, toc = false } = Astro.props;
+const { crumbs, slug, title, toc = false } = Astro.props;
 ---
 
 <div
@@ -33,14 +34,40 @@ const { slug, title, toc = false } = Astro.props;
     />
   )}
   <div class="blog-bar-row">
-    <a class="blog-brand focus-ring" href="/" title={en.blog.home}>
-      <AuthorPhoto alt="" class="blog-brand-photo" sizes="2rem" />
-      <span class="blog-brand-name">{personalData.name}</span>
-    </a>
-    <nav aria-label={en.blog.navLabel} class="blog-bar-nav">
-      <a class="blog-bar-link focus-ring" href="/blog">
-        {en.blog.heading}
-      </a>
+    <nav aria-label={en.blog.crumbsLabel} class="blog-crumbs">
+      <ol class="blog-crumbs-list">
+        {crumbs.map((crumb, index) => (
+          <li class="blog-crumbs-item" data-home={index === 0 ? "" : undefined}>
+            {index > 0 && (
+              <span aria-hidden="true" class="blog-crumbs-sep">
+                /
+              </span>
+            )}
+            {crumbIsLink(crumb) ? (
+              <a
+                aria-current={crumb.current ? "page" : undefined}
+                class="blog-crumbs-link focus-ring"
+                href={crumb.path}
+              >
+                {index === 0 && (
+                  <AuthorPhoto
+                    alt=""
+                    class="blog-crumbs-photo"
+                    sizes="1.5rem"
+                  />
+                )}
+                <span class={index === 0 ? "blog-crumbs-home" : undefined}>
+                  {crumb.label}
+                </span>
+              </a>
+            ) : (
+              <span aria-current="page" class="blog-crumbs-here">
+                {crumb.label}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
     </nav>
     {toc && (
       <button
@@ -65,11 +92,6 @@ const { slug, title, toc = false } = Astro.props;
       <MotionToggle client:load variant="bar" />
     </div>
   </div>
-  {slug !== undefined && (
-    <p aria-hidden="true" class="blog-bar-title">
-      {title}
-    </p>
-  )}
 </div>
 <BarSpy client:load />
 <header class="blog-header" data-sky-header="">

@@ -15,6 +15,25 @@ export interface PressOrigin {
   y: number;
 }
 
+export const withLip = (box: PressBox, lip: number): PressBox => ({
+  bottom: box.bottom + lip,
+  height: box.height + lip,
+  left: box.left,
+  right: box.right,
+  top: box.top,
+  width: box.width,
+});
+
+const pressBox = (element: HTMLElement): PressBox => {
+  const lip = Number(
+    getComputedStyle(element).getPropertyValue("--lip").trim().replace("px", "")
+  );
+  return withLip(
+    element.getBoundingClientRect(),
+    Number.isFinite(lip) ? lip : 0
+  );
+};
+
 export const pressOrigin = (
   clientX: number,
   clientY: number,
@@ -79,17 +98,18 @@ export const initPressDepth = (
       selector
     );
     if (!target) return;
-    press(
-      target,
-      pressOrigin(down.clientX, down.clientY, target.getBoundingClientRect())
-    );
+    press(target, pressOrigin(down.clientX, down.clientY, pressBox(target)));
     pointer = down.pointerId;
   });
 
   on(globalThis, "pointermove", (event) => {
     const move = event as PointerEvent;
     if (!element || move.pointerId !== pointer) return;
-    hold(isInside(move.clientX, move.clientY, element.getBoundingClientRect()));
+    hold(isInside(move.clientX, move.clientY, pressBox(element)));
+  });
+
+  on(scope, "focusout", (event) => {
+    if (element && event.target === element) release();
   });
 
   for (const type of ["pointerup", "pointercancel"]) {

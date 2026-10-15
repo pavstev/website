@@ -5,12 +5,12 @@ import { en } from "@/lib/i18n";
 
 <Base title={en.notFound.title}>
   <main class="grid min-h-dvh place-items-center overflow-x-clip safe-area text-center">
-    <div class="container-page grid justify-items-center gap-4">
-      <h1 class="type-display text-balance text-foreground">
+    <div class="container-page grid justify-items-center gap-3">
+      <h1 class="type-display text-balance font-semibold text-foreground">
         {en.notFound.title}
       </h1>
       <a
-        class="focus-ring inline-flex min-h-11 items-center text-primary underline"
+        class="focus-ring type-body inline-flex min-h-11 items-center rounded-(--ui-radius) px-3 text-primary underline underline-offset-4"
         href="/"
       >
         {en.notFound.home}

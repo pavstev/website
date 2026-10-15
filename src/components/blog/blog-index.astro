@@ -6,6 +6,7 @@ import PostList from "@/components/blog/post-list.astro";
 import TagRow from "@/components/blog/tag-row.astro";
 import { Icon } from "@/components/icon";
 import { SiteFooter } from "@/components/site-footer";
+import { listingCrumbs } from "@/lib/blog/crumbs";
 import { type Listing } from "@/lib/blog/listing";
 import { en } from "@/lib/i18n";
 
@@ -28,7 +29,7 @@ const countLabel = (total: number): string =>
   <script type="application/ld+json" is:inline set:html={jsonLd} />
 )}
 <main class="blog-main" id="main-content">
-  <BlogHeader title={heading}>
+  <BlogHeader crumbs={listingCrumbs(heading, listing.url)} title={heading}>
     <Fragment slot="meta">
       <span>{countLabel(listing.total)}</span>
       <span aria-hidden="true"> · </span>

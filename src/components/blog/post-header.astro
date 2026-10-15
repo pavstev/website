@@ -2,6 +2,7 @@
 import BlogHeader from "@/components/blog/blog-header.astro";
 import { PostDate } from "@/components/blog/post-date";
 import PostTags from "@/components/blog/post-tags.astro";
+import { postCrumbs } from "@/lib/blog/crumbs";
 import { minutesLabel } from "@/lib/blog/format";
 import { isScheduled } from "@/lib/blog/schedule";
 import { type PostMeta } from "@/lib/blog/schema";
@@ -15,12 +16,13 @@ interface Props {
 const { post, toc } = Astro.props;
 ---
 
-<BlogHeader slug={post.slug} title={post.title} toc={toc}>
+<BlogHeader
+  crumbs={postCrumbs(post)}
+  slug={post.slug}
+  title={post.title}
+  toc={toc}
+>
   <Fragment slot="meta">
-    <a class="blog-crumb focus-ring" href="/blog">
-      {en.blog.heading}
-    </a>
-    <span aria-hidden="true"> · </span>
     <span class="sr-only">{en.blog.published} </span>
     <PostDate client:load iso={post.date} />
     <span aria-hidden="true"> · </span>

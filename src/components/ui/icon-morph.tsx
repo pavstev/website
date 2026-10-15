@@ -29,7 +29,7 @@ interface IconMorphProps {
 
 export const IconMorph = ({
   shape,
-  size = 16,
+  size = 20,
 }: IconMorphProps): ReactElement => (
   <svg
     aria-hidden="true"

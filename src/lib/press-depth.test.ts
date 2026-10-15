@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { isInside, pressOrigin } from "./press-depth.ts";
+import { isInside, pressOrigin, withLip } from "./press-depth.ts";
 
 const rect = {
   bottom: 140,
@@ -38,6 +38,28 @@ describe("pressOrigin", () => {
       }),
       { x: 0, y: 0 }
     );
+  });
+});
+
+describe("withLip", () => {
+  it("grows the box downward by the lip, like interior's button padding", () => {
+    assert.deepEqual(withLip(rect, 4), {
+      bottom: 144,
+      height: 44,
+      left: 100,
+      right: 200,
+      top: 100,
+      width: 100,
+    });
+  });
+
+  it("keeps a point on the lip inside the press zone", () => {
+    assert.equal(isInside(150, 143, rect), false);
+    assert.equal(isInside(150, 143, withLip(rect, 4)), true);
+  });
+
+  it("measures the press origin over the box with the lip", () => {
+    assert.deepEqual(pressOrigin(150, 144, withLip(rect, 4)), { x: 0, y: 1 });
   });
 });
 
