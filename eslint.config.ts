@@ -67,6 +67,7 @@ const eslintConfig = defineConfig([
     ".agents/**",
     ".astro/**",
     ".claude/**",
+    ".opencode/**",
     ".profile-out/**",
     ".superpowers/**",
     ".wrangler/**",

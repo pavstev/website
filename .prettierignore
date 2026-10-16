@@ -10,3 +10,4 @@ public/blog-media
 public/blog
 public/build.json
 .claude/worktrees
+.opencode/

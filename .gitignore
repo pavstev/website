@@ -26,6 +26,7 @@ pnpm-debug.log*
 .DS_Store
 .claude/skills/
 .agents/
+/.opencode/
 .blog/
 .dev.vars
 .env*
