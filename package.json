@@ -12,6 +12,7 @@
     "dev:many": "export BLOG_FIXTURES=1 && pnpm dev",
     "fix": "prettier --write . --cache --log-level=warn && eslint . --fix --max-warnings=0 --cache",
     "icons": "node scripts/generate-icon-data.ts",
+    "land": "node scripts/generate-land-map.ts",
     "moon": "node scripts/generate-moon-map.ts",
     "places": "node scripts/generate-places.ts",
     "prepare": "husky",

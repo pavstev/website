@@ -1,5 +1,6 @@
 import { type ReactElement, useEffect, useId, useRef, useState } from "react";
 
+import landUrl from "@/assets/land-map.webp?url";
 import { Icon } from "@/components/icon";
 import { type LatLon, roundPlace, sameSpot } from "@/lib/geo";
 import { en } from "@/lib/i18n";
@@ -469,11 +470,19 @@ export const SkyGlobe = ({
         const table = await placeSource.table();
         if (alive) scene.addCities(table);
       } catch {}
+    };
+    const loadLand = async (): Promise<void> => {
+      try {
+        await scene.addLand(landUrl);
+      } catch {}
+    };
+    const loadAll = async (): Promise<void> => {
+      await Promise.all([loadCities(), loadLand()]);
       if (!alive) return;
       setStatus("ready");
       schedule();
     };
-    void loadCities();
+    void loadAll();
 
     return () => {
       alive = false;

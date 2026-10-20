@@ -40,5 +40,8 @@ export const globePalette = {
   city: paintTints.city,
   day: "#18284E",
   graticule: "#88A4DC",
+  land: "#1B2B4F",
+  landDay: "#2F4778",
   rim: "#3F62B0",
+  shore: "#7599E6",
 } as const;

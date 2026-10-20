@@ -69,6 +69,7 @@ const body = (current: Record<string, unknown> = {}): unknown => ({
     wind_speed_10m: 9.4,
     ...current,
   },
+  timezone: "Europe/Vienna",
 });
 
 const sky = (current: Record<string, unknown> = {}): SkyWeather => {
@@ -181,6 +182,7 @@ describe("parseReport", () => {
       visibility: 24_140,
       windFrom: 290,
       windKmh: 9.4,
+      zone: "Europe/Vienna",
     });
   });
 

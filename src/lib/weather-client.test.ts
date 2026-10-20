@@ -75,7 +75,7 @@ describe("weather client", () => {
   it("builds the request", () =>
     assert.equal(
       weatherUrl(vienna),
-      "https://api.open-meteo.com/v1/forecast?latitude=48.2&longitude=16.4&current=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,wind_speed_10m,wind_direction_10m,visibility,relative_humidity_2m,precipitation"
+      "https://api.open-meteo.com/v1/forecast?latitude=48.2&longitude=16.4&current=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,wind_speed_10m,wind_direction_10m,visibility,relative_humidity_2m,precipitation&timezone=auto"
     ));
 
   it("uses a cache entry younger than 15 minutes", async () => {

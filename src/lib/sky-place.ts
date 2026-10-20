@@ -1,6 +1,7 @@
 import { type LatLon, roundPlace, sameSpot, vienna } from "./geo.ts";
 import { en } from "./i18n.ts";
-import { type PlaceName } from "./place-name.ts";
+import { countryName, type PlaceName } from "./place-name.ts";
+import { fillText } from "./template.ts";
 
 export type PlaceStore = Pick<Storage, "getItem" | "removeItem" | "setItem">;
 
@@ -68,6 +69,14 @@ export const coordinateLabel = (spot: LatLon): string =>
     .replace("{ns}", () => (spot.lat < 0 ? en.sky.south : en.sky.north))
     .replace("{lon}", () => Math.abs(spot.lon).toFixed(1))
     .replace("{ew}", () => (spot.lon < 0 ? en.sky.west : en.sky.east));
+
+export const nearText = (found: PlaceName): string =>
+  fillText(en.sky.near, {
+    place: fillText(en.sky.named, {
+      city: found.name,
+      country: countryName(found.country),
+    }),
+  });
 
 export const placeOverride = (search: string): SkyPlace | undefined => {
   const parts = new URLSearchParams(search)

@@ -32,6 +32,7 @@ pnpm check     # prettier, eslint, astro check, worker tsc, tests, knip, build, 
 pnpm fix       # prettier --write + eslint --fix
 pnpm astro check   # types over .ts, .tsx and .astro (part of pnpm check)
 pnpm icons     # re-extract src/lib/icon-data.ts
+pnpm land      # rasterize Natural Earth 1:50m land (public domain) into src/assets/land-map.webp (the globe's continents; a local GeoJSON path may be the first argument)
 pnpm moon      # redraw src/assets/moon-map.webp (fixed seed, same output every run)
 pnpm places    # re-read GeoNames cities15000 into src/assets/places.txt (city names for the visitor's sky place)
 pnpm profile:build  # build the GitHub profile files into ./.profile-out
@@ -76,7 +77,7 @@ src/lib/          personal, nav (the bar links About, Work and Blog), footer-lin
                   frame-clock, intro, portrait-effects, portrait-lens (dither lens), portrait-halo (dither halo), portrait-dither (pure math), portrait-expand, contact-links, download-ring,
                   cursor, webgl, icon-data
 src/lib/blog/     schema, posts, schedule (go-live instant, scheduled posts), dates (Vienna date, relative date, tip lines), reading (reading time), tags, pagination, listing and listing-route (index, tag and page listings), fixture-posts (30 dev-only test posts), build-env (drafts, fixtures, robots), format (reading time label, post title), links (external link test), slug (routes: `isBlogPage`, `isSitePage` for the blog, /work and /about), about (reads content/about/index.mdx), render (`evaluate()`), plain (Markdown and feed HTML), toc, anchors, media (hashed names, manifest), share (share images), metadata, feeds, chart-data, chart-layout, diagrams (diagram copy lives here, not in i18n), diagram-ink, title-morph (the card to post title morph over `ClientRouter`), tests
-src/assets/       moon-map.webp (the drawn moon map, 512 x 512, made by `pnpm moon`, imported with `?url`)
+src/assets/       moon-map.webp (the drawn moon map, 512 x 512, made by `pnpm moon`, imported with `?url`), land-map.webp (the globe's land mask, 2048 x 1024, made by `pnpm land` from `scripts/generate-land-map.ts` over `scripts/land-map.ts`, loaded with the globe chunk through `?url`)
 src/data/         cv.json (the résumé, hand-edited; phone empty, updatedAt moved on every edit)
 src/styles/       tokens.css (every color: primitives, semantic and UI tokens, the night lift, the day mode, fallbacks, print), globals.css (shared: imports tokens.css, fonts, type utilities, sky, materials, keycaps, tips, drawers, dock, privacy, footer motion toggle), card.css (card-only rules, starts with `@import "./globals.css"`), blog.css (blog-only rules, same import)
 content/blog/     <slug>/index.mdx, data/*.json for charts, stills and cover.webp per post
@@ -85,7 +86,7 @@ public/           stevan-pavlovic.jpeg, portraits/, fonts/, favicons, og-image.j
 src/profile/      types, text, readme (tables), render (pure), validate, cli, tests
 worker/           index (entry), router (paths to handlers), mcp (/mcp), where (/where: the rough city from `request.cf`, no weather), facts (cv.json + llms.txt reader and text helpers), http, tests, tsconfig.json
 wrangler.jsonc    assets, run_worker_first, MCP_LIMITER, `preview_urls: false`; worker-configuration.d.ts is generated from it
-scripts/          blog-build.ts, preload-guard.ts and meta-guard.ts (the 404 stays noindex and the share titles follow the page title; run by `pnpm build`, blog-build also runs in `pnpm dev`), indexnow.ts (indexnow.yml), generate-icon-data.ts (pnpm icons), generate-moon-map.ts (pnpm moon, over moon-map.ts), generate-images.ts (images.yml), blog-publish.ts (blog-publish.yml, every 15 minutes: builds the site when a scheduled post is due), all run by Node's type stripping
+scripts/          blog-build.ts, preload-guard.ts and meta-guard.ts (the 404 stays noindex and the share titles follow the page title; run by `pnpm build`, blog-build also runs in `pnpm dev`), indexnow.ts (indexnow.yml), generate-icon-data.ts (pnpm icons), generate-land-map.ts (pnpm land, over land-map.ts), generate-moon-map.ts (pnpm moon, over moon-map.ts), generate-images.ts (images.yml), blog-publish.ts (blog-publish.yml, every 15 minutes: builds the site when a scheduled post is due), all run by Node's type stripping
 .blog/            gitignored: media.json (hashed image manifest), written by blog-build
 .github/workflows/  ci, images, profile, indexnow (pings IndexNow for changed posts after a deploy)
 ```

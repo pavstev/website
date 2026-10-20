@@ -53,6 +53,7 @@ export interface WeatherReport {
   visibility: number | undefined;
   windFrom: number;
   windKmh: number;
+  zone: string | undefined;
 }
 
 export type WeatherWord =
@@ -265,7 +266,7 @@ const optional = (value: unknown): number | undefined =>
 
 export const parseReport = (body: unknown): undefined | WeatherReport => {
   if (!isRecord(body)) return undefined;
-  const { current } = body;
+  const { current, timezone } = body;
   if (!isRecord(current)) return undefined;
   const {
     cloud_cover: cover,
@@ -298,5 +299,6 @@ export const parseReport = (body: unknown): undefined | WeatherReport => {
         visibility: optional(visibility),
         windFrom,
         windKmh,
+        zone: typeof timezone === "string" ? timezone : undefined,
       };
 };

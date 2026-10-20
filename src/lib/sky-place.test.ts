@@ -10,6 +10,7 @@ import {
   defaultStore,
   isPlace,
   namePlace,
+  nearText,
   placeEvent,
   placeKey,
   placeNamedEvent,
@@ -100,6 +101,12 @@ describe("place labels and overrides", () => {
     assert.equal(
       coordinateLabel({ lat: -33.9, lon: -70.7 }),
       "33.9° S, 70.7° W"
+    );
+  });
+  it("says near a city with its country", () => {
+    assert.equal(
+      nearText({ country: "AT", name: "Graz" }),
+      "Near Graz, Austria"
     );
   });
   it("reads ?place=", () =>

@@ -2103,9 +2103,23 @@ html:has([data-blog]) {
   font-size: var(--fs-note);
 }
 
-.sky-panel-place {
+.sky-panel-where {
   display: grid;
   min-width: 0;
+}
+
+.sky-panel-where > * {
+  grid-area: 1 / 1;
+}
+
+.sky-panel-place {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+}
+
+.sky-panel-place[data-moving] {
+  opacity: 0;
 }
 
 .sky-panel-city {

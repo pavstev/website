@@ -295,6 +295,7 @@ export const en = {
     locating: "Locating",
     mine: "Mine",
     named: "{city}, {country}",
+    near: "Near {place}",
     north: "N",
     note: "Rounded to about 10 km. Kept only on this device.",
     owner: "Stevan's",

@@ -22,7 +22,7 @@ import {
 } from "@/lib/scene-hold";
 import { publishSpot, skySpot } from "@/lib/sky-ask";
 import { clearBox, clearUniform } from "@/lib/sky-clear";
-import { placeZone } from "@/lib/sky-clock";
+import { placeZone, setPlaceZone } from "@/lib/sky-clock";
 import {
   freshInk,
   glowFor,
@@ -698,6 +698,7 @@ const startSky = (
     weatherAt = Date.now();
     const report = await loadWeather(asked, browserWeatherDeps());
     if (!report || !samePlace(asked, place)) return;
+    setPlaceZone(asked, report.zone);
     weatherReported = skyWeather(report);
     setLiveWeather(weatherNameOf(report.code));
     if (mode !== "home" || weatherFixed()) return;

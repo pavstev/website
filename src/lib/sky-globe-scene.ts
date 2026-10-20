@@ -1,6 +1,7 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  ClampToEdgeWrapping,
   CustomBlending,
   Group,
   Mesh,
@@ -8,9 +9,12 @@ import {
   OneMinusSrcAlphaFactor,
   OrthographicCamera,
   Points,
+  RepeatWrapping,
   Scene,
   ShaderMaterial,
   SphereGeometry,
+  type Texture,
+  TextureLoader,
   Vector3,
   WebGLRenderer,
 } from "three";
@@ -24,6 +28,7 @@ import { hexBytes } from "./theme.ts";
 
 export interface GlobeScene {
   addCities: (table: PlaceTable) => void;
+  addLand: (url: string) => Promise<void>;
   dispose: () => void;
   draw: (view: GlobeView) => void;
   radius: (zoom: number) => number;
@@ -56,10 +61,15 @@ void main() {
 `;
 
 const earthFragment = `
+uniform sampler2D uMap;
+uniform float uHasMap;
 uniform vec3 uBase;
 uniform vec3 uDay;
+uniform vec3 uLand;
+uniform vec3 uLandDay;
 uniform vec3 uLine;
 uniform vec3 uRim;
+uniform vec3 uShore;
 uniform vec3 uSun;
 varying vec3 vObj;
 varying float vNz;
@@ -78,7 +88,27 @@ void main() {
   float parallels = gridLine(lat, 30.0) * (1.0 - step(89.0, abs(lat)));
   float grid = max(meridians, parallels);
   float day = smoothstep(-0.15, 0.4, dot(p, uSun));
-  vec3 col = mix(uBase, uDay, day * 0.6);
+
+  float v = lat / 180.0 + 0.5;
+  vec2 uvA = vec2(lon / 360.0 + 0.5, v);
+  vec2 uvB = vec2(fract(lon / 360.0 + 1.0) - 0.5, v);
+  vec2 axA = dFdx(uvA);
+  vec2 ayA = dFdy(uvA);
+  vec2 axB = dFdx(uvB);
+  vec2 ayB = dFdy(uvB);
+  bool alt = fwidth(uvB.x) < fwidth(uvA.x);
+  vec2 uv = alt ? uvB : uvA;
+  vec2 gx = alt ? axB : axA;
+  vec2 gy = alt ? ayB : ayA;
+  float m = textureGrad(uMap, uv, gx, gy).r;
+  float aa = clamp(fwidth(m) * 0.75, 0.03, 0.5);
+  float land = smoothstep(0.5 - aa, 0.5 + aa, m) * uHasMap;
+  float blur = textureGrad(uMap, uv, gx * 6.0, gy * 6.0).r;
+  float shore = smoothstep(0.02, 0.45, blur) * (1.0 - land) * uHasMap;
+
+  vec3 ocean = mix(uBase, uDay, day * 0.6);
+  vec3 col = mix(ocean, mix(uLand, uLandDay, day), land);
+  col += uShore * shore * 0.2;
   float rim = pow(1.0 - clamp(vNz, 0.0, 1.0), 3.0);
   col += uRim * rim * 0.4;
   col = mix(col, uLine, grid * 0.17);
@@ -169,13 +199,23 @@ export const createGlobeScene = (
   const sunView = new Vector3();
 
   const earthGeometry = new SphereGeometry(1, 72, 48);
+  const landLoader = new TextureLoader();
+  const landMap: { value: null | Texture } = { value: null };
+  const landOn = { value: 0 };
+  let landTexture: Texture | undefined;
+  let disposed = false;
   const earthMaterial = new ShaderMaterial({
     fragmentShader: earthFragment,
     uniforms: {
       uBase: { value: color(globePalette.base) },
       uDay: { value: color(globePalette.day) },
+      uHasMap: landOn,
+      uLand: { value: color(globePalette.land) },
+      uLandDay: { value: color(globePalette.landDay) },
       uLine: { value: color(globePalette.graticule) },
+      uMap: landMap,
       uRim: { value: color(globePalette.rim) },
+      uShore: { value: color(globePalette.shore) },
       uSun: { value: sunObject },
     },
     vertexShader: earthVertex,
@@ -242,6 +282,21 @@ export const createGlobeScene = (
     globe.add(cityPoints);
   };
 
+  const addLand = async (url: string): Promise<void> => {
+    const texture = await landLoader.loadAsync(url);
+    if (disposed) {
+      texture.dispose();
+      return;
+    }
+    texture.wrapS = RepeatWrapping;
+    texture.wrapT = ClampToEdgeWrapping;
+    texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    landTexture?.dispose();
+    landTexture = texture;
+    landMap.value = texture;
+    landOn.value = 1;
+  };
+
   const resize = (nextWidth: number, nextHeight: number): void => {
     width = nextWidth;
     height = nextHeight;
@@ -266,6 +321,8 @@ export const createGlobeScene = (
   };
 
   const dispose = (): void => {
+    disposed = true;
+    landTexture?.dispose();
     earthGeometry.dispose();
     earthMaterial.dispose();
     atmosphereGeometry.dispose();
@@ -276,5 +333,5 @@ export const createGlobeScene = (
     renderer.forceContextLoss();
   };
 
-  return { addCities, dispose, draw, radius, resize };
+  return { addCities, addLand, dispose, draw, radius, resize };
 };

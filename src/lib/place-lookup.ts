@@ -1,7 +1,9 @@
 import { type LatLon, roundPlace } from "./geo.ts";
 import {
   decodePlaces,
+  nearbyPlace,
   nearestPlace,
+  type NearPlace,
   type PlaceName,
   type PlaceTable,
 } from "./place-name.ts";
@@ -10,6 +12,7 @@ export type PlaceLoader = () => Promise<string>;
 
 export interface PlaceSource {
   lookup: (spot: LatLon) => Promise<PlaceName | undefined>;
+  near: (spot: LatLon) => Promise<NearPlace | undefined>;
   table: () => Promise<PlaceTable>;
 }
 
@@ -31,5 +34,12 @@ export const createPlaceSource = (load: PlaceLoader): PlaceSource => {
       return undefined;
     }
   };
-  return { lookup, table };
+  const near = async (spot: LatLon): Promise<NearPlace | undefined> => {
+    try {
+      return nearbyPlace(await table(), roundPlace(spot));
+    } catch {
+      return undefined;
+    }
+  };
+  return { lookup, near, table };
 };

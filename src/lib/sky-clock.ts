@@ -1,6 +1,8 @@
 import { viennaZone } from "./blog/dates.ts";
+import { type LatLon, roundPlace } from "./geo.ts";
 
 const minuteMs = 60_000;
+const hourMs = 3_600_000;
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
 interface WallParts {
@@ -69,7 +71,48 @@ export const wallInstant = (
   return guess - offsetMs(first, timeZone);
 };
 
-export const placeZone = (place: { kind: string }): string =>
-  place.kind === "vienna"
-    ? viennaZone
-    : new Intl.DateTimeFormat().resolvedOptions().timeZone;
+export const isTimeZone = (zone: string): boolean => {
+  try {
+    formatterFor(zone);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const spotKey = (spot: LatLon): string => {
+  const rounded = roundPlace(spot);
+  return `${String(rounded.lat)},${String(rounded.lon)}`;
+};
+
+const zones = new Map<string, string>();
+
+export const setPlaceZone = (spot: LatLon, zone: string | undefined): void => {
+  if (zone && isTimeZone(zone)) zones.set(spotKey(spot), zone);
+};
+
+const fixedZone = (hours: number): string => {
+  if (hours === 0) return "Etc/GMT";
+  return hours > 0 ? `Etc/GMT-${String(hours)}` : `Etc/GMT+${String(-hours)}`;
+};
+
+export const zoneFor = (
+  place: LatLon & { kind: string },
+  known: string | undefined,
+  browser: string,
+  instant: number
+): string => {
+  if (place.kind === "vienna") return viennaZone;
+  if (known) return known;
+  const hours = Math.round(place.lon / 15);
+  const near = Math.abs(hours - offsetMs(instant, browser) / hourMs) <= 1;
+  return near ? browser : fixedZone(hours);
+};
+
+export const placeZone = (place: LatLon & { kind: string }): string =>
+  zoneFor(
+    place,
+    zones.get(spotKey(place)),
+    new Intl.DateTimeFormat().resolvedOptions().timeZone,
+    Date.now()
+  );

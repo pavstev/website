@@ -3,6 +3,7 @@ import {
   lazy,
   type ReactElement,
   Suspense,
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -18,8 +19,9 @@ import { MotionSwitch } from "@/components/motion-switch";
 import { SkyRange } from "@/components/sky-range";
 import { initAnchoredPopovers } from "@/lib/anchored-popovers";
 import { isCrawler } from "@/lib/crawler";
+import { type LatLon, sameSpot } from "@/lib/geo";
 import { en } from "@/lib/i18n";
-import { countryName } from "@/lib/place-name";
+import { countryName, nearbyPlace, type PlaceTable } from "@/lib/place-name";
 import { placeSource } from "@/lib/place-source";
 import {
   askPosition,
@@ -34,6 +36,7 @@ import {
   coordinateLabel,
   isPlace,
   namePlace,
+  nearText,
   placeEvent,
   placeNamedEvent,
   type SkyPlace,
@@ -74,6 +77,16 @@ import { instantOverride } from "@/lib/sky-sun";
 import { minePlan, moveTab, type SkyTab, startTab } from "@/lib/sky-tabs";
 import { fillText } from "@/lib/template";
 import { weatherNameOverride } from "@/lib/weather";
+
+interface Moving {
+  base: LatLon;
+  spot: LatLon;
+  text: string | undefined;
+}
+
+interface Nearby extends LatLon {
+  text: string;
+}
 
 type Notice = "failed" | "precise" | undefined;
 
@@ -165,8 +178,14 @@ export const SkyControls = (): ReactElement => {
   const [finding, setFinding] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [clock, setClock] = useState({ now: 0, search: "" });
+  const [moving, setMoving] = useState<Moving>();
+  const [nearby, setNearby] = useState<Nearby>();
   const { country, kind, lat, lon } = place;
   const alive = useRef(true);
+  const frame = useRef(0);
+  const pending = useRef<LatLon>(undefined);
+  const settled = useRef<LatLon>({ lat, lon });
+  const table = useRef<PlaceTable>(undefined);
   const round = useRef(0);
   const root = useRef<HTMLSpanElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -176,6 +195,39 @@ export const SkyControls = (): ReactElement => {
   const baseId = useId();
   const timeId = useId();
   const weatherId = useId();
+
+  const settle = useCallback((): void => {
+    cancelAnimationFrame(frame.current);
+    frame.current = 0;
+    pending.current = undefined;
+    setMoving(undefined);
+  }, []);
+
+  const trackMove = (spot: LatLon): void => {
+    pending.current = spot;
+    if (frame.current !== 0) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0;
+      const next = pending.current;
+      pending.current = undefined;
+      if (!next) return;
+      if (sameSpot(next, settled.current)) {
+        setMoving(undefined);
+        return;
+      }
+      const found = table.current && nearbyPlace(table.current, next);
+      const text = found && nearText(found);
+      const base = settled.current;
+      setMoving((earlier) =>
+        earlier &&
+        sameSpot(earlier.base, base) &&
+        sameSpot(earlier.spot, next) &&
+        earlier.text === text
+          ? earlier
+          : { base, spot: next, text }
+      );
+    });
+  };
 
   useEffect(() => {
     alive.current = true;
@@ -200,6 +252,7 @@ export const SkyControls = (): ReactElement => {
       clearInterval(tick);
       const isOpen = node?.matches(":popover-open") ?? false;
       setPanelOpen(isOpen);
+      if (!isOpen) settle();
       tick = isOpen ? setInterval(read, 60_000) : undefined;
     };
     const onBefore = (event: Event): void => {
@@ -215,7 +268,7 @@ export const SkyControls = (): ReactElement => {
       node?.removeEventListener("toggle", onToggle);
       stop?.();
     };
-  }, []);
+  }, [settle]);
 
   useEffect(() => {
     const current = placeOf(raw);
@@ -223,10 +276,37 @@ export const SkyControls = (): ReactElement => {
   }, [raw]);
 
   useEffect(() => {
+    settled.current = { lat, lon };
+  }, [lat, lon]);
+
+  useEffect(() => {
+    if (tab !== "mine" || !panelOpen) return;
+    let live = true;
+    const load = async (): Promise<void> => {
+      try {
+        const found = await placeSource.table();
+        if (live) table.current = found;
+      } catch {}
+    };
+    void load();
+    return () => {
+      live = false;
+    };
+  }, [panelOpen, tab]);
+
+  useEffect(() => {
     if (kind !== "visitor" || country) return;
     let live = true;
-    void placeSource.lookup({ lat, lon }).then((found) => {
-      if (live && found) namePlace({ lat, lon }, found);
+    const spot = { lat, lon };
+    void placeSource.lookup(spot).then((found) => {
+      if (!live) return;
+      if (found) {
+        namePlace(spot, found);
+        return;
+      }
+      void placeSource.near(spot).then((wide) => {
+        if (live && wide) setNearby({ ...spot, text: nearText(wide) });
+      });
     });
     return () => {
       live = false;
@@ -278,6 +358,7 @@ export const SkyControls = (): ReactElement => {
 
   const selectTab = (next: SkyTab): void => {
     setFocusTab(next);
+    settle();
     if (next === tab) {
       if (next === "mine" && kind !== "visitor" && !finding) {
         round.current += 1;
@@ -305,6 +386,9 @@ export const SkyControls = (): ReactElement => {
         country: countryName(country),
       })
     : undefined;
+  const dragging = moving && sameSpot(moving.base, place) ? moving : undefined;
+  const shownCity =
+    city ?? (nearby && sameSpot(nearby, place) ? nearby.text : undefined);
   const shown = shownTime(
     preview.time,
     instantOverride(clock.search),
@@ -451,7 +535,9 @@ export const SkyControls = (): ReactElement => {
                 >
                   <SkyGlobe
                     label={en.sky.globe.label}
+                    onMove={trackMove}
                     onPick={(picked) => {
+                      settle();
                       choosePlace({
                         kind: "visitor",
                         label: coordinateLabel(picked),
@@ -462,18 +548,36 @@ export const SkyControls = (): ReactElement => {
                   />
                 </Suspense>
               )}
-              <p aria-live="polite" className="sky-panel-place">
-                {visitor ? (
-                  <>
-                    {city && <span className="sky-panel-city">{city}</span>}
+              <div className="sky-panel-where">
+                <p
+                  aria-live="polite"
+                  className="sky-panel-place"
+                  data-moving={dragging ? "" : undefined}
+                >
+                  {visitor ? (
+                    <>
+                      {shownCity && (
+                        <span className="sky-panel-city">{shownCity}</span>
+                      )}
+                      <span className="sky-panel-coords">
+                        {coordinateLabel(place)}
+                      </span>
+                    </>
+                  ) : (
+                    finding && en.sky.locating
+                  )}
+                </p>
+                {dragging && (
+                  <p aria-hidden="true" className="sky-panel-place">
+                    {dragging.text && (
+                      <span className="sky-panel-city">{dragging.text}</span>
+                    )}
                     <span className="sky-panel-coords">
-                      {coordinateLabel(place)}
+                      {coordinateLabel(dragging.spot)}
                     </span>
-                  </>
-                ) : (
-                  finding && en.sky.locating
+                  </p>
                 )}
-              </p>
+              </div>
               {visitor && readout}
               <button
                 aria-disabled={asking}

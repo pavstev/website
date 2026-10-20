@@ -37,7 +37,7 @@ const placeKey = (place: LatLon): string =>
 
 export const weatherUrl = (place: LatLon): string => {
   const spot = roundPlace(place);
-  return `${endpoint}?latitude=${String(spot.lat)}&longitude=${String(spot.lon)}&current=${fields}`;
+  return `${endpoint}?latitude=${String(spot.lat)}&longitude=${String(spot.lon)}&current=${fields}&timezone=auto`;
 };
 
 interface CacheEntry {

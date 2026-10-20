@@ -39,6 +39,23 @@ describe("createPlaceSource", () => {
     assert.equal(again?.name, "Graz");
   });
 
+  it("names a place far away with its distance", async () => {
+    const { lookup, near } = createPlaceSource(() => Promise.resolve(file));
+    const spot = { lat: 47.1, lon: 17.5 };
+    assert.equal(await lookup(spot), undefined);
+    const found = await near(spot);
+    assert.equal(found?.name, "Vienna");
+    assert.ok(found && found.km > 30);
+    assert.equal(await near({ lat: 0, lon: 0 }), undefined);
+  });
+
+  it("gives nothing near when the load fails", async () => {
+    const { near } = createPlaceSource(() =>
+      Promise.reject(new Error("offline"))
+    );
+    assert.equal(await near({ lat: 47.1, lon: 15.4 }), undefined);
+  });
+
   it("gives the decoded table from the same single load", async () => {
     let loads = 0;
     const { lookup, table } = createPlaceSource(() => {

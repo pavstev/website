@@ -1,5 +1,9 @@
 import { distanceKm, type LatLon } from "./geo.ts";
 
+export interface NearPlace extends PlaceName {
+  km: number;
+}
+
 export interface PlaceName {
   country: string;
   name: string;
@@ -8,6 +12,8 @@ export interface PlaceName {
 export type PlaceTable = readonly Entry[];
 
 interface Entry extends LatLon, PlaceName {}
+
+export const approxRadiusKm = 300;
 
 export const placeRadiusKm = 30;
 
@@ -42,17 +48,34 @@ export const decodePlaces = (text: string): PlaceTable => {
   return rows;
 };
 
-export const nearestPlace = (
+export const windowStart = (table: PlaceTable, minLat: number): number => {
+  let low = 0;
+  let high = table.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    const entry = table[middle];
+    if (entry && entry.lat < minLat) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  return low;
+};
+
+export const nearbyPlace = (
   table: PlaceTable,
   spot: LatLon,
-  maxKm: number = placeRadiusKm
-): PlaceName | undefined => {
+  maxKm: number = approxRadiusKm
+): NearPlace | undefined => {
   const window = maxKm / kmPerDegree;
+  const top = spot.lat + window;
   let best: Entry | undefined;
   let bestKm = maxKm;
-  for (const entry of table) {
-    if (!(Math.abs(entry.lat - spot.lat) <= window)) {
-      continue;
+  for (let index = windowStart(table, spot.lat - window); ; index += 1) {
+    const entry = table[index];
+    if (!entry || entry.lat > top) {
+      break;
     }
 
     const km = distanceKm(spot, entry);
@@ -63,7 +86,16 @@ export const nearestPlace = (
     best = entry;
     bestKm = km;
   }
-  return best && { country: best.country, name: best.name };
+  return best && { country: best.country, km: bestKm, name: best.name };
+};
+
+export const nearestPlace = (
+  table: PlaceTable,
+  spot: LatLon,
+  maxKm: number = placeRadiusKm
+): PlaceName | undefined => {
+  const found = nearbyPlace(table, spot, maxKm);
+  return found && { country: found.country, name: found.name };
 };
 
 let regions: Intl.DisplayNames | undefined;
