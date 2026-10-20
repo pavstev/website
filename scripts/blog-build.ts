@@ -283,6 +283,10 @@ export const writeFixtures = (root: string, imagesFrom = root): number => {
       path.join(imagesFrom, fixtureImageSource, post.cover),
       path.join(dir, "cover.webp")
     );
+    if (post.chart !== undefined) {
+      mkdirSync(path.join(dir, "data"), { recursive: true });
+      writeFileSync(path.join(dir, "data/speed.json"), post.chart);
+    }
     if (post.image !== undefined) {
       copyFileSync(
         path.join(imagesFrom, fixtureImageSource, post.image),

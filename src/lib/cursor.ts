@@ -14,9 +14,9 @@ interface ProximityTarget {
   value: string;
 }
 
-const startCursorEffects = (): (() => void) => {
+const startCursorEffects = (scope: ParentNode): (() => void) => {
   const targets: ProximityTarget[] = [
-    ...document.querySelectorAll<HTMLElement>(proximitySelector),
+    ...scope.querySelectorAll<HTMLElement>(proximitySelector),
   ].map((element) => ({ core: 0, cx: 0, cy: 0, element, limit: 1, value: "" }));
   const lists = new Set<Element>();
   for (const target of targets) {
@@ -126,14 +126,16 @@ const startCursorEffects = (): (() => void) => {
   };
 };
 
-export const initCursorEffects = (): (() => void) => {
+export const initCursorEffects = (
+  scope: ParentNode = document
+): (() => void) => {
   const fine = globalThis.matchMedia(finePointerQuery);
   const reduce = stillQuery();
   let stop: (() => void) | undefined;
 
   const sync = (): void => {
     if (fine.matches && !reduce.matches) {
-      stop ??= startCursorEffects();
+      stop ??= startCursorEffects(scope);
     } else {
       stop?.();
       stop = undefined;

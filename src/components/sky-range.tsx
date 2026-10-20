@@ -27,10 +27,7 @@ interface SkyRangeProps {
   max: number;
   onValue: (value: number) => void;
   pageStep: number;
-  tag?: string;
-  thumb: "large" | "small";
   ticks: readonly RangeTick[];
-  tickStyle: "ruler" | "stop";
   value: number;
   valueText: string;
 }
@@ -41,16 +38,14 @@ const at = (value: number, max: number): CSSProperties =>
 interface TicksProps {
   max: number;
   ticks: readonly RangeTick[];
-  tickStyle: "ruler" | "stop";
 }
 
-const Ticks = memo(({ max, ticks, tickStyle }: TicksProps): ReactElement => (
+const Ticks = memo(({ max, ticks }: TicksProps): ReactElement => (
   <>
     {ticks.map((tick) => (
       <span
         className="sky-range-tick"
         data-major={tick.major ? "" : undefined}
-        data-style={tickStyle}
         key={tick.value}
         style={at(tick.value, max)}
       />
@@ -65,10 +60,7 @@ export const SkyRange = ({
   max,
   onValue,
   pageStep,
-  tag,
-  thumb,
   ticks,
-  tickStyle,
   value,
   valueText,
 }: SkyRangeProps): ReactElement => {
@@ -81,12 +73,12 @@ export const SkyRange = ({
   };
 
   return (
-    <span className="sky-range" data-thumb={thumb}>
+    <span className="sky-range">
       <span aria-hidden="true" className="sky-range-rail">
         <span className="sky-range-track">
           <span className="sky-range-fill" style={at(value, max)} />
         </span>
-        <Ticks max={max} ticks={ticks} tickStyle={tickStyle} />
+        <Ticks max={max} ticks={ticks} />
       </span>
       <input
         aria-valuetext={valueText}
@@ -112,7 +104,6 @@ export const SkyRange = ({
       <span
         aria-hidden="true"
         className="sky-range-scale"
-        data-tag={tag === undefined ? undefined : ""}
         onPointerDown={(event) => {
           if (event.button !== 0) return;
           event.preventDefault();
@@ -136,11 +127,6 @@ export const SkyRange = ({
             {label.content}
           </span>
         ))}
-        {tag !== undefined && (
-          <span className="sky-range-tag" style={at(value, max)}>
-            {tag}
-          </span>
-        )}
       </span>
     </span>
   );

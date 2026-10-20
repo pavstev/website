@@ -156,6 +156,19 @@ describe("test posts", () => {
     assert.ok(posts.some(({ meta }) => meta.date.endsWith("+02:00")));
   });
 
+  it("carry one chart file and a diagram for the render path", () => {
+    writeFixtures(root, repoRoot);
+    const dir = path.join(root, ".blog/fixtures/content/blog");
+    const slug = readdirSync(dir).find((name) =>
+      existsSync(path.join(dir, name, "data/speed.json"))
+    );
+    assert.ok(slug);
+    assert.match(
+      readFileSync(path.join(dir, slug, "index.mdx"), "utf8"),
+      /<Diagram name="site-pipeline"/u
+    );
+  });
+
   it("fail a production build or a CI run that asks for them", () => {
     assert.equal(fixtureGuard({ BLOG_FIXTURES: "1" }), undefined);
     assert.equal(fixtureGuard({}), undefined);

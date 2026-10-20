@@ -16,7 +16,7 @@ paths:
 
 # Blog
 
-Loads when you touch a post or the blog code. The full design is in the **Blog** (with **Scheduled posts**), **No previews** and **IndexNow** bullets of `docs/architecture.md`. Sibling rules: `sky.md` (the sky modes), `card.md`, `motion.md`.
+Loads when you touch a post or the blog code. The blog has no posts yet (the two drafts were removed in the release of 2026-10-20; they are in git history at `9372279`): `blogLive()` is false and the build writes no `/blog`, no feeds and no RSS key. The diagram and chart components stay covered by the dev-only test posts (`pnpm dev:many`). The full design is in the **Blog** (with **Scheduled posts**), **No previews** and **IndexNow** bullets of `docs/architecture.md`. Sibling rules: `sky.md` (the sky modes), `card.md`, `motion.md`.
 
 ## Add a post
 
@@ -65,7 +65,7 @@ Dates in outputs (sitemap `lastmod`, RSS, JSON Feed, JSON-LD, Open Graph) are th
 
 ## Reading time
 
-`src/lib/blog/reading.ts` counts visible words only (link text, not URLs; no image paths, alt or JSX props; `caption` and `title` of `Figure`, `Chart`, `Diagram` count; headings, inline code and footnote text count; footnote markers do not) at 238 words a minute, fenced code at 119, plus 12 s per image or `Figure` and 20 s per `Chart` or `Diagram`, rounded up, at least 1 minute. One value feeds the header, the list, the share image and JSON-LD. Changing a post changes its golden numbers in `reading.test.ts`: update them in the same commit.
+`src/lib/blog/reading.ts` counts visible words only (link text, not URLs; no image paths, alt or JSX props; `caption` and `title` of `Figure`, `Chart`, `Diagram` count; headings, inline code and footnote text count; footnote markers do not) at 238 words a minute, fenced code at 119, plus 12 s per image or `Figure` and 20 s per `Chart` or `Diagram`, rounded up, at least 1 minute. One value feeds the header, the list, the share image and JSON-LD. `reading.test.ts` checks the counting rules on small samples; there is no post-specific golden number.
 
 ## Tags and pages
 
@@ -73,7 +73,7 @@ Tag chips link to `/blog/tag/<slug>` (`tagSlug`: "Claude Code" is `claude-code`,
 
 ## Many posts locally
 
-`pnpm dev:many` adds 30 generated test posts (`src/lib/blog/fixture-posts.ts`, fixed seed, dated 2023 to 2025, each with a sky still as its cover and a real-sounding description) from the gitignored `.blog/fixtures/`. They load only with `BLOG_FIXTURES=1` outside a production build and CI; `pnpm build` with `BLOG_FIXTURES=1` fails on purpose.
+`pnpm dev:many` adds 30 generated test posts (`src/lib/blog/fixture-posts.ts`, fixed seed, dated 2023 to 2025, each with a sky still as its cover and a real-sounding description) from the gitignored `.blog/fixtures/`. Their images are the sky stills in `src/lib/blog/fixtures/images/`; the third post also holds a bar chart (`data/speed.json`) and all four diagrams, so `pnpm dev:many` shows every post part. They load only with `BLOG_FIXTURES=1` outside a production build and CI; `pnpm build` with `BLOG_FIXTURES=1` fails on purpose.
 
 ## Copy rules
 

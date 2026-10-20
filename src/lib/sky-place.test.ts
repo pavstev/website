@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { distanceKm, roundPlace, vienna } from "./geo.ts";
+import { distanceKm, roundPlace, sameSpot, vienna } from "./geo.ts";
 import {
   choosePlace,
   chosenPlace,
@@ -76,6 +76,11 @@ describe("geo", () => {
       lat: 12.3,
       lon: -180,
     }));
+  it("compares two spots by value", () => {
+    assert.equal(sameSpot({ lat: 1.5, lon: 2 }, { lat: 1.5, lon: 2 }), true);
+    assert.equal(sameSpot({ lat: 1.5, lon: 2 }, { lat: 1.6, lon: 2 }), false);
+    assert.equal(sameSpot({ lat: 1.5, lon: 2 }, { lat: 1.5, lon: 2.1 }), false);
+  });
   it("clamps the poles", () =>
     assert.equal(roundPlace({ lat: 95, lon: 0 }).lat, 90));
   it("never gives -0", () => {

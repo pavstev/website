@@ -37,6 +37,7 @@ export default defineConfig({
   site: "https://stevanpavlovic.com",
   trailingSlash: "never",
   vite: {
+    optimizeDeps: { include: ["three"] },
     plugins: [tailwindcss()],
     ssr: { external: ["@react-pdf/renderer"] },
   },

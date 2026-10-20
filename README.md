@@ -1,6 +1,6 @@
 # stevanpavlovic.com
 
-My personal site: a contact card over a painted WebGL sky of Vienna, a work page, an about page, a blog, and a Worker that answers questions about my CV and posts.
+My personal site: a contact card over a painted WebGL sky of Vienna, a work page, an about page, a blog (no posts yet), and a Worker that answers questions about my CV and posts.
 
 **Live:** [stevanpavlovic.com](https://stevanpavlovic.com)
 
@@ -8,11 +8,12 @@ My personal site: a contact card over a painted WebGL sky of Vienna, a work page
 
 - **Painted sky.** The home page has a hand-written WebGL sky in a painted style: the real Vienna sun and moon (with its phase), the live weather for Vienna or, if you share it, for your own place (rounded to about 10 km, kept only on your device), a band of space with stars at the top and paper grain. The other pages show the same painted sky, always at night, with light rays from the top left, and the sun glides between the two.
 - **Glass controls.** The home buttons, tooltips and panels are translucent glass that reads on a day or a night sky.
+- **Play with the sky.** The home footer panel has three tabs: Stevan's live sky, Mine (your location, or a pick on a small 3D night globe) and Custom (any hour and any weather).
 - **Work.** [/work](https://stevanpavlovic.com/work) lists my products and open-source projects.
 - **About.** [/about](https://stevanpavlovic.com/about) is a short text page.
 - **Blog.** [/blog](https://stevanpavlovic.com/blog) has MDX posts with charts and diagrams, tag pages, RSS and JSON feeds, and a Markdown copy for AI tools.
 - **MCP.** `POST /mcp` is a read-only MCP server (`profile`, `experience`, `skills`, `projects`, `products`, `contact`, `posts`, `post`) behind a per-IP rate limit.
-- **Kind to your device.** Loops slow down when idle, pause when hidden, and stop with a "Stop motion" button or reduced motion.
+- **Kind to your device.** Loops slow down when idle, pause when hidden, and stop with the Motion switch or reduced motion.
 - **No cookies.** Cloudflare Web Analytics counts visits without them.
 
 ## How it works

@@ -236,7 +236,6 @@
   --range-track: color-mix(in oklab, var(--ui-ink) 18%, transparent);
   --range-tick-minor: color-mix(in oklab, var(--ui-ink) 32%, transparent);
   --range-tick-strong: color-mix(in oklab, var(--ui-ink) 55%, transparent);
-  --range-stop: color-mix(in oklab, var(--ui-ink) 50%, transparent);
   --range-halo: color-mix(in oklab, var(--ui-panel) 45%, transparent);
 }
 
@@ -289,4 +288,15 @@
     --border-strong: #a0a0a0;
     --primary: #2457d6;
   }
+}
+
+.sky-globe {
+  --globe-well: rgb(7 8 15 / 0.45);
+  --globe-edge: rgb(255 255 255 / 0.14);
+  --globe-ink: rgb(255 255 255 / 0.9);
+  --globe-ink-soft: rgb(226 229 238 / 0.72);
+  --globe-glow: rgb(147 176 255 / 0.75);
+  --globe-button: rgb(255 255 255 / 0.14);
+  --globe-button-hover: rgb(255 255 255 / 0.22);
+  --globe-button-edge: rgb(255 255 255 / 0.2);
 }

@@ -64,14 +64,34 @@ describe("range config", () => {
     ]);
   });
 
-  it("puts one plain tick and one label on every weather stop", () => {
+  it("puts a major tick on every weather stop and four minor ticks between", () => {
+    assert.equal(weatherSteps, 500);
+    assert.equal(weatherTicks.length, 26);
     assert.deepEqual(
-      weatherTicks.map((tick) => tick.value),
+      weatherTicks.filter((tick) => tick.major).map((tick) => tick.value),
       [0, 100, 200, 300, 400, 500]
     );
-    assert.equal(weatherSteps, 500);
-    assert.ok(weatherTicks.every((tick) => !tick.major));
+    assert.deepEqual(
+      weatherTicks.slice(0, 6).map((tick) => tick.value),
+      [0, 20, 40, 60, 80, 100]
+    );
+    assert.deepEqual(weatherTicks[1], { major: false, value: 20 });
+    assert.deepEqual(weatherTicks.at(-1), { major: true, value: 500 });
+    assert.equal(weatherTicks.filter((tick) => !tick.major).length, 20);
+  });
+
+  it("puts one label on every weather stop", () => {
+    assert.equal(weatherLabelMarks.length, 6);
     assert.deepEqual(weatherLabelMarks[3], { mark: "fog", value: 300 });
+  });
+
+  it("puts minor weather ticks on the snap points", () => {
+    const reach = Math.round(
+      skyRanges.weather.snap * skyRanges.weather.stepsPerStop
+    );
+    for (const tick of weatherTicks) {
+      assert.equal(tick.value % reach, 0);
+    }
   });
 });
 

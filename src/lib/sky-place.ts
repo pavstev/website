@@ -1,4 +1,4 @@
-import { type LatLon, roundPlace, vienna } from "./geo.ts";
+import { type LatLon, roundPlace, sameSpot, vienna } from "./geo.ts";
 import { en } from "./i18n.ts";
 import { type PlaceName } from "./place-name.ts";
 
@@ -171,9 +171,7 @@ export const namePlace = (
   target: EventTarget = globalThis
 ): void => {
   const at = roundPlace(spot);
-  const same = (other: LatLon): boolean =>
-    other.lat === at.lat && other.lon === at.lon;
-  if (chosen && (chosen.kind !== "visitor" || !same(chosen))) {
+  if (chosen && (chosen.kind !== "visitor" || !sameSpot(chosen, at))) {
     return;
   }
   const named: SkyPlace = {
@@ -183,7 +181,7 @@ export const namePlace = (
     ...at,
   };
   const saved = readPlace(store);
-  if (saved && same(saved)) {
+  if (saved && sameSpot(saved, at)) {
     savePlace(named, store);
   }
   chosen = named;

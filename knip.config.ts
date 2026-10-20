@@ -2,7 +2,6 @@ import type { KnipConfig } from "knip";
 
 const config: KnipConfig = {
   entry: [
-    "content/blog/*/index.mdx",
     "src/lib/blog/fixtures/**/*.mdx",
     "scripts/blog-build.ts",
     "scripts/blog-publish.ts",
@@ -17,7 +16,6 @@ const config: KnipConfig = {
   includeEntryExports: true,
   project: [
     "*.ts",
-    "content/blog/*/index.mdx",
     "src/lib/blog/fixtures/**/*.mdx",
     "scripts/**/*.ts",
     "src/**/*.{astro,css,ts,tsx}",

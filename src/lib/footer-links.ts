@@ -1,57 +1,55 @@
+import {
+  contactEntries,
+  type ContactEntry,
+  type ContactSource,
+  type ContactTone,
+} from "./contact-links.ts";
 import { en } from "./i18n.ts";
-import { personalData } from "./personal.ts";
 
 export interface FooterLink {
+  detail?: string;
   external: boolean;
   href: string;
   icon: string;
-  id: string;
+  id: "email" | "github" | "linkedin" | "resume" | "rss";
   label: string;
+  tone: ContactTone;
   type?: string;
 }
 
+const order = ["github", "linkedin", "email"] as const;
+
 export const footerLinks = (
-  contact: { email: string; linkedin: string },
+  contact: ContactSource,
   rss: boolean
-): FooterLink[] => [
-  {
-    external: true,
-    href: personalData.github,
-    icon: "simple-icons:github",
-    id: "github",
-    label: en.card.github,
-  },
-  {
-    external: true,
-    href: contact.linkedin,
-    icon: "simple-icons:linkedin",
-    id: "linkedin",
-    label: en.card.linkedin,
-  },
-  {
-    external: false,
-    href: `mailto:${contact.email}`,
-    icon: "lucide:mail",
-    id: "email",
-    label: en.card.email,
-  },
-  {
-    external: false,
-    href: "/resume.pdf",
-    icon: "lucide:file-text",
-    id: "resume",
-    label: en.card.resume,
-  },
-  ...(rss
-    ? [
-        {
-          external: false,
-          href: "/blog/feed.xml",
-          icon: "lucide:rss",
-          id: "rss",
-          label: en.blog.rssShort,
-          type: "application/rss+xml",
-        },
-      ]
-    : []),
-];
+): FooterLink[] => {
+  const entries = contactEntries(contact);
+  const contacts = order.flatMap((id): ContactEntry[] =>
+    entries.filter((entry) => entry.id === id)
+  );
+  return [
+    ...contacts,
+    {
+      external: false,
+      href: "/resume.pdf",
+      icon: "lucide:file-text",
+      id: "resume",
+      label: en.card.resume,
+      tone: "blue",
+    },
+    ...(rss
+      ? [
+          {
+            detail: en.footer.rssDetail,
+            external: false,
+            href: "/blog/feed.xml",
+            icon: "lucide:rss",
+            id: "rss",
+            label: en.blog.rssShort,
+            tone: "gold",
+            type: "application/rss+xml",
+          } satisfies FooterLink,
+        ]
+      : []),
+  ];
+};

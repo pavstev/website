@@ -1,5 +1,0 @@
-{
-  "x": ["three.js", "raw WebGL2"],
-  "series": [{ "name": "Startup long tasks", "values": [955, 67] }],
-  "unit": "ms"
-}

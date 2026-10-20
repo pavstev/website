@@ -12,6 +12,9 @@ const tenth = (value: number): number => Math.round(value * 10) / 10;
 const wrapLongitude = (lon: number): number =>
   tenth(((((lon + 180) % 360) + 360) % 360) - 180);
 
+export const sameSpot = (a: LatLon, b: LatLon): boolean =>
+  a.lat === b.lat && a.lon === b.lon;
+
 export const roundPlace = (spot: LatLon): LatLon => {
   const lat = Math.min(90, Math.max(-90, tenth(spot.lat)));
   const lon = wrapLongitude(tenth(spot.lon));

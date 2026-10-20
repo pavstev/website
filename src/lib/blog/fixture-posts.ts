@@ -1,8 +1,11 @@
+import { diagramNames } from "./diagrams.ts";
+
 export const fixtureRoot = ".blog/fixtures";
 export const fixtureCount = 30;
-export const fixtureImageSource = "content/blog/how-i-built-this-website";
+export const fixtureImageSource = "src/lib/blog/fixtures/images";
 
 export interface FixturePost {
+  chart: string | undefined;
   cover: string;
   image: string | undefined;
   mdx: string;
@@ -169,11 +172,25 @@ const codeBlock = [
   "```",
 ].join("\n");
 
+const fixtureChart = JSON.stringify({
+  series: [{ name: "Build", values: [4, 7, 5] }],
+  unit: "s",
+  x: ["Mon", "Tue", "Wed"],
+});
+
+const visuals = [
+  '<Chart type="bar" src="data/speed.json" title="Build time" caption="A test chart." />',
+  ...diagramNames.map(
+    (name) => `<Diagram name="${name}" caption="A test diagram." />`
+  ),
+];
+
 const body = (
   next: () => number,
   target: number,
   image: string | undefined,
-  withCode: boolean
+  withCode: boolean,
+  withVisuals: boolean
 ): string => {
   const blocks: string[] = [];
   let count = 0;
@@ -192,6 +209,7 @@ const body = (
       );
     }
     if (withCode && blocks.length === 6) blocks.push(codeBlock);
+    if (withVisuals && blocks.length === 5) blocks.push(...visuals);
   }
   return blocks.join("\n\n");
 };
@@ -209,6 +227,7 @@ const fixturePost = (index: number): FixturePost => {
   const image = index % 6 === 0 ? pick(next, images) : undefined;
   const cover = pick(next, covers);
   const withCode = index % 4 === 1;
+  const withVisuals = index === 2;
   const target = pick(next, lengths);
   const slug = `sample-${pad(index + 1)}-${subject.replace(/^(?:a|the) /u, "").replaceAll(" ", "-")}`;
   const mdx = [
@@ -220,10 +239,16 @@ const fixturePost = (index: number): FixturePost => {
     `tags: [${tags.join(", ")}]`,
     "---",
     "",
-    body(next, target, image, withCode),
+    body(next, target, image, withCode, withVisuals),
     "",
   ].join("\n");
-  return { cover, image, mdx, slug };
+  return {
+    chart: withVisuals ? fixtureChart : undefined,
+    cover,
+    image,
+    mdx,
+    slug,
+  };
 };
 
 export const fixturePosts = (): FixturePost[] =>

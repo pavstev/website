@@ -20,11 +20,11 @@ import {
   currentSpot,
   deniedMs,
   doneMs,
+  fetchWhere,
   forcedCity,
   hintLabel,
   markAsked,
   mayAsk,
-  parseWhere,
   type Rect,
   type SkySpot,
   spotEvent,
@@ -131,14 +131,10 @@ export const SkyBubble = (): null | ReactElement => {
         saved: readPlace() !== undefined,
       });
       if (!open) return;
-      try {
-        const response = await fetch("/where", { signal: abort.signal });
-        if (!response.ok) return;
-        const reply = parseWhere(await response.json());
-        if (!alive || reply?.far !== true) return;
-        hint.current = reply;
-        setView({ city: reply.city, phase: "ask" });
-      } catch {}
+      const reply = await fetchWhere(abort.signal);
+      if (!alive || reply?.far !== true) return;
+      hint.current = reply;
+      setView({ city: reply.city, phase: "ask" });
     };
 
     const begin = (): void => {

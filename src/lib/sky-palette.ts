@@ -33,3 +33,12 @@ export const paintTints = {
   moonlit: "#96A5C6",
   space: "#04060E",
 } as const;
+
+export const globePalette = {
+  atmosphere: "#6F9BFF",
+  base: "#070B18",
+  city: paintTints.city,
+  day: "#18284E",
+  graticule: "#88A4DC",
+  rim: "#3F62B0",
+} as const;

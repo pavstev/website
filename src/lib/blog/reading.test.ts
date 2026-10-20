@@ -1,21 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { describe, it } from "node:test";
-import { VFile } from "vfile";
-import { matter } from "vfile-matter";
 
 import { readingCounts, readingOf, readingTime } from "./reading.ts";
-
-const repo = path.join(import.meta.dirname, "../../..");
-
-const postBody = (slug: string): string => {
-  const file = new VFile(
-    readFileSync(path.join(repo, "content/blog", slug, "index.mdx"), "utf8")
-  );
-  matter(file, { strip: true });
-  return String(file.value);
-};
 
 const words = (count: number): string =>
   Array.from({ length: count }, () => "word").join(" ");
@@ -121,37 +107,5 @@ describe("readingTime", () => {
     assert.equal(reading.seconds, 152);
     assert.equal(reading.minutes, 3);
     assert.equal(reading.words, 357);
-  });
-});
-
-describe("the committed posts", () => {
-  it("how-i-built-this-website: 2,788 prose + 11 code words, 2 figures, 4 visuals, 14 min", () => {
-    const reading = readingOf(postBody("how-i-built-this-website"));
-    assert.deepEqual(
-      [
-        reading.proseWords,
-        reading.codeWords,
-        reading.images,
-        reading.visuals,
-        reading.minutes,
-        reading.words,
-      ],
-      [2788, 11, 2, 4, 14, 2799]
-    );
-  });
-
-  it("how-i-use-ai: 2,578 prose words, no code, no images, 5 visuals = 749.9 s, 13 min", () => {
-    const reading = readingOf(postBody("how-i-use-ai"));
-    assert.deepEqual(
-      [
-        reading.proseWords,
-        reading.codeWords,
-        reading.images,
-        reading.visuals,
-        reading.minutes,
-        reading.words,
-      ],
-      [2578, 0, 0, 5, 13, 2578]
-    );
   });
 });

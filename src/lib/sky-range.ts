@@ -84,8 +84,14 @@ export const hourLabelMarks: ReadonlyArray<RangeMark<number>> = hourMarks.map(
   (hour) => ({ mark: hour, value: hour * stepsPerHour })
 );
 
-export const weatherTicks: readonly RangeTick[] = weatherStops.map(
-  (_, stop) => ({ major: false, value: stop * stepsPerStop })
+const ticksPerGap = Math.round(1 / snap);
+
+export const weatherTicks: readonly RangeTick[] = Array.from(
+  { length: weatherMax * ticksPerGap + 1 },
+  (_, index) => ({
+    major: index % ticksPerGap === 0,
+    value: (index * stepsPerStop) / ticksPerGap,
+  })
 );
 
 export const weatherLabelMarks: ReadonlyArray<RangeMark<WeatherName>> =

@@ -1,5 +1,10 @@
 import { distanceKm, type LatLon, roundPlace } from "./geo.ts";
-import { coordinateLabel, defaultStore, type PlaceStore } from "./sky-place.ts";
+import {
+  coordinateLabel,
+  defaultStore,
+  type PlaceStore,
+  type SkyPlace,
+} from "./sky-place.ts";
 
 export type Arrow = "down" | "none" | "up";
 
@@ -105,6 +110,31 @@ export const parseWhere = (body: unknown): undefined | WhereReply => {
     lat: orNull(lat, isNumber),
     lon: orNull(lon, isNumber),
   };
+};
+
+export type Fetcher = (
+  url: string,
+  init?: { signal: AbortSignal | null }
+) => Promise<Pick<Response, "json" | "ok">>;
+
+export const fetchWhere = async (
+  signal?: AbortSignal,
+  fetcher: Fetcher = fetch
+): Promise<undefined | WhereReply> => {
+  try {
+    const response = await fetcher("/where", { signal: signal ?? null });
+    return response.ok ? parseWhere(await response.json()) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+export const placeFromWhere = (
+  reply: undefined | WhereReply
+): SkyPlace | undefined => {
+  if (reply?.lat == null || reply.lon == null) return undefined;
+  const spot = roundPlace({ lat: reply.lat, lon: reply.lon });
+  return { kind: "visitor", label: hintLabel(spot, reply), ...spot };
 };
 
 let askedInMemory = false;

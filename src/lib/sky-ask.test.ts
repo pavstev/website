@@ -8,18 +8,21 @@ import {
   bubbleBox,
   chooseBox,
   currentSpot,
+  type Fetcher,
+  fetchWhere,
   forcedCity,
   hintLabel,
   markAsked,
   mayAsk,
   parseWhere,
+  placeFromWhere,
   publishSpot,
   type Rect,
   skySpot,
   spotEvent,
   wasAsked,
 } from "./sky-ask.ts";
-import { type PlaceStore } from "./sky-place.ts";
+import { coordinateLabel, type PlaceStore } from "./sky-place.ts";
 
 const memoryStore = (): PlaceStore => {
   const map = new Map<string, string>();
@@ -356,6 +359,55 @@ describe("parseWhere", () => {
   it("rejects a body that is not an object", () => {
     assert.equal(parseWhere(null), undefined);
     assert.equal(parseWhere("far"), undefined);
+  });
+});
+
+const answer =
+  (body: unknown, ok = true): Fetcher =>
+  () =>
+    Promise.resolve({ json: () => Promise.resolve(body), ok });
+
+describe("fetchWhere", () => {
+  it("reads the rough city from /where", async () => {
+    const reply = await fetchWhere(
+      undefined,
+      answer({ city: "Graz", far: false, lat: 47.1, lon: 15.4 })
+    );
+    assert.deepEqual(reply, { city: "Graz", far: false, lat: 47.1, lon: 15.4 });
+  });
+  it("answers undefined when the Worker says no", async () =>
+    assert.equal(await fetchWhere(undefined, answer({}, false)), undefined));
+  it("answers undefined when the request throws", async () =>
+    assert.equal(
+      await fetchWhere(undefined, () => Promise.reject(new Error("offline"))),
+      undefined
+    ));
+  it("answers undefined for a body that is not an object", async () =>
+    assert.equal(await fetchWhere(undefined, answer("far")), undefined));
+});
+
+describe("placeFromWhere", () => {
+  it("makes a visitor place named by the city", () =>
+    assert.deepEqual(
+      placeFromWhere({ city: "Graz", far: false, lat: 47.07, lon: 15.44 }),
+      { kind: "visitor", label: "Graz", lat: 47.1, lon: 15.4 }
+    ));
+  it("falls back to the coordinates without a city", () =>
+    assert.deepEqual(
+      placeFromWhere({ city: null, far: null, lat: 47.07, lon: 15.44 }),
+      {
+        kind: "visitor",
+        label: coordinateLabel({ lat: 47.1, lon: 15.4 }),
+        lat: 47.1,
+        lon: 15.4,
+      }
+    ));
+  it("gives nothing without a position", () => {
+    assert.equal(
+      placeFromWhere({ city: "Graz", far: false, lat: null, lon: 15.4 }),
+      undefined
+    );
+    assert.equal(placeFromWhere(undefined), undefined);
   });
 });
 
