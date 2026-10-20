@@ -1,0 +1,25 @@
+---
+import { tagHref } from "@/lib/blog/tags";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  class?: string;
+  tags: readonly string[];
+  unlabeled?: boolean;
+}
+
+const { class: className = "", tags, unlabeled = false } = Astro.props;
+---
+
+<ul
+  aria-label={unlabeled ? undefined : en.blog.tags}
+  class={`post-tags ${className}`.trim()}
+>
+  {tags.map((tag) => (
+    <li class="post-tag">
+      <a class="post-tag-link focus-ring" href={tagHref(tag)}>
+        {tag}
+      </a>
+    </li>
+  ))}
+</ul>

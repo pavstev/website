@@ -1,0 +1,45 @@
+---
+import BlogHeader from "@/components/blog/blog-header.astro";
+import { PostDate } from "@/components/blog/post-date";
+import PostTags from "@/components/blog/post-tags.astro";
+import { postCrumbs } from "@/lib/blog/crumbs";
+import { minutesLabel } from "@/lib/blog/format";
+import { isScheduled } from "@/lib/blog/schedule";
+import { type PostMeta } from "@/lib/blog/schema";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  post: PostMeta;
+  toc: boolean;
+}
+
+const { post, toc } = Astro.props;
+---
+
+<BlogHeader
+  crumbs={postCrumbs(post)}
+  slug={post.slug}
+  title={post.title}
+  toc={toc}
+>
+  <Fragment slot="meta">
+    <span class="sr-only">{en.blog.published} </span>
+    <PostDate client:idle={{ timeout: 1000 }} iso={post.date} />
+    <span aria-hidden="true"> · </span>
+    <span>{minutesLabel(post.readingMinutes)}</span>
+    {post.updated !== undefined && (
+      <>
+        <span aria-hidden="true"> · </span>
+        <span>
+          {en.blog.updated}{" "}
+          <PostDate client:idle={{ timeout: 1000 }} iso={post.updated} />
+        </span>
+      </>
+    )}
+    {post.draft && <span class="post-draft"> {en.blog.draft}</span>}
+    {!post.draft && isScheduled(post.date) && (
+      <span class="post-draft"> {en.blog.scheduled}</span>
+    )}
+  </Fragment>
+  <PostTags class="post-header-tags" tags={post.tags} />
+</BlogHeader>

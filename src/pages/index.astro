@@ -1,0 +1,81 @@
+---
+import "@/styles/card.css";
+
+import { CardActions } from "@/components/card-actions";
+import CardSections from "@/components/card-sections.astro";
+import { EffectsInit } from "@/components/effects-init";
+import { IndustryPanel } from "@/components/industry-panel";
+import { PageDock } from "@/components/page-dock";
+import { Portrait } from "@/components/portrait";
+import { Profile } from "@/components/profile";
+import SiteFooter from "@/components/site-footer.astro";
+import { SkyBubble } from "@/components/sky-bubble";
+import { SpaceBackground } from "@/components/space-background";
+import Base from "@/layouts/Base.astro";
+import { getCv } from "@/lib/cv";
+import { getContact, getRepos } from "@/lib/github";
+import { en } from "@/lib/i18n";
+import { industries, industryJob } from "@/lib/industries";
+import { personalData } from "@/lib/personal";
+import { products } from "@/lib/products";
+import { getResumeFacts } from "@/lib/resume-facts";
+import { serializeJsonLd, structuredData } from "@/lib/structured-data";
+
+const [repos, contact, resume, cv] = await Promise.all([
+  getRepos(personalData.githubHandle),
+  getContact(personalData.githubHandle),
+  getResumeFacts(),
+  getCv(),
+]);
+const jsonLd = serializeJsonLd(
+  structuredData(repos, contact, cv.updatedAt, products)
+);
+---
+
+<Base canonical={personalData.website} indexable>
+  <link
+    slot="head"
+    rel="preload"
+    as="image"
+    imagesrcset="/portraits/portrait-224.webp 224w, /portraits/portrait-336.webp 336w, /portraits/portrait-448.webp 448w"
+    imagesizes="(min-width: 768px) 154px, 134px"
+    fetchpriority="high"
+  />
+  <script type="application/ld+json" is:inline set:html={jsonLd}></script>
+  <SpaceBackground client:load transition:persist="sky" />
+  <main
+    class="relative grid min-h-dvh grid-cols-1 place-items-center overflow-x-clip safe-area"
+    id="main-content"
+  >
+    <div
+      class="container-page relative z-10 flex w-full flex-col items-center text-center"
+      data-card=""
+    >
+      <div class="relative z-10">
+        <Portrait alt={en.card.portraitAlt} client:idle={{ timeout: 1000 }} />
+      </div>
+      <Profile />
+      {industries.map((industry) => (
+        <IndustryPanel
+          industry={industry}
+          job={industryJob(cv, industry.key)}
+        />
+      ))}
+      <div
+        class="fade-up contact-row relative z-2 mt-(--card-gap-actions) flex w-full flex-wrap items-center justify-center gap-3 delay-2"
+        data-proximity=""
+      >
+        <CardActions
+          client:idle={{ timeout: 1000 }}
+          contact={contact}
+          facts={resume}
+        />
+      </div>
+      <CardSections repos={repos} />
+      <SiteFooter className="card-footer fade-up mt-(--card-gap-footer) delay-4" />
+    </div>
+    <EffectsInit client:load />
+  </main>
+  <PageDock client:idle={{ timeout: 1000 }} email={contact.email} />
+  <SkyBubble client:idle={{ timeout: 1000 }} />
+</Base>

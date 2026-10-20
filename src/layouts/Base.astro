@@ -1,0 +1,84 @@
+---
+import PageRouter from "@/components/page-router.astro";
+import SkipLink from "@/components/skip-link.astro";
+import { shareImage } from "@/lib/blog/metadata";
+import { en } from "@/lib/i18n";
+import { headScript } from "@/lib/motion-pause";
+import { personalData } from "@/lib/personal";
+import { designTokens } from "@/lib/theme";
+
+interface Props {
+  canonical?: string;
+  indexable?: boolean;
+  title?: string;
+}
+
+const { canonical, indexable = false, title = en.meta.title } = Astro.props;
+const description = en.meta.description;
+const imageUrl = new URL(shareImage.url, personalData.website).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content={designTokens.background} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="author" href={personalData.website} />
+    <meta name="author" content={personalData.name} />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    {indexable ? (
+      <>
+        <meta name="robots" content="index, follow" />
+        <meta
+          name="googlebot"
+          content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1"
+        />
+      </>
+    ) : (
+      <meta name="robots" content="noindex" />
+    )}
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:site_name" content={personalData.name} />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content={imageUrl} />
+    <meta property="og:image:type" content={shareImage.type} />
+    <meta property="og:image:width" content={String(shareImage.width)} />
+    <meta property="og:image:height" content={String(shareImage.height)} />
+    <meta property="og:image:alt" content={shareImage.alt} />
+    <meta property="og:type" content="profile" />
+    <meta property="profile:first_name" content={personalData.givenName} />
+    <meta property="profile:last_name" content={personalData.familyName} />
+    <meta property="profile:username" content={personalData.githubHandle} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
+    <meta name="twitter:image:alt" content={shareImage.alt} />
+    <link rel="icon" href="/favicon-32x32.png" sizes="32x32" />
+    <link
+      rel="icon"
+      href="/android-chrome-192x192.png"
+      sizes="192x192"
+      type="image/png"
+    />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <script is:inline set:html={headScript}></script>
+    <PageRouter />
+    <link href="/sitemap.xml" rel="sitemap" />
+    <slot name="head" />
+  </head>
+  <body>
+    <SkipLink />
+    <slot />
+  </body>
+</html>

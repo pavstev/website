@@ -1,0 +1,70 @@
+import type { ReactElement } from "react";
+
+import { BlurUpImage } from "@/components/ui/blur-up-image";
+import { mediaEntry, mediaPath } from "@/lib/blog/media";
+
+interface BlogImageProps {
+  alt: string;
+  priority?: boolean;
+  sizes?: string;
+  slug: string;
+  src: string;
+}
+
+const proseSizes =
+  "(min-width: 48em) min(37.5rem, calc(100vw - 4rem)), min(37.5rem, calc(100vw - 2.5rem))";
+
+const srcSet = (urls: string[], widths: number[]): string =>
+  urls.map((url, index) => `${url} ${String(widths[index] ?? 0)}w`).join(", ");
+
+export const BlogImage = ({
+  alt,
+  priority = false,
+  sizes = proseSizes,
+  slug,
+  src,
+}: BlogImageProps): ReactElement => {
+  const entry = mediaEntry(slug, src);
+  const loading = priority
+    ? ({ loading: "eager" } as const)
+    : ({ decoding: "async", loading: "lazy" } as const);
+  if (entry === undefined) {
+    return (
+      <img
+        alt={alt}
+        className="blog-image"
+        src={mediaPath(slug, src)}
+        {...loading}
+      />
+    );
+  }
+  return (
+    <BlurUpImage
+      eager={priority}
+      height={entry.height}
+      placeholder={entry.blur}
+      width={entry.width}
+    >
+      <picture>
+        <source
+          sizes={sizes}
+          srcSet={srcSet(entry.avif, entry.widths)}
+          type="image/avif"
+        />
+        <source
+          sizes={sizes}
+          srcSet={srcSet(entry.webp, entry.widths)}
+          type="image/webp"
+        />
+        <img
+          alt={alt}
+          className="blog-image"
+          height={entry.height}
+          src={entry.fallback}
+          width={entry.width}
+          {...loading}
+        />
+      </picture>
+    </BlurUpImage>
+  );
+};

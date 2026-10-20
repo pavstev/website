@@ -2,8 +2,8 @@ import type { Linter } from "eslint";
 
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
 import markdown from "@eslint/markdown";
-import nextPlugin from "@next/eslint-plugin-next";
 import prettierConfig from "eslint-config-prettier/flat";
+import astroPlugin from "eslint-plugin-astro";
 import betterTailwindcssPlugin from "eslint-plugin-better-tailwindcss";
 import importX from "eslint-plugin-import-x";
 import perfectionistPlugin from "eslint-plugin-perfectionist";
@@ -32,26 +32,27 @@ const eslintConfig = defineConfig([
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
   {
+    files: ["worker/**/*.ts"],
+    rules: {
+      "import-x/no-unresolved": [
+        "error",
+        { ignore: ["^@modelcontextprotocol/sdk/"] },
+      ],
+    },
+  },
+  {
     ...(regexpPlugin.configs["flat/recommended"] as Linter.Config),
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
   {
-    ...(securityPlugin.configs?.recommended as Linter.Config),
+    ...(securityPlugin.configs.recommended as Linter.Config),
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
   {
     ...perfectionistPlugin.configs["recommended-natural"],
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
   },
-  {
-    files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
-    plugins: { "@next/next": nextPlugin },
-    rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs["core-web-vitals"].rules,
-      "@next/next/no-img-element": "off",
-    },
-  },
+  ...astroPlugin.configs["flat/recommended"],
   {
     ...reactHooksPlugin.configs.flat.recommended,
     files: ["**/*.{js,jsx,ts,tsx,mts,cts,mjs,cjs}"],
@@ -61,11 +62,31 @@ const eslintConfig = defineConfig([
     },
   },
   globalIgnores([
-    ".claude/skills/**",
-    ".next/**",
+    "_notes/**",
+    "_ref/**",
+    ".agents/**",
+    ".astro/**",
+    ".claude/**",
+    ".opencode/**",
+    ".profile-out/**",
     ".superpowers/**",
+    ".wrangler/**",
+    "astro.config.mjs",
     "dist/**",
+    "postcss.config.mjs",
+    "scripts/postcss-color-mix.mjs",
+    "worker-configuration.d.ts",
   ]),
+  globalIgnores([
+    ".blog/**",
+    "public/blog-media/**",
+    "public/blog/**",
+    "public/build.json",
+  ]),
+  ...[
+    ...tseslint.configs.strictTypeChecked,
+    ...tseslint.configs.stylisticTypeChecked,
+  ].map((config) => ({ ...config, files: ["**/*.{ts,tsx,mts,cts}"] })),
   {
     files: ["**/*.{ts,tsx,mts,cts}"],
     languageOptions: {
@@ -85,6 +106,7 @@ const eslintConfig = defineConfig([
     },
     rules: {
       ...unicornPlugin.configs.recommended.rules,
+      "@eslint-community/eslint-comments/no-use": "error",
       "@typescript-eslint/array-type": ["error", { default: "array-simple" }],
       "@typescript-eslint/consistent-generic-constructors": [
         "error",
@@ -173,7 +195,19 @@ const eslintConfig = defineConfig([
       "better-tailwindcss/no-unnecessary-whitespace": "error",
       eqeqeq: ["error", "always", { null: "ignore" }],
       "func-style": ["error", "expression", { allowArrowFunctions: true }],
+      "import-x/no-cycle": "error",
       "import-x/no-duplicates": ["error", { "prefer-inline": true }],
+      "import-x/no-extraneous-dependencies": [
+        "error",
+        {
+          devDependencies: [
+            "*.config.ts",
+            "scripts/**",
+            "src/profile/**",
+            "**/*.test.ts",
+          ],
+        },
+      ],
       "import-x/no-mutable-exports": "error",
       "import-x/no-named-as-default": "off",
       "import-x/no-named-as-default-member": "off",
@@ -187,12 +221,25 @@ const eslintConfig = defineConfig([
       "no-implicit-coercion": "error",
       "no-lonely-if": "error",
       "no-param-reassign": "error",
+      "no-restricted-syntax": [
+        "error",
+        {
+          message:
+            'Import zod as `import * as z from "zod"`: `{ z }` puts every zod locale in the Worker.',
+          selector:
+            "ImportDeclaration[source.value='zod'] > :matches(ImportSpecifier, ImportDefaultSpecifier)",
+        },
+      ],
       "no-shadow": "off",
       "no-throw-literal": "error",
       "no-useless-constructor": "off",
       "no-useless-rename": "error",
       "no-useless-return": "error",
       "no-var": "error",
+      "no-warning-comments": [
+        "error",
+        { location: "anywhere", terms: ["todo", "fixme", "xxx", "hack"] },
+      ],
       "object-shorthand": ["error", "always"],
       "prefer-arrow-callback": "error",
       "prefer-const": "error",
@@ -216,6 +263,10 @@ const eslintConfig = defineConfig([
       "unicorn/no-nested-ternary": "off",
       "unicorn/no-null": "off",
       "unicorn/no-top-level-assignment-in-function": "off",
+      "unicorn/no-useless-undefined": [
+        "error",
+        { checkArrowFunctionBody: false },
+      ],
       "unicorn/prefer-at": "off",
       "unicorn/prefer-module": "off",
       "unused-imports/no-unused-imports": "error",
@@ -231,8 +282,17 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["scripts/**"],
+    files: [
+      "scripts/**",
+      "src/lib/blog/**",
+      "src/lib/theme.test.ts",
+      "src/profile/cli.ts",
+    ],
     rules: { "security/detect-non-literal-fs-filename": "off" },
+  },
+  {
+    files: ["**/*.test.ts"],
+    rules: { "@typescript-eslint/no-floating-promises": "off" },
   },
   ...markdown.configs.recommended,
   {

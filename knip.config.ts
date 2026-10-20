@@ -1,7 +1,48 @@
 import type { KnipConfig } from "knip";
 
 const config: KnipConfig = {
-  ignoreDependencies: ["wrangler"],
+  entry: [
+    "content/blog/*/index.mdx",
+    "src/lib/blog/fixtures/**/*.mdx",
+    "scripts/blog-build.ts",
+    "scripts/blog-publish.ts",
+    "scripts/generate-images.ts",
+    "scripts/indexnow.ts",
+    "scripts/preload-guard.ts",
+    "scripts/**/*.test.ts",
+    "src/profile/**/*.test.ts",
+  ],
+  ignoreDependencies: ["@fontsource/inter", "wrangler"],
+  ignoreExportsUsedInFile: false,
+  includeEntryExports: true,
+  project: [
+    "*.ts",
+    "content/blog/*/index.mdx",
+    "src/lib/blog/fixtures/**/*.mdx",
+    "scripts/**/*.ts",
+    "src/**/*.{astro,css,ts,tsx}",
+    "worker/**/*.ts",
+  ],
+  rules: {
+    binaries: "error",
+    catalog: "error",
+    catalogReferences: "error",
+    cycles: "error",
+    dependencies: "error",
+    devDependencies: "error",
+    duplicates: "error",
+    enumMembers: "error",
+    exports: "error",
+    files: "error",
+    namespaceMembers: "error",
+    nsExports: "error",
+    nsTypes: "error",
+    optionalPeerDependencies: "error",
+    types: "error",
+    unlisted: "error",
+    unresolved: "error",
+  },
+  treatConfigHintsAsErrors: true,
 };
 
 export default config;

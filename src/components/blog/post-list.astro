@@ -1,0 +1,63 @@
+---
+import { BlogImage } from "@/components/blog/blog-image";
+import PostTags from "@/components/blog/post-tags.astro";
+import { PostDate } from "@/components/blog/post-date";
+import { minutesLabel } from "@/lib/blog/format";
+import { postCover } from "@/lib/blog/media";
+import { isScheduled } from "@/lib/blog/schedule";
+import { type PostMeta } from "@/lib/blog/schema";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  feature?: boolean;
+  posts: readonly PostMeta[];
+}
+
+const { feature = false, posts } = Astro.props;
+const coverSizes =
+  "(min-width: 60em) 30rem, (min-width: 48em) calc(100vw - 6rem), calc(100vw - 3.5rem)";
+---
+
+<ol class="post-list">
+  {posts.map((post, index) => {
+    const lead = feature && index === 0;
+    const cover = lead ? postCover(post.slug) : undefined;
+    return (
+      <li
+        class:list={["post-row", lead && "post-feature mat-panel"]}
+        data-post-slug={post.slug}
+      >
+        {cover !== undefined && (
+          <div class="post-feature-cover">
+            <BlogImage
+              alt=""
+              priority
+              sizes={coverSizes}
+              slug={post.slug}
+              src={cover}
+            />
+          </div>
+        )}
+        <div class="post-row-body">
+          {lead && <p class="post-feature-label">{en.blog.latest}</p>}
+          <h2 class="post-row-title">
+            <a class="post-row-link focus-ring" href={`/blog/${post.slug}`}>
+              {post.title}
+            </a>
+          </h2>
+          <p class="post-row-meta">
+            <PostDate client:idle={{ timeout: 1000 }} iso={post.date} />{" "}
+            <span aria-hidden="true">·</span>{" "}
+            <span>{minutesLabel(post.readingMinutes)}</span>
+            {post.draft && <span class="post-draft"> {en.blog.draft}</span>}
+            {!post.draft && isScheduled(post.date) && (
+              <span class="post-draft"> {en.blog.scheduled}</span>
+            )}
+          </p>
+          <p class="post-row-text">{post.description}</p>
+          <PostTags tags={post.tags} unlabeled />
+        </div>
+      </li>
+    );
+  })}
+</ol>

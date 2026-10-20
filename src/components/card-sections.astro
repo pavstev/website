@@ -1,0 +1,68 @@
+---
+import type { Repo } from "@/lib/github";
+
+import { type SectionLink, SectionLinks } from "@/components/section-links";
+import { showDrafts } from "@/lib/blog/build-env";
+import { listPosts } from "@/lib/blog/posts";
+import { en } from "@/lib/i18n";
+import { products } from "@/lib/products";
+import { fillCount, fillText, pluralForm } from "@/lib/template";
+
+interface Props {
+  repos: Repo[];
+}
+
+const { repos } = Astro.props;
+const latest = listPosts({ drafts: showDrafts() }).at(0);
+const count = (value: number, one: string, other: string): string =>
+  fillCount(pluralForm(value, one, other), value);
+
+const workDetail = fillText(en.card.workTip, {
+  products: count(
+    products.length,
+    en.card.workProductsOne,
+    en.card.workProductsOther
+  ),
+  projects: count(
+    repos.length,
+    en.card.workProjectsOne,
+    en.card.workProjectsOther
+  ),
+});
+
+const sections: SectionLink[] = [
+  {
+    art: "card",
+    detail: en.card.aboutTip,
+    dots: [],
+    href: "/about",
+    icon: "lucide:user-round",
+    label: en.card.about,
+    name: en.card.aboutTipName,
+  },
+  {
+    art: "rows",
+    detail: workDetail,
+    dots: repos.slice(0, 3).map((repo) => repo.languages.at(0)?.color),
+    href: "/work",
+    icon: "lucide:briefcase",
+    label: en.card.work,
+    name: en.card.work,
+  },
+  ...(latest
+    ? [
+        {
+          art: "page" as const,
+          detail: fillText(en.card.blogTip, { title: latest.title }),
+          dots: [],
+          href: "/blog",
+          icon: "lucide:notebook-pen",
+          label: en.card.blog,
+          name: en.card.blog,
+        },
+      ]
+    : []),
+];
+---
+
+<SectionLinks client:idle={{ timeout: 1000 }} sections={sections} />

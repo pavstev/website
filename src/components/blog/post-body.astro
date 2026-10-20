@@ -1,0 +1,22 @@
+---
+import PostToc from "@/components/blog/post-toc.astro";
+import { PostEffects } from "@/components/blog/post-effects";
+import { type TocItem } from "@/lib/blog/toc";
+
+interface Props {
+  html: string;
+  toc: readonly TocItem[];
+}
+
+const { html, toc } = Astro.props;
+---
+
+<div class="post-layout">
+  {toc.length > 0 && (
+    <div class="post-rail">
+      <PostToc items={toc} />
+    </div>
+  )}
+  <article class="prose-blog" set:html={html} />
+  <PostEffects client:load />
+</div>

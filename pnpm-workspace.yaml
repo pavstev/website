@@ -1,6 +1,5 @@
 allowBuilds:
   esbuild: true
-  lefthook: true
   sharp: false
   unrs-resolver: false
   workerd: true
@@ -13,5 +12,6 @@ strictDepBuilds: true
 trustPolicy: no-downgrade
 trustPolicyExclude:
   - semver@6.3.1
+  - chokidar@4.0.3
 verifyDepsBeforeRun: install
 savePrefix: "^"

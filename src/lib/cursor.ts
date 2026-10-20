@@ -1,25 +1,27 @@
-import { finePointerQuery, reducedMotionQuery } from "@/lib/media";
+import { finePointerQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 
-const proximitySelector = "[data-proximity] > li > a";
-const glowSelector = "[data-cursor-glow]";
+const proximitySelector = "[data-proximity] .keycap-host";
 const proximityRadius = 80;
 const proximityGain = 0.18;
 
 interface ProximityTarget {
+  core: number;
   cx: number;
   cy: number;
   element: HTMLElement;
+  limit: number;
   value: string;
 }
 
 const startCursorEffects = (): (() => void) => {
-  const glow = document.querySelector<HTMLElement>(glowSelector);
   const targets: ProximityTarget[] = [
     ...document.querySelectorAll<HTMLElement>(proximitySelector),
-  ].map((element) => ({ cx: 0, cy: 0, element, value: "" }));
+  ].map((element) => ({ core: 0, cx: 0, cy: 0, element, limit: 1, value: "" }));
   const lists = new Set<Element>();
   for (const target of targets) {
     const list = target.element.closest("[data-proximity]");
+    lists.add(target.element);
     if (list) lists.add(list);
     if (list?.parentElement) lists.add(list.parentElement);
   }
@@ -36,6 +38,17 @@ const startCursorEffects = (): (() => void) => {
       const rect = target.element.getBoundingClientRect();
       target.cx = rect.left + rect.width / 2;
       target.cy = rect.top + rect.height / 2;
+      const { offsetHeight, offsetWidth } = target.element;
+      const row = target.element.closest("[data-proximity]");
+      const gap = row
+        ? Number(getComputedStyle(row).columnGap.replace("px", ""))
+        : 0;
+      target.core = Math.max(0, offsetWidth - offsetHeight) / 2;
+      target.limit =
+        1 +
+        (offsetWidth > 0 && Number.isFinite(gap)
+          ? gap / offsetWidth
+          : proximityGain);
     }
     stale = false;
   };
@@ -56,11 +69,14 @@ const startCursorEffects = (): (() => void) => {
     frame = 0;
     if (stale) refresh();
     for (const target of targets) {
-      const distance = Math.hypot(pointerX - target.cx, pointerY - target.cy);
+      const distance = Math.hypot(
+        Math.max(0, Math.abs(pointerX - target.cx) - target.core),
+        pointerY - target.cy
+      );
       setValue(
         target,
         distance < proximityRadius
-          ? `scale(${(1 + proximityGain * (1 - distance / proximityRadius)).toFixed(3)})`
+          ? `scale(${Math.min(target.limit, 1 + proximityGain * (1 - distance / proximityRadius)).toFixed(3)})`
           : ""
       );
     }
@@ -73,12 +89,8 @@ const startCursorEffects = (): (() => void) => {
   };
 
   const onPointerMove = (event: Event): void => {
-    const pointer = event as PointerEvent;
-    if (glow) {
-      glow.style.opacity = "1";
-      glow.style.transform = `translate3d(${pointer.clientX - 160}px, ${pointer.clientY - 160}px, 0)`;
-    }
     if (targets.length === 0) return;
+    const pointer = event as PointerEvent;
     pointerX = pointer.clientX;
     pointerY = pointer.clientY;
     seen = true;
@@ -86,7 +98,6 @@ const startCursorEffects = (): (() => void) => {
   };
 
   const onLeave = (): void => {
-    if (glow) glow.style.opacity = "0";
     seen = false;
     resetProximity();
   };
@@ -117,7 +128,7 @@ const startCursorEffects = (): (() => void) => {
 
 export const initCursorEffects = (): (() => void) => {
   const fine = globalThis.matchMedia(finePointerQuery);
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   let stop: (() => void) | undefined;
 
   const sync = (): void => {
@@ -138,67 +149,5 @@ export const initCursorEffects = (): (() => void) => {
     reduce.removeEventListener("change", sync);
     stop?.();
     stop = undefined;
-  };
-};
-
-export const initPointerLight = (scope: HTMLElement): (() => void) => {
-  const fine = globalThis.matchMedia(finePointerQuery);
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
-  const elements = [
-    ...scope.querySelectorAll<HTMLElement>("[data-pointer-light]"),
-  ];
-  const rects = new Map<HTMLElement, DOMRect | null>();
-  const disposers: Array<() => void> = [];
-
-  const clear = (element: HTMLElement): void => {
-    element.style.removeProperty("--mx");
-    element.style.removeProperty("--my");
-  };
-
-  const on = (
-    target: EventTarget,
-    type: string,
-    listener: (event: Event) => void
-  ): void => {
-    target.addEventListener(type, listener, { passive: true });
-    disposers.push(() => {
-      target.removeEventListener(type, listener);
-    });
-  };
-
-  for (const element of elements) {
-    on(element, "pointerenter", () => {
-      rects.set(element, null);
-    });
-    on(element, "pointermove", (event) => {
-      const pointer = event as PointerEvent;
-      if (
-        !rects.has(element) ||
-        pointer.pointerType !== "mouse" ||
-        !fine.matches ||
-        reduce.matches
-      )
-        return;
-      const rect = rects.get(element) ?? element.getBoundingClientRect();
-      rects.set(element, rect);
-      const x = ((pointer.clientX - rect.left) / rect.width) * 100;
-      const y = ((pointer.clientY - rect.top) / rect.height) * 100;
-      element.style.setProperty("--mx", `${x.toFixed(1)}%`);
-      element.style.setProperty("--my", `${y.toFixed(1)}%`);
-    });
-    on(element, "pointerleave", () => {
-      rects.delete(element);
-      clear(element);
-    });
-  }
-
-  on(globalThis, "scroll", () => {
-    for (const element of rects.keys()) rects.set(element, null);
-  });
-
-  return () => {
-    for (const dispose of disposers) dispose();
-    for (const element of elements) clear(element);
-    rects.clear();
   };
 };

@@ -1,0 +1,27 @@
+---
+import BlogIndex from "@/components/blog/blog-index.astro";
+import BlogLayout from "@/layouts/BlogLayout.astro";
+import { showDrafts } from "@/lib/blog/build-env";
+import {
+  listingMetadata,
+  listingPage,
+  listingParams,
+} from "@/lib/blog/listing-route";
+import { listPosts } from "@/lib/blog/posts";
+
+export const getStaticPaths = (): Array<{ params: { n: string } }> =>
+  listingParams(listPosts({ drafts: showDrafts() }))
+    .filter(({ slug }) => slug === "page")
+    .flatMap(({ rest }) => rest.map((n) => ({ params: { n } })));
+
+const { n = "" } = Astro.params;
+const page = listingPage(listPosts({ drafts: showDrafts() }), {
+  rest: [n],
+  slug: "page",
+});
+if (page === undefined) throw new Error(`blog: no page ${n}`);
+---
+
+<BlogLayout metadata={listingMetadata(page)}>
+  <BlogIndex heading={page.heading} listing={page.listing} />
+</BlogLayout>

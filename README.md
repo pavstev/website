@@ -1,89 +1,56 @@
 # stevanpavlovic.com
 
-My personal site: one contact card floating over a live WebGL sky.
-
-![The site: a portrait, a name, a short bio, a résumé button and two open-source project cards over a dark sky with drifting clouds](.github/assets/hero.jpg)
+My personal site: a contact card over a painted WebGL sky of Vienna, a work page, an about page, a blog, and a Worker that answers questions about my CV and posts.
 
 **Live:** [stevanpavlovic.com](https://stevanpavlovic.com)
 
 ## What is in it
 
-- **One static page.** A Next.js 16 App Router export with Tailwind CSS 4. No server, no extra pages. The 404 is plain.
-- **A real sky.** A hand-written WebGL nebula with sparkling stars, a rising planet and a shooting star every so often.
-- **Real clouds.** One three.js shader with three decks (thin cirrus, far, near), lit from below, with silver edges. They part around the cursor.
-- **Small details.** The name tunes in like a signal and glitches while you are around. The portrait turns holographic on hover. Every open-source tile gets its own planet.
-- **Found by people and machines.** Metadata, a JSON-LD graph (`WebSite`, `ProfilePage`, `Person`, one `SoftwareSourceCode` per project), a sitemap with images, a manifest, `robots.txt` and `llms.txt`.
-- **Careful with your device.** Both animations slow down when idle, pause when hidden and freeze on slow frames.
-- **No cookies, no tracking.** A small glass chip at the bottom opens a short note: the site sets no cookies, stores nothing on your device and loads nothing from other companies. Built on the Popover API, with no JavaScript and no consent banner, because there is nothing to consent to.
+- **Painted sky.** The home page has a hand-written WebGL sky in a painted style: the real Vienna sun and moon (with its phase), the live weather for Vienna or, if you share it, for your own place (rounded to about 10 km, kept only on your device), a band of space with stars at the top and paper grain. The other pages show the same painted sky, always at night, with light rays from the top left, and the sun glides between the two.
+- **Glass controls.** The home buttons, tooltips and panels are translucent glass that reads on a day or a night sky.
+- **Work.** [/work](https://stevanpavlovic.com/work) lists my products and open-source projects.
+- **About.** [/about](https://stevanpavlovic.com/about) is a short text page.
+- **Blog.** [/blog](https://stevanpavlovic.com/blog) has MDX posts with charts and diagrams, tag pages, RSS and JSON feeds, and a Markdown copy for AI tools.
+- **MCP.** `POST /mcp` is a read-only MCP server (`profile`, `experience`, `skills`, `projects`, `products`, `contact`, `posts`, `post`) behind a per-IP rate limit.
+- **Kind to your device.** Loops slow down when idle, pause when hidden, and stop with a "Stop motion" button or reduced motion.
+- **No cookies.** Cloudflare Web Analytics counts visits without them.
 
 ## How it works
 
-Everything on the page and in the discovery files comes from the same three sources.
-
-```mermaid
-flowchart LR
-  content["personal.ts and i18n.ts"] --> build["Next.js static export"]
-  github["GitHub API (build time)"] --> build
-  build --> dist["dist/: page, sitemap, robots, manifest, llms.txt"]
-  push["git push to main"] --> cloudflare["Cloudflare Workers static assets"]
-  dist --> cloudflare
-  cloudflare --> visitor["Visitor: card, WebGL sky, clouds"]
-```
-
-### Design notes
-
-- **One frame pacer.** The sky and the clouds share `src/lib/frame-pacer.ts`. It caps the frame rate, drops to 30 fps after 800 ms without input, lowers the render resolution on slow frames and freezes after a run of stalled frames.
-- **Software renderers get a still sky.** On SwiftShader, llvmpipe and similar, the sky draws one frame and the clouds never start. Crawlers and lab tools stay fast.
-- **Reduced motion is a first-class path.** The intro ends early, the sky and clouds draw one still frame, and pointer effects switch off, also when the setting changes at runtime.
-- **The glitch is invisible to screen readers.** The name copies are pseudo-elements with `content: attr(data-text) / ""`, so the name is read once. The glitch rests after 30 seconds without input.
-- **The build can fail on purpose.** If the GitHub API answers with anything but 200, the build stops, so a broken project strip never ships.
-- **Locked-down headers.** `public/_headers` sets a same-origin CSP, HSTS and immutable caching for hashed assets and fonts. Fonts are self-hosted, subset and not preloaded, because preloading measured slower.
-
-### Checks
-
-`pnpm verify` runs Prettier, ESLint (typescript-eslint, unicorn, Next.js and React hooks rules), the TypeScript compiler, the build and knip. On the built site, Lighthouse gives 100 for SEO, accessibility, best practices and agentic browsing, and axe-core finds 0 violations at desktop, short and phone sizes. Text contrast over the moving sky is measured by hand, because axe cannot read canvas pixels.
+An Astro 7 static build (React 19 islands, Tailwind v4) writes one HTML file per page to `dist/`. The Worker in `worker/` runs only for `/mcp` and `/where`. `/mcp` reads `/cv.json`, `/llms.txt` and `/blog/feed.json` from the static assets. `/where` answers with the rough city from Cloudflare request data and stores nothing. The browser asks [Open-Meteo](https://open-meteo.com) (CC BY 4.0) for the weather. The résumé is the committed file `src/data/cv.json` (no phone number); data that fails its schema fails the build.
 
 ## Getting started
 
-You need Node 24 (see `.nvmrc`) and pnpm 12 (Corepack reads it from `package.json`).
+Node 24 and pnpm 12. The build reads the GitHub API and needs `GITHUB_TOKEN`; locally it falls back to `gh auth token`.
 
 ```bash
 pnpm install
-pnpm dev
+pnpm dev   # http://localhost:4321
 ```
 
-The site runs at <http://localhost:4321>. The repo strip calls the GitHub API at build time. Set the optional `GITHUB_TOKEN` environment variable to lift the 60 requests per hour limit.
+| Script               | What it does                                                                  |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `pnpm dev`           | Builds the blog media, then a dev server on port 4321 (drafts show)           |
+| `pnpm build`         | Builds the blog media and `dist/`, then runs the preload and meta guards      |
+| `pnpm preview`       | Serves `dist/` with `astro preview` on port 4321                              |
+| `pnpm check`         | Format, lint, `astro check`, Worker types, tests, unused code, build, profile |
+| `pnpm fix`           | Applies Prettier and ESLint fixes                                             |
+| `pnpm icons`         | Rebuilds `src/lib/icon-data.ts`                                               |
+| `pnpm profile:build` | Builds the GitHub profile into `.profile-out/` (`--check` also checks links)  |
 
-| Script         | What it does                                                   |
-| -------------- | -------------------------------------------------------------- |
-| `pnpm dev`     | Starts the dev server on port 4321                             |
-| `pnpm build`   | Builds the static site into `dist/`                            |
-| `pnpm preview` | Serves `dist/` on port 4321                                    |
-| `pnpm verify`  | Formats, lints, type-checks, builds and checks for unused code |
-| `pnpm icons`   | Rebuilds `src/lib/icon-data.ts` from the icons used in `src/`  |
+`pnpm check` changes no file. It runs before every commit (husky) and in CI.
 
-`pnpm verify` also runs as the pre-commit hook (lefthook) and in GitHub Actions. Dependency settings live in `pnpm-workspace.yaml`: an allowlist for build scripts, a one-day minimum release age and a trust policy that blocks package downgrades, with one exact, documented exception.
+## GitHub profile
 
-## Project layout
-
-```text
-src/app/          the page, 404, sitemap, robots, manifest, llms.txt
-src/components/   one component per file
-src/lib/          content, i18n strings, structured data, theme, WebGL and effects
-src/styles/       globals.css: tokens, utilities, card styles
-public/           résumé, portraits, fonts, icons, share image, headers
-scripts/          icon extraction
-```
-
-Content lives in `src/lib/personal.ts`. Every UI string lives in `src/lib/i18n.ts`.
+The README on [github.com/pavstev](https://github.com/pavstev) is generated here by `src/profile/` and pushed to `pavstev/pavstev` by `.github/workflows/profile.yml` (needs the deploy key secret `PROFILE_DEPLOY_KEY`). Never edit that repo by hand.
 
 ## Deploy
 
-Every push to `main` makes Cloudflare build the repository and publish `dist/` as Workers static assets (`wrangler.jsonc`). Nobody deploys by hand.
+Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). It needs `GITHUB_TOKEN` as a build variable. A blog post with a future `date` goes live through `.github/workflows/blog-publish.yml`, which starts a build with the deploy hook `CLOUDFLARE_DEPLOY_HOOK`. Nobody deploys by hand.
 
 ## Contact
 
-Found a bug or want to say hello? Write to [pavlovicmstevan@gmail.com](mailto:pavlovicmstevan@gmail.com).
+[hi@stevanpavlovic.com](mailto:hi@stevanpavlovic.com)
 
 ## License
 

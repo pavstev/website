@@ -1,0 +1,80 @@
+---
+import BlogHeader from "@/components/blog/blog-header.astro";
+import { Icon } from "@/components/icon";
+import { ProductStrip } from "@/components/product-strip";
+import { RepoStrip } from "@/components/repo-strip";
+import BlogLayout from "@/layouts/BlogLayout.astro";
+import { pageCrumbs } from "@/lib/blog/crumbs";
+import { listMetadata } from "@/lib/blog/metadata";
+import { getRepos } from "@/lib/github";
+import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
+import { products as allProducts } from "@/lib/products";
+import { countHeading } from "@/lib/template";
+import { pickProducts } from "@/lib/work";
+
+const repos = await getRepos(personalData.githubHandle);
+const products = pickProducts(allProducts);
+const metadata = listMetadata({
+  description: en.work.metaDescription,
+  title: en.work.metaTitle,
+  url: `${personalData.website}/work`,
+});
+---
+
+<BlogLayout metadata={metadata}>
+  <main class="blog-main" id="main-content">
+    <BlogHeader
+      crumbs={pageCrumbs(en.work.heading, "/work")}
+      title={en.work.heading}
+    >
+      <Fragment slot="meta">
+        <span>{countHeading(products.length, en.products)}</span>
+        <span aria-hidden="true"> · </span>
+        <span>{countHeading(repos.length, en.repos)}</span>
+      </Fragment>
+    </BlogHeader>
+    <div class="post-layout">
+      <div class="blog-index work-page">
+        <span hidden id="work-new-tab">
+          {en.repos.newTab}
+        </span>
+        {products.length > 0 && (
+          <section aria-labelledby="products" class="work-section">
+            <div class="work-heading-row">
+              <h2 class="work-heading" id="products">
+                {en.work.productsHeading}
+              </h2>
+            </div>
+            <ProductStrip newTabId="work-new-tab" products={products} />
+          </section>
+        )}
+        {repos.length > 0 && (
+          <section aria-labelledby="projects" class="work-section">
+            <div class="work-heading-row">
+              <h2 class="work-heading" id="projects">
+                {en.work.projectsHeading}
+              </h2>
+              <a
+                class="work-all focus-ring"
+                href={`${personalData.github}?tab=repositories`}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <Icon aria-hidden name="simple-icons:github" size="0.9375rem" />
+                {en.repos.all}
+                <Icon
+                  aria-hidden
+                  name="lucide:arrow-up-right"
+                  size="0.875rem"
+                />
+                <span class="sr-only"> {en.card.newTab}</span>
+              </a>
+            </div>
+            <RepoStrip newTabId="work-new-tab" repos={repos} />
+          </section>
+        )}
+      </div>
+    </div>
+  </main>
+</BlogLayout>

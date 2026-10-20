@@ -1,0 +1,292 @@
+@layer base {
+  :root {
+    --white: #fff;
+    --black: #000;
+
+    --night-950: #07080f;
+    --night-900: #10121c;
+    --night-500: #8b91a7;
+    --night-300: #c3c7d6;
+    --night-100: #e8eaf2;
+
+    --cool-50: #f6f7fb;
+    --cool-100: #f0f2f7;
+    --cool-200: #e2e5ee;
+    --cool-300: #c3c7d6;
+    --cool-350: #b6bbcc;
+    --cool-375: #b9bdcd;
+    --cool-400: #a3a8bb;
+    --cool-450: #9298ad;
+    --cool-500: #767d95;
+    --cool-800: #1f2333;
+    --cool-850: #171a27;
+    --cool-900: #0f111b;
+
+    --day-50: #fafbfe;
+    --day-650: #3a3e4c;
+    --day-700: #2c3040;
+    --day-800: #262a36;
+    --day-950: #12141c;
+
+    --blue-300: #93b0ff;
+    --blue-400: #7aa2ff;
+    --blue-700: #1d4ed8;
+    --purple-300: #b48cff;
+    --green-300: #5ee2b5;
+    --green-400: #5bd79c;
+    --green-500: #00d492;
+    --green-700: #087a4b;
+    --green-800: #046c4e;
+    --red-300: #f5897f;
+    --red-400: #ff6467;
+    --red-700: #b42318;
+    --paper: #f3efe6;
+    --zinc-100: #f4f4f5;
+
+    --sky-gold: #ffc46b;
+    --sky-rose: #ff6fb5;
+    --sky-violet: #a97cff;
+    --sky-blue: #5e8bff;
+    --sky-teal: #4fe0c8;
+
+    --code-ink: rgb(219 215 202 / 0.933);
+    --code-constant: #4c9a91;
+    --code-function: #80a665;
+    --code-keyword: #cb7676;
+    --code-link: #5da994;
+    --code-parameter: #bd976a;
+    --code-string: #c98a7d;
+    --code-print-constant: #8a4b00;
+    --code-print-keyword: #6b2fa3;
+    --code-print-string: #1b6e2c;
+    --code-print-string-expression: #0b6363;
+
+    --background: var(--night-950);
+    --foreground: var(--night-100);
+    --foreground-soft: var(--night-300);
+    --muted-foreground: var(--night-500);
+    --muted-foreground-lift: oklch(
+      from var(--muted-foreground) calc(l + 0.06) c h
+    );
+    --ink-dark: var(--background);
+    --sky-lift: var(--white);
+    --primary: var(--blue-400);
+    --primary-foreground: var(--background);
+    --accent-purple: var(--purple-300);
+    --accent-green: var(--green-300);
+    --border: rgb(255 255 255 / 0.1);
+    --border-strong: rgb(255 255 255 / 0.22);
+    --surface: var(--night-900);
+    --focus: var(--white);
+
+    --glow-primary: rgb(122 162 255 / 0.14);
+    --glow-purple: rgb(180 140 255 / 0.12);
+    --glow-green: rgb(94 226 181 / 0.08);
+
+    --ui-bezel: var(--cool-900);
+    --ui-panel: var(--cool-850);
+    --ui-well: var(--cool-800);
+    --ui-hairline: rgb(255 255 255 / 0.16);
+    --ui-hairline-hover: rgb(255 255 255 / 0.2);
+    --ui-hairline-strong: rgb(255 255 255 / 0.28);
+    --ui-ink: var(--cool-50);
+    --ui-ink-2: var(--cool-300);
+    --ui-ink-3: var(--cool-450);
+    --ui-ink-tip: var(--cool-100);
+    --ui-stone-100: var(--cool-100);
+    --ui-stone-200: var(--cool-200);
+    --ui-stone-400: var(--cool-400);
+    --ui-stone-500: var(--cool-500);
+    --ui-accent: var(--blue-300);
+    --ui-on-accent: var(--ui-panel);
+    --ui-moss: var(--green-400);
+    --ui-flag: var(--red-300);
+    --ui-key-ink: var(--cool-50);
+    --ui-key-pending: var(--cool-400);
+    --ui-key-success: var(--green-500);
+    --ui-key-error: var(--red-400);
+    --ui-scrim: rgb(7 8 15 / 0.8);
+    --ui-scrim-soft: color-mix(in oklab, var(--black) 55%, transparent);
+    --ui-shadow-lift:
+      0 1px 2px rgb(0 0 0 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.05),
+      0 0 0 1px rgb(255 255 255 / 0.05);
+    --ui-shadow-well:
+      inset 0 1px 3px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(255 255 255 / 0.03);
+    --ui-shadow-row:
+      inset 0 0 0 1px rgb(255 255 255 / 0.06), 0 1px 2px rgb(0 0 0 / 0.25);
+    --ui-shadow-inset: inset 0 1px 2px rgb(0 0 0 / 0.45);
+    --ui-shadow-chip: 0 1px 6px rgb(0 0 0 / 0.45);
+    --ui-shadow-panel: 0 28px 56px -24px rgb(24 22 20 / 0.45);
+
+    --glass-blur: blur(6px);
+    --glass-blur-float: blur(10px);
+    --glass-fill: rgb(255 255 255 / 0.16);
+    --glass-fill-hover: rgb(255 255 255 / 0.22);
+    --glass-fill-day: rgb(255 255 255 / 0.38);
+    --glass-fill-day-hover: rgb(255 255 255 / 0.44);
+    --glass-edge: rgb(255 255 255 / 0.15);
+    --glass-float: rgb(22 24 36 / 0.3);
+    --glass-float-edge: rgb(255 255 255 / 0.12);
+    --glass-solid: rgb(30 32 46);
+    --glass-card: rgb(255 255 255 / 0.06);
+    --glass-card-edge: rgb(255 255 255 / 0.12);
+    --glass-card-edge-hover: color-mix(
+      in srgb,
+      var(--ui-accent) 55%,
+      transparent
+    );
+    --glass-lift: 0 14px 34px -16px rgb(0 0 0 / 0.55);
+    --pill-shine: rgb(255 255 255 / 0.4);
+    --pill-shine-day: rgb(255 255 255 / 0.85);
+    --credit-underline: color-mix(in oklab, currentColor 45%, transparent);
+    --bar-tint: rgb(7 8 15 / 0.4);
+    --bar-tint-solid: rgb(7 8 15 / 0.7);
+    --bar-shade: rgb(7 8 15 / 0.15);
+    --bar-blur: blur(10px);
+  }
+}
+
+:is(
+  .keycap,
+  .mat-cap,
+  .privacy-chip-face,
+  .privacy-ack,
+  .sky-trigger,
+  .motion-switch-button,
+  .tip,
+  .mat-pop
+) {
+  --ui-ink-3: var(--cool-350);
+  --ui-stone-400: var(--cool-375);
+  --ui-key-pending: var(--cool-375);
+}
+
+.tip,
+.mat-pop {
+  --ui-ink-2: var(--cool-200);
+  --ui-ink-3: var(--cool-200);
+  --ui-stone-400: var(--cool-200);
+}
+
+:root:has([data-card] .bio[data-ink="dark"]) {
+  --glass-fill: var(--glass-fill-day);
+  --glass-fill-hover: var(--glass-fill-day-hover);
+  --glass-edge: rgb(20 33 61 / 0.15);
+  --glass-float: rgb(255 255 255 / 0.3);
+  --glass-float-edge: rgb(20 33 61 / 0.15);
+  --glass-solid: var(--day-50);
+  --glass-lift: 0 14px 34px -16px rgb(18 24 48 / 0.4);
+  --pill-shine: var(--pill-shine-day);
+  --focus: var(--day-950);
+}
+
+:root:has([data-card] .bio[data-ink="dark"])
+  :is(
+    .keycap,
+    .mat-cap,
+    .privacy-chip-face,
+    .privacy-ack,
+    .sky-trigger,
+    .motion-switch-button,
+    .tip,
+    .mat-pop
+  ) {
+  --ui-ink: var(--day-950);
+  --ui-ink-2: var(--day-800);
+  --ui-ink-3: var(--day-700);
+  --ui-ink-tip: var(--day-950);
+  --ui-stone-100: var(--day-950);
+  --ui-stone-400: var(--day-700);
+  --ui-accent: var(--blue-700);
+  --ui-on-accent: var(--white);
+  --ui-hairline: rgb(18 20 28 / 0.18);
+  --ui-well: rgb(18 20 28 / 0.07);
+  --ui-moss: var(--green-700);
+  --ui-key-ink: var(--day-950);
+  --ui-key-pending: var(--day-650);
+  --ui-key-success: var(--green-800);
+  --ui-key-error: var(--red-700);
+}
+
+:root:has([data-card] .bio[data-lit]) {
+  --glass-fill: color-mix(in srgb, var(--glass-solid) 66%, transparent);
+  --glass-fill-hover: color-mix(in srgb, var(--glass-solid) 74%, transparent);
+}
+
+[data-card] [data-ink="dark"] .sky-trigger {
+  --glass-fill: var(--glass-fill-day);
+  --glass-fill-hover: var(--glass-fill-day-hover);
+  --pill-shine: var(--pill-shine-day);
+}
+
+.sky-panel {
+  --sky-press: rgb(7 8 15 / 0.4);
+  --sky-fill: var(
+    --glass-fill,
+    color-mix(in oklab, var(--ui-ink) 16%, transparent)
+  );
+  --sky-fill-hover: var(
+    --glass-fill-hover,
+    color-mix(in oklab, var(--ui-ink) 22%, transparent)
+  );
+  --sky-edge: var(
+    --glass-edge,
+    color-mix(in oklab, var(--ui-ink) 15%, transparent)
+  );
+  --range-track: color-mix(in oklab, var(--ui-ink) 18%, transparent);
+  --range-tick-minor: color-mix(in oklab, var(--ui-ink) 32%, transparent);
+  --range-tick-strong: color-mix(in oklab, var(--ui-ink) 55%, transparent);
+  --range-stop: color-mix(in oklab, var(--ui-ink) 50%, transparent);
+  --range-halo: color-mix(in oklab, var(--ui-panel) 45%, transparent);
+}
+
+:root:has([data-card] .bio[data-ink="dark"]) .sky-panel {
+  --sky-press: var(--sky-fill);
+}
+
+.sky-panel > * {
+  --ui-ink-2: var(--ui-ink);
+  --ui-ink-3: var(--ui-ink);
+}
+
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  :root,
+  :root:has([data-card] .bio[data-ink="dark"]),
+  :root:has([data-card] .bio[data-lit]) {
+    --bar-blur: none;
+    --bar-tint: var(--bar-tint-solid);
+    --glass-blur: none;
+    --glass-blur-float: none;
+    --glass-fill: var(--glass-solid);
+    --glass-fill-hover: var(--glass-solid);
+    --glass-float: var(--glass-solid);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  :root:has([data-card] .bio[data-ink="dark"]),
+  :root:has([data-card] .bio[data-lit]) {
+    --bar-blur: none;
+    --bar-tint: var(--bar-tint-solid);
+    --glass-blur: none;
+    --glass-blur-float: none;
+    --glass-fill: var(--glass-solid);
+    --glass-fill-hover: var(--glass-solid);
+    --glass-float: var(--glass-solid);
+  }
+}
+
+@media print {
+  :root {
+    --background: var(--white);
+    --foreground: #0a0a0a;
+    --foreground-soft: #1f1f1f;
+    --muted-foreground: #4a4a4a;
+    --border: #d4d4d4;
+    --border-strong: #a0a0a0;
+    --primary: #2457d6;
+  }
+}

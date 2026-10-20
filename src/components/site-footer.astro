@@ -1,0 +1,70 @@
+---
+import { FooterContacts } from "@/components/footer-contacts";
+import { MotionSwitch } from "@/components/motion-switch";
+import { SkyControls } from "@/components/sky-controls";
+import { blogLive } from "@/lib/blog/live";
+import { footerLinks } from "@/lib/footer-links";
+import { getContact } from "@/lib/github";
+import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
+
+interface Props {
+  className: string;
+  links?: boolean;
+}
+
+const { className, links = false } = Astro.props;
+const year = new Date().getFullYear();
+const keys = links
+  ? footerLinks(await getContact(personalData.githubHandle), blogLive())
+  : [];
+---
+
+{links ? (
+  <footer class={`${className} footer-night`}>
+    <div class="footer-row">
+      <div class="footer-left">
+        <span class="footer-copy">
+          <span class="footer-words">
+            <span>© {year}</span> <span>{personalData.name}</span>
+          </span>
+        </span>
+        <span class="footer-motion">
+          <MotionSwitch client:load />
+        </span>
+      </div>
+      <FooterContacts client:idle links={keys} />
+    </div>
+  </footer>
+) : (
+  <div class={`${className} type-chip`}>
+    <div class="footer-tiers tabular text-sky">
+      <div class="footer-tier">
+        <span class="footer-copy">
+          <span class="footer-words">
+            <span>© {year}</span> <span>{personalData.name}</span>
+          </span>
+        </span>
+      </div>
+      <div class="footer-tier">
+        <SkyControls client:load />
+        <a
+          class="footer-credit focus-ring"
+          href={en.weather.creditUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <span class="footer-words">
+            {en.weather.credit.split(" ").map((word, index) => (
+              <>
+                {index > 0 && " "}
+                <span>{word}</span>
+              </>
+            ))}
+          </span>
+          <span class="sr-only"> {en.card.newTab}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+)}

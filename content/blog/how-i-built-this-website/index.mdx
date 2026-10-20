@@ -1,0 +1,176 @@
+---
+title: How I built this website
+description: Eight days, three redesigns and a sky made from real stars. How I rebuilt this site with Next.js, raw WebGL and Claude Code.
+date: 2026-10-13T12:00:00+02:00
+updated: 2026-10-15T18:00:00+02:00
+draft: true
+tags: [Next.js, WebGL, Cloudflare, Claude Code]
+---
+
+On Monday, 5 October, my personal site was a static Astro site with about twenty URLs and a résumé pipeline that started a headless browser to print a PDF. It worked, but it was more site than I needed.
+
+Eight days later the site is one contact card over a sky that follows the real sun, moon and stars. For its first week it built my résumé from another app I wrote, and it answers AI agents on a public MCP endpoint. On the way I threw out a light theme, a galaxy, a holographic foil, a wind simulation and a chat panel.
+
+I built almost all of it with Claude Code. This post is the plain version: what I chose, what I reversed, the bugs that taught me something, and the numbers.
+
+## 5 October: three designs in one day
+
+I started with a long question session. I asked Claude to research my GitHub and my résumé and to propose a simple one-page site that kept the PDF download. Before it wrote any code, it asked me questions in rounds, each with options and their costs. That first session alone held 40 question rounds.
+
+The first lock was a warm editorial light theme: paper tones, a serif display font, a theme toggle and an animated morph for projects. About two hours later I looked at it and asked for a design that was "less of an AI slop". It read like a template. I asked for more motion, circles instead of boxes, no em dashes and no taglines.
+
+So the light theme went. Dark space came in: a WebGL nebula, layered stars, an aurora, and a three.js galaxy disc with a warp, a shockwave, bloom and numerals on rings. The same evening I moved the site from Astro 6 to Next.js 16 with a static export. It still writes plain files to `dist/`. Cloudflare serves them, and every push to `main` deploys.
+
+Late that night I changed direction a third time. In a short planning session I said the only point of the page was the résumé download. The result was the contact card: a portrait, my name, the PDF button, three contact links and a strip of my public GitHub repos. Claude ran that plan overnight with 42 subagents.
+
+## 6 and 7 October: cutting
+
+The next morning I dropped a static PDF of my résumé into the repo and asked Claude to remove the pipeline. Puppeteer, the JSON Resume build and the image processing went out in one commit. A few hours later I asked it to "remove the spinning circles of threejs, prune it totally". The galaxy had been about 85% of the GPU work. Soft clouds replaced it.
+
+### PageSpeed drew my sky on the CPU
+
+Lighthouse on my machine gave the mobile page 95 for performance. PageSpeed Insights gave the desktop page 63, with 16.7 seconds of total blocking time. The reason: PageSpeed renders WebGL in software, on the CPU. My frame logic lowered the resolution on slow frames, but it skipped frames over 100 ms as outliers. On a software renderer every frame is an outlier, so the sky kept looping at full cost for 30 seconds.
+
+The fix has two parts. Eight frames in a row over 100 ms now freeze the loop. And the page reads the renderer name (SwiftShader, llvmpipe, Microsoft Basic Render) and gives a software renderer one still frame with no clouds. The context flag that should catch this, `failIfMajorPerformanceCaveat`, never fired. After the fix PageSpeed showed medians of 97 on mobile and 92 on desktop.
+
+### A fresh repo instead of a cleanup
+
+On 7 October I wanted the code public. The old history held private details, so the public repo started fresh.
+
+The same day brought small things that now define the card. The flag next to my city is an SVG, because Windows shows the flag emoji as the letters "AT". The name plays a short TV glitch that stops after 30 seconds without input, to respect the WCAG rule on moving content. A holographic foil on the portrait looked awful, so a WebGL2 glass bead lens replaced it. Click my city in the bio for a small globe; a day later it had a live night side and the 100 largest metro areas.
+
+## 8 October: data from my own tools
+
+8 October brought 48 commits, the most of any day since the public repo started on the 7th. Three things landed that turned a page into a small system.
+
+First, a Cloudflare Worker. The site is static, and only one path runs code: `/mcp`. For two days a second path, `/weather`, ran too (see below), and I took it out again. `/mcp` is a stateless MCP server. It launched with six read-only tools (profile, experience, skills, projects, products, contact), and this blog added two, `posts` and `post`. It is limited to 20 requests per minute per IP. An AI agent gets the same facts the page shows. Claude built it with 31 subagents in three parallel lanes in about an hour.
+
+Second, my résumé came from hirista, the job search app I was building. At build time a script fetched its CV feed, and `/resume.pdf` was rendered from it with `@react-pdf/renderer`: four pages, about 143 KB. Saving my résumé in hirista called a deploy hook, and this site rebuilt. A fixture file was shared byte for byte between the two repos, so a change to the feed shape broke tests on both sides. I removed the feed on 15 October 2026; the résumé now lives in this repo as a committed file, and the PDF is still rendered from it at build time.
+
+Third, a products column with hirista and Safety Real Time. Their logos are small planets that turn in from the night side like a sunrise and then wobble. The page now had a lot of motion, so one small orbit-shaped button pauses all of it and remembers the choice.
+
+That day I also shipped an "Ask me" chat on Workers AI with a bot check in front of it. I removed it the same day, with the bot check and the AI binding. The MCP server stayed.
+
+### When the feed went away
+
+On 10 October hirista moved to a new database that started empty. The feed answered 404 and every build of this site failed. That was on purpose: I would rather fail a build than publish an empty résumé. It still blocked every deploy.
+
+So I added a committed snapshot of the résumé. The commit hook built from it without calling the feed, and CI and Cloudflare could switch to it in an emergency. A fallback to the live `/cv.json` happened only on a timeout, a network error or a 5xx. Five days later the snapshot became the résumé itself.
+
+<Diagram
+  name="site-pipeline"
+  caption="From a push to the live site: Workers Builds builds the blog and the pages, and publishes static files with a Worker in front of /mcp."
+/>
+
+## 12 October: the sky day
+
+I spent 12 October on the sky: 11 sessions and 27 commits.
+
+### Labs instead of descriptions
+
+I cannot judge a shader from a paragraph. So Claude built the options as pages I could click through, with a slider for every knob. The first page had six night skies, the next twenty. I picked an eclipse: a dark sun behind my portrait with a slowly turning corona. I tuned it in its own lab, clicked "copy my pick" and pasted the JSON back. Claude baked the values into the shader. Every look on this site went through that loop: lab, pick, paste, bake.
+
+Not every lab was a good idea. I asked for a subtler sky, maybe aware of time. Twenty minutes later I had a real sun position, moon phases and star charts. I wrote back that "the sun-based stuff is not okay". The sky now follows my local clock instead: day, twilight and night as they are where I live.
+
+The clouds took three tries. One version ran a stable-fluids wind simulation that pushed and swirled them. It was clever, and it did not look like clouds. The one that shipped is a stratocumulus bank in two rigid layers. Swipe across it and the clouds speed up in your direction, to about 3.5 times their normal speed, then ease back over about 2.3 seconds.
+
+### The real weather
+
+Then came the weather, for two days. A Worker route, `/weather`, asked Open-Meteo for the current cloud cover, weather code, rain, snow, visibility and wind where I live. The Cloudflare cache kept one good answer for 15 minutes per data center, so each data center asked at most 96 times a day. A failure answered `null`, never a 5xx, so the sky kept a default look. I used the data under its licence and credited it on the home page: [Weather data by Open-Meteo.com](https://open-meteo.com/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+The shader turned that answer into seven looks: clear, partly cloudy, overcast, fog, rain, snow and storm. The clouds moved with the real wind. You could force a look with `?weather=snow` or any of the other six.
+
+I removed all of it on the 14th. The sky now looks at the Earth from 100 km up, where a cloud is a small white smear and the weather in my city is hard to see. A data source and a credit line are not worth that. The route, the credit and the seven looks are gone, and the Earth keeps one partly cloudy look.
+
+<Figure
+  src="sky-storm.webp"
+  alt="The site's sky in the storm preset: a near-black overcast sky, the eclipsed sun with a white corona at the upper right, thin rain streaks across the frame and a dark gray cloud bank along the bottom."
+  caption="Storm: the same shader with the storm preset. A lightning flash now and then lit the clouds near a random spot."
+/>
+
+<Figure
+  src="sky-fog-dawn.webp"
+  alt="The site's sky at dawn in fog: a dim slate blue sky with a few faint stars, the eclipsed sun with a soft corona at the upper right, and a hazy gray cloud bank fading into the fog at the bottom. No warm light shows."
+  caption="Fog at dawn. The warm dawn band shows only where the horizon is open, so the fog dims it here."
+/>
+
+### Fewer bytes for the same planets
+
+The repo and logo planets still used three.js, which is a lot of library for a few spheres. I ported them to raw WebGL2 and kept every GLSL body, the geometry and the color math. A still frame compared with 0 pixel difference. The JavaScript a first visit downloads dropped from 308 KB to 181 KB, and the programs link in parallel, so nothing blocks on a shader compile. Only the city globe still uses three.js, loaded on click.
+
+<Chart
+  type="pair"
+  src="data/planets-port.json"
+  title="Startup long tasks before and after the planet port"
+  caption="Measured on the home page with my own probe script: 955 ms of long tasks at startup with three.js, 67 ms with raw WebGL2."
+/>
+
+That evening I also fixed a layout shift. When the web fonts swapped in, the page moved: mobile CLS 0.14. Fallback faces on Arial and Courier New with measured metrics brought it to 0.0007. Preloading the fonts made a slow 4G load worse (largest paint from 0.9 to 1.5 seconds), so there are no preloads.
+
+## 13 October: text over a sky that never holds still
+
+On the last morning I wrote "the rays are glitchy on the scrolling". The sky canvas is fixed and redrawn on the main thread, while the page scrolls on the compositor. The eclipse corona belongs to the portrait, so during a scroll it trailed behind.
+
+The fix is a second WebGL context. When the page can scroll, the corona is drawn into its own layer that scrolls with the portrait, blended over the sky with `screen`. The split is exact by math. The shader's tone map is `1 - exp(-1.15 x)`, and the `screen` blend of two tone-mapped parts equals the tone map of their sum. So the layer draws only the corona, the sky canvas leaves it out, and at rest the two match the old single canvas within screenshot noise.
+
+The harder problem was text. The sky changes with the hour, and I did not want dark boxes or shadows behind the words. So the text reads the sky. A probe draws the sky shader into a small framebuffer, 24 by 6 samples behind each text block, and reads it back on the next frame so it never waits on the GPU. It runs at most once a second. Each text has a contrast target: 6.9:1 for the bio, 3:1 for the large name, 4.5:1 for the rest. The text lifts toward white in steps of 0.05 until it meets its target. It rises at once and falls only after a clear change, so it never flickers. In CSS it is one line:
+
+```css
+color: color-mix(in srgb, var(--ink), white calc(var(--lift) * 100%));
+```
+
+I tried dark text on bright days too. It failed, because day clouds are patchy and no single dark color reads on all of them. Instead the brightest day clouds roll off gently away from the portrait, so white text keeps 4.5:1 over them.
+
+<Diagram
+  name="sky-layers"
+  caption="Three layers: the fixed sky canvas, the corona layer that scrolls with the portrait, and the probe that lifts the text over both."
+/>
+
+One more rule for machines. Crawlers, link previews and headless browsers get a fixed, partly cloudy night, so share images and audits stay stable. The text and markup are the same for everyone.
+
+## Working with Claude Code
+
+Here are the numbers from the transcripts, from 5 to 13 October. 33 sessions on seven working days. 37.9 hours of active time, counting only gaps under five minutes. 284 prompts from me and 192 question rounds from Claude, each round with up to four questions. 170 subagents. 80 commits in the public repo before this post. Before the blog, the code was 24,043 lines in 158 files, mostly TypeScript with one CSS file, including 35 test files, and no comments, by rule.
+
+<Chart
+  type="bar"
+  src="data/prompts-per-day.json"
+  title="My prompts and Claude's question rounds per day"
+  caption="On the first day Claude asked more often than I typed. 10 and 11 October had no work on the site."
+/>
+
+### What worked
+
+Questions before code. For anything visual I answered rounds of options with their costs before Claude wrote a spec. On the first day that went too far, as the chart shows.
+
+Labs for looks. A page with sliders beat every written description. I picked in minutes what I could not have specified in an hour.
+
+Width for clear plans. Many parallel subagents shipped the Worker in about an hour.
+
+One gate. `pnpm check` runs Prettier, ESLint with zero warnings, TypeScript, the tests, knip and the full build, before every commit and in CI.
+
+Dashboards without me. Claude drove the Cloudflare and GitHub settings in my browser, and I only did the logins and typed the keys. One limit: the extension's tab runs hidden, so WebGL drew nothing there. Pointer checks moved to a headless Playwright script with 26 checks.
+
+### What did not
+
+The products column on 8 October took a session of 9 hours and 50 minutes with 57 subagents. Near the end I asked Claude whether I was losing my mind. Its own breakdown: 2 h 35 of ideas, 1 h 15 of spec and plan, 2 h 25 of building and 3 h 35 of follow-ups. The follow-ups alone took longer than the building, and Claude's own estimate was that the work should have taken about half the time. A privacy note in the footer, one small chip, took 81 minutes and 414 messages, much of it checks far bigger than the change.
+
+An audit of my website sessions on the 12th named the same friction again and again: helpers waiting on each other in series, oversized checks and too many screenshots. I split my project instructions into small rule files that load only when Claude touches the matching code. And I wrote a short rule set for myself, "Speed over ceremony": scale the process to the change, verify once and in proportion, and decide early. I wrote more about that in [How I use AI](/blog/how-i-use-ai).
+
+## What I would keep
+
+Decide the scope before the look. The biggest reversal on day one was about how much page I wanted, not how it looked.
+
+Show, do not describe. Every visual choice I am happy with came from a lab with knobs.
+
+Measure on the renderer the world uses. My laptop said 95 while PageSpeed was drawing the sky on a CPU.
+
+Let builds fail loudly. The broken feed blocked my deploys, and it never put an empty résumé online.
+
+And delete things. The light theme, the galaxy, the foil, the wind, the chat: each was fun to build, and the site is better without them.
+
+<Note>
+  The sky behind this blog is the same sky as the home page: one clear night. On
+  the home page the real sun over my city sits beside the card, and it glides to
+  this corner when you open the blog.
+</Note>
