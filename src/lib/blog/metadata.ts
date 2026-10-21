@@ -2,8 +2,8 @@ import { en } from "../i18n.ts";
 import { personalData } from "../personal.ts";
 import { pageRobots } from "./build-env.ts";
 import { postTitle } from "./format.ts";
+import { shareImageUrl, shareSize } from "./images.ts";
 import { blogLive } from "./live.ts";
-import { readMedia, shareKey } from "./media.ts";
 import { modifiedOf } from "./modified.ts";
 import { type FeedLinks, type PageMetadata } from "./page-metadata.ts";
 import { type PostMeta } from "./schema.ts";
@@ -38,18 +38,13 @@ export const shareImage: ShareImage = {
   width: 1200,
 };
 
-export const postShareImage = (post: PostMeta): ShareImage => {
-  const entry = readMedia()[shareKey(post.slug)];
-  return entry === undefined
-    ? shareImage
-    : {
-        alt: post.title,
-        height: entry.height,
-        type: "image/png",
-        url: entry.fallback,
-        width: entry.width,
-      };
-};
+export const postShareImage = (post: PostMeta): ShareImage => ({
+  alt: post.title,
+  height: shareSize.height,
+  type: "image/png",
+  url: shareImageUrl(post),
+  width: shareSize.width,
+});
 
 interface ListMetadata {
   description: string;

@@ -54,22 +54,18 @@ describe("resolveInstant", () => {
   });
 
   it("puts a previewed time on the day of the base, in the place zone", () => {
-    assert.equal(
-      resolveInstant(780, undefined, noon, vienna),
-      Date.parse("2026-10-20T13:00:00+02:00")
-    );
-    assert.equal(
-      resolveInstant(1380, undefined, noon, vienna),
-      Date.parse("2026-10-20T23:00:00+02:00")
-    );
-    assert.equal(
-      resolveInstant(0, undefined, noon, vienna),
-      Date.parse("2026-10-20T00:00:00+02:00")
-    );
-    assert.equal(
-      resolveInstant(1440, undefined, noon, vienna),
-      Date.parse("2026-10-21T00:00:00+02:00")
-    );
+    for (const [minutes, expected] of [
+      [780, "2026-10-20T13:00:00+02:00"],
+      [1380, "2026-10-20T23:00:00+02:00"],
+      [0, "2026-10-20T00:00:00+02:00"],
+      [1440, "2026-10-21T00:00:00+02:00"],
+    ] as const) {
+      assert.equal(
+        resolveInstant(minutes, undefined, noon, vienna),
+        Date.parse(expected),
+        String(minutes)
+      );
+    }
   });
 
   it("starts from ?at= and moves the time on its day", () => {
@@ -83,18 +79,17 @@ describe("resolveInstant", () => {
 
   it("follows the zone offset on the day the clocks change", () => {
     const base = Date.parse("2026-10-25T12:00:00+01:00");
-    assert.equal(
-      resolveInstant(180, undefined, base, vienna),
-      Date.parse("2026-10-25T03:00:00+01:00")
-    );
-    assert.equal(
-      resolveInstant(60, undefined, base, vienna),
-      Date.parse("2026-10-25T01:00:00+02:00")
-    );
-    assert.equal(
-      resolveInstant(780, undefined, base, "America/New_York"),
-      Date.parse("2026-10-25T13:00:00-04:00")
-    );
+    for (const [minutes, zone, expected] of [
+      [180, vienna, "2026-10-25T03:00:00+01:00"],
+      [60, vienna, "2026-10-25T01:00:00+02:00"],
+      [780, "America/New_York", "2026-10-25T13:00:00-04:00"],
+    ] as const) {
+      assert.equal(
+        resolveInstant(minutes, undefined, base, zone),
+        Date.parse(expected),
+        `${String(minutes)} in ${zone}`
+      );
+    }
   });
 });
 

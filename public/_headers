@@ -93,11 +93,6 @@
   ! Content-Security-Policy
   ! X-Frame-Options
 
-/blog-media/*
-  Cache-Control: public, max-age=31536000, immutable
-  ! Content-Security-Policy
-  ! X-Frame-Options
-
 /blog/*.md
   Content-Type: text/markdown; charset=utf-8
   Link: <https://stevanpavlovic.com/blog/:splat>; rel="canonical"

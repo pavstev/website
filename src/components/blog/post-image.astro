@@ -1,0 +1,40 @@
+---
+import { Picture } from "astro:assets";
+
+import { type FoundImage } from "@/components/blog/post-images";
+import { BlurUpImage } from "@/components/ui/blur-up-image";
+import { blurOf, imageWidths } from "@/lib/blog/images";
+
+interface Props {
+  alt: string;
+  found: FoundImage;
+  priority?: boolean;
+  sizes?: string;
+}
+
+const {
+  alt,
+  found: { image, key },
+  priority = false,
+  sizes = "(min-width: 48em) min(37.5rem, calc(100vw - 4rem)), min(37.5rem, calc(100vw - 2.5rem))",
+} = Astro.props;
+const blur = await blurOf(key);
+const width = Math.min(image.width, Math.max(...imageWidths));
+const height = Math.round((image.height * width) / image.width);
+---
+
+<BlurUpImage eager={priority} height={height} placeholder={blur} width={width}>
+  <Picture
+    alt={alt}
+    class="blog-image"
+    decoding={priority ? undefined : "async"}
+    fallbackFormat="webp"
+    formats={["avif", "webp"]}
+    height={height}
+    loading={priority ? "eager" : "lazy"}
+    sizes={sizes}
+    src={image}
+    width={width}
+    widths={imageWidths}
+  />
+</BlurUpImage>

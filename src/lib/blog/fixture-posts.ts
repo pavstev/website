@@ -1,6 +1,6 @@
 import { diagramNames } from "./diagrams.ts";
 
-export const fixtureRoot = ".blog/fixtures";
+export const fixtureRoot = "blog-fixtures";
 export const fixtureCount = 30;
 export const fixtureImageSource = "src/lib/blog/fixtures/images";
 
@@ -234,7 +234,7 @@ const fixturePost = (index: number): FixturePost => {
     "---",
     `title: ${title} (sample ${String(index + 1)})`,
     `description: ${blurb}`,
-    `date: ${date}`,
+    `date: "${date}"`,
     "draft: false",
     `tags: [${tags.join(", ")}]`,
     "---",

@@ -2,13 +2,13 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { createElement, type ReactElement } from "react";
 import satori from "satori";
+import sharp from "sharp";
 
 import { en } from "../i18n.ts";
 import { designTokens, inkPalette } from "../theme.ts";
 import { minutesLabel } from "./format.ts";
+import { shareSize } from "./images.ts";
 import { type PostMeta } from "./schema.ts";
-
-export const shareSize = { height: 630, width: 1200 };
 
 export interface ShareFonts {
   list: ShareFont[];
@@ -135,3 +135,26 @@ export const renderShareSvg = (
   tree: ShareNode,
   fonts: ShareFonts
 ): Promise<string> => satori(tree, { ...shareSize, fonts: fonts.list });
+
+const coverData = async (cover: string | undefined): Promise<string> => {
+  if (cover === undefined) {
+    return "";
+  }
+  const png = await sharp(cover)
+    .resize(shareSize.width, shareSize.height, { fit: "cover" })
+    .png()
+    .toBuffer();
+  return `data:image/png;base64,${png.toString("base64")}`;
+};
+
+export const sharePng = async (
+  post: PostMeta,
+  cover: string | undefined,
+  fonts: ShareFonts
+): Promise<Uint8Array<ArrayBuffer>> => {
+  const svg = await renderShareSvg(
+    shareTree(post, await coverData(cover)),
+    fonts
+  );
+  return new Uint8Array(await sharp(Buffer.from(svg)).png().toBuffer());
+};

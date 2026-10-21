@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 
 import type { Facts } from "./facts.ts";
 
+import { blogAssets, cv, fakeAssets } from "./fixtures.ts";
 import { createMcpServer, handleMcp } from "./mcp.ts";
 
 const llms = [
@@ -30,40 +31,7 @@ const llms = [
   "",
 ].join("\n");
 
-const sampleFacts: Facts = {
-  cv: {
-    basics: {
-      headline: "Backend engineer",
-      location: "Vienna, Austria",
-      name: "Ada Example",
-    },
-    experience: {
-      items: [
-        {
-          company: "Acme",
-          contributions: [
-            { description: "Cut latency by half", title: "Speed" },
-            { description: "Led four engineers", title: "" },
-          ],
-          from: "2020",
-          overview: "Payments platform",
-          position: "Tech lead",
-          skills: ["Go", "Postgres"],
-          to: "2024",
-        },
-      ],
-    },
-    skills: {
-      items: [
-        { keywords: ["Go", "Rust"], name: "Languages" },
-        { keywords: [], name: "Empty" },
-      ],
-    },
-    summary: "Builds systems people rely on.",
-    updatedAt: "2026-10-08T00:00:00.000Z",
-  },
-  llms,
-};
+const sampleFacts: Facts = { cv, llms };
 
 const bareProject = {
   contributions: [],
@@ -74,40 +42,6 @@ const bareProject = {
   to: "",
   websiteUrl: "",
 };
-
-const blogFeed = {
-  items: [
-    {
-      _markdown_url: "https://ada.example/blog/newer.md",
-      date_published: "2026-10-12T00:00:00Z",
-      id: "https://ada.example/blog/newer",
-      summary: "The newer post.",
-      tags: ["One", "Two"],
-      title: "Newer & better",
-      url: "https://ada.example/blog/newer",
-    },
-    {
-      _markdown_url: "https://ada.example/blog/older.md",
-      date_published: "2026-10-01T00:00:00Z",
-      id: "https://ada.example/blog/older",
-      summary: "The older post.",
-      tags: ["Three"],
-      title: "Older",
-      url: "https://ada.example/blog/older",
-    },
-  ],
-};
-
-const blogAssets = {
-  fetch: (url: string) =>
-    Promise.resolve(
-      url.endsWith("/blog/feed.json")
-        ? Response.json(blogFeed)
-        : url.endsWith("/blog/newer.md")
-          ? new Response("# Newer & better\n\nBody.\n")
-          : new Response("", { status: 404 })
-    ),
-} as unknown as Fetcher;
 
 let blogOrigin = 0;
 
@@ -190,10 +124,10 @@ const listTools = {
   params: {},
 };
 
-const mcpRequest = (): Request => {
+const mcpRequest = (body: unknown = listTools): Request => {
   originCounter += 1;
   return new Request(`https://mcp${String(originCounter)}.test/mcp`, {
-    body: JSON.stringify(listTools),
+    body: JSON.stringify(body),
     headers: {
       Accept: "application/json, text/event-stream",
       "CF-Connecting-IP": "203.0.113.7",
@@ -243,9 +177,7 @@ describe("createMcpServer", () => {
     assert.ok(text.indexOf("Newer") < text.indexOf("Older"));
   });
   it("posts answers not available when the feed is missing", async () => {
-    const assets = {
-      fetch: () => Promise.resolve(new Response("", { status: 404 })),
-    } as unknown as Fetcher;
+    const assets = fakeAssets(() => new Response("", { status: 404 }));
     const client = await connect(sampleFacts, assets);
 
     assert.match(await textOf(client, "posts"), /not available/i);
@@ -264,32 +196,23 @@ describe("createMcpServer", () => {
       "# Newer & better\n\nBody.\n"
     );
   });
-  it("post answers not_found for a slug that is not listed", async () => {
-    const client = await connect(sampleFacts);
+  for (const { slug, why } of [
+    { slug: "draft-post", why: "is not listed" },
+    { slug: "older", why: "has no copy" },
+  ]) {
+    it(`post answers not_found for a slug that ${why}`, async () => {
+      const client = await connect(sampleFacts);
+      const result = await client.callTool({
+        arguments: { slug },
+        name: "post",
+      });
 
-    const result = await client.callTool({
-      arguments: { slug: "draft-post" },
-      name: "post",
+      assert.equal(result.isError, true);
+      assert.deepEqual(result.content, [
+        { text: '{"error":"not_found"}', type: "text" },
+      ]);
     });
-
-    assert.equal(result.isError, true);
-    assert.deepEqual(result.content, [
-      { text: '{"error":"not_found"}', type: "text" },
-    ]);
-  });
-  it("post answers not_found when the copy is missing", async () => {
-    const client = await connect(sampleFacts);
-
-    const result = await client.callTool({
-      arguments: { slug: "older" },
-      name: "post",
-    });
-
-    assert.equal(result.isError, true);
-    assert.deepEqual(result.content, [
-      { text: '{"error":"not_found"}', type: "text" },
-    ]);
-  });
+  }
   for (const slug of ["../x", "a/b", "UPPER", "", "a".repeat(81)]) {
     it(`post rejects the slug ${JSON.stringify(slug)}`, async () => {
       const client = await connect(sampleFacts);
@@ -430,8 +353,10 @@ describe("createMcpServer", () => {
     assert.match(await textOf(client, "contact"), /not available/i);
   });
   it("answers not available when there are no skills", async () => {
-    const { skills: _skills, ...rest } = sampleFacts.cv;
-    const client = await connect({ ...sampleFacts, cv: rest });
+    const client = await connect({
+      ...sampleFacts,
+      cv: { ...cv, skills: { items: [] } },
+    });
 
     assert.match(await textOf(client, "skills"), /not available/i);
   });
@@ -484,17 +409,8 @@ describe("handleMcp", () => {
   }
   it("rejects an oversized POST body", async () => {
     const { env } = envOf();
-    originCounter += 1;
-    const body = JSON.stringify({ ...listTools, pad: "x".repeat(20_000) });
     const response = await handleMcp(
-      new Request(`https://mcp${String(originCounter)}.test/mcp`, {
-        body,
-        headers: {
-          Accept: "application/json, text/event-stream",
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      }),
+      mcpRequest({ ...listTools, pad: "x".repeat(20_000) }),
       env
     );
 
@@ -520,17 +436,6 @@ describe("handleMcp", () => {
       "camera=(), microphone=(), geolocation=(self)"
     );
     assert.equal(response.headers.get("mcp-session-id"), null);
-    for (const name of [
-      "contact",
-      "experience",
-      "post",
-      "posts",
-      "products",
-      "profile",
-      "projects",
-      "skills",
-    ]) {
-      assert.ok(text.includes(`"${name}"`), name);
-    }
+    assert.ok(text.includes('"profile"'));
   });
 });

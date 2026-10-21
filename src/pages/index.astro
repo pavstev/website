@@ -3,14 +3,13 @@ import "@/styles/card.css";
 
 import { CardActions } from "@/components/card-actions";
 import CardSections from "@/components/card-sections.astro";
-import { EffectsInit } from "@/components/effects-init";
 import { IndustryPanel } from "@/components/industry-panel";
 import { PageDock } from "@/components/page-dock";
 import { Portrait } from "@/components/portrait";
 import { Profile } from "@/components/profile";
 import SiteFooter from "@/components/site-footer.astro";
 import { SkyBubble } from "@/components/sky-bubble";
-import { SpaceBackground } from "@/components/space-background";
+import SpaceBackground from "@/components/space-background.astro";
 import Base from "@/layouts/Base.astro";
 import { getCv } from "@/lib/cv";
 import { getContact, getRepos } from "@/lib/github";
@@ -42,7 +41,7 @@ const jsonLd = serializeJsonLd(
     fetchpriority="high"
   />
   <script type="application/ld+json" is:inline set:html={jsonLd}></script>
-  <SpaceBackground client:load transition:persist="sky" />
+  <SpaceBackground />
   <main
     class="relative grid min-h-dvh grid-cols-1 place-items-center overflow-x-clip safe-area"
     id="main-content"
@@ -74,8 +73,12 @@ const jsonLd = serializeJsonLd(
       <CardSections repos={repos} />
       <SiteFooter className="card-footer fade-up mt-(--card-gap-footer) delay-4" />
     </div>
-    <EffectsInit client:load />
   </main>
   <PageDock client:idle={{ timeout: 1000 }} email={contact.email} />
   <SkyBubble client:idle={{ timeout: 1000 }} />
+  <script>
+    import { watchHomeEffects } from "@/lib/home-effects";
+
+    watchHomeEffects();
+  </script>
 </Base>

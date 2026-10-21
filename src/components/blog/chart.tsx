@@ -7,12 +7,13 @@ import {
   chartId,
   chartLines,
   type ChartType,
-  readChartData,
+  readChartFile,
 } from "@/lib/blog/chart-data";
 import { barRows, pairRows } from "@/lib/blog/chart-layout";
 
 interface ChartProps {
   caption: string;
+  dir: string;
   slug: string;
   src: string;
   title: string;
@@ -21,12 +22,13 @@ interface ChartProps {
 
 export const Chart = ({
   caption,
+  dir,
   slug,
   src,
   title,
   type,
 }: ChartProps): ReactElement => {
-  const data = readChartData(slug, src, type);
+  const data = readChartFile(dir, src, type);
   const id = chartId(slug, { src, title, type });
   return (
     <figure className="blog-figure blog-viz">

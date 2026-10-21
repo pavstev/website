@@ -1,9 +1,9 @@
 import { en } from "../i18n.ts";
 import { personalData } from "../personal.ts";
-import { shareImageUrl } from "./media.ts";
-import { modifiedOf } from "./modified.ts";
-import { toFeedHtml } from "./plain.ts";
-import { lastModified, listSources } from "./posts.ts";
+import { absoluteUrl, shareImageUrl } from "./images.ts";
+import { lastModified, modifiedOf } from "./modified.ts";
+import { type ImageUrl, toFeedHtml } from "./plain.ts";
+import { listSources, type PostSource } from "./posts.ts";
 import { type PostMeta } from "./schema.ts";
 
 export interface FeedPost {
@@ -139,11 +139,16 @@ export const jsonFeed = (
 export const loadFeedPosts = (
   options: { drafts: boolean },
   site: string,
-  root?: string
-): FeedPostWithMarkdown[] =>
-  listSources(options, root).map((source) => ({
-    html: toFeedHtml(source),
-    image: shareImageUrl(source.slug, site),
-    markdownUrl: `${site}/blog/${source.slug}.md`,
-    meta: source.meta,
-  }));
+  imageUrlOf: (source: PostSource) => Promise<ImageUrl>,
+  sources?: readonly PostSource[]
+): Promise<FeedPostWithMarkdown[]> =>
+  Promise.all(
+    listSources(options, sources).map(
+      async (source): Promise<FeedPostWithMarkdown> => ({
+        html: toFeedHtml(source, await imageUrlOf(source)),
+        image: absoluteUrl(shareImageUrl(source.meta), site),
+        markdownUrl: `${site}/blog/${source.slug}.md`,
+        meta: source.meta,
+      })
+    )
+  );

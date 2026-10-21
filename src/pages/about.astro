@@ -1,28 +1,38 @@
 ---
+import { getEntry, render } from "astro:content";
+
 import BlogHeader from "@/components/blog/blog-header.astro";
+import { mdxComponents } from "@/components/blog/mdx-components";
 import PostBody from "@/components/blog/post-body.astro";
+import PostFigure from "@/components/blog/post-figure.astro";
 import BlogLayout from "@/layouts/BlogLayout.astro";
-import { readAbout } from "@/lib/blog/about";
 import { pageCrumbs } from "@/lib/blog/crumbs";
 import { listMetadata } from "@/lib/blog/metadata";
-import { renderPost } from "@/lib/blog/render";
+import { tocOf } from "@/lib/blog/toc";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
 
-const about = readAbout();
-const { html, toc } = await renderPost(about);
+const entry = await getEntry("about", "index");
+if (entry === undefined) throw new Error("content/about/index.mdx is missing");
+const { Content, headings } = await render(entry);
+const toc = tocOf(headings);
+const { data } = entry;
 const metadata = listMetadata({
-  description: about.description,
+  description: data.description,
   title: en.about.metaTitle,
   url: `${personalData.website}/about`,
 });
+const components = {
+  ...mdxComponents({ dir: "content/about", slug: "about" }),
+  Figure: PostFigure,
+};
 ---
 
 <BlogLayout metadata={metadata}>
   <main class="blog-main post-main" id="main-content">
     <BlogHeader
       crumbs={pageCrumbs(en.about.crumb, "/about")}
-      title={about.title}
+      title={data.title}
       toc={toc.length > 0}
     >
       <Fragment slot="meta">
@@ -30,7 +40,9 @@ const metadata = listMetadata({
       </Fragment>
     </BlogHeader>
     <div class="post-page">
-      <PostBody html={html} toc={toc} />
+      <PostBody toc={toc}>
+        <Content components={components} />
+      </PostBody>
     </div>
   </main>
 </BlogLayout>

@@ -3,6 +3,12 @@ import { noiseShader } from "./sky-paint-shader.ts";
 import { type Rgb } from "./sky-paint.ts";
 import { skyVertexShader } from "./sky-shader.ts";
 import { createUniformSink } from "./uniform-sink.ts";
+import {
+  bindTriangle,
+  clampedTexture,
+  compileShader,
+  linkProgram,
+} from "./webgl.ts";
 
 export interface MoonLayer {
   dispose: () => void;
@@ -103,20 +109,6 @@ export const layerPixels = (
   return { css, device: Math.round(css * Math.min(dpr, maxDensity)) };
 };
 
-const compile = (
-  gl: WebGLRenderingContext,
-  type: number,
-  source: string
-): undefined | WebGLShader => {
-  const shader = gl.createShader(type);
-  if (!shader) return undefined;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  return gl.getShaderParameter(shader, gl.COMPILE_STATUS) === true
-    ? shader
-    : undefined;
-};
-
 const setupTexture = (
   gl: WebGLRenderingContext,
   unit: number
@@ -124,10 +116,7 @@ const setupTexture = (
   const texture = gl.createTexture();
   gl.activeTexture(gl.TEXTURE0 + unit);
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  clampedTexture(gl, gl.LINEAR);
   return texture;
 };
 
@@ -155,35 +144,24 @@ export const createMoonLayer = (
   canvas.setAttribute("aria-hidden", "true");
   const gl = canvas.getContext("webgl", contextOptions);
   if (!gl) return undefined;
-  const vertex = compile(gl, gl.VERTEX_SHADER, skyVertexShader);
-  const fragment = compile(gl, gl.FRAGMENT_SHADER, fragmentShader);
+  const vertex = compileShader(gl, gl.VERTEX_SHADER, skyVertexShader);
+  const fragment = compileShader(gl, gl.FRAGMENT_SHADER, fragmentShader);
   const program = gl.createProgram();
   const release = (): void => {
     gl.deleteProgram(program);
-    gl.deleteShader(vertex ?? null);
-    gl.deleteShader(fragment ?? null);
+    gl.deleteShader(vertex);
+    gl.deleteShader(fragment);
   };
   if (!vertex || !fragment) {
     release();
     return undefined;
   }
-  gl.attachShader(program, vertex);
-  gl.attachShader(program, fragment);
-  gl.bindAttribLocation(program, 0, "a_pos");
-  gl.linkProgram(program);
+  linkProgram(gl, program, [vertex, fragment], "a_pos");
   if (gl.getProgramParameter(program, gl.LINK_STATUS) !== true) {
     release();
     return undefined;
   }
-  const triangle = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangle);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([-1, -1, 3, -1, -1, 3]),
-    gl.STATIC_DRAW
-  );
-  gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const triangle = bindTriangle(gl, 0);
   const mapTexture = setupTexture(gl, mapUnit);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, map);
   const patchTexture = setupTexture(gl, patchUnit);

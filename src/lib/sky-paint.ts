@@ -1,5 +1,5 @@
 import { type LatLon } from "./geo.ts";
-import { clamp, deg, smoothstep } from "./math.ts";
+import { clamp, deg, mix, smoothstep } from "./math.ts";
 import { sunPosition } from "./sky-ephemeris.ts";
 import { type SkyTable, type TableInput } from "./sky-light.ts";
 import { airTint, moonView, screenAngle } from "./sky-moon.ts";
@@ -76,11 +76,7 @@ const unit = (color: Rgb): Rgb => [
   color[2] / 255,
 ];
 
-const mixRgb = (from: Rgb, to: Rgb, share: number): Rgb => [
-  from[0] + (to[0] - from[0]) * share,
-  from[1] + (to[1] - from[1]) * share,
-  from[2] + (to[2] - from[2]) * share,
-];
+const mixRgb = mix<Rgb>;
 
 const scaleRgb = (color: Rgb, by: number): Rgb => [
   color[0] * by,
@@ -93,40 +89,31 @@ const tint = (name: keyof typeof paintTints): Rgb =>
 
 const paletteOf = (name: PaletteName): PaintPalette => {
   const source = paintPalettes[name];
+  const color = (tone: Tone): Rgb => unit(hexBytes(source[tone]));
   return {
-    lit: unit(hexBytes(source.lit)),
-    low: unit(hexBytes(source.low)),
-    mid: unit(hexBytes(source.mid)),
-    shade: unit(hexBytes(source.shade)),
-    sun: unit(hexBytes(source.sun)),
-    top: unit(hexBytes(source.top)),
+    lit: color("lit"),
+    low: color("low"),
+    mid: color("mid"),
+    shade: color("shade"),
+    sun: color("sun"),
+    top: color("top"),
   };
 };
 
-const mixPalette = (
-  from: PaintPalette,
-  to: PaintPalette,
-  share: number
-): PaintPalette => ({
-  lit: mixRgb(from.lit, to.lit, share),
-  low: mixRgb(from.low, to.low, share),
-  mid: mixRgb(from.mid, to.mid, share),
-  shade: mixRgb(from.shade, to.shade, share),
-  sun: mixRgb(from.sun, to.sun, share),
-  top: mixRgb(from.top, to.top, share),
-});
+const mixPalette = mix<PaintPalette>;
+
+const dimmed = (palette: PaintPalette, by: number): PaintPalette => {
+  const out = { ...palette };
+  for (const tone of tones)
+    if (tone !== "sun") out[tone] = scaleRgb(palette[tone], by);
+  return out;
+};
 
 export const nightAim = (sunAltitude: number, moonAltitude: number): number =>
   smoothstep(-2, -8, sunAltitude) * smoothstep(-3, 2, moonAltitude);
 
-const rainPalette = (dayness: number): PaintPalette => {
-  const rain = paletteOf("rain");
-  const dim = 0.22 + 0.78 * dayness;
-  const out = { ...rain };
-  for (const tone of tones)
-    if (tone !== "sun") out[tone] = scaleRgb(rain[tone], dim);
-  return out;
-};
+const rainPalette = (dayness: number): PaintPalette =>
+  dimmed(paletteOf("rain"), 0.22 + 0.78 * dayness);
 
 const deckRise = [0, 1.5] as const;
 const deckLevel = 0.9;
@@ -145,12 +132,8 @@ const greyPalette = (
 ): PaintPalette => {
   const dim = rainPalette(dayness);
   if (light <= 0) return dim;
-  const deck = paletteOf("overcast");
   const level = deckLevel + (rainDeckLevel - deckLevel) * rain;
-  const bright = { ...deck };
-  for (const tone of tones)
-    if (tone !== "sun") bright[tone] = scaleRgb(deck[tone], level);
-  return mixPalette(dim, bright, light);
+  return mixPalette(dim, dimmed(paletteOf("overcast"), level), light);
 };
 
 const tablePalette = (
@@ -363,68 +346,7 @@ export const nightScene = (view: ViewSize, weather: SkyWeather): PaintScene => {
   };
 };
 
-const blend = (from: number, to: number, share: number): number =>
-  from * (1 - share) + to * share;
-
-const blendRgb = (from: Rgb, to: Rgb, share: number): Rgb => [
-  blend(from[0], to[0], share),
-  blend(from[1], to[1], share),
-  blend(from[2], to[2], share),
-];
-
-const blendPair = (
-  from: readonly [number, number],
-  to: readonly [number, number],
-  share: number
-): readonly [number, number] => [
-  blend(from[0], to[0], share),
-  blend(from[1], to[1], share),
-];
-
-export const mixScene = (
-  from: PaintScene,
-  to: PaintScene,
-  t: number
-): PaintScene => ({
-  alto: blend(from.alto, to.alto, t),
-  aura: blend(from.aura, to.aura, t),
-  cirrus: blend(from.cirrus, to.cirrus, t),
-  corona: blendRgb(from.corona, to.corona, t),
-  cumulus: blend(from.cumulus, to.cumulus, t),
-  drift: blend(from.drift, to.drift, t),
-  earth: blend(from.earth, to.earth, t),
-  fog: blend(from.fog, to.fog, t),
-  glow: blend(from.glow, to.glow, t),
-  grey: blend(from.grey, to.grey, t),
-  haze: blend(from.haze, to.haze, t),
-  light: blendPair(from.light, to.light, t),
-  lightColor: blendRgb(from.lightColor, to.lightColor, t),
-  lit: blendRgb(from.lit, to.lit, t),
-  low: blendRgb(from.low, to.low, t),
-  lutMix: blend(from.lutMix, to.lutMix, t),
-  mid: blendRgb(from.mid, to.mid, t),
-  moon: [
-    blend(from.moon[0], to.moon[0], t),
-    blend(from.moon[1], to.moon[1], t),
-    blend(from.moon[2], to.moon[2], t),
-    blend(from.moon[3], to.moon[3], t),
-  ],
-  moonColor: blendRgb(from.moonColor, to.moonColor, t),
-  moonGlow: blend(from.moonGlow, to.moonGlow, t),
-  moonLight: blendRgb(from.moonLight, to.moonLight, t),
-  moonNorth: blendPair(from.moonNorth, to.moonNorth, t),
-  moonTint: blendRgb(from.moonTint, to.moonTint, t),
-  overcast: blend(from.overcast, to.overcast, t),
-  rain: blend(from.rain, to.rain, t),
-  shade: blendRgb(from.shade, to.shade, t),
-  snow: blend(from.snow, to.snow, t),
-  spaceColor: blendRgb(from.spaceColor, to.spaceColor, t),
-  stars: blend(from.stars, to.stars, t),
-  sun: blendRgb(from.sun, to.sun, t),
-  sunColor: blendRgb(from.sunColor, to.sunColor, t),
-  sunUp: blend(from.sunUp, to.sunUp, t),
-  top: blendRgb(from.top, to.top, t),
-});
+export const mixScene = mix<PaintScene>;
 
 interface ShotPose {
   corona: { x: number; y: number };
@@ -435,12 +357,12 @@ interface ShotPose {
 export const shotScene = (
   home: PaintScene,
   night: PaintScene,
-  mix: number,
+  share: number,
   pose: ShotPose
 ): PaintScene => ({
-  ...mixScene(home, night, mix),
-  corona: [pose.corona.x, pose.corona.y, mix],
-  moon: [home.moon[0], home.moon[1], home.moon[2], home.moon[3] * (1 - mix)],
+  ...mixScene(home, night, share),
+  corona: [pose.corona.x, pose.corona.y, share],
+  moon: [home.moon[0], home.moon[1], home.moon[2], home.moon[3] * (1 - share)],
   moonLight: home.moonLight,
   moonNorth: home.moonNorth,
   moonTint: home.moonTint,

@@ -10,8 +10,6 @@ export type Arrow = "down" | "none" | "up";
 
 export interface AskContext {
   asked: boolean;
-  crawler: boolean;
-  home: boolean;
   lightLoad: boolean;
   pinned: boolean;
   saved: boolean;
@@ -63,12 +61,7 @@ const guardMs = 11_000;
 const cachedMs = 1_800_000;
 
 export const mayAsk = (context: AskContext): boolean =>
-  context.home &&
-  !context.asked &&
-  !context.crawler &&
-  !context.lightLoad &&
-  !context.pinned &&
-  !context.saved;
+  !context.asked && !context.lightLoad && !context.pinned && !context.saved;
 
 export const forcedCity = (search: string): string | undefined => {
   const city = new URLSearchParams(search).get("bubble")?.trim() ?? "";
@@ -307,40 +300,20 @@ export const chooseBox = (
 };
 
 export const askPosition = (
-  geo: Pick<Geolocation, "getCurrentPosition"> | undefined,
+  geo: Pick<Geolocation, "getCurrentPosition">,
   guard = guardMs
 ): Promise<LatLon | undefined> =>
   new Promise((resolve) => {
-    if (!geo) {
-      resolve(undefined);
-      return;
-    }
     const timer = setTimeout(() => resolve(undefined), guard);
     const settle = (spot: LatLon | undefined): void => {
       clearTimeout(timer);
       resolve(spot);
     };
-    try {
-      geo.getCurrentPosition(
-        ({ coords }) => {
-          const { latitude: lat, longitude: lon } = coords;
-          settle(
-            Number.isFinite(lat) &&
-              Number.isFinite(lon) &&
-              Math.abs(lat) <= 90 &&
-              Math.abs(lon) <= 180
-              ? roundPlace({ lat, lon })
-              : undefined
-          );
-        },
-        () => settle(undefined),
-        {
-          enableHighAccuracy: false,
-          maximumAge: cachedMs,
-          timeout: lookupMs,
-        }
-      );
-    } catch {
-      settle(undefined);
-    }
+    geo.getCurrentPosition(
+      ({ coords }) => {
+        settle(roundPlace({ lat: coords.latitude, lon: coords.longitude }));
+      },
+      () => settle(undefined),
+      { enableHighAccuracy: false, maximumAge: cachedMs, timeout: lookupMs }
+    );
   });

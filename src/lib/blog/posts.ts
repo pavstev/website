@@ -1,18 +1,15 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import type { CollectionEntry } from "astro:content";
+
 import path from "node:path";
-import { VFile } from "vfile";
-import { matter } from "vfile-matter";
 
 import { personalData } from "../personal.ts";
-import { type BuildEnv, builtInstant, fixturesEnabled } from "./build-env.ts";
-import { fixtureRoot } from "./fixture-posts.ts";
-import { modifiedOf, newestFirst } from "./modified.ts";
+import { builtInstant } from "./build-env.ts";
+import { newestFirst } from "./modified.ts";
 import { readingOf } from "./reading.ts";
 import { isScheduled } from "./schedule.ts";
-import { frontmatterSchema, type PostMeta } from "./schema.ts";
+import { type PostMeta } from "./schema.ts";
 import { isSlug } from "./slug.ts";
 
-const blogDir = "content/blog";
 const reservedSlugs = new Set(["page", "tag"]);
 
 export interface PostSource {
@@ -27,48 +24,26 @@ interface DraftOptions {
   now?: Date;
 }
 
-const fail = (file: string, field: string, message: string): Error =>
-  new Error(`${file}: ${field}: ${message}`);
+const slugError = (file: string, message: string): Error =>
+  new Error(`${file}: slug: ${message}`);
 
-const readSource = (root: string, slug: string): PostSource => {
-  const relative = `${blogDir}/${slug}/index.mdx`;
+export const sourceOf = (
+  entry: Pick<CollectionEntry<"blog">, "body" | "data" | "filePath" | "id">
+): PostSource => {
+  const { filePath = "", id: slug } = entry;
   if (!isSlug(slug)) {
-    throw fail(relative, "slug", "use lowercase letters, digits and dashes");
+    throw slugError(filePath, "use lowercase letters, digits and dashes");
   }
   if (reservedSlugs.has(slug)) {
-    throw fail(relative, "slug", `"${slug}" is a blog route, pick another`);
+    throw slugError(filePath, `"${slug}" is a blog route, pick another`);
   }
-  const dir = path.join(root, blogDir, slug);
-  const file = new VFile({
-    path: relative,
-    value: readFileSync(path.join(dir, "index.mdx"), "utf8"),
-  });
-  try {
-    matter(file, { strip: true });
-  } catch (error) {
-    throw fail(
-      relative,
-      "frontmatter",
-      error instanceof Error ? error.message : String(error)
-    );
-  }
-  const parsed = frontmatterSchema.safeParse(file.data["matter"]);
-  if (!parsed.success) {
-    const [issue] = parsed.error.issues;
-    const field = issue?.path.join(".") ?? "";
-    throw fail(
-      relative,
-      field === "" ? "frontmatter" : field,
-      issue?.message ?? "invalid"
-    );
-  }
-  const body = String(file.value);
+  const body = entry.body ?? "";
   const reading = readingOf(body);
   return {
     body,
-    dir,
+    dir: path.resolve(path.dirname(filePath)),
     meta: {
-      ...parsed.data,
+      ...entry.data,
       readingMinutes: reading.minutes,
       slug,
       url: `${personalData.website}/blog/${slug}`,
@@ -78,56 +53,46 @@ const readSource = (root: string, slug: string): PostSource => {
   };
 };
 
-const readDir = (root: string): PostSource[] => {
-  const base = path.join(root, blogDir);
-  return existsSync(base)
-    ? readdirSync(base, { withFileTypes: true })
-        .filter(
-          (entry) =>
-            entry.isDirectory() &&
-            existsSync(path.join(base, entry.name, "index.mdx"))
-        )
-        .map((entry) => readSource(root, entry.name))
-    : [];
+const outsideAstro = (error: unknown): boolean =>
+  error instanceof Error &&
+  "code" in error &&
+  error.code === "ERR_UNSUPPORTED_ESM_URL_SCHEME";
+
+const loadSources = async (): Promise<PostSource[]> => {
+  try {
+    const { getCollection } = await import("astro:content");
+    const entries = await getCollection("blog");
+    return entries.map((entry) => sourceOf(entry));
+  } catch (error) {
+    if (outsideAstro(error)) return [];
+    throw error;
+  }
 };
 
-export const readPostSources = (
-  root: string = process.cwd(),
-  env: BuildEnv = process.env
-): PostSource[] => [
-  ...readDir(root),
-  ...(fixturesEnabled(env) ? readDir(path.join(root, fixtureRoot)) : []),
-];
+const allSources = await loadSources();
 
 const byDateThenTitle = (a: PostMeta, b: PostMeta): number =>
   newestFirst(a.date, b.date) || a.title.localeCompare(b.title, "en");
 
-export const visibleSources = (
-  { drafts, now = builtInstant() ?? new Date() }: DraftOptions,
-  root?: string
-): PostSource[] =>
-  readPostSources(root).filter(
-    (source) =>
-      drafts || !(source.meta.draft || isScheduled(source.meta.date, now))
-  );
-
 export const listSources = (
-  options: DraftOptions,
-  root?: string
+  { drafts, now = builtInstant() ?? new Date() }: DraftOptions,
+  sources: readonly PostSource[] = allSources
 ): PostSource[] =>
-  visibleSources(options, root).toSorted((a, b) =>
-    byDateThenTitle(a.meta, b.meta)
-  );
+  sources
+    .filter(
+      (source) =>
+        drafts || !(source.meta.draft || isScheduled(source.meta.date, now))
+    )
+    .toSorted((a, b) => byDateThenTitle(a.meta, b.meta));
 
-export const listPosts = (options: DraftOptions, root?: string): PostMeta[] =>
-  listSources(options, root).map((source) => source.meta);
+export const listPosts = (
+  options: DraftOptions,
+  sources: readonly PostSource[] = allSources
+): PostMeta[] => listSources(options, sources).map((source) => source.meta);
 
 export const findPost = (
   slug: string,
   options: DraftOptions,
-  root?: string
+  sources: readonly PostSource[] = allSources
 ): PostSource | undefined =>
-  visibleSources(options, root).find((source) => source.slug === slug);
-
-export const lastModified = (posts: readonly PostMeta[]): string | undefined =>
-  posts.map((post) => modifiedOf(post)).toSorted(newestFirst)[0];
+  listSources(options, sources).find((source) => source.slug === slug);

@@ -68,8 +68,6 @@ const headerTargets = (): readonly InkTarget[] => [
   headerTarget(".blog-header-meta", inkPalette.soft, 4.5),
 ];
 
-export const blogIndexInkTargets: readonly InkTarget[] = headerTargets();
-
 export const postInkTargets: readonly InkTarget[] = headerTargets();
 
 const linear = (byte: number): number => {

@@ -1,55 +1,13 @@
 import * as z from "zod";
 
-const contributionSchema = z.object({
-  description: z.string(),
-  title: z.string(),
-});
-
-const roleSchema = z.object({
-  company: z.string(),
-  contributions: z.array(contributionSchema).default([]),
-  from: z.string(),
-  overview: z.string().default(""),
-  position: z.string(),
-  skills: z.array(z.string()).default([]),
-  to: z.string(),
-});
-
-const skillGroupSchema = z.object({
-  keywords: z.array(z.string()).default([]),
-  name: z.string().default(""),
-});
-
-const projectSchema = z.object({
-  contributions: z.array(contributionSchema).default([]),
-  from: z.string().default(""),
-  name: z.string(),
-  overview: z.string().default(""),
-  skills: z.array(z.string()).default([]),
-  to: z.string().default(""),
-  websiteUrl: z.string().default(""),
-});
-
-const cvSchema = z.object({
-  basics: z.object({
-    headline: z.string(),
-    location: z.string(),
-    name: z.string(),
-  }),
-  experience: z.object({ items: z.array(roleSchema) }),
-  projects: z.object({ items: z.array(projectSchema) }).optional(),
-  skills: z.object({ items: z.array(skillGroupSchema) }).optional(),
-  summary: z.string(),
-  updatedAt: z.string(),
-});
+import { type Cv, cvSchema } from "../src/lib/cv-schema.ts";
 
 export interface Facts {
   cv: Cv;
   llms: string;
 }
-type Cv = z.infer<typeof cvSchema>;
 
-type Project = NonNullable<Cv["projects"]>["items"][number];
+type Project = Cv["projects"]["items"][number];
 
 type Role = Cv["experience"]["items"][number];
 

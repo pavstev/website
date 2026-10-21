@@ -5,9 +5,22 @@ import path from "node:path";
 import { describe, it } from "node:test";
 
 import { diagramText } from "./diagrams.ts";
-import { toFeedHtml, toMarkdown } from "./plain.ts";
+import {
+  type ImageUrl,
+  toFeedHtml as renderFeedHtml,
+  toMarkdown as renderMarkdown,
+} from "./plain.ts";
 import { postSource } from "./post-fixture.ts";
 import { type PostSource } from "./posts.ts";
+
+const imageUrl: ImageUrl = (src) =>
+  `https://stevanpavlovic.com/_astro/${src.replace(/^\.\//u, "")}`;
+
+const toMarkdown = (source: PostSource): string =>
+  renderMarkdown(source, imageUrl);
+
+const toFeedHtml = (source: PostSource): string =>
+  renderFeedHtml(source, imageUrl);
 
 const sourceFor = (
   body: string,
@@ -38,23 +51,19 @@ describe("toMarkdown", () => {
   });
 
   it("turns a Figure into an absolute image and an italic caption", () => {
-    const markdown = toMarkdown(
+    const text = toMarkdown(
       sourceFor('<Figure src="./sky.png" alt="The sky" caption="At night" />')
     );
     assert.ok(
-      markdown.includes(
-        "![The sky](https://stevanpavlovic.com/blog-media/a-post/sky.png)"
-      )
+      text.includes("![The sky](https://stevanpavlovic.com/_astro/sky.png)")
     );
-    assert.ok(markdown.includes("*At night*"));
+    assert.ok(text.includes("*At night*"));
   });
 
   it("makes a relative Markdown image absolute", () => {
-    const markdown = toMarkdown(sourceFor("![A photo](./photo.png)"));
+    const text = toMarkdown(sourceFor("![A photo](./photo.png)"));
     assert.ok(
-      markdown.includes(
-        "![A photo](https://stevanpavlovic.com/blog-media/a-post/photo.png)"
-      )
+      text.includes("![A photo](https://stevanpavlovic.com/_astro/photo.png)")
     );
   });
 
@@ -153,9 +162,7 @@ describe("toFeedHtml", () => {
       html.includes('href="https://stevanpavlovic.com/blog/a-post#notes"')
     );
     assert.ok(
-      html.includes(
-        'src="https://stevanpavlovic.com/blog-media/a-post/photo.png"'
-      )
+      html.includes('src="https://stevanpavlovic.com/_astro/photo.png"')
     );
     assert.ok(html.includes("<blockquote>"));
     assert.ok(html.includes("Hi &#x26; bye") || html.includes("Hi &amp; bye"));

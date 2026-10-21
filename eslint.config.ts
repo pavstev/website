@@ -77,12 +77,7 @@ const eslintConfig = defineConfig([
     "scripts/postcss-color-mix.mjs",
     "worker-configuration.d.ts",
   ]),
-  globalIgnores([
-    ".blog/**",
-    "public/blog-media/**",
-    "public/blog/**",
-    "public/build.json",
-  ]),
+  globalIgnores(["blog-fixtures/**"]),
   ...[
     ...tseslint.configs.strictTypeChecked,
     ...tseslint.configs.stylisticTypeChecked,
@@ -212,7 +207,10 @@ const eslintConfig = defineConfig([
       "import-x/no-named-as-default": "off",
       "import-x/no-named-as-default-member": "off",
       "import-x/no-self-import": "error",
-      "import-x/no-unresolved": "error",
+      "import-x/no-unresolved": [
+        "error",
+        { ignore: ["^astro:", "^@modelcontextprotocol/sdk/"] },
+      ],
       "import-x/no-useless-path-segments": ["error", { noUselessIndex: true }],
       "import-x/order": "off",
       "logical-assignment-operators": ["error", "always"],
@@ -302,6 +300,7 @@ const eslintConfig = defineConfig([
       "markdown/no-bare-urls": "error",
       "markdown/no-duplicate-headings": "error",
       "markdown/no-html": "error",
+      "markdown/no-reversed-media-syntax": "off",
     },
   },
   {

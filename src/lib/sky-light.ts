@@ -1,3 +1,4 @@
+import { clamp, clamp01, deg, smoothstep } from "./math.ts";
 import { paintPalettes } from "./sky-palette.ts";
 import { horizonHeight, pixelsPerDegree, type ViewSize } from "./sky-view.ts";
 import { hexBytes } from "./theme.ts";
@@ -74,7 +75,6 @@ const mieScatter = 3.996e-3;
 const mieExtinct = 4.44e-3;
 const rayleighKm = 8;
 const mieKm = 1.2;
-const deg = Math.PI / 180;
 const tableH = 48;
 const tableMu = 256;
 const shadowDepth = 60;
@@ -198,13 +198,13 @@ const lookup = (
   mu: number,
   out: Vec3
 ): void => {
-  const fi = Math.sqrt(Math.min(Math.max(h, 0), 100) / 100) * (tableH - 1);
+  const fi = Math.sqrt(clamp(h, 0, 100) / 100) * (tableH - 1);
   const x = Math.sign(mu) * Math.sqrt(Math.abs(mu));
   const fj = ((x + 1) / 2) * (tableMu - 1);
   const i0 = Math.min(tableH - 2, Math.floor(fi));
-  const j0 = Math.min(tableMu - 2, Math.max(0, Math.floor(fj)));
+  const j0 = clamp(Math.floor(fj), 0, tableMu - 2);
   const ti = fi - i0;
-  const tj = Math.min(1, Math.max(0, fj - j0));
+  const tj = clamp01(fj - j0);
   for (let c = 0; c < 3; c++) {
     const a = table[(i0 * tableMu + j0) * 3 + c] ?? 0;
     const b = table[(i0 * tableMu + j0 + 1) * 3 + c] ?? 0;
@@ -335,11 +335,6 @@ const display = (c: Vec3): Vec3 => {
   ];
 };
 
-const smooth = (a: number, b: number, x: number): number => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
-
 export const warmSkyTable = (): void => {
   noonLevel();
 };
@@ -372,7 +367,7 @@ export const scatterSky = (input: ScatterInput): ScatterOutput => {
       raw[at] = out[0];
       raw[at + 1] = out[1];
       raw[at + 2] = out[2];
-      const cosSun = Math.min(1, Math.max(-1, dot(v, sunDir)));
+      const cosSun = clamp(dot(v, sunDir), -1, 1);
       const fromSun = Math.acos(cosSun) / deg;
       if (altitude > 8 && altitude < 70 && fromSun > 25) {
         refSum += luma(out);
@@ -416,17 +411,17 @@ export const scatterSky = (input: ScatterInput): ScatterOutput => {
   const ref = Math.max(refN > 0 ? refSum / refN : 0, noon * 1e-12);
   const bright = 0.3 * (ref / noon) ** input.adapt;
   const scale = bright / ref;
-  const nightShare = 1 - smooth(-16, -5, input.sun.altitude);
+  const nightShare = 1 - smoothstep(-16, -5, input.sun.altitude);
   const lowN = linear(input.night.low);
   const midN = linear(input.night.mid);
   const topN = linear(input.night.top);
-  const hour = smooth(1, -7, input.sun.altitude) * (input.blueHour ?? 0);
+  const hour = smoothstep(1, -7, input.sun.altitude) * (input.blueHour ?? 0);
   const blue: Vec3 = [1 - 0.4 * hour, 1 - 0.14 * hour, 1 + 0.3 * hour];
   const pixels = new Uint8Array(cols * rows * 4);
   for (let r = 0; r < rows; r++) {
     const yb = (r + 0.5) / rows;
-    const a = smooth(-0.05, 0.5, yb);
-    const b = smooth(0.4, 1.05, yb);
+    const a = smoothstep(-0.05, 0.5, yb);
+    const b = smoothstep(0.4, 1.05, yb);
     const base: Vec3 = [0, 0, 0];
     for (let c = 0; c < 3; c++) {
       const lowC = cell(lowN, c);
@@ -470,7 +465,7 @@ export const scatterSky = (input: ScatterInput): ScatterOutput => {
   const cloudSunPower =
     lit *
     Math.min(1, cloudMax * 1.6) *
-    smooth(-dip - 0.6, -dip + 1.2, input.sun.altitude);
+    smoothstep(-dip - 0.6, -dip + 1.2, input.sun.altitude);
   const cloudLum = Math.min(0.85, 3 * noon * scale * cloudMax) * cloudSunPower;
   const ambientLinear: Vec3 = [
     (ambient[0] / n) * scale + topN[0] * nightShare,
@@ -504,7 +499,7 @@ const unit = (hex: string): Vec3 => {
 };
 
 const rowMean = (pixels: Uint8Array, yb: number): Vec3 => {
-  const row = Math.min(lutRows - 1, Math.max(0, Math.floor(yb * lutRows)));
+  const row = clamp(Math.floor(yb * lutRows), 0, lutRows - 1);
   const sum: Vec3 = [0, 0, 0];
   for (let c = 0; c < lutCols; c++) {
     const i = (row * lutCols + c) * 4;

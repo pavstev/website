@@ -5,7 +5,7 @@ import PageRouter from "@/components/page-router.astro";
 import SiteFooter from "@/components/site-footer.astro";
 import SkipLink from "@/components/skip-link.astro";
 import { PageDock } from "@/components/page-dock";
-import { SpaceBackground } from "@/components/space-background";
+import SpaceBackground from "@/components/space-background.astro";
 import {
   resolveUrl,
   googleBotContent,
@@ -113,7 +113,7 @@ const contact = await getContact(personalData.githubHandle);
   <body>
     <SkipLink />
     <div data-blog="">
-      <SpaceBackground client:load transition:persist="sky" />
+      <SpaceBackground />
       <slot />
       <SiteFooter className="blog-footer" links />
     </div>

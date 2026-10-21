@@ -1,3 +1,5 @@
+import { clamp } from "./math.ts";
+
 export interface LatLon {
   lat: number;
   lon: number;
@@ -16,7 +18,7 @@ export const sameSpot = (a: LatLon, b: LatLon): boolean =>
   a.lat === b.lat && a.lon === b.lon;
 
 export const roundPlace = (spot: LatLon): LatLon => {
-  const lat = Math.min(90, Math.max(-90, tenth(spot.lat)));
+  const lat = clamp(tenth(spot.lat), -90, 90);
   const lon = wrapLongitude(tenth(spot.lon));
   return { lat: lat + 0, lon: lon + 0 };
 };

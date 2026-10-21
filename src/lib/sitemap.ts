@@ -6,8 +6,7 @@ import {
   tagPageParams,
   tagParams,
 } from "./blog/listing.ts";
-import { modifiedOf } from "./blog/modified.ts";
-import { lastModified } from "./blog/posts.ts";
+import { lastModified, modifiedOf } from "./blog/modified.ts";
 import { type PostMeta } from "./blog/schema.ts";
 import { pagePaths } from "./blog/slug.ts";
 

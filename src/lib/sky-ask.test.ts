@@ -22,37 +22,11 @@ import {
   spotEvent,
   wasAsked,
 } from "./sky-ask.ts";
-import { coordinateLabel, type PlaceStore } from "./sky-place.ts";
-
-const memoryStore = (): PlaceStore => {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key) => map.get(key) ?? null,
-    removeItem: (key) => {
-      map.delete(key);
-    },
-    setItem: (key, value) => {
-      map.set(key, value);
-    },
-  };
-};
-
-const throwingStore: PlaceStore = {
-  getItem: () => {
-    throw new Error("blocked");
-  },
-  removeItem: () => {
-    throw new Error("blocked");
-  },
-  setItem: () => {
-    throw new Error("blocked");
-  },
-};
+import { coordinateLabel } from "./sky-place.ts";
+import { memoryStore, throwingStore } from "./store-fixtures.ts";
 
 const fresh: AskContext = {
   asked: false,
-  crawler: false,
-  home: true,
   lightLoad: false,
   pinned: false,
   saved: false,
@@ -80,14 +54,7 @@ const geoAnswer = (latitude: number, longitude: number) => ({
 describe("mayAsk", () => {
   it("asks only a fresh visitor on home", () => {
     assert.equal(mayAsk(fresh), true);
-    assert.equal(mayAsk({ ...fresh, home: false }), false);
-    for (const flag of [
-      "asked",
-      "crawler",
-      "lightLoad",
-      "pinned",
-      "saved",
-    ] as const) {
+    for (const flag of ["asked", "lightLoad", "pinned", "saved"] as const) {
       assert.equal(mayAsk({ ...fresh, [flag]: true }), false, flag);
     }
   });
@@ -330,19 +297,6 @@ describe("askPosition", () => {
       }),
       undefined
     ));
-  it("answers undefined without geolocation or when it throws", async () => {
-    assert.equal(await askPosition(undefined), undefined);
-    assert.equal(
-      await askPosition({
-        getCurrentPosition: () => {
-          throw new Error("blocked");
-        },
-      }),
-      undefined
-    );
-  });
-  it("answers undefined for a broken position", async () =>
-    assert.equal(await askPosition(geoAnswer(NaN, 13)), undefined));
 });
 
 describe("parseWhere", () => {

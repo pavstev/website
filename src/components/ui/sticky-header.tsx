@@ -7,11 +7,10 @@ import {
 } from "motion/react";
 import { useEffect } from "react";
 
+import { clamp01 } from "@/lib/math";
 import { useStill } from "@/lib/use-still";
 
 const SMOOTH = { damping: 44, mass: 0.6, stiffness: 240 } as const;
-
-const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 export interface CondenseRange {
   from: number;

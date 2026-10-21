@@ -39,6 +39,8 @@ let wide = true;
 
 let animations: Array<{ finished: Promise<unknown> }> = [];
 
+const disposers: Array<() => void> = [];
+
 const stopTracking = (): void => undefined;
 
 const untracked = (): (() => void) => stopTracking;
@@ -95,6 +97,7 @@ const build = (hoverOpen: string, anchored = ""): Fixture => {
     root as unknown as ParentNode,
     untracked
   );
+  disposers.push(dispose);
   return {
     clickTrigger: (detail: number, pointerType?: string): boolean => {
       const click = Object.assign(new Event("click", { cancelable: true }), {
@@ -122,9 +125,9 @@ const build = (hoverOpen: string, anchored = ""): Fixture => {
 const isOpen = (fixture: Fixture): boolean =>
   fixture.panel.matches(":popover-open");
 
-describe("initAnchoredPopovers hover cards", () => {
+const withGlobals = (isWide: boolean, extra: object = {}): void => {
   beforeEach(() => {
-    wide = true;
+    wide = isWide;
     animations = [];
     Object.assign(globalThis, {
       CSS: { escape: (value: string) => value },
@@ -137,15 +140,27 @@ describe("initAnchoredPopovers hover cards", () => {
           return !query.includes("min-width") || wide;
         },
       }),
+      ...extra,
     });
+  });
+
+  afterEach(() => {
+    for (const dispose of disposers.splice(0)) dispose();
+    for (const name of ["CSS", "document", "matchMedia", "Node"]) {
+      Reflect.deleteProperty(globalThis, name);
+    }
+  });
+};
+
+describe("initAnchoredPopovers hover cards", () => {
+  withGlobals(true);
+
+  beforeEach(() => {
     mock.timers.enable({ apis: ["setTimeout"] });
   });
 
   afterEach(() => {
     mock.timers.reset();
-    Reflect.deleteProperty(globalThis, "CSS");
-    Reflect.deleteProperty(globalThis, "document");
-    Reflect.deleteProperty(globalThis, "matchMedia");
   });
 
   it("opens after 300 ms and closes 300 ms after the pointer leaves", () => {
@@ -162,7 +177,6 @@ describe("initAnchoredPopovers hover cards", () => {
     mock.timers.tick(1);
     assert.equal(isOpen(fixture), false);
     assert.equal(fixture.trigger.attributes.get("aria-expanded"), "false");
-    fixture.dispose();
   });
 
   it("stays open while the pointer moves from the word onto the card", () => {
@@ -174,7 +188,6 @@ describe("initAnchoredPopovers hover cards", () => {
     fixture.panel.dispatchEvent(new Event("pointerenter"));
     mock.timers.tick(1000);
     assert.equal(isOpen(fixture), true);
-    fixture.dispose();
   });
 
   it("pins on a mouse click and unpins on a second click", () => {
@@ -188,7 +201,6 @@ describe("initAnchoredPopovers hover cards", () => {
     assert.equal(isOpen(fixture), true);
     assert.equal(fixture.clickTrigger(1), true);
     assert.equal(isOpen(fixture), false);
-    fixture.dispose();
   });
 
   it("pins on a click whose pointer type is mouse even with detail 0", () => {
@@ -197,7 +209,6 @@ describe("initAnchoredPopovers hover cards", () => {
     fixture.trigger.dispatchEvent(new Event("pointerleave"));
     mock.timers.tick(1000);
     assert.equal(isOpen(fixture), true);
-    fixture.dispose();
   });
 
   it("returns focus to the trigger when the panel closes with focus inside", () => {
@@ -206,7 +217,6 @@ describe("initAnchoredPopovers hover cards", () => {
     fixture.focusInside(true);
     fixture.panel.hidePopover();
     assert.equal(fixture.triggerFocus(), 1);
-    fixture.dispose();
   });
 
   it("returns focus to the trigger when focus fell to the body", () => {
@@ -217,7 +227,6 @@ describe("initAnchoredPopovers hover cards", () => {
     });
     fixture.panel.hidePopover();
     assert.equal(fixture.triggerFocus(), 1);
-    fixture.dispose();
   });
 
   it("leaves focus alone when it moved out before the panel closed", () => {
@@ -226,14 +235,12 @@ describe("initAnchoredPopovers hover cards", () => {
     fixture.focusInside(false);
     fixture.panel.hidePopover();
     assert.equal(fixture.triggerFocus(), 0);
-    fixture.dispose();
   });
 
   it("treats a click with an empty pointer type as the keyboard", () => {
     const fixture = build("pin");
     assert.equal(fixture.clickTrigger(1, ""), false);
     assert.equal(fixture.focusMoves(), 1);
-    fixture.dispose();
   });
 
   it("opens at once on a mouse click before the delay ends", () => {
@@ -244,7 +251,6 @@ describe("initAnchoredPopovers hover cards", () => {
     assert.equal(isOpen(fixture), true);
     mock.timers.tick(1000);
     assert.equal(isOpen(fixture), true);
-    fixture.dispose();
   });
 
   it("does not reopen a card that was closed while an open timer ran", () => {
@@ -256,7 +262,6 @@ describe("initAnchoredPopovers hover cards", () => {
     fixture.panel.hidePopover();
     mock.timers.tick(1000);
     assert.equal(isOpen(fixture), false);
-    fixture.dispose();
   });
 
   it("leaves a keyboard click to the browser", () => {
@@ -264,7 +269,6 @@ describe("initAnchoredPopovers hover cards", () => {
     assert.equal(fixture.clickTrigger(0), false);
     assert.equal(isOpen(fixture), true);
     assert.equal(fixture.focusMoves(), 1);
-    fixture.dispose();
   });
 
   it("stays open on pointer leave while focus is inside the card", () => {
@@ -275,7 +279,6 @@ describe("initAnchoredPopovers hover cards", () => {
     fixture.trigger.dispatchEvent(new Event("pointerleave"));
     mock.timers.tick(1000);
     assert.equal(isOpen(fixture), true);
-    fixture.dispose();
   });
 
   it("leaves a card that opens as a bottom sheet to the click", () => {
@@ -289,7 +292,6 @@ describe("initAnchoredPopovers hover cards", () => {
     fixture.trigger.dispatchEvent(new Event("pointerleave"));
     mock.timers.tick(1000);
     assert.equal(isOpen(fixture), true);
-    fixture.dispose();
   });
 
   it("keeps hover for a popover anchored on every screen", () => {
@@ -301,7 +303,6 @@ describe("initAnchoredPopovers hover cards", () => {
     fixture.trigger.dispatchEvent(new Event("pointerleave"));
     mock.timers.tick(220);
     assert.equal(isOpen(fixture), false);
-    fixture.dispose();
   });
 
   it("keeps the quick timing and no pinning for plain hover popovers", () => {
@@ -310,7 +311,6 @@ describe("initAnchoredPopovers hover cards", () => {
     mock.timers.tick(120);
     assert.equal(isOpen(fixture), true);
     assert.equal(fixture.clickTrigger(1), false);
-    fixture.dispose();
   });
 });
 
@@ -320,24 +320,7 @@ const settle = (): Promise<void> =>
   });
 
 describe("initAnchoredPopovers exit", () => {
-  beforeEach(() => {
-    wide = true;
-    animations = [];
-    Object.assign(globalThis, {
-      CSS: { escape: (value: string) => value },
-      document: Object.assign(new EventTarget(), {
-        activeElement: null,
-        body: {},
-      }),
-      matchMedia: () => ({ matches: true }),
-    });
-  });
-
-  afterEach(() => {
-    Reflect.deleteProperty(globalThis, "CSS");
-    Reflect.deleteProperty(globalThis, "document");
-    Reflect.deleteProperty(globalThis, "matchMedia");
-  });
+  withGlobals(true);
 
   it("keeps the panel placed until its exit animation has finished", async () => {
     const fixture = build("pin");
@@ -351,7 +334,6 @@ describe("initAnchoredPopovers exit", () => {
     exit.resolve(undefined);
     await settle();
     assert.equal("floating" in fixture.panel.dataset, false);
-    fixture.dispose();
   });
 
   it("keeps the placement when the panel opens again during the exit", async () => {
@@ -364,7 +346,6 @@ describe("initAnchoredPopovers exit", () => {
     exit.resolve(undefined);
     await settle();
     assert.equal("floating" in fixture.panel.dataset, true);
-    fixture.dispose();
   });
 
   it("releases at once when the animation list is empty", async () => {
@@ -373,29 +354,11 @@ describe("initAnchoredPopovers exit", () => {
     fixture.panel.hidePopover();
     await settle();
     assert.equal("floating" in fixture.panel.dataset, false);
-    fixture.dispose();
   });
 });
 
 describe("initAnchoredPopovers binding", () => {
-  beforeEach(() => {
-    wide = true;
-    animations = [];
-    Object.assign(globalThis, {
-      CSS: { escape: (value: string) => value },
-      document: Object.assign(new EventTarget(), {
-        activeElement: null,
-        body: {},
-      }),
-      matchMedia: () => ({ matches: true }),
-    });
-  });
-
-  afterEach(() => {
-    Reflect.deleteProperty(globalThis, "CSS");
-    Reflect.deleteProperty(globalThis, "document");
-    Reflect.deleteProperty(globalThis, "matchMedia");
-  });
+  withGlobals(true);
 
   it("binds a panel once until the first binding is disposed", () => {
     const fixture = build("");
@@ -429,28 +392,7 @@ const outsideClick = (): Event => {
 };
 
 describe("initAnchoredPopovers click guard", () => {
-  beforeEach(() => {
-    wide = false;
-    animations = [];
-    Object.assign(globalThis, {
-      CSS: { escape: (value: string) => value },
-      document: Object.assign(new EventTarget(), {
-        activeElement: null,
-        body: {},
-      }),
-      matchMedia: (query: string) => ({
-        matches: !query.includes("min-width") || wide,
-      }),
-      Node: Map,
-    });
-  });
-
-  afterEach(() => {
-    Reflect.deleteProperty(globalThis, "CSS");
-    Reflect.deleteProperty(globalThis, "document");
-    Reflect.deleteProperty(globalThis, "matchMedia");
-    Reflect.deleteProperty(globalThis, "Node");
-  });
+  withGlobals(false, { Node: Map });
 
   it("swallows the click that follows a tap outside an open sheet", () => {
     const fixture = build("");
@@ -458,21 +400,18 @@ describe("initAnchoredPopovers click guard", () => {
     globalThis.document.dispatchEvent(new Event("pointerdown"));
     assert.equal(outsideClick().defaultPrevented, true);
     assert.equal(outsideClick().defaultPrevented, false);
-    fixture.dispose();
   });
 
   it("lets a click through when no tap started outside an open sheet", () => {
     const fixture = build("");
     fixture.panel.showPopover();
     assert.equal(outsideClick().defaultPrevented, false);
-    fixture.dispose();
   });
 
   it("lets the tap through when the sheet is closed", () => {
-    const fixture = build("");
+    build("");
     globalThis.document.dispatchEvent(new Event("pointerdown"));
     assert.equal(outsideClick().defaultPrevented, false);
-    fixture.dispose();
   });
 
   it("lets the tap through when the panel floats", () => {
@@ -481,7 +420,6 @@ describe("initAnchoredPopovers click guard", () => {
     fixture.panel.showPopover();
     globalThis.document.dispatchEvent(new Event("pointerdown"));
     assert.equal(outsideClick().defaultPrevented, false);
-    fixture.dispose();
   });
 });
 

@@ -1,42 +1,39 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import rehypeSlug from "rehype-slug";
-import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
-import { unified } from "unified";
-import { VFile } from "vfile";
 
-import { rehypeHeadingAnchors } from "./anchors.ts";
-import { branchOf, rehypeToc, spySection, type TocItem } from "./toc.ts";
+import { branchOf, spySection, type TocItem, tocOf } from "./toc.ts";
 
-const tocOf = async (markdown: string): Promise<unknown> => {
-  const file = new VFile(markdown);
-  const processor = unified()
-    .use(remarkParse)
-    .use(remarkRehype)
-    .use(rehypeSlug)
-    .use(rehypeHeadingAnchors, { label: "Link to {heading}" })
-    .use(rehypeToc);
-  await processor.run(processor.parse(file), file);
-  return file.data.toc;
-};
+describe("tocOf", () => {
+  it("keeps h2 and h3 with their ids and drops the anchor mark", () => {
+    assert.deepEqual(
+      tocOf([
+        { depth: 1, slug: "d", text: "D#" },
+        { depth: 2, slug: "a", text: "A#" },
+        { depth: 3, slug: "b", text: "B#" },
+        { depth: 4, slug: "c", text: "C#" },
+      ]),
+      [
+        { depth: 2, id: "a", text: "A" },
+        { depth: 3, id: "b", text: "B" },
+      ]
+    );
+  });
 
-describe("rehypeToc", () => {
-  it("collects h2 and h3 with their ids and text", async () => {
-    assert.deepEqual(await tocOf("## A\n\n### B\n\n#### C\n\n# D"), [
-      { depth: 2, id: "a", text: "A" },
-      { depth: 3, id: "b", text: "B" },
+  it("removes only the one mark the anchor adds", () => {
+    assert.deepEqual(tocOf([{ depth: 2, slug: "c", text: "  C##\n " }]), [
+      { depth: 2, id: "c", text: "C#" },
     ]);
   });
 
-  it("keeps inline text and skips the anchor link", async () => {
-    assert.deepEqual(await tocOf("## The `sky` *shader*"), [
-      { depth: 2, id: "the-sky-shader", text: "The sky shader" },
-    ]);
+  it("leaves the footnote heading out", () => {
+    assert.deepEqual(
+      tocOf([{ depth: 2, slug: "footnote-label", text: "Footnotes" }]),
+      []
+    );
   });
 
-  it("returns an empty list without headings", async () => {
-    assert.deepEqual(await tocOf("Just text."), []);
+  it("returns an empty list without headings", () => {
+    assert.deepEqual(tocOf([]), []);
   });
 });
 

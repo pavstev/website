@@ -1,14 +1,12 @@
 import assert from "node:assert/strict";
-import path from "node:path";
 import { describe, it } from "node:test";
 
 import { modifiedOf } from "./blog/modified.ts";
-import { postMeta } from "./blog/post-fixture.ts";
+import { postMeta, validSources } from "./blog/post-fixture.ts";
 import { listPosts } from "./blog/posts.ts";
 import { sitemapEntries, type SitemapEntry, sitemapXml } from "./sitemap.ts";
 
 const site = "https://stevanpavlovic.com";
-const valid = path.join(import.meta.dirname, "blog", "fixtures", "valid");
 
 const liveXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
@@ -156,7 +154,7 @@ describe("sitemapEntries", () => {
   it("lists the home page, the about and work pages, the blog index and each visible post", () => {
     const entries = sitemapEntries({
       ...input,
-      posts: listPosts({ drafts: false }, valid),
+      posts: listPosts({ drafts: false }, validSources),
     });
     assert.deepEqual(
       entries.map((entry) => entry.loc),
@@ -182,17 +180,23 @@ describe("sitemapEntries", () => {
 
   it("leaves drafts out of a production build and keeps them in a draft build", () => {
     const production = sitemapXml(
-      sitemapEntries({ ...input, posts: listPosts({ drafts: false }, valid) })
+      sitemapEntries({
+        ...input,
+        posts: listPosts({ drafts: false }, validSources),
+      })
     );
     assert.doesNotMatch(production, /gamma/);
     const withDrafts = sitemapXml(
-      sitemapEntries({ ...input, posts: listPosts({ drafts: true }, valid) })
+      sitemapEntries({
+        ...input,
+        posts: listPosts({ drafts: true }, validSources),
+      })
     );
     assert.match(withDrafts, /\/blog\/gamma</);
   });
 
   it("uses the newest post date for the blog index", () => {
-    const posts = listPosts({ drafts: false }, valid);
+    const posts = listPosts({ drafts: false }, validSources);
     const entries = sitemapEntries({ ...input, posts });
     assert.equal(entries[3]?.loc, `${site}/blog`);
     assert.equal(entries[3]?.lastmod, "2026-10-13T07:45:00+02:00");

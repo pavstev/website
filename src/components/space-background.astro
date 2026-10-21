@@ -1,0 +1,14 @@
+<div aria-hidden="true" data-blog-sky="" transition:persist="sky">
+  <canvas aria-hidden="true" data-space="" data-space-state="init"></canvas>
+  <div data-sky-fade=""></div>
+</div>
+<div
+  aria-hidden="true"
+  data-sky-sentinel=""
+  transition:persist="sky-sentinel"
+></div>
+<script>
+  import { watchSky } from "@/lib/sky-mount";
+
+  watchSky();
+</script>

@@ -17,9 +17,9 @@ import {
   tableInput,
 } from "./sky-paint.ts";
 import { paintPalettes } from "./sky-palette.ts";
-import { anchorX, projectSight } from "./sky-view.ts";
+import { anchorX, projectSight, type ViewSize } from "./sky-view.ts";
 import { hexBytes } from "./theme.ts";
-import { fallbackWeather, weatherPresets } from "./weather.ts";
+import { fallbackWeather, type SkyWeather, weatherPresets } from "./weather.ts";
 
 const laptop = {
   card: { bottom: 640, left: 520, right: 920, top: 180 },
@@ -48,6 +48,13 @@ const stubTable: SkyTable = {
   sunColor: [1, 0.9, 0.8],
   top: [0.7, 0.6, 0.5],
 };
+
+const paint = (
+  iso: string,
+  weather: SkyWeather = fallbackWeather,
+  table?: SkyTable,
+  view: ViewSize = laptop
+): PaintScene => paintScene(Date.parse(iso), view, weather, vienna, table);
 
 const spread = (c: readonly number[]): number =>
   Math.max(...c) - Math.min(...c);
@@ -131,12 +138,7 @@ describe("paint shaders", () => {
 
 describe("paintScene", () => {
   it("puts the noon sun right of the card with no stars", () => {
-    const scene = paintScene(
-      Date.parse("2026-10-19T13:00:00+02:00"),
-      laptop,
-      fallbackWeather,
-      vienna
-    );
+    const scene = paint("2026-10-19T13:00:00+02:00");
     near(scene.sun[0], anchorX(laptop), 1e-6);
     assert.ok(scene.sun[1] > 0 && scene.sun[1] < laptop.height);
     assert.equal(scene.stars, 0);
@@ -146,12 +148,13 @@ describe("paintScene", () => {
   });
 
   it("passes the cloud layers through", () => {
-    const scene = paintScene(
-      Date.parse("2026-10-19T13:00:00+02:00"),
-      laptop,
-      { ...fallbackWeather, alto: 0.4, cirrus: 0.9, cumulus: 0.2, haze: 1.6 },
-      vienna
-    );
+    const scene = paint("2026-10-19T13:00:00+02:00", {
+      ...fallbackWeather,
+      alto: 0.4,
+      cirrus: 0.9,
+      cumulus: 0.2,
+      haze: 1.6,
+    });
     assert.equal(scene.alto, 0.4);
     assert.equal(scene.cirrus, 0.9);
     assert.equal(scene.cumulus, 0.2);
@@ -159,12 +162,7 @@ describe("paintScene", () => {
   });
 
   it("turns to a bright full moon at night", () => {
-    const scene = paintScene(
-      Date.parse("2026-08-28T04:00:00+02:00"),
-      laptop,
-      weatherPresets.clear,
-      vienna
-    );
+    const scene = paint("2026-08-28T04:00:00+02:00", weatherPresets.clear);
     near(scene.moon[0], anchorX(laptop), 1);
     assert.equal(scene.moon[3], 1);
     assert.ok(scene.moonGlow > 0.95);
@@ -174,22 +172,22 @@ describe("paintScene", () => {
   });
 
   it("draws the moon 1.85 times bigger", () => {
-    const scene = paintScene(
-      Date.parse("2026-11-20T16:50:00Z"),
-      { height: 900, width: 1440 },
+    const scene = paint(
+      "2026-11-20T16:50:00Z",
       weatherPresets.clear,
-      vienna
+      undefined,
+      { height: 900, width: 1440 }
     );
     const share = scene.moon[2] / 900;
     assert.ok(share > 0.043 && share < 0.054);
   });
 
   it("carries the aura and the air tint of the moon", () => {
-    const scene = paintScene(
-      Date.parse("2026-11-20T16:50:00Z"),
-      { height: 900, width: 1440 },
+    const scene = paint(
+      "2026-11-20T16:50:00Z",
       weatherPresets.clear,
-      vienna
+      undefined,
+      { height: 900, width: 1440 }
     );
     assert.equal(scene.aura, 0.55);
     assert.ok(allFinite(scene.moonTint));
@@ -197,21 +195,9 @@ describe("paintScene", () => {
   });
 
   it("hides the stars and dims the sun under overcast", () => {
-    const at = Date.parse("2026-10-19T13:00:00+02:00");
-    const clear = paintScene(
-      at,
-      laptop,
-      weatherPresets.clear,
-      vienna,
-      stubTable
-    );
-    const grey = paintScene(
-      at,
-      laptop,
-      weatherPresets.overcast,
-      vienna,
-      stubTable
-    );
+    const at = "2026-10-19T13:00:00+02:00";
+    const clear = paint(at, weatherPresets.clear, stubTable);
+    const grey = paint(at, weatherPresets.overcast, stubTable);
     assert.equal(grey.stars, 0);
     assert.ok(grey.sunUp < 0.2);
     assert.ok(grey.glow < clear.glow);
@@ -221,11 +207,9 @@ describe("paintScene", () => {
   });
 
   it("lights the overcast and rain deck light grey by day", () => {
-    const at = Date.parse("2026-10-19T12:00:00+02:00");
-    const scene = (name: "overcast" | "rain"): PaintScene =>
-      paintScene(at, laptop, weatherPresets[name], vienna, stubTable);
-    const overcast = scene("overcast");
-    const rain = scene("rain");
+    const at = "2026-10-19T12:00:00+02:00";
+    const overcast = paint(at, weatherPresets.overcast, stubTable);
+    const rain = paint(at, weatherPresets.rain, stubTable);
     for (const tone of [overcast.lit, overcast.low, overcast.shade])
       assert.ok(Math.min(...tone) > 0.42, String(tone));
     assert.ok(Math.min(...rain.shade) > 0.35, String(rain.shade));
@@ -234,33 +218,23 @@ describe("paintScene", () => {
   });
 
   it("keeps the dim deck below the horizon, in snow and in fog", () => {
-    const dusk = Date.parse("2026-10-19T16:00:00Z");
-    const noon = Date.parse("2026-10-19T12:00:00+02:00");
+    const dusk = "2026-10-19T16:00:00Z";
+    const noon = "2026-10-19T12:00:00+02:00";
     const dim = { ...weatherPresets.overcast, snow: 1 };
     assert.deepEqual(
-      tones(
-        paintScene(dusk, laptop, weatherPresets.overcast, vienna, stubTable)
-      ),
-      tones(paintScene(dusk, laptop, dim, vienna, stubTable))
+      tones(paint(dusk, weatherPresets.overcast, stubTable)),
+      tones(paint(dusk, dim, stubTable))
     );
-    const snow = paintScene(
-      noon,
-      laptop,
-      weatherPresets.snow,
-      vienna,
-      stubTable
-    );
-    const fog = paintScene(noon, laptop, weatherPresets.fog, vienna, stubTable);
+    const snow = paint(noon, weatherPresets.snow, stubTable);
+    const fog = paint(noon, weatherPresets.fog, stubTable);
     assert.ok(Math.max(...snow.mid) < 0.42, String(snow.mid));
     assert.ok(Math.max(...fog.shade) < 0.4, String(fog.shade));
   });
 
   it("takes the colors from the table", () => {
-    const scene = paintScene(
-      Date.parse("2026-10-19T13:30:00Z"),
-      laptop,
+    const scene = paint(
+      "2026-10-19T13:30:00Z",
       weatherPresets.clear,
-      vienna,
       stubTable
     );
     assert.deepEqual(scene.low, stubTable.low);
@@ -275,11 +249,9 @@ describe("paintScene", () => {
   });
 
   it("gives the night palette for lit and shade deep in the night", () => {
-    const scene = paintScene(
-      Date.parse("2026-10-10T18:10:00Z"),
-      laptop,
+    const scene = paint(
+      "2026-10-10T18:10:00Z",
       weatherPresets.clear,
-      vienna,
       stubTable
     );
     assert.equal(scene.moon[3], 0);
@@ -289,11 +261,9 @@ describe("paintScene", () => {
   });
 
   it("blends lit and shade toward the night palette near -11 degrees", () => {
-    const scene = paintScene(
-      Date.parse("2026-10-10T17:17:00Z"),
-      laptop,
+    const scene = paint(
+      "2026-10-10T17:17:00Z",
       weatherPresets.clear,
-      vienna,
       stubTable
     );
     assert.equal(scene.moon[3], 0);

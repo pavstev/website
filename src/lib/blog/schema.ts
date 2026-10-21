@@ -6,7 +6,7 @@ const instantPattern =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-](?:0\d|1[0-4]):[0-5]\d$/u;
 
 const instantMessage =
-  "Use a full date and time with its offset, for example 2026-10-13T09:30:00+02:00 (a date alone is not enough)";
+  'Use a full date and time with its offset in quotes, for example "2026-10-13T09:30:00+02:00" (a date alone is not enough, and without quotes the offset is lost)';
 
 const instant = (): z.ZodString =>
   z

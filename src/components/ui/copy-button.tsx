@@ -1,4 +1,6 @@
-import { type ReactElement, useCallback, useEffect, useState } from "react";
+import { type ReactElement } from "react";
+
+import { useAsyncAction } from "@/components/ui/loading-button";
 
 interface CopyButtonProps {
   ariaLabel: string;
@@ -8,49 +10,12 @@ interface CopyButtonProps {
   label: string;
 }
 
-type CopyStatus = "copied" | "error" | "idle";
-
-const resetAfter = 2000;
-
-const useCopyToClipboard = (): {
-  copy: (text: string) => Promise<void>;
-  status: CopyStatus;
-} => {
-  const [status, setStatus] = useState<CopyStatus>("idle");
-  const [ticket, setTicket] = useState(0);
-
-  useEffect(() => {
-    if (ticket === 0) return;
-    const timer = setTimeout(() => {
-      setStatus("idle");
-    }, resetAfter);
-    return (): void => {
-      clearTimeout(timer);
-    };
-  }, [ticket]);
-
-  const copy = useCallback(async (text: string): Promise<void> => {
-    if (text === "") return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setStatus("copied");
-    } catch {
-      setStatus("error");
-    }
-    setTicket((value) => value + 1);
-  }, []);
-
-  return { copy, status };
-};
-
-const announcement = (
-  status: CopyStatus,
-  copiedLabel: string,
-  errorLabel: string
-): string => {
-  if (status === "copied") return copiedLabel;
-  return status === "error" ? errorLabel : "";
-};
+const statusOf = {
+  error: "error",
+  idle: "idle",
+  pending: "idle",
+  success: "copied",
+} as const;
 
 export const CopyButton = ({
   ariaLabel,
@@ -59,14 +24,18 @@ export const CopyButton = ({
   getValue,
   label,
 }: CopyButtonProps): ReactElement => {
-  const { copy, status } = useCopyToClipboard();
+  const { run, status } = useAsyncAction({
+    action: () => navigator.clipboard.writeText(getValue()),
+    resetAfter: 2000,
+  });
+  const shown = statusOf[status];
   return (
     <button
       aria-label={ariaLabel}
       className="copy-key mat-cap focus-ring"
-      data-status={status}
+      data-status={shown}
       onClick={() => {
-        void copy(getValue());
+        if (getValue() !== "") run();
       }}
       type="button"
     >
@@ -100,7 +69,7 @@ export const CopyButton = ({
         <path d="M3.6 3.6 10.4 10.4M10.4 3.6 3.6 10.4" />
       </svg>
       <span className="sr-only" role="status">
-        {announcement(status, copiedLabel, errorLabel)}
+        {{ copied: copiedLabel, error: errorLabel, idle: "" }[shown]}
       </span>
     </button>
   );

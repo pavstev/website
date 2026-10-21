@@ -14,7 +14,7 @@ import {
   subscribeMotionPause,
 } from "./motion-pause.ts";
 import { privacyAckKey } from "./privacy-ack.ts";
-import { holdScene, isSceneHeld, sceneHoldEvent } from "./scene-hold.ts";
+import { isSceneHeld, sceneHoldEvent } from "./scene-hold.ts";
 
 const stubs = [
   "addEventListener",
@@ -106,16 +106,13 @@ describe("motion pause", () => {
     assert.deepEqual(fake.events, ["scene:hold", "motion:pause"]);
   });
 
-  it("holds the scene while held or paused, so closing the globe keeps a pause", () => {
+  it("holds the scene while paused", () => {
     install();
-    holdScene(true);
+    assert.equal(isSceneHeld(), false);
     setMotionPaused(true);
-    holdScene(false);
     assert.equal(isSceneHeld(), true);
     setMotionPaused(false);
     assert.equal(isSceneHeld(), false);
-    holdScene(true);
-    assert.equal(isSceneHeld(), true);
   });
 
   it("follows other tabs through storage events until unsubscribed", () => {

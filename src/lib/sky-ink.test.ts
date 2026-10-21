@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
-  blogIndexInkTargets,
   contrast,
   freshInk,
   glowFor,
@@ -165,15 +164,13 @@ describe("sharedScores", () => {
 
 describe("blog header targets", () => {
   it("lifts the title to 3 and the meta line to 4.5 in the sky header", () => {
-    for (const targets of [blogIndexInkTargets, postInkTargets]) {
-      assert.deepEqual(
-        targets.map((target) => [target.paint, target.need]),
-        [
-          ["[data-sky-header] .blog-title", 3],
-          ["[data-sky-header] .blog-header-meta", 4.5],
-        ]
-      );
-    }
+    assert.deepEqual(
+      postInkTargets.map((target) => [target.paint, target.need]),
+      [
+        ["[data-sky-header] .blog-title", 3],
+        ["[data-sky-header] .blog-header-meta", 4.5],
+      ]
+    );
   });
 });
 

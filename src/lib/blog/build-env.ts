@@ -19,6 +19,11 @@ export const fixturesEnabled = (env: BuildEnv = process.env): boolean =>
   (env.WORKERS_CI ?? "") === "" &&
   (env.BLOG_BUILT_AT ?? "") === "";
 
+export const fixtureGuard = (env: BuildEnv): string | undefined =>
+  env.BLOG_FIXTURES === "1" && !fixturesEnabled(env)
+    ? "BLOG_FIXTURES=1 is for pnpm dev:many only. Unset it for a build or in CI: test posts must never ship."
+    : undefined;
+
 export const builtInstant = (env: BuildEnv = process.env): Date | undefined => {
   const text = env.BLOG_BUILT_AT?.trim() ?? "";
   if (text === "") return undefined;

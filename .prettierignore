@@ -5,9 +5,6 @@ _ref
 dist
 pnpm-lock.yaml
 worker-configuration.d.ts
-.blog
-public/blog-media
-public/blog
-public/build.json
+blog-fixtures
 .claude/worktrees
 .opencode/

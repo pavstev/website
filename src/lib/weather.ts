@@ -1,4 +1,4 @@
-import { clamp, deg } from "./math.ts";
+import { clamp, deg, mix } from "./math.ts";
 
 export interface SkyWeather {
   alto: number;
@@ -31,12 +31,10 @@ export const mixWeather = (
   from: Readonly<SkyWeather>,
   to: Readonly<SkyWeather>,
   share: number
-): SkyWeather => {
-  const mixed: SkyWeather = { ...from, windFrom: from.windFrom ?? to.windFrom };
-  for (const key of weatherKeys)
-    mixed[key] = from[key] + (to[key] - from[key]) * share;
-  return mixed;
-};
+): SkyWeather => ({
+  ...mix(from, to, share),
+  windFrom: from.windFrom ?? to.windFrom,
+});
 
 export type WeatherName =
   "clear" | "fog" | "overcast" | "partly" | "rain" | "snow";

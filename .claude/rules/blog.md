@@ -2,13 +2,14 @@
 paths:
   - "content/blog/**"
   - "content/about/**"
+  - "src/content.config.ts"
   - "src/pages/about.astro"
   - "src/pages/blog/**"
   - "src/layouts/BlogLayout.astro"
   - "src/styles/blog.css"
   - "src/components/blog/**"
   - "src/lib/blog/**"
-  - "scripts/blog-build.ts"
+  - "scripts/blog-fixtures.ts"
   - "scripts/blog-publish.ts"
   - ".github/workflows/blog-publish.yml"
   - "scripts/indexnow.ts"
@@ -16,95 +17,116 @@ paths:
 
 # Blog
 
-Loads when you touch a post or the blog code. The blog has no posts yet (the two drafts were removed in the release of 2026-10-20; they are in git history at `9372279`): `blogLive()` is false and the build writes no `/blog`, no feeds and no RSS key. The diagram and chart components stay covered by the dev-only test posts (`pnpm dev:many`). The full design is in the **Blog** (with **Scheduled posts**), **No previews** and **IndexNow** bullets of `docs/architecture.md`. Sibling rules: `sky.md` (the sky modes), `card.md`, `motion.md`.
+Siblings: `sky.md`, `card.md`, `motion.md`. The full design is in the Blog bullet of `docs/architecture.md`.
+
+- The blog has no posts yet. `blogLive()` is false: no `/blog`, no feeds, no RSS key, no Blog button.
+- Posts and the About page are Astro content collections (`src/content.config.ts`). The dev-only test posts cover the charts and diagrams.
 
 ## Add a post
 
-1. Make `content/blog/<slug>/index.mdx`. The slug is lowercase letters and digits in groups joined by single dashes (at most 80 characters), and it is the URL.
-2. Frontmatter (a strict object: an unknown key fails the build):
+1. Make `content/blog/<slug>/index.mdx`. The slug is lowercase letters and digits in groups joined by single dashes, at most 80 characters. It is the URL.
+2. Frontmatter is a strict object. An unknown key fails the build.
 
    ```yaml
    title: Plain title
    description: One or two sentences, at most 160 characters.
-   date: 2026-10-13T09:30:00+02:00 # required, with seconds and offset; live at this instant
-   updated: 2026-10-20T18:00:00+02:00 # optional, same form, not before date
+   date: "2026-10-13T09:30:00+02:00" # required, quoted, with seconds and offset
+   updated: "2026-10-20T18:00:00+02:00" # optional, quoted, not before date
    draft: true # optional, default false
    tags: [AI, Workflow] # 1 to 5
    ```
 
-   Every blog page shares one sky (the clear night with corner rays); a post has no sky field.
+3. Quote the dates. Unquoted, Astro turns them into a `Date` and drops the offset.
+4. Write Vienna time with its offset: `+02:00` from the last Sunday of March to the last Sunday of October, else `+01:00`. A date alone fails.
+5. Every blog page shares one sky. A post has no sky field.
+6. Write Markdown with GFM. Headings h2 and h3 get anchors and a TOC entry. Name the language on code fences.
+7. Put images next to the post. Reference them by file name: `<Figure src="sky-storm.webp" alt="..." caption="..." />`.
+8. `alt` is required and describes the real picture. Only referenced images ship. A missing file fails the build.
+9. `cover.webp|png|jpg` (about 2400x1260) is the share image background. Keep a lower-left area dark, as the title is drawn there.
+10. Charts: `<Chart type="bar|line|pair" src="data/<file>.json" title="..." caption="..." />`. Write `src` as `data/<file>.json`, never `./data/...`.
+11. Chart JSON is `{ "x": [...], "series": [{ "name": "...", "values": [...] }], "unit": "ms" }`.
+    1 to 4 series, one value per x label, non-negative, no repeated labels. `pair` needs exactly 2 labels.
+12. Diagrams: `<Diagram name="site-pipeline|sky-layers|work-loop|skill-map" caption="..." />`. Diagram copy lives in `src/lib/blog/diagrams.ts`, which must not import from `@/`.
+13. `<Note>text</Note>` is an aside. In the Markdown copy it becomes a blockquote.
+14. Link other posts with a root path (`/blog/other-slug`). External links open in a new tab by themselves.
+15. Run `pnpm dev` (drafts and scheduled posts show) or `pnpm dev:many` (30 generated posts in the gitignored `blog-fixtures/`). Then `pnpm check:fast`.
 
-   Write Vienna time with its offset: `+02:00` from the last Sunday of March to the last Sunday of October, else `+01:00`. Any valid offset passes; a wrong one moves the post by an hour (accepted risk). A date alone fails.
+## Drafts and schedule
 
-3. Write Markdown with GFM (tables, task lists, footnotes). Headings h2 and h3 get anchors and a TOC entry. Code fences use Shiki; name the language.
-4. Put images next to the post and reference them by file name: `<Figure src="sky-storm.webp" alt="..." caption="..." />`. `alt` is required and must describe what the image shows. A plain `![alt](file.webp)` also works but has no caption or zoom. Only referenced images ship. A missing file fails the build.
-5. `cover.webp|png|jpg` (about 2400x1260) is the background of the share image. Keep a lower-left area dark, as the title is drawn there. Stills are one frame of the real sky shader with fixed uniforms (no clock); keep them WebP or PNG.
-6. Charts: `<Chart type="bar|line|pair" src="data/<file>.json" title="..." caption="..." />`. Write `src` as `data/<file>.json`, never `./data/...` (a path segment must start with a letter or digit). The JSON is `{ "x": [...], "series": [{ "name": "...", "values": [...] }], "unit": "ms" }`: 1 to 4 series, one value per x label, non-negative numbers, no repeated labels or names; `pair` needs exactly 2 x labels. Use `"unit": ""` when the number needs no unit.
-7. Diagrams: `<Diagram name="site-pipeline|sky-layers|work-loop|skill-map" caption="..." />`. A new diagram is a component in `src/components/blog/diagrams/` plus an entry (title, description, labels) in `src/lib/blog/diagrams.ts`. Diagram copy stays there, not in `i18n.ts`, and that file must not import from `@/`.
-8. `<Note>text</Note>` is an aside. In the Markdown copy it becomes a blockquote.
-9. Link other posts with a root path (`/blog/other-slug`). External links open in a new tab by themselves.
-10. Check it with `pnpm dev` (drafts and scheduled posts show), or `pnpm dev:many` to see it among 30 test posts. Then `pnpm check`.
+- `draft: true` hides a post everywhere except where `showDrafts()` is true: `pnpm dev` and `BLOG_DRAFTS=1`.
+- A future `date` hides the post until that instant (`goLiveAt` in `schedule.ts`). Where drafts show it carries a "Scheduled" label.
+- `blog-publish.yml` runs at minutes 7, 22, 37 and 52 of each hour. If a post fell due since the live `builtAt`, it calls the deploy hook, waits, then pings IndexNow.
+- `scripts/blog-publish.ts` imports only `node:` modules, `schedule.ts` and `indexnow.ts`, and reads the front matter itself. Keep it so: the workflow installs nothing.
+- It needs the secret `CLOUDFLARE_DEPLOY_HOOK`. A failed run opens a `blog-publish-failed` issue.
+- `pnpm build` takes one instant (`BLOG_BUILT_AT`). `astro build` and `src/pages/build.json.ts` both use it.
+- `BLOG_FIXTURES=1` outside `pnpm dev:many` fails the build on purpose (`fixtureGuard` in the content config).
+- Dates in outputs (sitemap `lastmod`, RSS, JSON Feed, JSON-LD, Open Graph) are the instant as written, with its offset. Never append `Z`.
+- Feeds stay custom (`feeds.ts`), because `@astrojs/rss` would write `pubDate` as GMT and lose the offset.
 
-## Drafts
+## Dates, reading time, tags
 
-`draft: true` hides a post everywhere (index, home button count, feeds, sitemap, `llms.txt`, Markdown copy, share image, `/mcp`) except where `showDrafts()` is true: `pnpm dev` and `BLOG_DRAFTS=1`. Production never shows a draft. There are no preview builds. To publish, set `draft: false` and land the commit on `main`.
-
-## Schedule a post
-
-Set `date` to a future instant (`2026-11-02T08:00:00+01:00`). Nothing else. The post is hidden like a draft until that instant (`goLiveAt` in `src/lib/blog/schedule.ts` is the one rule; `listPosts`, `findPost` and `visibleSources` take an optional `now` for tests). Where drafts show, a scheduled post carries a "Scheduled" label.
-
-`.github/workflows/blog-publish.yml` runs at minutes 7, 22, 37 and 52 of every hour on `main`, with no dependency install: `scripts/blog-publish.ts` imports only `node:` modules, `schedule.ts` and `scripts/indexnow.ts`, and reads `date` and `draft` straight from the front matter (`timingOf`). Keep it that way, or the workflow needs `pnpm install` again. It compares the live `/build.json` `builtAt` with the go-live instants of the non-draft posts. If one fell between `builtAt` and now, it POSTs the deploy hook, waits for a newer `builtAt`, then tells IndexNow about the new posts, `/blog` and both feeds. A scheduled post is live within about 15 minutes plus the build. Nothing due: one log line, exit 0. It needs the GitHub Actions secret `CLOUDFLARE_DEPLOY_HOOK`; without it a run that finds a due post fails. A failed run opens a `blog-publish-failed` issue. When nothing is due, the run tells IndexNow again about posts that went live in the last 30 minutes (two runs), are in the live build and answer 200. With no readable `builtAt` it treats the last 30 minutes as due. On a scheduled run, if a post is due and the open `blog-publish-failed` issue is older than an hour (four runs), the run skips the hook, logs one line and leaves the issue open (a run by hand always tries). `pnpm build` takes one instant (`BLOG_BUILT_AT`) before anything else; the prebuild, `astro build` and `public/build.json` all use it. The pure parts (`duePosts`, `recentlyLive`, `shouldBackOff`, `timingOf`, `runPublish`) are tested with injected network calls; `node scripts/blog-publish.ts --dry-run` reports what is due and changes nothing.
-
-No live post means no blog. `blogLive()` (`src/lib/blog/live.ts`) is true when `listPosts` returns anything. When it is false, `/blog`, `/blog/feed.xml` and `/blog/feed.json` are not built (`getStaticPaths` in `src/pages/blog/[...index].astro` and `feed.[format].ts` returns no paths), and the Blog link in the bar (`navFor` in `src/lib/nav.ts`), the Blog button on the card, the RSS link in the footer and the feed `<link rel="alternate">` tags disappear. `date` is required in `frontmatterSchema`, so every post has a go-live instant.
-
-Dates in outputs (sitemap `lastmod`, RSS, JSON Feed, JSON-LD, Open Graph) are the instant as written, with its offset. Never append `Z`.
-
-## Dates on the page
-
-`PostDate` (`src/components/blog/post-date.tsx`) prints the Vienna date in the server HTML ("13 Oct 2026"), then, in the browser, relative text within 7 days ("3 hours ago", "yesterday") or the date in the reader's zone, refreshed once a minute while visible. The date is a button: hover, focus or tap opens a tip with the full date, time and zone in the reader's zone and, outside Vienna's zone, a second line "12:30, Stevan's time" (no city name on the site); Escape and an outside click close it. Formatting lives in `src/lib/blog/dates.ts` (tested). Use `PostDate` for every post date shown on a page.
-
-## Reading time
-
-`src/lib/blog/reading.ts` counts visible words only (link text, not URLs; no image paths, alt or JSX props; `caption` and `title` of `Figure`, `Chart`, `Diagram` count; headings, inline code and footnote text count; footnote markers do not) at 238 words a minute, fenced code at 119, plus 12 s per image or `Figure` and 20 s per `Chart` or `Diagram`, rounded up, at least 1 minute. One value feeds the header, the list, the share image and JSON-LD. `reading.test.ts` checks the counting rules on small samples; there is no post-specific golden number.
-
-## Tags and pages
-
-Tag chips link to `/blog/tag/<slug>` (`tagSlug`: "Claude Code" is `claude-code`, "Next.js" is `next-js`). Two spellings that map to one slug fail the build: pick one. `/blog` shows 10 posts, then `/blog/page/2`, and so on; tags paginate the same way (`/blog/tag/<slug>/page/2`). There is no `/blog/page/1`. The listing URLs come from `src/pages/blog/page/[n].astro`, `tag/[tag].astro` and `tag/[tag]/page/[n].astro`; `page` and `tag` are reserved post slugs. The page links are a window (`pageWindow` in `src/lib/blog/pagination.ts`): first, last, the current page and one neighbor each side, the rest as `…` that is not a link. Listings are indexable, self-canonical and in the sitemap; feeds stay the full list.
-
-## Many posts locally
-
-`pnpm dev:many` adds 30 generated test posts (`src/lib/blog/fixture-posts.ts`, fixed seed, dated 2023 to 2025, each with a sky still as its cover and a real-sounding description) from the gitignored `.blog/fixtures/`. Their images are the sky stills in `src/lib/blog/fixtures/images/`; the third post also holds a bar chart (`data/speed.json`) and all four diagrams, so `pnpm dev:many` shows every post part. They load only with `BLOG_FIXTURES=1` outside a production build and CI; `pnpm build` with `BLOG_FIXTURES=1` fails on purpose.
+- `PostDate` prints the Vienna date in the server HTML, then relative text within 7 days or the date in the reader's zone.
+- Its tip shows the full date and time in the reader's zone and, outside Vienna, "12:30, Stevan's time". No city name.
+- Use `PostDate` for every post date shown on a page. Formatting lives in `dates.ts`.
+- Reading time (`reading.ts`) counts visible words at 238 a minute, code at 119, plus 12 s per image and 20 s per chart or diagram. One value feeds header, list, share image and JSON-LD.
+- Tag chips link to `/blog/tag/<slug>` (`tagSlug`). Two spellings with one slug fail the build.
+- `/blog` shows 10 posts a page. There is no `/blog/page/1`. `page` and `tag` are reserved slugs.
+- The page links are a window (`pageWindow`): first, last, current and one neighbor each side.
+- Listings are indexable, self-canonical and in the sitemap.
 
 ## Copy rules
 
-- No em dashes or en dashes (`src/lib/blog/content.test.ts` fails on one in any post), no taglines, short plain sentences, first person where the owner speaks.
-- Every claim is a measured number, a quote or a plainly marked opinion. Say what a number counts and over what period.
-- Owner quotes stay under 15 words and are exact. Never quote a secret, an email address, a phone number or a private repo detail.
-- Alt text describes the real picture, not the intent.
-- UI strings (labels, tooltips, aria text) go in `src/lib/i18n.ts` under `en.blog`. Post text and diagram copy do not.
+- No em dashes or en dashes in posts (`content.test.ts` fails on one). No taglines. Short plain sentences, first person.
+- Every claim is a measured number, a quote or a marked opinion. Say what a number counts and over what period.
+- Owner quotes stay under 15 words and are exact. Never quote a secret, an email, a phone number or a private repo detail.
+- UI strings go in `src/lib/i18n.ts` under `en.blog`. Post text and diagram copy do not.
 
-## Checks and gotchas
+## Rendering
 
-- `pnpm check` is the gate. It runs `scripts/blog-build.ts` through `pnpm build`, so image, chart and frontmatter errors fail it. ESLint and Prettier lint the MDX and Markdown.
-- Run `pnpm exec prettier --write content/blog` after editing a post; it wraps long JSX props.
-- Satori (share images) cannot read WebP. `coverData` in `scripts/blog-build.ts` converts the cover with sharp first; keep that if you touch it. Share images load Inter `latin` and `latin-ext` (400 and 600, from `@fontsource/inter`, under the names "Inter" and "Inter Ext") so satori never fetches a font from Google during a build; a title with a glyph outside both subsets would make it fetch again, and `share.test.ts` fails when any request goes out.
-- Headless Chromium counts as a crawler (`isCrawler`) and always gets the cloudy night sky with no parallax. Browser tests of the blog sky need a normal desktop `userAgent`; on the home page `?at=<ISO instant>` also stops the crawler rule.
-- The blog sky (`SpaceBackground mode="blog"`) mounts once, in `src/layouts/BlogLayout.astro`, as the first child of `[data-blog]`, and stays mounted across blog routes: the layout loads `ClientRouter` through `src/components/page-router.astro` and marks the sky (`transition:persist="sky"`) and the dock `transition:persist`, so a move between blog pages is a client navigation and the canvas survives. The home page persists the same sky island, so the brand link to `/` is a client navigation too and plays the home to blog shot in reverse (`sky.md`). Never mount a second one in a page. An island that must survive a page change needs `transition:persist="<name>"`; flags kept on `<html>` survive through `src/lib/router-flags.ts`, which copies every `data-*` attribute, so a new flag needs no change. A link to any other page outside the blog layout (a feed, a file) keeps `data-astro-reload`; `BlogLink` adds it for post body links (`leavesBlog` in `src/lib/blog/links.ts`). `/work` and `/about` use this layout too (`isSitePage` in `src/lib/blog/slug.ts` lists them next to the blog routes), so a post link to either is a client navigation; `/about` is `content/about/index.mdx` with a `title` and `description` frontmatter only (`readAbout` in `src/lib/blog/about.ts`) and goes through the same `renderPost`. The card and post titles morph through `src/lib/blog/title-morph.ts` (names are set per navigation and removed when the transition ends, never in the markup). New blog routes get the sky for free; give them the shared `BlogHeader` (`src/components/blog/blog-header.astro`) so the bar, the title morph and the ink targets work.
-- The sky behind text: only the header title and meta line sit on the bright part of the sky and carry `text-sky` with ink targets (`postInkTargets` and `blogIndexInkTargets`, the same `[data-sky-header] .blog-title` and `.blog-header-meta`). The cards are solid panels, and the prose sits on the faded sky (at least 9.9:1 measured). New text in the header needs `text-sky`, a target in `sky-ink.ts` and an `--ink` base in `globals.css`.
-- The sticky bar is `--bar-h` (3rem) tall, plus `--bar-sub-h` (0.75rem) on a post, a strip that holds only the reading progress track (`--bar-total`, set on `.post-main`). In-page jumps land below it through `scroll-padding-top` on `html:has(.post-main)` (4.25rem) and `scroll-margin-top` on the prose headings; keep both if you change the bar height. The bar never wraps and never grows.
-- Bar nav (owner ask 2026-10-20: one smart left side, no right-side nav): the bar's left end is one landmark, `nav[aria-label="Site"]` (`en.nav.site`), plain text with no pill: Geist 13 px (`--fs-sm`) weight 400 in `--ui-ink-3`, the current page and hover in `--ui-key-ink`, always visible (not tied to `--glass`). It holds two lists. First `ol[aria-label="Breadcrumb"]`, the trail from `crumbTrail`, `postCrumbs` and `listingCrumbs` in `src/lib/blog/crumbs.ts` (tested); labels live in `en.blog` (`crumbHome`, `crumbsLabel`, `heading`). A new blog route passes its trail to `BlogHeader` (`crumbs`, required). The last item is the current page: a `span[aria-current="page"]`, except on `/blog` where it is the Blog link with `aria-current="page"`. The post JSON-LD `BreadcrumbList` must keep the same paths (`crumbs.test.ts` checks it). Then `ul[aria-label="Pages"]` (`en.nav.label`) with the sections you are not in, each after a middle dot (`.blog-nav-sep`): `navOthers(pathname, blogLive)` in `src/lib/nav.ts` (tested) is the menu order About, Work, Blog minus the section `navCurrent` marks, and Blog only while a post is live (`navFor`). So `/work` reads "Stevan Pavlović / Work · About · Blog" and a post "Stevan Pavlović / Blog / title · About · Work". All links reuse `.blog-crumbs-link` (28 px tall, the 44 px hit area from `::after`, the focus ring). What collapses, by bar width: the last crumb always truncates with an ellipsis; below 40em the name is visually hidden (the portrait stays the Home link) and the dots tighten; below 15em (200% zoom on a phone) the non-link current crumb is visually hidden (the page title right under the bar says it) and, on pages three crumbs deep (posts, tag and page listings), the section links go, so Home, Blog and the TOC button stay; below 11em (a 320 px phone at 200%) the section links go everywhere. Measured at 160 to 1440 px: no overlap and no sideways scroll. The meta line holds no Blog link. The pause button is gone (the footer toggle replaces it, see `motion.md`). There is no back button: the Home crumb (`/`) and the Blog crumb (`/blog`) replace it. Images in the bar and the sidebar (`AuthorPhoto`) stay `loading="lazy"`, or `scripts/preload-guard.ts` fails a post page. Wide layouts (`@container page (min-width: 80em)`, never a viewport media query, so zoomed text keeps the TOC reachable) show two columns, the prose (`--measure`, 37.5rem) and one sticky rail (`.post-rail`, 16rem) holding the TOC only (posts with headings; the index, `/work` and a TOC-less page have no rail and the index and `/work` use the full `--frame-wide` from 60em). The contact keys live in the blog footer: `SiteFooter` with `links` draws the night footer row (© and the Motion switch on the left, the `footer-contacts.tsx` icon keys over `src/lib/footer-links.ts` on the right); see the Footer bullet in `card.md`. The footer's one gradient line is the only rule on the page end (the post end row has no line of its own). The bar row, the header and the reading progress track share one frame (`--frame`: the measure on narrow screens, measure plus gap plus rail from the wide layout), so the bar nav, the title and the prose start on one edge from 48em up. The rail has no line left of it and tree lines on nested h3 items (`data-branch`, `branchOf` in `src/lib/blog/toc.ts`). The TOC has three forms in one `nav.post-toc`: the rail, the drawer (`toc-drawer.tsx` on the shared `ui/drawer.tsx`, opened by any `[data-toc-open]` button; spring slide, drag to dismiss, see **Blog chrome** in `docs/architecture.md`) and the `<details>` list without JS; `toc-spy.tsx` marks the active link in all of them and moves one `.toc-thumb` bar along the rail.
-- The blog chrome has the interior.dev dark look for panels and prose, and the D2 soft tint for every control (`card.md`, Control look). The bar surface (`.blog-bar-glass`, owner pick 2026-10-20, A2 "blur fade") is a full-width 5rem layer behind the bar, `backdrop-filter: blur(10px)` masked by `linear-gradient(#000 35%, transparent)` over `linear-gradient(--bar-tint, transparent)` (`rgb(7 8 15 / 0.4)`), no border, no shadow, always on (the corner rays make the top-left links the hardest contrast case); bar text is `--font-ui`; the bar's "On this page" button (`.blog-bar-toc`) and the "All posts" link (`.post-nav-all`) are `.keycap-host` buttons like the card buttons (36 px high), the other "On this page" button is a `.mat-cap`; pagination is 32 px chevron arrows and 34 px page slots in the D2 look, the current page the hover fill with an edge; the chart table is a bordered `--ui-panel` box (14 px radius, `0 1px 6px` shadow) with a transparent header row and its summary a 26 px `.mat-cap`; the lightbox caption is a floating surface and the buttons are 32 px D2 controls (9 px radius) on a `--ui-scrim`. TOC items are 13px `--ui-stone-400` (active `--ui-stone-100`, 2 px thumb) and the reading line is a `--ui-accent` fill on a `--ui-panel` track. The `--ui-stone-*` and `--ui-scrim` tokens (in `tokens.css`) are the Tailwind stone values and hexes that interior's component files use; use them for parts that copy a component demo, and the `--ui-ink*` tokens for docs-page parts. These parts set `letter-spacing: normal`, as interior does. New chrome in the bar takes these tokens, never `--foreground` or a color-mix of `--background`. Each `.mat-*` part gets a `CanvasText` border under `forced-colors` (box shadows vanish there). Text on the sky (title, meta line, prose) is not part of this.
-- Bar and TOC motion come from the interior ports in `src/components/ui/` (`sticky-header.tsx`, `reading-progress.tsx`, `scroll-spy.tsx`). The bar condenses through two custom properties that `BarSpy` writes on the bar's parent (`--glass`, `--condense`, spring smoothed, a step under `useStill`), not through CSS transitions or scroll-driven animations: a new bar effect reads one of them. The scroll ramp is `--condense`, never `--lift`: the sky probe writes `--lift` on the same title and meta line (ink targets), and sharing the name faded them to 2.2:1 to 3.9:1 contrast. An island that looks up page elements must do it when it reads, not once at mount (the reading progress bar hydrates before the article is parsed). The spy picks the section with `spySection` (`src/lib/blog/toc.ts`), with the landing offset taken from `scroll-padding-top` and the heading's `scroll-margin-top`: if you change either, the spy follows. Reading progress is on posts only and fills from `.prose-blog`.
-- Blog index layout (owner pick 2026-10-20: A2 "featured first, then a calm list", B1 tag chips with counts). `PostList` (`post-list.astro`) takes `feature`; `BlogIndex` sets it on page 1 of every listing (`/blog` and each tag). The first post is then `.post-feature`, a `.mat-panel` card with an eyebrow "Latest" (`en.blog.latest`), a 20 px title, the meta line, text and tags, and its cover (`postCover` in `src/lib/blog/media.ts`, through `BlogImage` with eager loading, `alt=""` as the title sits next to it, and its own `sizes`); cover and text sit side by side from `@container posts (min-width: 40em)`, stacked below; a post without a cover gets the card without the image. The other rows are calm: no panel, `--sp-5` above and below, a `--ui-hairline` line between rows, the text capped at `--measure`. These rules are scoped to `.post-list > .post-row`, because `/work` cards reuse `.post-row`. Covers: `scripts/blog-build.ts` encodes `cover.webp|png|jpg` like any post image (AVIF and WebP at 480, 768 and 1344 px, key `<slug>/cover.webp`), next to the share crops. Test posts (`pnpm dev:many`) each get one of the sky stills as `cover.webp` and a plain one-line description.
-- List rows: the title link stretches over the card with `::after`; anything clickable inside a card (date button, tag chips) needs `position: relative; z-index: 1` to sit above it. Never nest a link in the row link. The card is a `.mat-panel` (`.post-row`, no glow, no `overflow: hidden`), so the date tip is never clipped. Code blocks in posts come from the MDX `pre` override (`src/components/blog/code-block.tsx`: panel, head with the language and a `.copy-key`, `.mat-well` surface around the Shiki `pre`); `PostEffects` mounts `CopyButton` (`src/components/ui/copy-button.tsx`) into each `[data-code-copy]`. Notes are `.mat-panel` boxes. Shiki token colors stay in the `.prose-blog` variables and follow interior's vitesse-dark, with comments and punctuation lifted to `--ui-ink-3` for 4.5:1.
-- Keep `<picture>` a server element in `BlogImage`, inside `BlurUpImage` (`src/components/ui/blur-up-image.tsx`, a plain `span` with no hooks, so it renders in the static MDX markup; `PostEffects` runs `watchBlurUp` on each `[data-blur-up]` at hydration). React preloads every eager `<img>` that a server component renders outside a `<picture>`, so a client wrapper around the `<picture>` makes AVIF browsers also fetch the WebP fallback. After a change, `dist/blog/<slug>.html` must hold no `rel="preload"` with `as="image"`. `scripts/preload-guard.ts` checks this after `astro build` in `pnpm build` and fails the build on a post page that has one (`/` keeps its portrait preload on purpose).
-- Post content motion comes from three interior ports in `src/components/ui/`: `blur-up-image.tsx`, `lightbox.tsx` and `sortable-table.tsx`. The post body is static markup (`renderToStaticMarkup`), so only `PostEffects` is a client part: it finds the markup by selector and attaches the behavior. Blur-up: the wrapper has the image's aspect ratio (so nothing shifts) and the 16 px blur from the manifest as a blurred layer; the real image starts at `data-state="loading"` (blurred, desaturated, scaled 1.06, opacity 0) and develops in 650 ms after `decode()`. The first image of a post (`data-blur-up="eager"`) and any already loaded image are never hidden. `data-instant` (cached, or `stillQuery()` true) removes the transitions, so no extra reduced-motion CSS is needed. Without JS the image just shows. Lightbox: a modal `<dialog class="lightbox">` in a portal from 48em up; the picture flies from the figure (`landing` in `src/lib/blog/lightbox.ts`) and back to wherever the figure is now. Escape zooms out first and then closes; so do a click outside the picture and a swipe or drag of the fitted picture (`isSwipe`). Wheel, `+`, `-`, `0`, arrows and double click zoom and pan up to 4 times. Focus goes to the frame and returns to the figure. Chart tables: `ChartTable` renders a closed `<details class="chart-data">` whose `<summary>` is a `.mat-cap` key with a down chevron drawn in CSS (the native marker is hidden; it turns up when open) and whose body is a bordered panel holding the plain `<table>` (numbers in `data-value`); `PostEffects` reads it, hides it and mounts `SortableTable` next to it, with `<button>`s in the `<th>`s, `aria-sort`, a polite status line and rows that travel with `motion` `layout`. The sort rules are pure and tested in `src/lib/blog/sort-rows.ts`. A new post element that needs this must render static markup with a selector hook and get its behavior in `PostEffects`, never a client component inside the MDX.
-- `BlogImage` sets `sizes="(min-width: 48em) min(37.5rem, calc(100vw - 4rem)), min(37.5rem, calc(100vw - 2.5rem))"`; it should match the prose column (`--measure`, 37.5rem, about 68ch at 15 to 16 px like interior's docs; set in rem, not ch, because a ch width moves when the web font arrives and shifted the article by 0.139 CLS; below 48em the viewport minus 2.5rem limits it).
-- Never edit `public/blog-media/`, `public/blog/`, `public/build.json` or `.blog/`: the prebuild writes them and they are gitignored.
-- When you touch `serializeJsonLd` or any JSON-LD string, check the raw bytes for `<` (see the SEO note in `CLAUDE.md`).
-- IndexNow runs on its own after a push to `main` that touches `content/blog/**`, and `blog-publish.yml` pings after a scheduled go-live; do not ping by hand for a post. It also tells the engines about a deleted post, or one switched back to draft, when the post was public before the push.
+- Pages call `getEntry` and `render()`. The MDX component map is `src/components/blog/mdx-components.tsx`.
+- Components in the map render as static HTML. Props arrive with HTML names, and no `class` reaches a component.
+- The heading anchor sets `data-heading-anchor`. `BlogLink` turns it into the class.
+- Images go through `post-image.astro` and `post-figure.astro` with Astro's `<Picture>` (AVIF and WebP, 480, 768, 1344 px). The first image is eager.
+- Keep `<picture>` a server element. A client wrapper makes AVIF browsers fetch the WebP fallback too.
+- `scripts/preload-guard.ts` fails the build when a post page holds a `rel="preload" as="image"`. Images in the bar and the sidebar stay lazy.
+- The blur placeholder is a 16 px WebP data URI made with sharp (`blurOf`). `PostEffects` develops it in 650 ms (`data-instant` skips it).
+- The share image is drawn by satori at `/blog/<slug>/share.png` (`share.ts`, `src/pages/blog/[slug]/share.png.ts`). Satori cannot read WebP, so the cover goes through sharp first. Pages and feeds link it with `?v=` from the drawn fields (`shareImageUrl`: title, reading time, `updated`), so social previews refresh after an edit. After a cover-only change, move `updated`.
+- Markdown copies are `/blog/<slug>.md` (`plain.ts`). Nothing is written into `public/`.
+- `PostEffects` attaches behavior to static markup by selector: blur-up, the lightbox and sortable chart tables.
+- A new post element renders static markup with a selector hook and gets its behavior in `PostEffects`. Never a client component inside the MDX.
 
-- Scroll bars never show at rest, on any scroller. `src/lib/scroll-fade.ts` (started from `page-router.astro`) sets `data-scrolled` and, for 900 ms after each scroll, `data-scrolling` on the element that scrolls; `globals.css` makes the thumb transparent and fades it in through `scrollbar-color` on `[data-scrolling]`. `router-flags.ts` does not carry these two across a swap. The bar surface has no drop shadow, only the hairline and a 0.75rem fade. Prose, headings, inline code and the post title follow interior's docs page (Geist, 15 px body in `--ui-ink-2`, headings weight 500 with negative tracking, code in a `--ui-well` chip); h2 is 20 px (`--fs-lg`), not interior's 11 px label, so sections stay easy to scan.
-- One header and one scale. Every night page (`/about`, `/work`, the blog index and listings, posts, the 404) gets its header from `BlogHeader`, styled by one `.blog-header` rule set: `--sp-4` above, `--sp-5` below, `--sp-2` between the meta line and the title, a bottom-aligned block of `--head-h` height, the meta line 12 px (`type-chip`), the title `--fs-xl` and from 48em `--fs-2xl`. A new page adds no header rule of its own, and `.post-page` and `.post-layout` start flush under the header. The RSS link in the meta line keeps its hit area through a negative margin, so it does not grow the line. Font sizes and gaps in the three CSS files read the S1 tokens (`--fs-*`, `--sp-*` in `globals.css`); hit areas, control heights and 1 to 3 px nudges stay in rem.
-- Page slides (T3, owner pick 2026-10-20). `src/lib/page-slide.ts` (tested) maps a navigation to `data-slide="left|right"` on `<html>` from `astro:before-preparation`: menu order About, Work, Blog (posts and listings are Blog); a move right slides the new page in from the right; inside one section the browser direction decides (`back` slides in from the left). The home page and the 404 are not in the order, so they get no slide and the home to night sky shot (`sky.md`) is untouched. The flag clears when `viewTransition.finished` settles. While the flag is set, every child of `#main-content` except `.blog-bar` gets `view-transition-name: match-element` with class `page-slide` (`globals.css`): old content leaves in 140 ms ease-in (24 px), new content arrives in 260 ms after a 90 ms delay. The bar, the sky and the dock stay in the root snapshot. The root `animation-duration: 0s` rules for reduced motion and the Motion pause cover the slide too. Content that is scrolled under the bar can pass over it for the 140 ms exit.
-- On a fine pointer `html` has `overscroll-behavior-y: none` (`globals.css`), so a trackpad scroll past the top or bottom shows no gap between the bar and the fixed sky; phones keep pull to refresh.
+## Sky, header and bar
+
+- The blog sky mounts once, in `BlogLayout.astro` through `space-background.astro`, and stays mounted across routes. Never mount a second one.
+- `/work` and `/about` use this layout. `isSitePage` in `slug.ts` lists the routes that share the sky.
+- Give a new blog route the shared `BlogHeader` (`blog-header.astro`) and its crumbs, so the bar, the title morph and the ink targets work.
+- Only the header title and meta line sit on the bright sky. They carry `text-sky` with `postInkTargets`. New header text needs a target in `sky-ink.ts` and an `--ink` base in `globals.css`.
+- The prose sits on the faded sky. Cards are solid panels.
+- Links out of the blog layout (a feed, a file) keep `data-astro-reload`. `BlogLink` adds it.
+- The bar never wraps. Its left end is one `nav[aria-label="Site"]`: the breadcrumb list (`crumbs.ts`) and the other sections after middle dots (`navOthers`).
+- The last crumb truncates. Below 40em the name is hidden. Below 15em the current crumb and, on deep pages, the section links go. Below 11em the section links go everywhere.
+- The bar is `--bar-h` (3rem), plus `--bar-sub-h` (0.75rem) on a post for the reading progress track. In-page jumps clear it through `scroll-padding-top`.
+- `BarSpy` writes `--glass` and `--condense` on the bar's parent. A new bar effect reads one of them. Never use `--lift` for it: the sky probe writes `--lift`.
+- The bar surface (`.blog-bar-glass`) is a 5rem blur-fade layer with no border and no shadow.
+- The TOC has three forms in one `nav.post-toc`: the rail, the drawer and a `<details>` list without JS. From `@container page (min-width: 80em)` the rail shows.
+- The footer holds the contact keys. `BlogLayout.astro` renders it once, outside `main`.
+
+## Look
+
+- The blog chrome follows interior.dev: dark panels, D2 soft tint for controls (see `card.md`), Geist.
+- Use the `--ui-stone-*` tokens for parts that copy an interior demo and `--ui-ink*` for docs-page parts.
+- New chrome in the bar takes these tokens, never `--foreground`.
+- Index page 1 shows the newest post as a `.post-feature` card with its cover. Other rows are calm: no panel, a hairline between rows.
+- Anything clickable inside a card needs `position: relative; z-index: 1` above the stretched title link. Never nest a link in the row link.
+- Code blocks are a `.mat-panel` with a head, the language and a copy key. Notes are `.mat-panel` boxes.
+- Scroll bars never show at rest (`scroll-fade.ts`).
+- Page slides: About, Work, Blog slide left or right by menu order (`page-slide.ts`). Home and the 404 do not slide.
+- On a fine pointer `html` has `overscroll-behavior-y: none`.
+- Every night page gets its header from `BlogHeader`. A new page adds no header rule of its own.
+
+## Checks
+
+- Run `pnpm exec prettier --write content/blog` after editing a post. It wraps long JSX props.
+- Never edit `public/build.json` or generated output. `build.json` comes from `src/pages/build.json.ts`.
+- When you touch `serializeJsonLd` or any JSON-LD string, check the raw bytes for `<`.
+- IndexNow runs after a push that touches `content/blog/**`. Do not ping by hand for a post.

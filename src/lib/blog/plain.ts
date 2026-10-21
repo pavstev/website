@@ -10,12 +10,15 @@ import * as z from "zod";
 
 import { chartLines, isChartType, readChartFile } from "./chart-data.ts";
 import { diagramText } from "./diagrams.ts";
+import { absoluteUrl } from "./images.ts";
 import { parseMdx, type SourceNode } from "./mdx-tree.ts";
-import { absoluteUrl, mediaUrl } from "./media.ts";
 import { type PostSource } from "./posts.ts";
+
+export type ImageUrl = (src: string) => string;
 
 interface Context {
   body: string;
+  imageUrl: ImageUrl;
   source: PostSource;
 }
 
@@ -93,7 +96,6 @@ const jsxFallback = (
   node: SourceNode,
   block: boolean
 ): string => {
-  const { slug } = context.source;
   switch (node.name ?? "") {
     case "Chart": {
       return [attribute(node, "caption"), chartList(context, node)]
@@ -106,7 +108,7 @@ const jsxFallback = (
         .join("\n\n");
     }
     case "Figure": {
-      const image = `![${escapeAlt(attribute(node, "alt"))}](${mediaUrl(slug, attribute(node, "src"))})`;
+      const image = `![${escapeAlt(attribute(node, "alt"))}](${context.imageUrl(attribute(node, "src"))})`;
       const caption = attribute(node, "caption");
       return caption === "" ? image : `${image}\n\n*${caption}*`;
     }
@@ -169,7 +171,7 @@ const rewrite = (context: Context, node: SourceNode): string => {
     return absoluteLink(context, node);
   }
   return node.type === "image" && node.url !== undefined
-    ? `![${escapeAlt(node.alt ?? "")}](${mediaUrl(context.source.slug, node.url)})`
+    ? `![${escapeAlt(node.alt ?? "")}](${context.imageUrl(node.url)})`
     : spliced(context, node.children ?? [], startOf(node), endOf(node));
 };
 
@@ -189,15 +191,15 @@ const spliced = (
   return output + context.body.slice(cursor, end);
 };
 
-const plainBody = (source: PostSource): string => {
+const plainBody = (source: PostSource, imageUrl: ImageUrl): string => {
   const tree = parseMdx(source.body);
-  const context = { body: source.body, source };
+  const context = { body: source.body, imageUrl, source };
   return spliced(context, tree.children ?? [], 0, source.body.length)
     .replaceAll(/\n{3,}/g, "\n\n")
     .trim();
 };
 
-export const toMarkdown = (source: PostSource): string => {
+export const toMarkdown = (source: PostSource, imageUrl: ImageUrl): string => {
   const { meta } = source;
   const header = [
     `# ${meta.title}`,
@@ -209,7 +211,7 @@ export const toMarkdown = (source: PostSource): string => {
     "",
     meta.description,
   ];
-  return `${header.join("\n")}\n\n${plainBody(source)}\n`;
+  return `${header.join("\n")}\n\n${plainBody(source, imageUrl)}\n`;
 };
 
 const linkProperties = ["href", "src"] as const;
@@ -227,7 +229,7 @@ const rehypeAbsolute =
     });
   };
 
-export const toFeedHtml = (source: PostSource): string =>
+export const toFeedHtml = (source: PostSource, imageUrl: ImageUrl): string =>
   String(
     unified()
       .use(remarkParse)
@@ -235,5 +237,5 @@ export const toFeedHtml = (source: PostSource): string =>
       .use(remarkRehype)
       .use(rehypeAbsolute, { base: source.meta.url })
       .use(rehypeStringify)
-      .processSync(plainBody(source))
+      .processSync(plainBody(source, imageUrl))
   ).replaceAll("]]>", "]]&#x3E;");

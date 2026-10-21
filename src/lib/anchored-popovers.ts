@@ -9,6 +9,7 @@ import {
   size,
 } from "@floating-ui/dom";
 
+import { clamp } from "./math.ts";
 import { finePointerQuery } from "./media.ts";
 
 const edge = 12;
@@ -42,7 +43,7 @@ export const popoverOrigin = (
   anchorX: number,
   { height, width }: Size
 ): string => {
-  const x = Math.min(Math.max(anchorX, 0), width);
+  const x = clamp(anchorX, 0, width);
   const y = side === "top" ? height : 0;
   return `${String(Math.round(x))}px ${String(Math.round(y))}px`;
 };

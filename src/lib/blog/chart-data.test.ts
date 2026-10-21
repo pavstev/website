@@ -11,7 +11,7 @@ import {
   niceTicks,
   pairChange,
   parseChartData,
-  readChartData,
+  readChartFile,
   spreadLabels,
   tickLabels,
 } from "./chart-data.ts";
@@ -115,30 +115,23 @@ describe("parseChartData", () => {
   });
 });
 
-describe("readChartData", () => {
+describe("readChartFile", () => {
   it("reads a JSON file from the post folder", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "chart-data-"));
-    mkdirSync(path.join(root, "content/blog/post/data"), { recursive: true });
-    writeFileSync(
-      path.join(root, "content/blog/post/data/speed.json"),
-      JSON.stringify(sample)
-    );
-    assert.deepEqual(
-      readChartData("post", "data/speed.json", "pair", root),
-      sample
-    );
+    const dir = mkdtempSync(path.join(tmpdir(), "chart-data-"));
+    mkdirSync(path.join(dir, "data"), { recursive: true });
+    writeFileSync(path.join(dir, "data/speed.json"), JSON.stringify(sample));
+    assert.deepEqual(readChartFile(dir, "data/speed.json", "pair"), sample);
   });
 
   it("refuses paths that leave the post folder", () => {
     assert.throws(
-      () => readChartData("post", "../other/data.json", "bar"),
+      () => readChartFile("/post", "../other/data.json", "bar"),
       /chart src/
     );
     assert.throws(
-      () => readChartData("post", "/etc/data.json", "bar"),
+      () => readChartFile("/post", "/etc/data.json", "bar"),
       /chart src/
     );
-    assert.throws(() => readChartData("../post", "data.json", "bar"), /slug/);
   });
 });
 

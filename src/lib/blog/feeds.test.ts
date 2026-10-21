@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
-import path from "node:path";
 import { describe, it } from "node:test";
 
 import { jsonFeed, loadFeedPosts, rfc822, rssXml } from "./feeds.ts";
-import { postMeta } from "./post-fixture.ts";
+import { type ImageUrl } from "./plain.ts";
+import { postMeta, validSources } from "./post-fixture.ts";
 import { type PostMeta } from "./schema.ts";
 
 const site = "https://stevanpavlovic.com";
-const valid = path.join(import.meta.dirname, "fixtures", "valid");
 
 const meta = (over: Partial<PostMeta>): PostMeta =>
   postMeta({
@@ -188,9 +187,14 @@ describe("jsonFeed", () => {
   });
 });
 
+const imageUrlOf = (): Promise<ImageUrl> => Promise.resolve((src) => src);
+
+const loadValid = (drafts: boolean): ReturnType<typeof loadFeedPosts> =>
+  loadFeedPosts({ drafts }, site, imageUrlOf, validSources);
+
 describe("loadFeedPosts", () => {
-  it("leaves drafts out of production feeds", () => {
-    const production = loadFeedPosts({ drafts: false }, site, valid);
+  it("leaves drafts out of production feeds", async () => {
+    const production = await loadValid(false);
     assert.deepEqual(
       production.map((post) => post.meta.slug),
       ["alpha", "beta"]
@@ -199,16 +203,17 @@ describe("loadFeedPosts", () => {
     assert.doesNotMatch(rssXml(production, site), /gamma/i);
   });
 
-  it("includes drafts in a preview", () => {
-    const preview = loadFeedPosts({ drafts: true }, site, valid);
+  it("includes drafts in a preview", async () => {
+    const preview = await loadValid(true);
     assert.deepEqual(
       preview.map((post) => post.meta.slug),
       ["gamma", "alpha", "beta"]
     );
   });
 
-  it("renders feed HTML and the Markdown copy URL", () => {
-    const [first] = loadFeedPosts({ drafts: false }, site, valid);
+  it("renders feed HTML, the share image and the Markdown copy URL", async () => {
+    const [first] = await loadValid(false);
+    assert.ok(first?.image?.startsWith(`${site}/blog/alpha/share.png?v=`));
     assert.equal(first?.markdownUrl, `${site}/blog/alpha.md`);
     assert.match(first?.html ?? "", /<p>/);
   });

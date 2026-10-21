@@ -1,11 +1,15 @@
 import type { ComponentPropsWithoutRef, ReactElement } from "react";
 
+import { anchorAttribute, anchorClass } from "@/lib/blog/anchors";
 import { isExternalHref, leavesBlog } from "@/lib/blog/links";
 import { en } from "@/lib/i18n";
 
-type BlogLinkProps = ComponentPropsWithoutRef<"a">;
+type BlogLinkProps = ComponentPropsWithoutRef<"a"> & {
+  [anchorAttribute]?: string;
+};
 
 export const BlogLink = ({
+  [anchorAttribute]: anchor,
   children,
   href = "",
   ...rest
@@ -18,6 +22,7 @@ export const BlogLink = ({
   ) : (
     <a
       {...rest}
+      className={anchor === undefined ? undefined : `${anchorClass} focus-ring`}
       data-astro-reload={leavesBlog(href) ? "" : undefined}
       href={href}
     >

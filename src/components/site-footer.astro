@@ -1,6 +1,6 @@
 ---
 import { FooterContacts } from "@/components/footer-contacts";
-import { MotionSwitch } from "@/components/motion-switch";
+import MotionSwitch from "@/components/motion-switch.astro";
 import { SkyControls } from "@/components/sky-controls";
 import { blogLive } from "@/lib/blog/live";
 import { footerLinks } from "@/lib/footer-links";
@@ -32,7 +32,7 @@ const facts = links ? await getResumeFacts() : undefined;
           </span>
         </span>
         <span class="footer-motion">
-          <MotionSwitch client:load />
+          <MotionSwitch />
         </span>
       </div>
       {facts && <FooterContacts client:idle facts={facts} links={keys} />}
@@ -49,7 +49,9 @@ const facts = links ? await getResumeFacts() : undefined;
         </span>
       </div>
       <div class="footer-tier">
-        <SkyControls client:load />
+        <SkyControls client:idle={{ timeout: 1000 }}>
+          <MotionSwitch hint />
+        </SkyControls>
         <a
           class="footer-credit focus-ring"
           href={en.weather.creditUrl}

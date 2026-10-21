@@ -1,3 +1,4 @@
+import { clamp01 } from "./math.ts";
 import { type WeatherName } from "./weather.ts";
 
 export interface RangeMark<T> {
@@ -126,7 +127,7 @@ export const stopBlend = (stop: number): StopBlend => {
 };
 
 export const rangeShare = (value: number, max: number): number =>
-  max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
+  max > 0 ? clamp01(value / max) : 0;
 
 export const pointerValue = (
   x: number,

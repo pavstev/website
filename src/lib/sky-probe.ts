@@ -1,4 +1,5 @@
 import { type UniformSink } from "./uniform-sink.ts";
+import { clampedTexture } from "./webgl.ts";
 
 export interface ProbeBox {
   bottom: number;
@@ -39,10 +40,7 @@ export const createSkyProbe = (
     gl.UNSIGNED_BYTE,
     null
   );
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  clampedTexture(gl, gl.NEAREST);
   gl.bindFramebuffer(gl.FRAMEBUFFER, buffer);
   gl.framebufferTexture2D(
     gl.FRAMEBUFFER,

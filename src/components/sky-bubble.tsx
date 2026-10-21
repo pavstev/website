@@ -121,8 +121,6 @@ export const SkyBubble = (): null | ReactElement => {
       }
       const open = mayAsk({
         asked: wasAsked(),
-        crawler: false,
-        home: true,
         lightLoad: prefersLightLoad(),
         pinned:
           instantOverride(location.search) !== undefined ||

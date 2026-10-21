@@ -4,6 +4,8 @@ import { visit } from "unist-util-visit";
 
 export const anchorClass = "heading-anchor";
 
+export const anchorAttribute = "data-heading-anchor";
+
 const footnoteLabel = "footnote-label";
 
 interface AnchorOptions {
@@ -23,7 +25,7 @@ const plainText = (node: Element): string =>
     .replaceAll(/\s+/g, " ")
     .trim();
 
-export const sectionHeading = (
+const sectionHeading = (
   node: Element
 ): undefined | { depth: 2 | 3; id: string } => {
   const { id } = node.properties;
@@ -58,6 +60,7 @@ export const rehypeHeadingAnchors =
       node.children.push({
         children: [{ type: "text", value: "#" }],
         properties: {
+          [anchorAttribute]: "",
           ariaLabel: label.replace("{heading}", () => plainText(node)),
           className: [anchorClass, "focus-ring"],
           href: `#${id}`,

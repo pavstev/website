@@ -19,17 +19,27 @@ const languageOf = (children: ReactNode): string => {
   return "text";
 };
 
+type CodeBlockProps = ComponentPropsWithoutRef<"pre"> & {
+  tabindex?: number | string;
+};
+
 export const CodeBlock = ({
   children,
+  tabindex,
   ...props
-}: ComponentPropsWithoutRef<"pre">): ReactElement => (
+}: CodeBlockProps): ReactElement => (
   <div className="code-block mat-panel">
     <div className="code-head">
       <span className="code-lang">{languageOf(children)}</span>
       <span data-code-copy="" />
     </div>
     <div className="code-surface mat-well">
-      <pre {...props}>{children}</pre>
+      <pre
+        {...props}
+        tabIndex={tabindex === undefined ? undefined : Number(tabindex)}
+      >
+        {children}
+      </pre>
     </div>
   </div>
 );

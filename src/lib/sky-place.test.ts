@@ -22,31 +22,7 @@ import {
   startPlace,
   viennaPlace,
 } from "./sky-place.ts";
-
-const memoryStore = (entries: Record<string, string> = {}): PlaceStore => {
-  const map = new Map(Object.entries(entries));
-  return {
-    getItem: (key) => map.get(key) ?? null,
-    removeItem: (key) => {
-      map.delete(key);
-    },
-    setItem: (key, value) => {
-      map.set(key, value);
-    },
-  };
-};
-
-const throwingStore: PlaceStore = {
-  getItem: () => {
-    throw new Error("blocked");
-  },
-  removeItem: () => {
-    throw new Error("blocked");
-  },
-  setItem: () => {
-    throw new Error("blocked");
-  },
-};
+import { memoryStore, throwingStore } from "./store-fixtures.ts";
 
 const berlin: SkyPlace = {
   kind: "visitor",

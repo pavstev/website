@@ -2,6 +2,7 @@ import {
   type ComponentType,
   lazy,
   type ReactElement,
+  type ReactNode,
   Suspense,
   useCallback,
   useEffect,
@@ -15,7 +16,6 @@ import { flushSync } from "react-dom";
 import type { SkyGlobeProps } from "@/components/sky-globe";
 
 import { Icon } from "@/components/icon";
-import { MotionSwitch } from "@/components/motion-switch";
 import { SkyRange } from "@/components/sky-range";
 import { initAnchoredPopovers } from "@/lib/anchored-popovers";
 import { isCrawler } from "@/lib/crawler";
@@ -158,7 +158,11 @@ const placeOf = (raw: string): SkyPlace => {
 
 let earlierMine: SkyPlace | undefined;
 
-export const SkyControls = (): ReactElement => {
+export const SkyControls = ({
+  children,
+}: {
+  children: ReactNode;
+}): ReactElement => {
   const raw = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   const place = placeOf(raw);
   const preview = useSyncExternalStore(
@@ -260,6 +264,7 @@ export const SkyControls = (): ReactElement => {
     };
     node?.addEventListener("beforetoggle", onBefore);
     node?.addEventListener("toggle", onToggle);
+    if (node?.matches(":popover-open")) onToggle();
     return () => {
       alive.current = false;
       clearTimeout(timer.current);
@@ -683,9 +688,7 @@ export const SkyControls = (): ReactElement => {
             </>
           )}
         </div>
-        <div className="sky-motion">
-          <MotionSwitch hint />
-        </div>
+        <div className="sky-motion">{children}</div>
       </div>
     </span>
   );

@@ -1,0 +1,36 @@
+---
+import { en } from "@/lib/i18n";
+
+interface Props {
+  hint?: boolean;
+}
+
+const { hint = false } = Astro.props;
+---
+
+<span class="motion-switch">
+  <span class="motion-switch-text">
+    <span id="motion-switch-label">{en.motion.label}</span>
+    {hint && (
+      <span class="motion-switch-hint" id="motion-switch-hint">
+        {en.motion.hint}
+      </span>
+    )}
+  </span>
+  <button
+    aria-checked="true"
+    aria-describedby={hint ? "motion-switch-hint" : undefined}
+    aria-labelledby="motion-switch-label"
+    class="motion-switch-track focus-ring"
+    data-motion-switch=""
+    role="switch"
+    type="button"
+  >
+    <span aria-hidden="true" class="motion-switch-thumb"></span>
+  </button>
+</span>
+<script>
+  import { watchMotionSwitches } from "@/lib/motion-switch";
+
+  watchMotionSwitches();
+</script>
