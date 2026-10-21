@@ -172,6 +172,7 @@ const storyBody = (counts: SceneCounts, portrait: string): string => `
 </div>`;
 
 const waitForAssets = async (): Promise<void> => {
+  await Promise.all([...document.fonts].map(async (face) => face.load()));
   await document.fonts.ready;
   await Promise.all([...document.images].map(async (image) => image.decode()));
 };
