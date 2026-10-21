@@ -248,6 +248,8 @@ export const en = {
     forksLabel: "forks",
     headingOne: "{count} open source project",
     headingOther: "{count} open source projects",
+    more: "+{count} more",
+    moreLabel: "Show {count} more",
     newTab: "Opens in a new tab",
     starsLabel: "stars",
   },

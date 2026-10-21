@@ -1181,7 +1181,7 @@ html:has(:is(.drawer, .lightbox)[open]) {
   overscroll-behavior: contain;
 }
 
-:is(.privacy-panel, .sky-panel, .topic-panel) {
+:is(.privacy-panel, .sky-panel, .topic-panel, .tech-pop) {
   --pop-y: var(--pop-dist);
   opacity: 0;
   transform: scale(var(--pop-scale-out));
@@ -1207,13 +1207,13 @@ html:has(:is(.drawer, .lightbox)[open]) {
   }
 }
 
-:is(.sky-panel, .topic-panel)[data-floating] {
+:is(.sky-panel, .topic-panel, .tech-pop)[data-floating] {
   inset: auto;
   margin: 0;
 }
 
 @starting-style {
-  :is(.privacy-panel, .sky-panel, .topic-panel):popover-open {
+  :is(.privacy-panel, .sky-panel, .topic-panel, .tech-pop):popover-open {
     opacity: 0;
     transform: translateY(var(--pop-y)) scale(var(--pop-scale-in));
   }

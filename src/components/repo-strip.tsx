@@ -5,9 +5,7 @@ import type { Repo, RepoLanguage } from "@/lib/github";
 import { CompoundText } from "@/components/compound-text";
 import { Icon } from "@/components/icon";
 import { RepoTags } from "@/components/repo-tags";
-import { TechTag } from "@/components/tech-tag";
 import { en } from "@/lib/i18n";
-import { languageTech } from "@/lib/tech-logos";
 
 const mainLanguage = (repo: Repo): RepoLanguage | undefined =>
   repo.languages.find(({ name }) => name === repo.language) ??
@@ -44,24 +42,20 @@ const RepoFacts = ({ repo }: { repo: Repo }): null | ReactElement =>
     </span>
   ) : null;
 
-const RepoName = ({ newTabId, repo }: RepoProps): ReactElement => (
-  <h3 className="post-row-title work-card-name">
-    <a
-      aria-describedby={newTabId}
-      className="post-row-link focus-ring"
-      href={repo.url}
-      rel="noopener noreferrer"
-      target="_blank"
-    >
-      {repo.name}
-    </a>
-  </h3>
-);
-
-const FeaturedRepo = ({ newTabId, repo }: RepoProps): ReactElement => (
-  <li className="post-row work-card work-featured mat-panel" style={tone(repo)}>
+const RepoCard = ({ newTabId, repo }: RepoProps): ReactElement => (
+  <li className="post-row work-card mat-panel" style={tone(repo)}>
     <div className="work-card-head">
-      <RepoName newTabId={newTabId} repo={repo} />
+      <h3 className="post-row-title work-card-name">
+        <a
+          aria-describedby={newTabId}
+          className="post-row-link focus-ring"
+          href={repo.url}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {repo.name}
+        </a>
+      </h3>
       <span className="work-card-side">
         <RepoFacts repo={repo} />
         <Icon
@@ -75,28 +69,13 @@ const FeaturedRepo = ({ newTabId, repo }: RepoProps): ReactElement => (
     <p className="post-row-text">
       <CompoundText text={repo.description} />
     </p>
-    <RepoTags languages={repo.languages} topics={repo.topics} />
+    <RepoTags
+      id={`tech-${repo.name}`}
+      languages={repo.languages}
+      topics={repo.topics}
+    />
   </li>
 );
-
-const SmallRepo = ({ newTabId, repo }: RepoProps): ReactElement => {
-  const language = mainLanguage(repo);
-  const hasFacts = repo.stars > 0 || repo.forks > 0;
-  return (
-    <li className="post-row work-card mat-panel" style={tone(repo)}>
-      <RepoName newTabId={newTabId} repo={repo} />
-      <p className="post-row-text">
-        <CompoundText text={repo.description} />
-      </p>
-      {language || hasFacts ? (
-        <div className="work-card-foot">
-          {language ? <TechTag tech={languageTech(language)} /> : null}
-          <RepoFacts repo={repo} />
-        </div>
-      ) : null}
-    </li>
-  );
-};
 
 interface RepoStripProps {
   newTabId: string;
@@ -106,14 +85,10 @@ interface RepoStripProps {
 export const RepoStrip = ({
   newTabId,
   repos,
-}: RepoStripProps): ReactElement => {
-  const [featured, ...rest] = repos;
-  return (
-    <ol className="work-repos" data-repos="">
-      {featured ? <FeaturedRepo newTabId={newTabId} repo={featured} /> : null}
-      {rest.map((repo) => (
-        <SmallRepo key={repo.url} newTabId={newTabId} repo={repo} />
-      ))}
-    </ol>
-  );
-};
+}: RepoStripProps): ReactElement => (
+  <ol className="work-repos" data-repos="">
+    {repos.map((repo) => (
+      <RepoCard key={repo.url} newTabId={newTabId} repo={repo} />
+    ))}
+  </ol>
+);
