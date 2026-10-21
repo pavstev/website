@@ -40,6 +40,7 @@ const jsonLd = serializeJsonLd(
     imagesizes="(min-width: 768px) 154px, 134px"
     fetchpriority="high"
   />
+  <link slot="head" rel="expect" href="#card-end" blocking="render" />
   <script type="application/ld+json" is:inline set:html={jsonLd}></script>
   <SpaceBackground />
   <main
@@ -72,6 +73,7 @@ const jsonLd = serializeJsonLd(
       </div>
       <CardSections repos={repos} />
       <SiteFooter className="card-footer fade-up mt-(--card-gap-footer) delay-4" />
+      <span id="card-end" hidden></span>
     </div>
   </main>
   <PageDock client:idle={{ timeout: 1000 }} email={contact.email} />
