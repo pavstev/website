@@ -414,6 +414,18 @@ const writeIfChanged = async (
   return true;
 };
 
+const settleTries = 8;
+
+const settled = async (
+  draw: () => Promise<Buffer>,
+  last: Buffer,
+  left = settleTries
+): Promise<Buffer | undefined> => {
+  const next = await draw();
+  if (next.equals(last)) return next;
+  return left > 1 ? settled(draw, next, left - 1) : undefined;
+};
+
 const started = performance.now();
 const portrait = await dataUrl(
   path.join(publicDir, personalData.portrait.url),
@@ -468,12 +480,12 @@ const browser = await chromium.launch({
 try {
   const page = await browser.newPage({ deviceScaleFactor: 1 });
   for (const spec of specs) {
-    const passes = await Array.fromAsync([1, 2, 3], async () =>
-      render(page, spec, faces)
-    );
-    const [, bytes, again] = passes;
-    if (!bytes || !again || !bytes.equals(again))
-      throw new Error(`${spec.file} differs between two renders`);
+    const draw = async (): Promise<Buffer> => render(page, spec, faces);
+    const bytes = await settled(draw, await draw());
+    if (!bytes)
+      throw new Error(
+        `${spec.file} differs between renders after ${String(settleTries)} tries`
+      );
     const changed = await writeIfChanged(spec.file, bytes);
     console.warn(
       `${changed ? "Updated" : "Unchanged"} ${spec.file} (${String(spec.width)}x${String(spec.height)}, ${String(Math.round(bytes.length / 1024))} KB)`
