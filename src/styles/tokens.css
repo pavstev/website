@@ -20,7 +20,6 @@
     --cool-500: #767d95;
     --cool-800: #1f2333;
     --cool-850: #171a27;
-    --cool-900: #0f111b;
 
     --day-50: #fafbfe;
     --day-650: #3a3e4c;
@@ -83,7 +82,6 @@
     --glow-purple: rgb(180 140 255 / 0.12);
     --glow-green: rgb(94 226 181 / 0.08);
 
-    --ui-bezel: var(--cool-900);
     --ui-panel: var(--cool-850);
     --ui-well: var(--cool-800);
     --ui-hairline: rgb(255 255 255 / 0.16);
@@ -107,9 +105,6 @@
     --ui-key-error: var(--red-400);
     --ui-scrim: rgb(7 8 15 / 0.8);
     --ui-scrim-soft: color-mix(in oklab, var(--black) 55%, transparent);
-    --ui-shadow-lift:
-      0 1px 2px rgb(0 0 0 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.05),
-      0 0 0 1px rgb(255 255 255 / 0.05);
     --ui-shadow-well:
       inset 0 1px 3px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(255 255 255 / 0.03);
     --ui-shadow-row:
