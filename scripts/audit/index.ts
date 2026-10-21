@@ -25,6 +25,7 @@ import runtime from "./check-runtime.ts";
 import seo from "./check-seo.ts";
 import shots from "./check-shots.ts";
 import sizes from "./check-sizes.ts";
+import story from "./check-story.ts";
 import worker from "./check-worker.ts";
 import { closeBrowser, root, setWorkers, sitemapTags, sleep } from "./lib.ts";
 import { classify, notFoundPath } from "./pages.ts";
@@ -40,6 +41,7 @@ const checks: Record<string, Check> = {
   seo,
   shots,
   sizes,
+  story,
   worker,
 };
 const checkNames = Object.keys(checks);

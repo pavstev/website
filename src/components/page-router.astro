@@ -9,10 +9,12 @@ import { ClientRouter } from "astro:transitions";
   import { watchPageSlide } from "@/lib/page-slide";
   import { keepPageFlags } from "@/lib/router-flags";
   import { watchScrollFade } from "@/lib/scroll-fade";
+  import { watchStoryMorph } from "@/lib/story-morph";
 
   keepPageFlags();
   watchScrollFade();
   watchPageSlide();
+  watchStoryMorph();
   morphTitles();
   startLinkPrefetch();
 </script>

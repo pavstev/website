@@ -6,6 +6,7 @@ import { CompoundText } from "@/components/compound-text";
 import { Icon } from "@/components/icon";
 import { RepoTags } from "@/components/repo-tags";
 import { en } from "@/lib/i18n";
+import { storyPath } from "@/lib/work";
 
 const mainLanguage = (repo: Repo): RepoLanguage | undefined =>
   repo.languages.find(({ name }) => name === repo.language) ??
@@ -42,40 +43,53 @@ const RepoFacts = ({ repo }: { repo: Repo }): null | ReactElement =>
     </span>
   ) : null;
 
-const RepoCard = ({ newTabId, repo }: RepoProps): ReactElement => (
-  <li className="post-row work-card mat-panel" style={tone(repo)}>
-    <div className="work-card-head">
-      <h3 className="post-row-title work-card-name">
-        <a
-          aria-describedby={newTabId}
-          className="post-row-link focus-ring"
-          href={repo.url}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          {repo.name}
+const RepoCard = ({ newTabId, repo }: RepoProps): ReactElement => {
+  const story = storyPath(repo.name);
+  return (
+    <li
+      className="post-row work-card mat-panel"
+      data-story-path={story}
+      style={tone(repo)}
+    >
+      <div className="work-card-head">
+        <h3 className="post-row-title work-card-name">
+          <a
+            aria-describedby={newTabId}
+            className="post-row-link focus-ring"
+            href={repo.url}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {repo.name}
+          </a>
+        </h3>
+        <span className="work-card-side">
+          <RepoFacts repo={repo} />
+          <Icon
+            aria-hidden
+            className="work-card-mark"
+            name="lucide:arrow-up-right"
+            size="1rem"
+          />
+        </span>
+      </div>
+      <p className="post-row-text">
+        <CompoundText text={repo.description} />
+      </p>
+      <RepoTags
+        id={`tech-${repo.name}`}
+        languages={repo.languages}
+        topics={repo.topics}
+      />
+      {story ? (
+        <a className="work-card-story focus-ring" href={story}>
+          {en.repos.seeStory}
+          <Icon aria-hidden name="lucide:arrow-right" size="0.875rem" />
         </a>
-      </h3>
-      <span className="work-card-side">
-        <RepoFacts repo={repo} />
-        <Icon
-          aria-hidden
-          className="work-card-mark"
-          name="lucide:arrow-up-right"
-          size="1rem"
-        />
-      </span>
-    </div>
-    <p className="post-row-text">
-      <CompoundText text={repo.description} />
-    </p>
-    <RepoTags
-      id={`tech-${repo.name}`}
-      languages={repo.languages}
-      topics={repo.topics}
-    />
-  </li>
-);
+      ) : null}
+    </li>
+  );
+};
 
 interface RepoStripProps {
   newTabId: string;

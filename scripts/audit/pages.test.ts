@@ -10,4 +10,6 @@ it("classify maps paths to page kinds, first match wins", () => {
   assert.equal(classify("/blog/page/2"), "listing");
   assert.equal(classify("/blog/hello-world"), "post");
   assert.equal(classify("/about"), "other");
+  assert.equal(classify("/work"), "other");
+  assert.equal(classify("/work/dotfiles"), "story");
 });

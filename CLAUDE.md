@@ -8,7 +8,7 @@ A Cloudflare Worker serves `/mcp` and `/where`.
 This repo inherits the harness (commits, secrets, workflow, writing) from `~/dotfiles`.
 This file holds project facts only. Long notes are in `docs/architecture.md`.
 Path rules in `.claude/rules/` load when you touch matching files:
-`card.md` (card, footer, /work), `motion.md` (motion switch, dock, privacy), `sky.md` (sky, shaders, globe), `blog.md` (posts, blog code).
+`card.md` (card, footer, /work), `motion.md` (motion switch, dock, privacy), `sky.md` (sky, shaders, globe), `blog.md` (posts, blog code), `story.md` (the `/work/dotfiles` story).
 
 ## Stack
 
@@ -22,6 +22,7 @@ Path rules in `.claude/rules/` load when you touch matching files:
 
 - `GITHUB_TOKEN` is required for the build. It is a Cloudflare build variable. Locally `github.ts` asks `gh auth token`. A non-200 answer fails the build on purpose.
 - The résumé is the committed `src/data/cv.json`. Keep `basics.phone` empty. Move `updatedAt` on every edit: it is the sitemap `lastmod` and the `ProfilePage` `dateModified`.
+- The dotfiles story copy is `src/data/dotfiles-story.ts`. Move `storyMeta.updatedAt` on every copy edit.
 - The owner has no iPhone. Never suggest a real-iPhone check. Emulate WebKit.
 - Every push to `main` deploys on Cloudflare. Never run `wrangler deploy` or `pnpm deploy`. Never deploy by hand.
 - Push only when asked. After a push, watch CI and the Cloudflare build. Wait until `https://stevanpavlovic.com/build.json` shows the new `sha` before you call it live.
@@ -101,15 +102,18 @@ pnpm profile:build  # build the GitHub profile files into ./.profile-out
 ## Layout
 
 ```text
-src/pages/         index, work, about, 404, blog/, build.json, cv.json, llms.txt, resume.pdf, sitemap.xml
+src/pages/         index, work, work/dotfiles, about, 404, blog/, build.json, cv.json, llms.txt, resume.pdf, sitemap.xml
 src/layouts/       Base.astro (card), BlogLayout.astro (night pages)
 src/components/    card parts, site-footer.astro, sky-controls, sky-globe, space-background.astro, ui/
 src/components/blog/  bar, header, TOC, mdx-components.tsx, charts, diagrams
+src/components/story/ the dotfiles story stage, steps and rail
 src/lib/           sky-*, weather*, place*, motion-pause, home-effects, github, cv, i18n, theme, products, work
 src/lib/blog/      schema, posts, schedule, dates, reading, plain, feeds, share, crumbs, slug
+src/lib/story/     blueprint geometry, svg and gl, story mount, scroll, pointer, rail, copy rules, metadata
 src/content.config.ts   blog and about collections
 src/data/cv.json   the résumé (hand-edited)
-src/styles/        tokens.css, globals.css, card.css, blog.css
+src/data/dotfiles-story.ts   the dotfiles story copy (hand-edited)
+src/styles/        tokens.css, globals.css, card.css, blog.css, story.css
 src/profile/       builds the pavstev/pavstev README
 content/           blog/<slug>/index.mdx, about/index.mdx
 worker/            index, router, mcp, where, facts, http

@@ -143,7 +143,7 @@ const headers = (auth?: string): Record<string, string> => ({
   "X-GitHub-Api-Version": "2022-11-28",
 });
 
-const request = async (
+export const request = async (
   path: string,
   fetchImpl: typeof fetch
 ): Promise<unknown> => {
@@ -157,7 +157,7 @@ const request = async (
   return response.json();
 };
 
-const graph = async (
+export const graph = async (
   query: string,
   variables: Record<string, string>,
   fetchImpl: typeof fetch

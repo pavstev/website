@@ -1,0 +1,31 @@
+---
+import { en } from "@/lib/i18n";
+import { fillText } from "@/lib/template";
+import { type StoryStep } from "@/lib/story/steps";
+
+interface Props {
+  steps: readonly StoryStep[];
+}
+
+const { steps } = Astro.props;
+const ticks = steps.filter((step) => step.tick);
+const chapters: Record<string, string> = en.story.chapters;
+---
+
+<nav aria-label={en.story.railLabel} class="story-rail">
+  <ol class="story-rail-list">
+    {ticks.map((step) => (
+      <li class="story-rail-item">
+        <button
+          aria-label={fillText(en.story.railTick, {
+            chapter: chapters[step.id] ?? step.eyebrow,
+            line: step.line,
+          })}
+          class="story-tick focus-ring"
+          data-tick={step.id}
+          type="button"
+        ></button>
+      </li>
+    ))}
+  </ol>
+</nav>

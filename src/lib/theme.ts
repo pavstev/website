@@ -50,6 +50,22 @@ export const ditherTones = [
 
 export const ditherOutline = "#C9D6FF";
 
+export const storyPalette = {
+  accent: "#7AA2FF",
+  denied: "#F5897F",
+  face: 0.04,
+  grid: 0.08,
+  hair: 0.1,
+  hairStrong: 0.22,
+  ink: "#E8EAF2",
+  line: "#C3C7D6",
+  mark: "#B48CFF",
+  markAlt: "#5EE2B5",
+  muted: "#8B91A7",
+  paper: "#07080F",
+  white: "#FFFFFF",
+} as const;
+
 export const hexBytes = (hex: string): [number, number, number] => {
   const value = Number.parseInt(hex.slice(1), 16);
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];

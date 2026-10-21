@@ -20,9 +20,10 @@ import { designTokens } from "@/lib/theme";
 
 interface Props {
   metadata: PageMetadata;
+  sky?: boolean;
 }
 
-const { metadata } = Astro.props;
+const { metadata, sky = true } = Astro.props;
 const { alternates, openGraph, robots, twitter } = metadata;
 const origin = personalData.website;
 const contact = await getContact(personalData.githubHandle);
@@ -112,8 +113,8 @@ const contact = await getContact(personalData.githubHandle);
   </head>
   <body>
     <SkipLink />
-    <div data-blog="">
-      <SpaceBackground />
+    <div data-blog="" data-story={sky ? undefined : ""}>
+      {sky && <SpaceBackground />}
       <slot />
       <SiteFooter className="blog-footer" links />
     </div>

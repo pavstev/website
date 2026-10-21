@@ -9,6 +9,7 @@ import {
   hexBytes,
   inkPalette,
   profilePalette,
+  storyPalette,
 } from "./theme.ts";
 
 const srcDir = path.join(import.meta.dirname, "..");
@@ -83,11 +84,37 @@ describe("theme.ts mirrors tokens.css", () => {
     [ditherTones[0], "--background"],
     [ditherTones[2], "--ui-accent"],
     [ditherTones[3], "--ui-stone-200"],
+    [storyPalette.ink, "--story-ink"],
+    [storyPalette.line, "--story-line"],
+    [storyPalette.muted, "--story-muted"],
+    [storyPalette.accent, "--story-accent"],
+    [storyPalette.mark, "--story-mark"],
+    [storyPalette.markAlt, "--story-mark-alt"],
+    [storyPalette.denied, "--story-denied"],
+    [storyPalette.paper, "--story-paper"],
   ];
 
   for (const [hex, token] of pairs) {
     it(`${token} equals ${hex}`, () => {
       assert.equal(resolve(token), hex.toLowerCase());
+    });
+  }
+
+  it("--story-white is the six-digit white", () => {
+    assert.equal(resolve("--story-white"), "#fff");
+    assert.equal(storyPalette.white.toLowerCase(), "#ffffff");
+  });
+
+  const alphas: Array<[number, string]> = [
+    [storyPalette.face, "--story-face"],
+    [storyPalette.grid, "--story-grid"],
+    [storyPalette.hair, "--story-hair"],
+    [storyPalette.hairStrong, "--story-hair-strong"],
+  ];
+
+  for (const [alpha, token] of alphas) {
+    it(`${token} is white at ${String(alpha)}`, () => {
+      assert.equal(resolve(token), `rgb(255 255 255 / ${String(alpha)})`);
     });
   }
 });

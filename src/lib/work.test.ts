@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { products } from "./products.ts";
-import { pickProducts, pickRepos, workConfig } from "./work.ts";
+import { pickProducts, pickRepos, storyPath, workConfig } from "./work.ts";
 
 const repos = ["alpha", "beta", "gamma", "delta", "website"].map((name) => ({
   name,
@@ -66,6 +66,33 @@ describe("pickRepos", () => {
     assert.deepEqual(workConfig.repos.pinned, ["website"]);
     assert.equal(workConfig.repos.max, 12);
     assert.equal(names(pickRepos(repos))[0], "website");
+  });
+});
+
+describe("storyPath", () => {
+  it("gives the dotfiles story path and nothing for other repos", () => {
+    assert.equal(storyPath("dotfiles"), "/work/dotfiles");
+    assert.equal(storyPath("website"), undefined);
+  });
+  it("reads the picks it is given", () => {
+    const picks = {
+      hidden: [],
+      max: 12,
+      pinned: [],
+      stories: { alpha: "/work/alpha" },
+    };
+    assert.equal(storyPath("alpha", picks), "/work/alpha");
+    assert.equal(storyPath("dotfiles", picks), undefined);
+  });
+  it("ignores names that only exist on the prototype chain", () => {
+    assert.equal(storyPath("constructor"), undefined);
+    assert.equal(storyPath("toString"), undefined);
+  });
+  it("is undefined when the picks carry no stories", () => {
+    assert.equal(
+      storyPath("dotfiles", { hidden: [], max: 12, pinned: [] }),
+      undefined
+    );
   });
 });
 

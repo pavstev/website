@@ -30,6 +30,8 @@ const config: KnipConfig = {
     "!src/lib/blog/post-fixture.ts!",
     "!src/lib/cv-sample.ts!",
     "!src/lib/store-fixtures.ts!",
+    "!src/lib/story/copy-rules.ts!",
+    "!src/lib/story/sample-facts.ts!",
     "!src/profile/fixtures.ts!",
     "!worker/fixtures.ts!",
   ],

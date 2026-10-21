@@ -113,6 +113,20 @@
     --ui-shadow-chip: 0 1px 6px rgb(0 0 0 / 0.45);
     --ui-shadow-panel: 0 28px 56px -24px rgb(24 22 20 / 0.45);
 
+    --story-ink: var(--night-100);
+    --story-line: var(--night-300);
+    --story-muted: var(--night-500);
+    --story-accent: var(--blue-400);
+    --story-mark: var(--purple-300);
+    --story-mark-alt: var(--green-300);
+    --story-denied: var(--red-300);
+    --story-paper: var(--night-950);
+    --story-white: var(--white);
+    --story-face: rgb(255 255 255 / 0.04);
+    --story-grid: rgb(255 255 255 / 0.08);
+    --story-hair: var(--border);
+    --story-hair-strong: var(--border-strong);
+
     --glass-blur: blur(6px);
     --glass-blur-float: blur(10px);
     --glass-fill: rgb(255 255 255 / 0.16);

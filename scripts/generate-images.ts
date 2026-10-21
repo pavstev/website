@@ -3,6 +3,9 @@ import path from "node:path";
 import { chromium } from "playwright-core";
 import sharp from "sharp";
 
+import { sceneCounts } from "../src/data/dotfiles-story.ts";
+import { getDotfilesFacts } from "../src/lib/dotfiles-facts.ts";
+import { en } from "../src/lib/i18n.ts";
 import { personalData } from "../src/lib/personal.ts";
 import {
   haloLit,
@@ -22,19 +25,27 @@ import {
 import { meteorStart, rayView } from "../src/lib/sky-rays.ts";
 import { skyVertexShader } from "../src/lib/sky-shader.ts";
 import {
+  type SceneCounts,
+  toneNames,
+} from "../src/lib/story/blueprint-geometry.ts";
+import { posterSvg } from "../src/lib/story/blueprint-svg.ts";
+import {
   designTokens,
   ditherOutline,
   ditherTones,
   hexBytes,
   profilePalette,
+  storyPalette,
 } from "../src/lib/theme.ts";
 import { nightWeather } from "../src/lib/weather.ts";
 
 interface ImageSpec {
+  background: string;
   body: string;
   file: string;
   height: number;
   meteor: number;
+  sky: boolean;
   type: "jpeg" | "png" | "webp";
   width: number;
 }
@@ -73,7 +84,10 @@ const fontFaces = async (): Promise<string> => {
   const css = await readFile("src/styles/globals.css", "utf8");
   const faces = css.match(/@font-face\s*\{[^}]*\}/g) ?? [];
   const wanted = faces.filter(
-    (face) => face.includes('"Geist Variable"') || face.includes('"Geist"')
+    (face) =>
+      face.includes('"Geist Variable"') ||
+      face.includes('"Geist"') ||
+      face.includes("geist-mono-latin-400")
   );
   const inlined = await Promise.all(
     wanted.map(async (face) => {
@@ -83,7 +97,7 @@ const fontFaces = async (): Promise<string> => {
       return face.replace(`/${url}`, () => data);
     })
   );
-  if (inlined.length !== 4) throw new Error("Expected four font faces");
+  if (inlined.length !== 5) throw new Error("Expected five font faces");
   return inlined.join("\n");
 };
 
@@ -127,6 +141,34 @@ const ogBody = (portrait: string): string => `
     <div style="font-family:Geist;font-size:76px;font-weight:600;letter-spacing:0.02em;line-height:1;padding-block:0.08em;color:${profilePalette.ring};text-shadow:0 0 30px ${textShade}">${name}</div>
     <div style="font-size:27px;font-weight:400;white-space:nowrap;color:${profilePalette.glyph};text-shadow:0 0 18px ${textShade}">${title}</div>
   </div>
+</div>`;
+
+const storyWidth = 1200;
+const storyHeight = 630;
+
+const site = escapeHtml(new URL(personalData.website).host);
+
+const drawnBy = (portrait: string): string => `
+  <div style="position:absolute;left:72px;top:64px;display:flex;flex-direction:column;gap:14px">
+    <div style="font-family:'Geist Mono';font-size:15px;letter-spacing:0.1em;text-transform:uppercase;color:${storyPalette.muted}">${escapeHtml(en.story.drawnBy)}</div>
+    <div style="display:flex;align-items:center;gap:18px">
+      <img src="${portrait}" style="display:block;width:64px;height:64px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid ${storyPalette.line}">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Geist;font-size:30px;font-weight:600;letter-spacing:-0.01em;line-height:1;color:${storyPalette.ink}">${name}</div>
+        <div style="font-family:'Geist Mono';font-size:17px;line-height:1;color:${storyPalette.muted}">${site}</div>
+      </div>
+    </div>
+  </div>`;
+
+const storyBody = (counts: SceneCounts, portrait: string): string => `
+<style>${toneNames
+  .filter((tone) => tone !== "ink")
+  .map((tone) => `.tone-${tone}{color:${storyPalette[tone]}}`)
+  .join("")}</style>
+<div style="position:absolute;inset:0;color:${storyPalette.ink}">
+  ${posterSvg(storyWidth, storyHeight, counts).replace("<svg ", '<svg style="position:absolute;inset:0" ')}
+  ${drawnBy(portrait)}
+  <div style="position:absolute;left:72px;bottom:56px;font-family:Geist;font-size:132px;font-weight:600;letter-spacing:-0.03em;line-height:1;color:${storyPalette.ink}">${escapeHtml(en.story.crumb)}</div>
 </div>`;
 
 const waitForAssets = async (): Promise<void> => {
@@ -311,31 +353,33 @@ const render = async (
   await page.setViewportSize({ height: spec.height, width: spec.width });
   await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>
 ${faces}
-html,body{margin:0;width:${String(spec.width)}px;height:${String(spec.height)}px;overflow:hidden;background:${designTokens.background}}
+html,body{margin:0;width:${String(spec.width)}px;height:${String(spec.height)}px;overflow:hidden;background:${spec.background}}
 body{position:relative;font-family:"Geist Variable",sans-serif;-webkit-font-smoothing:antialiased}
 canvas{position:absolute;inset:0;width:100%;height:100%}
-</style></head><body><canvas width="${String(spec.width)}" height="${String(spec.height)}"></canvas>${spec.body}</body></html>`);
+</style></head><body>${spec.sky ? `<canvas width="${String(spec.width)}" height="${String(spec.height)}"></canvas>` : ""}${spec.body}</body></html>`);
   await page.evaluate(waitForAssets);
-  const scene = nightScene(
-    { height: spec.height, width: spec.width },
-    nightWeather
-  );
-  const view = rayView(spec.height);
-  const start = meteorStart(spec.width, spec.height, view);
-  await page.evaluate(drawSky, {
-    band: spaceBand,
-    cloudCell,
-    cloudSource: paintCloudShader,
-    height: spec.height,
-    meteor: [start.x, start.y, start.angle, spec.meteor],
-    meteorScale: view,
-    paintSource: paintSkyShader,
-    scene,
-    time: skyTime,
-    vertex: skyVertexShader,
-    width: spec.width,
-    wind: scene.drift * windSeconds,
-  });
+  if (spec.sky) {
+    const scene = nightScene(
+      { height: spec.height, width: spec.width },
+      nightWeather
+    );
+    const view = rayView(spec.height);
+    const start = meteorStart(spec.width, spec.height, view);
+    await page.evaluate(drawSky, {
+      band: spaceBand,
+      cloudCell,
+      cloudSource: paintCloudShader,
+      height: spec.height,
+      meteor: [start.x, start.y, start.angle, spec.meteor],
+      meteorScale: view,
+      paintSource: paintSkyShader,
+      scene,
+      time: skyTime,
+      vertex: skyVertexShader,
+      width: spec.width,
+      wind: scene.drift * windSeconds,
+    });
+  }
   if (spec.type === "jpeg")
     return page.screenshot({ quality: jpegQuality, type: "jpeg" });
   const png = await page.screenshot({ type: "png" });
@@ -366,20 +410,34 @@ const portrait = await dataUrl(
 );
 const specs: ImageSpec[] = [
   {
+    background: designTokens.background,
     body: ogBody(portrait),
     file: path.join(publicDir, "og-image.jpg"),
     height: 630,
     meteor: noMeteor,
+    sky: true,
     type: "jpeg",
     width: 1200,
   },
   {
+    background: designTokens.background,
     body: "",
     file: path.join(publicDir, "linkedin-cover.png"),
     height: 396,
     meteor: 0.55,
+    sky: true,
     type: "png",
     width: 1584,
+  },
+  {
+    background: storyPalette.paper,
+    body: storyBody(sceneCounts(await getDotfilesFacts()), portrait),
+    file: path.join(publicDir, "og-dotfiles.jpg"),
+    height: 630,
+    meteor: 0,
+    sky: false,
+    type: "jpeg",
+    width: 1200,
   },
 ];
 

@@ -4,6 +4,7 @@ import type {
   Graph,
   ImageObject,
   Person,
+  WebPage,
   WebSite,
 } from "schema-dts";
 
@@ -15,6 +16,7 @@ import { blogUrl } from "./blog/metadata.ts";
 import { modifiedOf } from "./blog/modified.ts";
 import { en } from "./i18n.ts";
 import { personalData, plainName } from "./personal.ts";
+import { storyUrl } from "./story/metadata.ts";
 
 const home = personalData.website;
 const site = `${home}/`;
@@ -210,6 +212,31 @@ export const postGraph = (
       homeCrumb,
       blogCrumb,
       { name: post.title, url: post.url },
+    ]),
+  ],
+});
+
+export const storyPageNode = (updatedAt: string): WebPage => ({
+  "@id": `${storyUrl}#webpage`,
+  "@type": "WebPage",
+  dateModified: updatedAt,
+  description: en.story.metaDescription,
+  inLanguage: "en",
+  isPartOf: { "@id": websiteId },
+  mainEntity: { "@id": `${site}#repo-dotfiles` },
+  name: en.story.metaTitle,
+  url: storyUrl,
+});
+
+export const storyGraph = (updatedAt: string): Graph => ({
+  "@context": "https://schema.org",
+  "@graph": [
+    websiteNode,
+    storyPageNode(updatedAt),
+    breadcrumbs(`${storyUrl}#breadcrumb`, [
+      homeCrumb,
+      { name: en.work.heading, url: `${home}/work` },
+      { name: en.story.crumb, url: storyUrl },
     ]),
   ],
 });

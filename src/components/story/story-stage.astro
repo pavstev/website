@@ -1,0 +1,49 @@
+---
+interface Props {
+  tall: string;
+  wide: string;
+}
+
+const { tall, wide } = Astro.props;
+
+const mark = (svg: string, kind: "tall" | "wide"): string =>
+  svg.replace(
+    "<svg ",
+    `<svg class="story-poster story-poster-${kind}" preserveAspectRatio="xMidYMid meet" `
+  );
+---
+
+<div class="story-stage" data-story-stage="">
+  <Fragment set:html={mark(wide, "wide")} />
+  <Fragment set:html={mark(tall, "tall")} />
+  <canvas aria-hidden="true" class="story-canvas"></canvas>
+  <div aria-hidden="true" class="story-labels"></div>
+</div>
+<script>
+  import { watchCopy } from "@/lib/story/copy-line";
+  import { mountStory } from "@/lib/story/story-mount";
+
+  watchCopy();
+
+  let mounted: HTMLElement | null = null;
+  let stop: (() => void) | undefined;
+
+  const release = (): void => {
+    stop?.();
+    stop = undefined;
+    mounted = null;
+  };
+
+  const sync = (): void => {
+    const root = document.querySelector<HTMLElement>("[data-story-root]");
+    if (root === mounted) return;
+    release();
+    if (!root) return;
+    mounted = root;
+    stop = mountStory(root);
+  };
+
+  sync();
+  document.addEventListener("astro:page-load", sync);
+  document.addEventListener("astro:before-swap", release);
+</script>

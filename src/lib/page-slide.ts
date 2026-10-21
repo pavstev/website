@@ -2,7 +2,7 @@ import { isBlogPage } from "./blog/slug.ts";
 
 export type SlideFrom = "left" | "right";
 
-const clean = (pathname: string): string => {
+export const clean = (pathname: string): string => {
   const trimmed = pathname.replace(/\.html$/u, "").replace(/\/+$/u, "");
   return trimmed === "" ? "/" : trimmed;
 };
@@ -26,23 +26,28 @@ export const slideFrom = (
   return to > from ? "right" : "left";
 };
 
-const flag = "data-slide";
-
-export const watchPageSlide = (): void => {
+export const watchRouteFlag = (
+  flag: string,
+  decide: (from: string, to: string, direction: string) => string | undefined
+): void => {
   const root = document.documentElement;
   const clear = (): void => {
     root.removeAttribute(flag);
   };
   document.addEventListener("astro:before-preparation", (event) => {
-    const side = slideFrom(
+    const value = decide(
       event.from.pathname,
       event.to.pathname,
       event.direction
     );
-    if (side === undefined) clear();
-    else root.setAttribute(flag, side);
+    if (value === undefined) clear();
+    else root.setAttribute(flag, value);
   });
   document.addEventListener("astro:before-swap", (event) => {
     void event.viewTransition.finished.then(clear).catch(clear);
   });
+};
+
+export const watchPageSlide = (): void => {
+  watchRouteFlag("data-slide", slideFrom);
 };

@@ -22,6 +22,7 @@ export interface SitemapInput {
   imageFor: (slug: string) => string | undefined;
   posts: readonly PostMeta[];
   site: string;
+  stories: ReadonlyArray<{ path: string; updatedAt: string }>;
 }
 
 const listingEntry = (
@@ -55,6 +56,7 @@ export const sitemapEntries = ({
   imageFor,
   posts,
   site,
+  stories,
 }: SitemapInput): SitemapEntry[] => {
   const blogModified = lastModified(posts);
   return [
@@ -63,6 +65,11 @@ export const sitemapEntries = ({
       images: [],
       lastmod: undefined,
       loc: `${site}${path}`,
+    })),
+    ...stories.map((story) => ({
+      images: [],
+      lastmod: story.updatedAt,
+      loc: `${site}${story.path}`,
     })),
     ...(blogModified === undefined
       ? []

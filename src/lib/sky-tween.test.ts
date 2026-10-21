@@ -50,6 +50,10 @@ describe("linkMode", () => {
     assert.equal(linkMode("/resume.pdf"), undefined);
     assert.equal(linkMode("/blog/feed.xml"), undefined);
   });
+  it("gives the story page no sky, so no glide starts", () => {
+    assert.equal(linkMode("/work/dotfiles"), undefined);
+    assert.equal(linkMode("/work"), "blog");
+  });
 });
 
 describe("tweenProgress", () => {

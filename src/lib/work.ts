@@ -4,6 +4,7 @@ export interface RepoPicks {
   hidden: readonly string[];
   max: number;
   pinned: readonly string[];
+  stories?: Readonly<Record<string, string>>;
 }
 
 export interface WorkConfig {
@@ -13,14 +14,23 @@ export interface WorkConfig {
 
 const maxProducts = 3;
 
+export const dotfilesStory = "/work/dotfiles";
+
 export const workConfig: WorkConfig = {
   productKeys: ["safety-real-time"],
   repos: {
     hidden: [],
     max: 12,
     pinned: ["website"],
+    stories: { dotfiles: dotfilesStory },
   },
 };
+
+export const storyPath = (
+  name: string,
+  picks: RepoPicks = workConfig.repos
+): string | undefined =>
+  Object.hasOwn(picks.stories ?? {}, name) ? picks.stories?.[name] : undefined;
 
 export const pickRepos = <T extends { name: string }>(
   repos: readonly T[],

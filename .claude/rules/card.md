@@ -154,6 +154,7 @@ Siblings: `motion.md`, `sky.md`. Colors and tokens are in `src/styles/tokens.css
 - `src/lib/work.ts` is the one place to configure the page: `productKeys`, `repos.pinned`, `repos.hidden`, `repos.max`.
 - Cards and rows are glass cards (`.mat-panel`, `--glass-card`). Hover or focus turns the edge to the accent.
 - Every card and row is one stretched link that opens in a new tab. The CSS lives in `blog.css` (`.work-*`, `.repo-*`, `.logo-planet`).
+- A repo listed in `workConfig.repos.stories` (only dotfiles) has a second link under the tech lane: "See the story" (`.work-card-story`, raised above the stretched link, same tab, 44 px hit area). The card box and name morph into the story sheet and title under `html[data-story-morph]` (`story-morph.ts`, set only for `/work` to a story path and back).
 - No featured card. All repo cards have the same width and weight in an auto grid: as many 15rem columns as fit (`auto-fill`). Cards in a row share one height.
 - Cards show the name, stars and forks (only above 0), the arrow, the full description, then the tech lane pinned to the card bottom.
 - The tech lane (`repo-tags.tsx`, `tech-lanes.ts`) is one line. When it does not fit, the first clipped tag fades out and a blue "+N more" button follows. Its popover (`popover="auto"`, `anchored-popovers.ts`) lists only the hidden tags. Hover opens it on fine pointers, a click pins it, tap and Enter toggle it, Escape closes it.

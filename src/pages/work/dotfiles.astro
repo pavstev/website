@@ -1,0 +1,125 @@
+---
+import "@/styles/story.css";
+
+import BlogHeader from "@/components/blog/blog-header.astro";
+import { Icon } from "@/components/icon";
+import StoryRail from "@/components/story/story-rail.astro";
+import StoryStage from "@/components/story/story-stage.astro";
+import StoryStep from "@/components/story/story-step.astro";
+import {
+  bootstrapLine,
+  sceneCounts,
+  storyMeta,
+  storyNumbers,
+  uninstallLine,
+} from "@/data/dotfiles-story";
+import BlogLayout from "@/layouts/BlogLayout.astro";
+import { type Crumb } from "@/lib/blog/crumbs";
+import { getDotfilesFacts } from "@/lib/dotfiles-facts";
+import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
+import { buildScene, phoneLabelLimit } from "@/lib/story/blueprint-geometry";
+import { posterSvg, sceneSvg } from "@/lib/story/blueprint-svg";
+import { storyMetadata } from "@/lib/story/metadata";
+import { dotfilesStory } from "@/lib/work";
+import { buildSteps } from "@/lib/story/steps";
+import { serializeJsonLd, storyGraph } from "@/lib/structured-data";
+
+const facts = await getDotfilesFacts();
+const counts = sceneCounts(facts);
+const steps = buildSteps(facts);
+const numbers = storyNumbers(facts);
+const numbersFor: Record<string, typeof numbers.hero> = {
+  harness: numbers.harness,
+  hero: numbers.hero,
+};
+const wide = posterSvg(1440, 900, counts);
+const tall = sceneSvg(
+  buildScene("outro", 1, 1, counts, phoneLabelLimit),
+  390,
+  480
+);
+const crumbs: Crumb[] = [
+  { current: false, label: en.blog.crumbHome, path: "/" },
+  { current: false, label: en.work.heading, path: "/work" },
+  { current: true, label: en.story.crumb, path: dotfilesStory },
+];
+const repoUrl = `${personalData.github}/dotfiles`;
+const jsonLd = serializeJsonLd(storyGraph(storyMeta.updatedAt));
+---
+
+<BlogLayout metadata={storyMetadata()} sky={false}>
+  <script type="application/ld+json" is:inline set:html={jsonLd}></script>
+  <main class="blog-main" id="main-content">
+    <BlogHeader crumbs={crumbs} title={en.story.metaTitle} />
+    <a class="skip-link mat-pop type-chip focus-ring" href="#story-end">
+      {en.story.skipToEnd}
+    </a>
+    <section
+      class="story"
+      data-story-counts={JSON.stringify(counts)}
+      data-story-root=""
+    >
+      <StoryRail steps={steps} />
+      <StoryStage tall={tall} wide={wide} />
+      <p aria-hidden="true" class="story-progress"></p>
+      <ol class="story-steps">
+        {steps.map((step) => (
+          <StoryStep numbers={numbersFor[step.id] ?? []} step={step}>
+            {step.id === "outro" && (
+              <div class="story-outro">
+                <p class="story-label">{en.story.install}</p>
+                <code class="story-install">{bootstrapLine}</code>
+                <div class="story-actions">
+                  <button
+                    aria-label={en.story.copyLine}
+                    class="keycap-host focus-ring"
+                    data-copied={en.blog.codeCopied}
+                    data-copy={bootstrapLine}
+                    data-failed={en.story.copyFailed}
+                    type="button"
+                  >
+                    <span class="keycap story-copy">
+                      <span data-face="idle">{en.story.copy}</span>
+                      <span data-face="copied">{en.blog.codeCopied}</span>
+                      <span data-face="failed">{en.story.copyFailed}</span>
+                    </span>
+                  </button>
+                  <span class="sr-only" data-copy-status role="status" />
+                  <a
+                    class="keycap-host focus-ring"
+                    href={repoUrl}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <span class="keycap">
+                      <Icon
+                        aria-hidden
+                        name="simple-icons:github"
+                        size="0.9375rem"
+                      />
+                      {en.story.onGithub}
+                      <span class="sr-only"> {en.card.newTab}</span>
+                    </span>
+                  </a>
+                </div>
+                <p class="story-label">{en.story.takeItBack}</p>
+                <code class="story-install">{uninstallLine}</code>
+                <a class="keycap-host focus-ring story-back" href="/work">
+                  <span class="keycap">
+                    <Icon
+                      aria-hidden
+                      name="lucide:arrow-left"
+                      size="0.9375rem"
+                    />
+                    {en.story.backToWork}
+                  </span>
+                </a>
+              </div>
+            )}
+          </StoryStep>
+        ))}
+      </ol>
+    </section>
+  </main>
+</BlogLayout>

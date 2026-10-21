@@ -82,8 +82,7 @@ const measure = ({ H, touch, W }: MeasureInput): Findings => {
     }
     if (ok) {
       const style = getComputedStyle(el);
-      if (style.display === "none" || style.visibility !== "visible")
-        ok = false;
+      if (!el.checkVisibility() || style.visibility !== "visible") ok = false;
       let opacity = 1;
       for (
         let node: HTMLElement | null = el;
@@ -226,16 +225,41 @@ const measure = ({ H, touch, W }: MeasureInput): Findings => {
         `${nameOf(el)} y ${String(Math.round(r.top))}..${String(Math.round(r.bottom))}`
       );
   }
+  const shown = (from: HTMLElement | null, r: DOMRect): boolean => {
+    if (r.bottom + scrollY <= 0 || r.right + scrollX <= 0) return false;
+    for (
+      let node = from;
+      node !== null && !stops.has(node);
+      node = node.parentElement
+    ) {
+      const style = getComputedStyle(node);
+      if (
+        ["auto", "scroll"].includes(style.overflowX) ||
+        ["auto", "scroll"].includes(style.overflowY)
+      ) {
+        const bounds = clipBox(node);
+        return (
+          r.bottom > bounds.top &&
+          r.top < bounds.bottom &&
+          r.right > bounds.left &&
+          r.left < bounds.right
+        );
+      }
+    }
+    return true;
+  };
   const controls = [
     ...document.querySelectorAll<HTMLElement>(
       'a[href], button, [role="button"], summary, input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])'
     ),
   ].filter((el) => isVisible(el) && !readerOnly(el));
   const boxes: Box[] = [
-    ...lines.filter((line) => !line.deco),
+    ...lines.filter((line) => !line.deco && shown(line.el, line.r)),
     ...controls.flatMap((el) =>
       [...el.getClientRects()]
-        .filter((r) => r.width >= 1 && r.height >= 1)
+        .filter(
+          (r) => r.width >= 1 && r.height >= 1 && shown(el.parentElement, r)
+        )
         .map((r) => ({ control: true, deco: false, el, r }))
     ),
   ];

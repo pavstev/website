@@ -130,6 +130,7 @@ Project facts by area. Read the bullet for the area you change. Rules for design
 - Both pages use `BlogLayout`, `BlogHeader` and the night sky. Crumbs come from `pageCrumbs`. Both are in `sitemap.xml` and `llms.txt`.
 - Work lists products and repos from `work.ts`, `products.ts` and the build-time `getRepos`. See `card.md`.
 - About is `content/about/index.mdx` (the `about` collection: `title` and `description` only). It renders through the same MDX pipeline as a post. Figures and charts are not supported there.
+- `/work/dotfiles` is a scroll story about the dotfiles repo, entered from its `/work` card. It uses `BlogLayout` with `sky={false}`: no sky, the night footer and the dock stay. The facts come from GitHub at build (`dotfiles-facts.ts`), the copy from `src/data/dotfiles-story.ts`. A pure geometry draws an exploded isometric blueprint, once as build-time SVG posters and once live in one WebGL2 context that follows the scroll. Rules are in `.claude/rules/story.md`.
 
 ## Prefetch
 
