@@ -148,11 +148,21 @@ const storyHeight = 630;
 
 const site = escapeHtml(new URL(personalData.website).host);
 
-const drawnBy = (portrait: string): string => `
+const badgePx = 64;
+
+const badgeUrl = async (file: string): Promise<string> => {
+  const bytes = await sharp(file)
+    .resize(badgePx, badgePx, { fit: "cover", position: "top" })
+    .png()
+    .toBuffer();
+  return `data:image/png;base64,${bytes.toString("base64")}`;
+};
+
+const drawnBy = (badge: string): string => `
   <div style="position:absolute;left:72px;top:64px;display:flex;flex-direction:column;gap:14px">
     <div style="font-family:'Geist Mono';font-size:15px;letter-spacing:0.1em;text-transform:uppercase;color:${storyPalette.muted}">${escapeHtml(en.story.drawnBy)}</div>
     <div style="display:flex;align-items:center;gap:18px">
-      <img src="${portrait}" style="display:block;width:64px;height:64px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid ${storyPalette.line}">
+      <img src="${badge}" style="display:block;width:${String(badgePx)}px;height:${String(badgePx)}px;border-radius:50%;border:1px solid ${storyPalette.line}">
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="font-family:Geist;font-size:30px;font-weight:600;letter-spacing:-0.01em;line-height:1;color:${storyPalette.ink}">${name}</div>
         <div style="font-family:'Geist Mono';font-size:17px;line-height:1;color:${storyPalette.muted}">${site}</div>
@@ -160,14 +170,14 @@ const drawnBy = (portrait: string): string => `
     </div>
   </div>`;
 
-const storyBody = (counts: SceneCounts, portrait: string): string => `
+const storyBody = (counts: SceneCounts, badge: string): string => `
 <style>${toneNames
   .filter((tone) => tone !== "ink")
   .map((tone) => `.tone-${tone}{color:${storyPalette[tone]}}`)
   .join("")}</style>
 <div style="position:absolute;inset:0;color:${storyPalette.ink}">
   ${posterSvg(storyWidth, storyHeight, counts).replace("<svg ", '<svg style="position:absolute;inset:0" ')}
-  ${drawnBy(portrait)}
+  ${drawnBy(badge)}
   <div style="position:absolute;left:72px;bottom:56px;font-family:Geist;font-size:132px;font-weight:600;letter-spacing:-0.03em;line-height:1;color:${storyPalette.ink}">${escapeHtml(en.story.crumb)}</div>
 </div>`;
 
@@ -432,7 +442,10 @@ const specs: ImageSpec[] = [
   },
   {
     background: storyPalette.paper,
-    body: storyBody(sceneCounts(await getDotfilesFacts()), portrait),
+    body: storyBody(
+      sceneCounts(await getDotfilesFacts()),
+      await badgeUrl(path.join(publicDir, personalData.portrait.url))
+    ),
     file: path.join(publicDir, "og-dotfiles.jpg"),
     height: 630,
     meteor: 0,
