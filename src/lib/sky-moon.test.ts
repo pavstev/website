@@ -97,12 +97,12 @@ describe("moonView against JPL Horizons (Vienna, airless)", () => {
           Math.cos((row.elevation * Math.PI) / 180),
         moon.trueAltitude - row.elevation
       );
-      assert.ok(arc < 0.3, `position off by ${arc.toFixed(3)} degrees`);
-      assert.ok(Math.abs(moon.fraction * 100 - row.litPercent) < 0.5);
-      assert.ok(Math.abs(moon.phaseAngle - row.sunTargetObserver) < 0.3);
-      assert.ok(Math.abs(moon.distanceKm - row.deltaAu * auKm) < 200);
-      assert.ok(Math.abs(turnGap(moon.pole, row.poleAngle)) < 1);
-      assert.ok(Math.abs(turnGap(moon.brightLimb, row.sunAngle + 180)) < 1);
+      assert.ok(arc < 0.006, `position off by ${arc.toFixed(3)} degrees`);
+      assert.ok(Math.abs(moon.fraction * 100 - row.litPercent) < 0.01);
+      assert.ok(Math.abs(moon.phaseAngle - row.sunTargetObserver) < 0.01);
+      assert.ok(Math.abs(moon.distanceKm - row.deltaAu * auKm) < 50);
+      assert.ok(Math.abs(turnGap(moon.pole, row.poleAngle)) < 0.025);
+      assert.ok(Math.abs(turnGap(moon.brightLimb, row.sunAngle + 180)) < 0.25);
     });
   }
 });

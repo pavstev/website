@@ -30,7 +30,7 @@ export const inkTargets: readonly InkTarget[] = [
     base: inkPalette.foreground,
     group: "card",
     index: 0,
-    need: 4.5,
+    need: 3,
     paint: "[data-card] h1",
     probe: "[data-card] .name-letters",
   },
@@ -98,7 +98,7 @@ export const liftFor = (base: string, sky: number, need: number): number => {
 
 export const inkGlow = (achieved: number, need: number): number => {
   const goal = need * inkMargin;
-  return clamp01((goal - achieved) / (goal - 1));
+  return clamp01((goal - achieved) / (goal - need));
 };
 
 export const nextLift = (current: number, wanted: number): number =>
@@ -109,11 +109,14 @@ export type InkMode = "dark" | "light";
 export interface InkRange {
   bright: number;
   dark: number;
+  middle: number;
 }
 
 export interface InkScores {
   dark: number;
+  darkMiddle: number;
   light: number;
+  lightMiddle: number;
 }
 
 export interface InkState {
@@ -151,12 +154,15 @@ export const skyRange = (pixels: Uint8Array, block: ProbeBlock): InkRange => {
   return {
     bright: percentile(levels, skyShare) + tintLuminance,
     dark: percentile(levels, darkShare),
+    middle: percentile(levels, 0.5),
   };
 };
 
 export const inkScores = (range: InkRange): InkScores => ({
   dark: contrast(liftedLuminance(inkPalette.dark, 0), range.dark),
+  darkMiddle: contrast(liftedLuminance(inkPalette.dark, 0), range.middle),
   light: contrast(1, range.bright),
+  lightMiddle: contrast(1, range.middle + tintLuminance),
 });
 
 export const glowFor = (
@@ -178,15 +184,23 @@ export interface InkPart {
   scores: InkScores;
 }
 
+const weakest = (parts: readonly InkPart[], key: keyof InkScores): number =>
+  Math.min(...parts.map((part) => part.scores[key] / part.need));
+
 export const sharedScores = (parts: readonly InkPart[]): InkScores => ({
-  dark: Math.min(...parts.map((part) => part.scores.dark / part.need)),
-  light: Math.min(...parts.map((part) => part.scores.light / part.need)),
+  dark: weakest(parts, "dark"),
+  darkMiddle: weakest(parts, "darkMiddle"),
+  light: weakest(parts, "light"),
+  lightMiddle: weakest(parts, "lightMiddle"),
 });
+
+const middleOf = (scores: InkScores, mode: InkMode): number =>
+  mode === "dark" ? scores.darkMiddle : scores.lightMiddle;
 
 export const wantedInk = (scores: InkScores, need: number): InkMode => {
   if (scores.dark >= need * inkMargin) return "dark";
   if (scores.light >= need * inkMargin) return "light";
-  return scores.dark >= scores.light ? "dark" : "light";
+  return scores.darkMiddle >= scores.lightMiddle ? "dark" : "light";
 };
 
 const other = (mode: InkMode): InkMode => (mode === "dark" ? "light" : "dark");
@@ -196,6 +210,9 @@ const mayLeave = (from: InkMode, scores: InkScores, need: number): boolean => {
   const next = scores[other(from)];
   return (
     (held < need * inkMargin && next >= need * inkMargin) ||
+    (held < need &&
+      next < need &&
+      middleOf(scores, other(from)) >= middleOf(scores, from) + switchMargin) ||
     (held < need && next > held) ||
     next >= held + switchMargin
   );

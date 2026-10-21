@@ -65,6 +65,10 @@
   --glow-tone: var(--foreground);
 }
 
+[data-card] .text-sky .topic-trigger {
+  text-shadow: inherit;
+}
+
 [data-card] .text-sky button,
 .name-signal::before,
 .name-signal::after,
@@ -780,7 +784,6 @@ html:has(.portrait-dialog[open]) {
     var(--background)
   );
   text-decoration-thickness: 1px;
-  text-shadow: none;
   text-underline-offset: 0.22em;
   filter: drop-shadow(
       0 1px 1px color-mix(in oklab, var(--background) 70%, transparent)
@@ -796,6 +799,7 @@ html:has(.portrait-dialog[open]) {
 .topic-trigger[data-open] .topic-word {
   filter: var(--topic-halo);
   color: transparent;
+  text-shadow: none;
   text-decoration-style: solid;
   text-decoration-color: color-mix(in oklab, var(--topic-a) 40%, transparent);
 }
@@ -987,6 +991,7 @@ a.topic-company:hover {
   .topic-trigger:hover .topic-word {
     filter: var(--topic-halo);
     color: transparent;
+    text-shadow: none;
     text-decoration-style: solid;
     text-decoration-color: color-mix(in oklab, var(--topic-a) 40%, transparent);
   }

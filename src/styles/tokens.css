@@ -173,6 +173,7 @@
   --glass-lift: 0 14px 34px -16px rgb(18 24 48 / 0.4);
   --pill-shine: var(--pill-shine-day);
   --focus: var(--day-950);
+  background-color: var(--day-50);
 }
 
 :root:has([data-card] .bio[data-ink="dark"])

@@ -34,6 +34,7 @@ interface AnalyseInput {
 interface Found {
   box: Rect;
   color: number[];
+  dark: boolean;
   index: number;
   lift: string;
   paint: string;
@@ -45,8 +46,8 @@ interface LiveItem extends Found {
 
 interface Measured {
   glyphRing: number;
+  ring02: number;
   ring98: number;
-  ringMax: number;
 }
 
 interface Plan {
@@ -70,7 +71,7 @@ interface Row {
   need: number;
   page: string;
   ratio: number;
-  ring98: number;
+  ring: number;
   size: string;
   spot: string;
   state: string;
@@ -95,6 +96,23 @@ const snapshot = async (page: PwPage): Promise<string> => {
 
 const detach = (node: Element): void => {
   node.remove();
+};
+
+const holdSky = (held: boolean): void => {
+  document.documentElement.toggleAttribute("data-motion-paused", held);
+  dispatchEvent(new Event("scene:hold"));
+};
+
+const glyphCss = (paints: readonly string[]): string => {
+  const pill = ":is(.sky-trigger, .sky-trigger *)";
+  const inner = paints.flatMap((selector) =>
+    ["", "::before", "::after"].map(
+      (part) => `${selector} *:not(${pill})${part}`
+    )
+  );
+  const fill = `${[...paints, ...inner].join(",")}{-webkit-text-fill-color:transparent!important;text-decoration-color:transparent!important;background-image:none!important;transition:none!important;animation:none!important}`;
+  const keep = `${paints.map((selector) => `${selector} ${pill}`).join(",")}{-webkit-text-fill-color:currentColor!important}`;
+  return fill + keep;
 };
 
 const scrollSpot = (spot: Spot): void => {
@@ -130,6 +148,7 @@ const findTargets = (
       color: style.color.startsWith("color(")
         ? numbers.map((value) => value * 255)
         : numbers,
+      dark: node instanceof HTMLElement && node.dataset["ink"] === "dark",
       index: target.index,
       lift: style.getPropertyValue("--lift").trim(),
       paint: target.paint,
@@ -184,7 +203,7 @@ const analyse = async ({
     for (let y = y0; y < y1; y += 1)
       for (let x = x0; x < x1; x += 1) {
         const index = (y * a.width + x) * 4;
-        if (lum(a.data, index) - lum(b.data, index) > 0.05)
+        if (Math.abs(lum(a.data, index) - lum(b.data, index)) > 0.05)
           mask[(y - y0) * width + (x - x0)] = 1;
       }
     const nearGlyph = (x: number, y: number): boolean => {
@@ -209,12 +228,13 @@ const analyse = async ({
         if (mask[y * width + x] === 0 && nearGlyph(x, y))
           ring.push(lum(b.data, ((y + y0) * a.width + x + x0) * 4));
     const sorted = ring.toSorted((p, q) => p - q);
+    const share = (part: number): number =>
+      sorted[Math.min(sorted.length - 1, Math.floor(part * sorted.length))] ??
+      0;
     return {
       glyphRing: sorted.length,
-      ring98:
-        sorted[Math.min(sorted.length - 1, Math.floor(0.98 * sorted.length))] ??
-        0,
-      ringMax: sorted.at(-1) ?? 0,
+      ring02: share(0.02),
+      ring98: share(0.98),
     };
   });
 };
@@ -285,7 +305,7 @@ const check: Check = async (audit) => {
     async ({ plan, sizeName, spots, state, time }) => {
       const slug = pageSlug(plan.page.url);
       const paints = [...new Set(plan.targets.map((target) => target.paint))];
-      const hideCss = `${paints.flatMap((selector) => [selector, `${selector} *`]).join(",")}{visibility:hidden!important}`;
+      const hideCss = glyphCss(paints);
       const wanted = plan.targets.map(({ index, paint, probe }) => ({
         index,
         paint,
@@ -302,6 +322,7 @@ const check: Check = async (audit) => {
       for (const spot of spots) {
         await page.evaluate(scrollSpot, spot);
         await page.waitForTimeout(spot === "top" ? 600 : 2200);
+        await page.evaluate(holdSky, true);
         await page.waitForTimeout(250);
         const items = await page.evaluate(findTargets, wanted);
         const shown = await snapshot(page);
@@ -325,7 +346,8 @@ const check: Check = async (audit) => {
           const reading = measured[index];
           if (!reading?.glyphRing) continue;
           const [red = 0, green = 0, blue = 0] = item.color;
-          const ratio = contrast(luminance(red, green, blue), reading.ring98);
+          const ring = item.dark ? reading.ring02 : reading.ring98;
+          const ratio = contrast(luminance(red, green, blue), ring);
           found.push({
             row: {
               key: keyOf(item.target),
@@ -333,7 +355,7 @@ const check: Check = async (audit) => {
               need: item.target.need,
               page: plan.page.path,
               ratio,
-              ring98: reading.ring98,
+              ring,
               size: sizeName,
               spot,
               state,
@@ -350,6 +372,7 @@ const check: Check = async (audit) => {
               `${slug}-${sizeName}-${time}-${state}-${spot}.png`
             ),
           });
+        await page.evaluate(holdSky, false);
       }
       await context.close();
       return found;

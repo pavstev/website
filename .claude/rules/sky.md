@@ -100,6 +100,7 @@ Siblings: `card.md`, `motion.md`. Weather and place facts are in `docs/architect
 
 - `paintScene(instant, view, weather, place)` in `sky-paint.ts` is pure. It refreshes every 30 s, on resize, swap and place change.
 - Sun and moon come from `sky-ephemeris.ts` and `sky-moon.ts` for the chosen place. The view is `sky-view.ts`: horizon at 2%, 90 degrees up.
+- `moonView` matches JPL Horizons within 0.006 degrees in position (worst 0.0051 over the six rows in `sky-moon.test.ts`). The test bounds hold that.
 - By day the sun sits right of the card (`sunSpot`, radius 0.026 x height). At night the moon shows. No sun below -0.833 degrees.
 - Space band: the top 24% blends into the `space` token with stars, on every screen.
 - Sky colors come from single scattering written to a 40 x 24 table (`sky-light.ts`). Build it on idle, never in the first frame.
@@ -122,12 +123,13 @@ Siblings: `card.md`, `motion.md`. Weather and place facts are in `docs/architect
 ## Text over the sky
 
 - No boxes, shadows or rays behind text. A subtle glow is fine.
-- `text-sky` texts have ink targets in `sky-ink.ts`: `inkTargets` on the home (name, bio, copyright at 4.5), `postInkTargets` on night pages.
+- `text-sky` texts have ink targets in `sky-ink.ts`: `inkTargets` on the home (name at 3 as large text, bio and copyright at 4.5), `postInkTargets` on night pages.
 - `createSkyProbe` (`sky-probe.ts`) reads the sky behind each text box. `liftFor` and `nextLift` pick the lift.
 - By day the ink can be dark (`data-ink="dark"`). `wantedInk` and `nextInk` choose it with a margin (`inkMargin` 1.35) and a two-read rule.
 - The name and the bio are one ink group, so they never show two inks.
-- The glow is `--glow` (`glowFor`). `card.css` turns it into an offset-free `text-shadow`. Not under 8 px blur, none in forced colors.
-- Measure contrast with the glow on, on real pixels under the text. Axe cannot see the WebGL canvas.
+- The glow is `--glow` (`glowFor`). It is full once the ink drops to its target. `card.css` turns it into an offset-free `text-shadow`. Topic words share it at rest. Not under 8 px blur, none in forced colors.
+- Known miss (owner, 2026-10-21): on a phone the clear full moon can sit behind the name, which then reads about 2.8:1. The sky stays real and the glow keeps its look.
+- Measure contrast with the glow on, on real pixels under the text, with the sky held still (`pnpm audit:site --only contrast`). Dark ink is measured against the darkest sky next to it. Axe cannot see the WebGL canvas.
 - `?at=<ISO instant>` pins the time and stops the page from counting as a crawler. Headless Chromium counts as a crawler otherwise.
 
 ## Frame pacing

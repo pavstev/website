@@ -8,6 +8,7 @@ import {
   inkGlow,
   inkMargin,
   type InkRange,
+  type InkScores,
   inkScores,
   inkTargets,
   liftedLuminance,
@@ -24,6 +25,13 @@ import {
   wantedInk,
 } from "./sky-ink.ts";
 import { inkPalette } from "./theme.ts";
+
+const scored = (
+  dark: number,
+  light: number,
+  darkMiddle = dark,
+  lightMiddle = light
+): InkScores => ({ dark, darkMiddle, light, lightMiddle });
 
 describe("luminance", () => {
   it("follows the WCAG relative luminance", () => {
@@ -82,23 +90,29 @@ describe("inkGlow", () => {
     assert.equal(inkGlow(9, 4.5), 0);
   });
 
-  it("grows with the gap and tops out at a contrast of 1", () => {
+  it("grows with the gap and is full once the ink drops to its target", () => {
     const near = inkGlow(4.5 * inkMargin - 0.5, 4.5);
-    const far = inkGlow(2, 4.5);
+    const far = inkGlow(4.6, 4.5);
     assert.ok(near > 0 && near < far && far < 1);
-    assert.equal(inkGlow(1, 4.5), 1);
-    assert.equal(inkGlow(0.5, 3), 1);
+    assert.equal(inkGlow(4.5, 4.5), 1);
+    assert.equal(inkGlow(2, 3), 1);
   });
 });
 
 describe("glowFor", () => {
-  const night: InkRange = { bright: 0.02, dark: 0.001 };
-  const grey: InkRange = { bright: 0.35, dark: 0.2 };
+  const night: InkRange = { bright: 0.02, dark: 0.001, middle: 0.01 };
+  const grey: InkRange = { bright: 0.35, dark: 0.2, middle: 0.28 };
 
   it("is zero where the chosen ink passes", () => {
     assert.equal(glowFor("light", inkPalette.soft, 0, night, 4.5), 0);
     assert.equal(
-      glowFor("dark", inkPalette.soft, 0, { bright: 0.9, dark: 0.9 }, 4.5),
+      glowFor(
+        "dark",
+        inkPalette.soft,
+        0,
+        { bright: 0.9, dark: 0.9, middle: 0.9 },
+        4.5
+      ),
       0
     );
   });
@@ -130,7 +144,7 @@ describe("inkTargets", () => {
   it("lists every text that sits on the sky with its target", () => {
     assert.deepEqual(
       inkTargets.map((target) => target.need),
-      [4.5, 4.5, 4.5]
+      [3, 4.5, 4.5]
     );
   });
 
@@ -145,16 +159,16 @@ describe("inkTargets", () => {
 describe("sharedScores", () => {
   it("scores a group by its weakest part against each need", () => {
     const shared = sharedScores([
-      { need: 3, scores: { dark: 9, light: 3 } },
-      { need: 4.5, scores: { dark: 9, light: 9 } },
+      { need: 3, scores: scored(9, 3) },
+      { need: 4.5, scores: scored(9, 9) },
     ]);
-    assert.deepEqual(shared, { dark: 2, light: 1 });
+    assert.deepEqual(shared, scored(2, 1));
     assert.equal(nextInk(freshInk, shared, 1).mode, "dark");
   });
 
   it("picks one ink for both parts even when they alone would differ", () => {
-    const name = { need: 3, scores: { dark: 2, light: 8 } };
-    const bio = { need: 4.5, scores: { dark: 7, light: 5 } };
+    const name = { need: 3, scores: scored(2, 8) };
+    const bio = { need: 4.5, scores: scored(7, 5) };
     assert.equal(wantedInk(name.scores, name.need), "light");
     assert.equal(wantedInk(bio.scores, bio.need), "dark");
     const shared = sharedScores([name, bio]);
@@ -201,12 +215,13 @@ describe("skyRange", () => {
     const mid = luminance(128, 128, 128);
     assert.equal(range.dark, mid);
     assert.equal(range.bright, mid + tintLuminance);
+    assert.equal(range.middle, mid);
   });
 });
 
 describe("inkScores", () => {
   it("scores dark ink on the darkest sample and white on the brightest", () => {
-    const scores = inkScores({ bright: 0.5, dark: 0.4 });
+    const scores = inkScores({ bright: 0.5, dark: 0.4, middle: 0.45 });
     assert.equal(
       scores.dark,
       contrast(liftedLuminance(inkPalette.dark, 0), 0.4)
@@ -220,23 +235,27 @@ describe("wantedInk", () => {
   const floor = need * inkMargin;
 
   it("takes dark ink on a bright sky", () => {
-    assert.equal(wantedInk({ dark: floor, light: 1.2 }, need), "dark");
+    assert.equal(wantedInk(scored(floor, 1.2), need), "dark");
   });
 
   it("takes white ink on a dark sky", () => {
-    assert.equal(wantedInk({ dark: 1.1, light: floor }, need), "light");
+    assert.equal(wantedInk(scored(1.1, floor), need), "light");
   });
 
   it("prefers dark ink when both clear the target", () => {
-    assert.equal(
-      wantedInk({ dark: floor + 1, light: floor + 5 }, need),
-      "dark"
-    );
+    assert.equal(wantedInk(scored(floor + 1, floor + 5), need), "dark");
   });
 
   it("takes the ink with the better contrast when neither clears the target", () => {
-    assert.equal(wantedInk({ dark: 3, light: 2 }, need), "dark");
-    assert.equal(wantedInk({ dark: 2, light: 3 }, need), "light");
+    assert.equal(wantedInk(scored(3, 2), need), "dark");
+    assert.equal(wantedInk(scored(2, 3), need), "light");
+  });
+
+  it("follows the middle of the sky when a bright moon sits in a dark sky", () => {
+    const scores = inkScores({ bright: 0.85, dark: 0.016, middle: 0.05 });
+    assert.ok(scores.dark < need && scores.light < need);
+    assert.ok(scores.dark > scores.light);
+    assert.equal(wantedInk(scores, need), "light");
   });
 });
 
@@ -245,11 +264,11 @@ describe("nextInk", () => {
   const floor = need * inkMargin;
 
   it("decides at once on the first read", () => {
-    assert.deepEqual(nextInk(freshInk, { dark: floor + 1, light: 1 }, need), {
+    assert.deepEqual(nextInk(freshInk, scored(floor + 1, 1), need), {
       mode: "dark",
       pending: undefined,
     });
-    assert.deepEqual(nextInk(freshInk, { dark: 2, light: 3 }, need), {
+    assert.deepEqual(nextInk(freshInk, scored(2, 3), need), {
       mode: "light",
       pending: undefined,
     });
@@ -257,7 +276,7 @@ describe("nextInk", () => {
 
   it("needs two reads in a row to switch away from an ink that fails", () => {
     const state = { mode: "dark", pending: undefined } as const;
-    const scores = { dark: floor - 1, light: floor + 1 };
+    const scores = scored(floor - 1, floor + 1);
     const first = nextInk(state, scores, need);
     assert.deepEqual(first, { mode: "dark", pending: "light" });
     assert.deepEqual(nextInk(first, scores, need), {
@@ -268,7 +287,7 @@ describe("nextInk", () => {
 
   it("switches on one firm read of the goal sky", () => {
     const state = { mode: "dark", pending: undefined } as const;
-    const scores = { dark: floor - 1, light: floor + 1 };
+    const scores = scored(floor - 1, floor + 1);
     assert.deepEqual(nextInk(state, scores, need, true), {
       mode: "light",
       pending: undefined,
@@ -277,7 +296,7 @@ describe("nextInk", () => {
 
   it("keeps a held ink on a firm read when leaving is not allowed", () => {
     const state = { mode: "light", pending: undefined } as const;
-    const close = { dark: floor + 0.8, light: floor + 0.5 };
+    const close = scored(floor + 0.8, floor + 0.5);
     assert.deepEqual(nextInk(state, close, need, true), {
       mode: "light",
       pending: undefined,
@@ -286,7 +305,7 @@ describe("nextInk", () => {
 
   it("drops a pending switch when the next read agrees with the mode", () => {
     const pending = { mode: "dark", pending: "light" } as const;
-    assert.deepEqual(nextInk(pending, { dark: floor + 1, light: 1 }, need), {
+    assert.deepEqual(nextInk(pending, scored(floor + 1, 1), need), {
       mode: "dark",
       pending: undefined,
     });
@@ -294,12 +313,12 @@ describe("nextInk", () => {
 
   it("holds an ink that still clears the target unless the other wins by 0.5", () => {
     const state = { mode: "light", pending: undefined } as const;
-    const close = { dark: floor + 0.8, light: floor + 0.5 };
+    const close = scored(floor + 0.8, floor + 0.5);
     assert.deepEqual(nextInk(state, close, need), {
       mode: "light",
       pending: undefined,
     });
-    const clear = { dark: floor + 1.2, light: floor + 0.5 };
+    const clear = scored(floor + 1.2, floor + 0.5);
     assert.deepEqual(nextInk(state, clear, need), {
       mode: "light",
       pending: "dark",
@@ -308,16 +327,27 @@ describe("nextInk", () => {
 
   it("moves toward the better ink when the held one fails its target", () => {
     const state = { mode: "dark", pending: undefined } as const;
-    const scores = { dark: 3, light: 3.4 };
+    const scores = scored(3, 3.4);
     assert.deepEqual(nextInk(state, scores, need), {
       mode: "dark",
       pending: "light",
     });
   });
 
+  it("leaves dark ink when both fail and the middle of the sky wants light", () => {
+    const state = { mode: "dark", pending: undefined } as const;
+    const scores = scored(1.25, 1.17, 1.9, 7);
+    const first = nextInk(state, scores, need);
+    assert.deepEqual(first, { mode: "dark", pending: "light" });
+    assert.deepEqual(nextInk(first, scores, need), {
+      mode: "light",
+      pending: undefined,
+    });
+  });
+
   it("switches after two reads when the other ink wins by 0.5 and both fail", () => {
     const state = { mode: "dark", pending: undefined } as const;
-    const scores = { dark: 2.5, light: 3.1 };
+    const scores = scored(2.5, 3.1);
     const first = nextInk(state, scores, need);
     assert.deepEqual(first, { mode: "dark", pending: "light" });
     assert.deepEqual(nextInk(first, scores, need), {
