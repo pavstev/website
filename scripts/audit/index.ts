@@ -26,7 +26,7 @@ import seo from "./check-seo.ts";
 import shots from "./check-shots.ts";
 import sizes from "./check-sizes.ts";
 import worker from "./check-worker.ts";
-import { closeBrowser, root, setWorkers, sleep } from "./lib.ts";
+import { closeBrowser, root, setWorkers, sitemapTags, sleep } from "./lib.ts";
 import { classify, notFoundPath } from "./pages.ts";
 
 const checks: Record<string, Check> = {
@@ -200,19 +200,15 @@ const discover = async (
 ): Promise<{ pages: Page[]; sitemap: string }> => {
   const response = await fetch(`${base}/sitemap.xml`);
   const sitemap = await response.text();
-  const pages: Page[] = sitemap
-    .matchAll(/<loc>([^<]+)<\/loc>/gu)
-    .map((match) => {
-      const url = (match[1] ?? "").trim();
-      const { pathname } = new URL(url);
-      return {
-        kind: classify(pathname),
-        live: url,
-        path: pathname,
-        url: new URL(pathname, base).href,
-      };
-    })
-    .toArray();
+  const pages: Page[] = sitemapTags(sitemap, "loc").map((url) => {
+    const { pathname } = new URL(url);
+    return {
+      kind: classify(pathname),
+      live: url,
+      path: pathname,
+      url: new URL(pathname, base).href,
+    };
+  });
   pages.push({
     kind: "404",
     live: undefined,

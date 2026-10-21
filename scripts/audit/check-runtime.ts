@@ -1,6 +1,14 @@
 import type { Check, Page } from "./types.ts";
 
-import { newResult, note, openPage, pageSlug, pool, sizes } from "./lib.ts";
+import {
+  count,
+  newResult,
+  openPage,
+  pageSlug,
+  pool,
+  reporter,
+  sizes,
+} from "./lib.ts";
 
 interface Audit {
   csp: string[];
@@ -84,34 +92,21 @@ const check: Check = async (context) => {
   );
   const runs = await pool(jobs, (job) => visit(job.page, job.sizeName, wait));
   for (const { errors, failed, page, seen, sizeName } of runs) {
-    const where = `${page.path} ${sizeName}`;
+    const say = reporter(result, `${page.path} ${sizeName}`);
     for (const error of errors)
       if (!(page.kind === "404" && error.includes("status of 404")))
-        note(result, "fail", `${where}: ${error}`);
-    for (const blocked of seen.csp)
-      note(result, "fail", `${where}: CSP blocked ${blocked}`);
-    for (const request of failed)
-      note(result, "fail", `${where}: request failed ${request}`);
-    let cls = 0;
-    for (const shift of seen.shifts) cls += shift;
+        say.fail(error);
+    for (const blocked of seen.csp) say.fail(`CSP blocked ${blocked}`);
+    for (const request of failed) say.fail(`request failed ${request}`);
+    const cls = seen.shifts.reduce((sum, shift) => sum + shift, 0);
     worst = Math.max(worst, cls);
     result.metrics[`cls_${pageSlug(page.url)}_${sizeName}`] = Number(
       cls.toFixed(4)
     );
-    if (cls > 0.25)
-      note(
-        result,
-        "fail",
-        `${where}: layout shift ${cls.toFixed(3)} (over 0.25)`
-      );
-    else if (cls > 0.1)
-      note(
-        result,
-        "warn",
-        `${where}: layout shift ${cls.toFixed(3)} (over 0.1)`
-      );
+    if (cls > 0.25) say.fail(`layout shift ${cls.toFixed(3)} (over 0.25)`);
+    else if (cls > 0.1) say.warn(`layout shift ${cls.toFixed(3)} (over 0.1)`);
   }
-  const fails = result.lines.filter((line) => line.startsWith("FAIL")).length;
+  const fails = count(result, "fail");
   result.summary = `${String(context.pages.length)} pages x 2 sizes: ${String(fails)} errors, worst layout shift ${worst.toFixed(3)} (unthrottled)`;
   return result;
 };

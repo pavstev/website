@@ -1,3 +1,5 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   type Browser,
@@ -7,7 +9,9 @@ import {
   type Response,
 } from "playwright-core";
 
-import type { Level, Result } from "./types.ts";
+import type { Context, Level, Result, Page as SitePage } from "./types.ts";
+
+import { weatherPresets } from "../../src/lib/weather.ts";
 
 export const root = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -48,14 +52,7 @@ export const skyTimes = {
   night: "2026-10-12T21:00:00Z",
 } as const;
 
-export const weathers = [
-  "clear",
-  "partly",
-  "overcast",
-  "rain",
-  "snow",
-  "fog",
-] as const;
+export const weathers = Object.keys(weatherPresets);
 
 const withAgent = (size: Size): Size & { userAgent: string } => ({
   userAgent: size.isMobile ? mobileUA : desktopUA,
@@ -113,23 +110,6 @@ export const pool = <T, R>(
 ): Promise<R[]> =>
   Promise.all(items.map((item, index) => slot(() => job(item, index))));
 
-export const mapLimit = async <T, R>(
-  items: readonly T[],
-  limit: number,
-  job: (item: T) => Promise<R>
-): Promise<R[]> => {
-  const out: R[] = [];
-  let next = 0;
-  const run = async (): Promise<void> => {
-    while (next < items.length) {
-      const index = next++;
-      out[index] = await job(items[index] as T);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
-  return out;
-};
-
 export const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -145,8 +125,8 @@ export const median = (values: readonly number[]): number => {
 };
 
 export const pageSlug = (url: string): string => {
-  const path = new URL(url).pathname.replaceAll(/^\/+|\/+$/gu, "");
-  return path ? path.replaceAll(/[^\w-]+/gu, "-") : "home";
+  const trimmed = new URL(url).pathname.replaceAll(/^\/+|\/+$/gu, "");
+  return trimmed ? trimmed.replaceAll(/[^\w-]+/gu, "-") : "home";
 };
 
 export const withQuery = (
@@ -188,6 +168,50 @@ export const merge = (result: Result, part: Pick<Result, "lines">): void => {
     raise(result, line.slice(0, 4).trim().toLowerCase());
   }
 };
+
+export const count = (result: Result, level: Level): number =>
+  result.lines.filter((line) => line.startsWith(level.toUpperCase())).length;
+
+export type Say = Record<Level, (line: string) => void>;
+
+export const reporter = (result: Result, where: string): Say => {
+  const at =
+    (level: Level) =>
+    (line: string): void => {
+      note(result, level, where ? `${where}: ${line}` : line);
+    };
+  return { fail: at("fail"), info: at("info"), warn: at("warn") };
+};
+
+export const baselineMetrics = (
+  context: Context,
+  name: string
+): Record<string, number | undefined> =>
+  context.baseline?.results.find((result) => result.name === name)?.metrics ??
+  {};
+
+export const outDir = (context: Context, name: string): string => {
+  const dir = path.join(context.out, name);
+  mkdirSync(dir, { recursive: true });
+  return dir;
+};
+
+export const pageOf = (
+  pages: readonly SitePage[],
+  kind: string
+): SitePage | undefined => pages.find((page) => page.kind === kind);
+
+export const firstPostOnly = (pages: readonly SitePage[]): SitePage[] => {
+  const first = pageOf(pages, "post");
+  return pages.filter((page) => page.kind !== "post" || page === first);
+};
+
+export const sitemapTags = (sitemap: string, tag: string): string[] =>
+  sitemap
+    .matchAll(/<(loc|lastmod)>([^<]+)</gu)
+    .filter((match) => match[1] === tag)
+    .map((match) => (match[2] ?? "").trim())
+    .toArray();
 
 export const skip = (name: string, why: string): Result => ({
   ...newResult(name),
@@ -270,9 +294,23 @@ const waitForAssets = async (): Promise<void> => {
   ]);
 };
 
-export const settle = async (page: Page, ms = 1200): Promise<void> => {
+const settle = async (page: Page, ms = 1200): Promise<void> => {
   await page.evaluate(waitForAssets);
   await page.waitForTimeout(ms);
+};
+
+export const withPage = async <T>(
+  options: OpenOptions,
+  wait: number,
+  work: (opened: Opened) => Promise<T>
+): Promise<T> => {
+  const opened = await openPage(options);
+  try {
+    await settle(opened.page, wait);
+    return await work(opened);
+  } finally {
+    await opened.context.close();
+  }
 };
 
 export interface PixelDiff {

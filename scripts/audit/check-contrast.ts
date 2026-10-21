@@ -14,14 +14,15 @@ import {
 import {
   newResult,
   note,
-  openPage,
+  outDir,
+  pageOf,
   pageSlug,
   pool,
-  settle,
   type Size,
   sizes,
   skyTimes,
   weathers,
+  withPage,
   withQuery,
 } from "./lib.ts";
 
@@ -240,8 +241,8 @@ const analyse = async ({
 };
 
 const plansFor = (audit: Context): Plan[] => {
-  const home = audit.pages.find((entry) => entry.kind === "home");
-  const post = audit.pages.find((entry) => entry.kind === "post");
+  const home = pageOf(audit.pages, "home");
+  const post = pageOf(audit.pages, "post");
   const plans: Plan[] = [];
   if (home)
     plans.push(
@@ -284,8 +285,7 @@ const plansFor = (audit: Context): Plan[] => {
 
 const check: Check = async (audit) => {
   const result = newResult("contrast");
-  const dir = path.join(audit.out, "contrast");
-  fs.mkdirSync(dir, { recursive: true });
+  const dir = outDir(audit, "contrast");
   const rows: Row[] = [];
   const worst = new Map<string, Row>();
   const jobs: Array<{
@@ -311,71 +311,74 @@ const check: Check = async (audit) => {
         paint,
         probe,
       }));
-      const found: Array<{ row: Row; slug: string }> = [];
       const size: Size = sizes[sizeName];
-      const { context, page } = await openPage({
-        size,
-        time: skyTimes[time],
-        url: withQuery(plan.page.url, { weather: state }),
-      });
-      await settle(page, 3000);
-      for (const spot of spots) {
-        await page.evaluate(scrollSpot, spot);
-        await page.waitForTimeout(spot === "top" ? 600 : 2200);
-        await page.evaluate(holdSky, true);
-        await page.waitForTimeout(250);
-        const items = await page.evaluate(findTargets, wanted);
-        const shown = await snapshot(page);
-        const tag = await page.addStyleTag({ content: hideCss });
-        await page.waitForTimeout(80);
-        const hidden = await snapshot(page);
-        await tag.evaluate(detach);
-        const live: LiveItem[] = [];
-        for (const [index, item] of items.entries()) {
-          const target = plan.targets[index];
-          if (item && target) live.push({ ...item, target });
+      return withPage(
+        {
+          size,
+          time: skyTimes[time],
+          url: withQuery(plan.page.url, { weather: state }),
+        },
+        3000,
+        async ({ page }) => {
+          const found: Array<{ row: Row; slug: string }> = [];
+          for (const spot of spots) {
+            await page.evaluate(scrollSpot, spot);
+            await page.waitForTimeout(spot === "top" ? 600 : 2200);
+            await page.evaluate(holdSky, true);
+            await page.waitForTimeout(250);
+            const items = await page.evaluate(findTargets, wanted);
+            const shown = await snapshot(page);
+            const tag = await page.addStyleTag({ content: hideCss });
+            await page.waitForTimeout(80);
+            const hidden = await snapshot(page);
+            await tag.evaluate(detach);
+            const live: LiveItem[] = [];
+            for (const [index, item] of items.entries()) {
+              const target = plan.targets[index];
+              if (item && target) live.push({ ...item, target });
+            }
+            const measured = await page.evaluate(analyse, {
+              boxes: live.map((item) => item.box),
+              dpr: size.deviceScaleFactor ?? 1,
+              hidden,
+              shown,
+            });
+            let failed = false;
+            for (const [index, item] of live.entries()) {
+              const reading = measured[index];
+              if (!reading?.glyphRing) continue;
+              const [red = 0, green = 0, blue = 0] = item.color;
+              const ring = item.dark ? reading.ring02 : reading.ring98;
+              const ratio = contrast(luminance(red, green, blue), ring);
+              found.push({
+                row: {
+                  key: keyOf(item.target),
+                  lift: Number(item.lift || 0),
+                  need: item.target.need,
+                  page: plan.page.path,
+                  ratio,
+                  ring,
+                  size: sizeName,
+                  spot,
+                  state,
+                  time,
+                },
+                slug,
+              });
+              if (ratio < item.target.need) failed = true;
+            }
+            if (failed)
+              await page.screenshot({
+                path: path.join(
+                  dir,
+                  `${slug}-${sizeName}-${time}-${state}-${spot}.png`
+                ),
+              });
+            await page.evaluate(holdSky, false);
+          }
+          return found;
         }
-        const measured = await page.evaluate(analyse, {
-          boxes: live.map((item) => item.box),
-          dpr: size.deviceScaleFactor ?? 1,
-          hidden,
-          shown,
-        });
-        let failed = false;
-        for (const [index, item] of live.entries()) {
-          const reading = measured[index];
-          if (!reading?.glyphRing) continue;
-          const [red = 0, green = 0, blue = 0] = item.color;
-          const ring = item.dark ? reading.ring02 : reading.ring98;
-          const ratio = contrast(luminance(red, green, blue), ring);
-          found.push({
-            row: {
-              key: keyOf(item.target),
-              lift: Number(item.lift || 0),
-              need: item.target.need,
-              page: plan.page.path,
-              ratio,
-              ring,
-              size: sizeName,
-              spot,
-              state,
-              time,
-            },
-            slug,
-          });
-          if (ratio < item.target.need) failed = true;
-        }
-        if (failed)
-          await page.screenshot({
-            path: path.join(
-              dir,
-              `${slug}-${sizeName}-${time}-${state}-${spot}.png`
-            ),
-          });
-        await page.evaluate(holdSky, false);
-      }
-      await context.close();
-      return found;
+      );
     }
   );
   for (const { row, slug } of runs.flat()) {

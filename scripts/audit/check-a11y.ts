@@ -4,14 +4,14 @@ import { type Page as PwPage } from "playwright-core";
 import type { Check, Page, Result } from "./types.ts";
 
 import {
+  count,
   merge,
   newResult,
-  note,
-  openPage,
   pixelDiff,
   pool,
-  settle,
+  reporter,
   sizes,
+  withPage,
 } from "./lib.ts";
 
 const tags = [
@@ -92,60 +92,49 @@ const focusWalk = async (
   target: Page
 ): Promise<{ part: Result; stops: number }> => {
   const part = newResult("focus");
-  const { context, page } = await openPage({
-    reducedMotion: "reduce",
-    size: sizes.laptop,
-    url: target.url,
-  });
-  await settle(page, 1500);
-  const seen = new Set<string>();
-  let stops = 0;
-  for (let step = 0; step < 60; step += 1) {
-    await page.keyboard.press("Tab");
-    await page.waitForTimeout(120);
-    const info = await page.evaluate(readFocus);
-    if (!info || seen.has(info.key)) break;
-    seen.add(info.key);
-    stops += 1;
-    if (!info.onScreen) {
-      note(
-        part,
-        "warn",
-        `${target.path}: focused element is off screen: ${info.label}`
-      );
-      continue;
+  const say = reporter(part, target.path);
+  const stops = await withPage(
+    { reducedMotion: "reduce", size: sizes.laptop, url: target.url },
+    1500,
+    async ({ page }) => {
+      const seen = new Set<string>();
+      for (let step = 0; step < 60; step += 1) {
+        await page.keyboard.press("Tab");
+        await page.waitForTimeout(120);
+        const info = await page.evaluate(readFocus);
+        if (!info || seen.has(info.key)) break;
+        seen.add(info.key);
+        if (!info.onScreen) {
+          say.warn(`focused element is off screen: ${info.label}`);
+          continue;
+        }
+        const viewport = page.viewportSize() ?? sizes.laptop.viewport;
+        const x = Math.max(0, Math.floor(info.box.x - 8));
+        const y = Math.max(0, Math.floor(info.box.y - 8));
+        const clip = {
+          height: Math.min(
+            viewport.height - y,
+            Math.ceil(info.box.height + 16)
+          ),
+          width: Math.min(viewport.width - x, Math.ceil(info.box.width + 16)),
+          x,
+          y,
+        };
+        if (clip.width < 2 || clip.height < 2) continue;
+        const focused = await clipShot(page, clip);
+        await page.evaluate(blurFocus);
+        await page.waitForTimeout(150);
+        const blurred = await clipShot(page, clip);
+        await page.evaluate(refocus, info.key);
+        await page.waitForTimeout(100);
+        const { changed } = await pixelDiff(page, focused, blurred);
+        if (changed < 12) say.warn(`no visible focus change on ${info.label}`);
+        if (info.obscured)
+          say.warn(`focused ${info.label} is covered by another element`);
+      }
+      return seen.size;
     }
-    const viewport = page.viewportSize() ?? sizes.laptop.viewport;
-    const x = Math.max(0, Math.floor(info.box.x - 8));
-    const y = Math.max(0, Math.floor(info.box.y - 8));
-    const clip = {
-      height: Math.min(viewport.height - y, Math.ceil(info.box.height + 16)),
-      width: Math.min(viewport.width - x, Math.ceil(info.box.width + 16)),
-      x,
-      y,
-    };
-    if (clip.width < 2 || clip.height < 2) continue;
-    const focused = await clipShot(page, clip);
-    await page.evaluate(blurFocus);
-    await page.waitForTimeout(150);
-    const blurred = await clipShot(page, clip);
-    await page.evaluate(refocus, info.key);
-    await page.waitForTimeout(100);
-    const { changed } = await pixelDiff(page, focused, blurred);
-    if (changed < 12)
-      note(
-        part,
-        "warn",
-        `${target.path}: no visible focus change on ${info.label}`
-      );
-    if (info.obscured)
-      note(
-        part,
-        "warn",
-        `${target.path}: focused ${info.label} is covered by another element`
-      );
-  }
-  await context.close();
+  );
   return { part, stops };
 };
 
@@ -154,7 +143,6 @@ const check: Check = async (audit) => {
   const sizeNames = audit.fast
     ? (["phone", "laptop"] as const)
     : (["phone", "laptop", "wide"] as const);
-  let violations = 0;
   const incomplete = new Map<string, number>();
   const walkPages = audit.pages.filter(
     (entry) =>
@@ -166,29 +154,27 @@ const check: Check = async (audit) => {
     sizeNames.map((name) => ({ entry, name }))
   );
   const walking = pool(walkPages, focusWalk);
-  const scans = await pool(jobs, async ({ entry, name }) => {
-    const { context, page } = await openPage({
-      reducedMotion: "reduce",
-      size: sizes[name],
-      url: entry.url,
-    });
-    await settle(page, 1500);
-    const found = await new AxeBuilder({ page }).withTags(tags).analyze();
-    await context.close();
-    return { entry, found, name };
-  });
+  const scans = await pool(jobs, ({ entry, name }) =>
+    withPage(
+      { reducedMotion: "reduce", size: sizes[name], url: entry.url },
+      1500,
+      async ({ page }) => ({
+        entry,
+        found: await new AxeBuilder({ page }).withTags(tags).analyze(),
+        name,
+      })
+    )
+  );
   const walks = await walking;
   for (const { entry, found, name } of scans) {
+    const say = reporter(result, `${entry.path} ${name}`);
     for (const violation of found.violations) {
-      violations += 1;
       const targets = violation.nodes
         .slice(0, 3)
         .map((node) => node.target.join(" "))
         .join(", ");
-      note(
-        result,
-        "fail",
-        `${entry.path} ${name}: [${String(violation.impact)}] ${violation.id}: ${violation.help} (${String(violation.nodes.length)}x: ${targets})`
+      say.fail(
+        `[${String(violation.impact)}] ${violation.id}: ${violation.help} (${String(violation.nodes.length)}x: ${targets})`
       );
     }
     for (const item of found.incomplete)
@@ -197,11 +183,11 @@ const check: Check = async (audit) => {
         (incomplete.get(item.id) ?? 0) + item.nodes.length
       );
   }
-  for (const [id, count] of incomplete)
-    note(
-      result,
-      "info",
-      `axe could not decide ${id} on ${String(count)} nodes (usually contrast over the sky; the contrast check measures that)`
+  const violations = count(result, "fail");
+  const say = reporter(result, "");
+  for (const [id, nodes] of incomplete)
+    say.info(
+      `axe could not decide ${id} on ${String(nodes)} nodes (usually contrast over the sky; the contrast check measures that)`
     );
   let stops = 0;
   for (const walk of walks) {
@@ -210,10 +196,7 @@ const check: Check = async (audit) => {
   }
   result.metrics["violations"] = violations;
   result.metrics["tab_stops"] = stops;
-  const warnings = result.lines.filter((line) =>
-    line.startsWith("WARN")
-  ).length;
-  result.summary = `axe on ${String(audit.pages.length)} pages x ${String(sizeNames.length)} sizes: ${String(violations)} violations; ${String(stops)} tab stops walked, ${String(warnings)} focus warnings`;
+  result.summary = `axe on ${String(audit.pages.length)} pages x ${String(sizeNames.length)} sizes: ${String(violations)} violations; ${String(stops)} tab stops walked, ${String(count(result, "warn"))} focus warnings`;
   return result;
 };
 

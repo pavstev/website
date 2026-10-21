@@ -4,7 +4,7 @@ import path from "node:path";
 
 import type { Check } from "./types.ts";
 
-import { newResult, note, skip } from "./lib.ts";
+import { newResult, note, reporter, skip } from "./lib.ts";
 import { live } from "./pages.ts";
 
 interface LycheeData {
@@ -92,6 +92,7 @@ const check: Check = async (context) => {
     result.summary = "lychee did not run";
     return result;
   }
+  const say = reporter(result, "");
   const own = [origin, live];
   let broken = 0;
   const failures = Object.entries(data.error_map ?? data.fail_map ?? {});
@@ -104,9 +105,7 @@ const check: Check = async (context) => {
         JSON.stringify(item.status ?? "");
       const ours = own.some((prefix) => url.startsWith(prefix));
       broken += 1;
-      note(
-        result,
-        ours ? "fail" : "warn",
+      say[ours ? "fail" : "warn"](
         `${ours ? "own" : "external"} link ${url} on ${new URL(page).pathname}: ${String(status)}`
       );
     }

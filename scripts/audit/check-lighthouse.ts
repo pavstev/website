@@ -5,11 +5,15 @@ import path from "node:path";
 import type { Check, Page } from "./types.ts";
 
 import {
+  baselineMetrics,
   chromePath,
   median,
   newResult,
   note,
+  outDir,
+  pageOf,
   pageSlug,
+  reporter,
   root,
   skip,
 } from "./lib.ts";
@@ -77,14 +81,13 @@ const failing = (lhr: Lhr, category: string): string[] => {
 
 const check: Check = async (audit) => {
   const result = newResult("lighthouse");
-  const dir = path.join(audit.out, "lighthouse");
-  fs.mkdirSync(dir, { recursive: true });
-  const home = audit.pages.find((entry) => entry.kind === "home");
+  const dir = outDir(audit, "lighthouse");
+  const home = pageOf(audit.pages, "home");
   if (!home) return skip("lighthouse", "no home page to audit");
   const plan: Array<[Page, number]> = [[home, audit.fast ? 1 : 3]];
   if (!audit.fast)
     for (const kind of ["blog", "post"]) {
-      const entry = audit.pages.find((candidate) => candidate.kind === kind);
+      const entry = pageOf(audit.pages, kind);
       if (entry) plan.push([entry, 1]);
     }
   for (const [entry, runs] of plan) {
@@ -100,38 +103,27 @@ const check: Check = async (audit) => {
           reports.push(JSON.parse(fs.readFileSync(file, "utf8")) as Lhr);
       }
       const where = `${entry.path} ${preset}`;
+      const say = reporter(result, where);
       const first = reports[0];
       if (!first) {
-        note(result, "fail", `${where}: Lighthouse produced no report`);
+        say.fail("Lighthouse produced no report");
         continue;
       }
+      const med = (pick: (report: Lhr) => number): number =>
+        median(reports.map((report) => pick(report)));
       const score = (category: string): number =>
-        median(
-          reports.map(
-            (report) => (report.categories[category]?.score ?? 0) * 100
-          )
-        );
+        med((report) => (report.categories[category]?.score ?? 0) * 100);
       const slug = `${pageSlug(entry.url)}_${preset}`;
       const measured = {
         a11y: score("accessibility"),
         bp: score("best-practices"),
-        cls: median(
-          reports.map((report) => numeric(report, "cumulative-layout-shift"))
-        ),
-        fcp: median(
-          reports.map((report) => numeric(report, "first-contentful-paint"))
-        ),
-        kb: median(
-          reports.map((report) => numeric(report, "total-byte-weight") / 1024)
-        ),
-        lcp: median(
-          reports.map((report) => numeric(report, "largest-contentful-paint"))
-        ),
+        cls: med((report) => numeric(report, "cumulative-layout-shift")),
+        fcp: med((report) => numeric(report, "first-contentful-paint")),
+        kb: med((report) => numeric(report, "total-byte-weight") / 1024),
+        lcp: med((report) => numeric(report, "largest-contentful-paint")),
         perf: score("performance"),
         seo: score("seo"),
-        tbt: median(
-          reports.map((report) => numeric(report, "total-blocking-time"))
-        ),
+        tbt: med((report) => numeric(report, "total-blocking-time")),
       };
       for (const [key, value] of Object.entries(measured))
         result.metrics[`${key}_${slug}`] = Number(
@@ -149,20 +141,14 @@ const check: Check = async (audit) => {
       ] as const) {
         const value = score(category);
         if (value < 100)
-          note(
-            result,
-            "fail",
-            `${where}: ${label} ${String(value)}: ${failing(first, category).join(", ")}`
+          say.fail(
+            `${label} ${String(value)}: ${failing(first, category).join(", ")}`
           );
       }
-      const old = audit.baseline?.results.find(
-        (entryResult) => entryResult.name === "lighthouse"
-      )?.metrics[`perf_${slug}`];
-      if (typeof old === "number" && measured.perf < old - 5)
-        note(
-          result,
-          "warn",
-          `${where}: performance fell from ${String(old)} to ${String(measured.perf)}`
+      const old = baselineMetrics(audit, "lighthouse")[`perf_${slug}`];
+      if (old !== undefined && measured.perf < old - 5)
+        say.warn(
+          `performance fell from ${String(old)} to ${String(measured.perf)}`
         );
     }
   }

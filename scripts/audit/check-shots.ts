@@ -4,31 +4,25 @@ import path from "node:path";
 import type { Check, Page } from "./types.ts";
 
 import {
+  firstPostOnly,
   newResult,
   note,
   openPage,
+  outDir,
   pageSlug,
   pixelDiff,
   pool,
-  settle,
   type Size,
+  sizes,
   skyTimes,
+  withPage,
   withQuery,
 } from "./lib.ts";
 
 const shotSizes: Record<"laptop" | "phone" | "tablet", Size> = {
-  laptop: { viewport: { height: 900, width: 1440 } },
-  phone: {
-    deviceScaleFactor: 2,
-    hasTouch: true,
-    isMobile: true,
-    viewport: { height: 844, width: 390 },
-  },
-  tablet: {
-    hasTouch: true,
-    isMobile: true,
-    viewport: { height: 1024, width: 768 },
-  },
+  laptop: sizes.laptop,
+  phone: { ...sizes.phone, deviceScaleFactor: 2 },
+  tablet: { hasTouch: true, isMobile: true, viewport: sizes.tablet.viewport },
 };
 
 interface Job {
@@ -49,12 +43,8 @@ const scrollToEnd = (): void => {
 
 const check: Check = async (audit) => {
   const result = newResult("shots");
-  const dir = path.join(audit.out, "shots");
-  fs.mkdirSync(dir, { recursive: true });
-  const firstPost = audit.pages.find((entry) => entry.kind === "post");
-  const pages = audit.pages.filter(
-    (entry) => entry.kind !== "post" || entry === firstPost
-  );
+  const dir = outDir(audit, "shots");
+  const pages = firstPostOnly(audit.pages);
   const looks: ReadonlyArray<readonly ["day" | "night", string]> = audit.fast
     ? [["day", "partly"]]
     : [
@@ -69,27 +59,30 @@ const check: Check = async (audit) => {
     for (const size of sizeNames)
       for (const [time, weather] of looks)
         jobs.push({ entry, size, time, weather });
-  const taken = await pool(jobs, async ({ entry, size, time, weather }) => {
-    const { context, page } = await openPage({
-      reducedMotion: "reduce",
-      seed: true,
-      size: shotSizes[size],
-      time: skyTimes[time],
-      url: withQuery(entry.url, { weather }),
-    });
-    await settle(page, 2500);
-    const base = `${pageSlug(entry.url)}-${size}-${time}`;
-    const made = [`${base}.png`];
-    await page.screenshot({ path: path.join(dir, `${base}.png`) });
-    if (await page.evaluate(isTall)) {
-      await page.evaluate(scrollToEnd);
-      await page.waitForTimeout(1500);
-      await page.screenshot({ path: path.join(dir, `${base}-end.png`) });
-      made.push(`${base}-end.png`);
-    }
-    await context.close();
-    return made;
-  });
+  const taken = await pool(jobs, ({ entry, size, time, weather }) =>
+    withPage(
+      {
+        reducedMotion: "reduce",
+        seed: true,
+        size: shotSizes[size],
+        time: skyTimes[time],
+        url: withQuery(entry.url, { weather }),
+      },
+      2500,
+      async ({ page }) => {
+        const base = `${pageSlug(entry.url)}-${size}-${time}`;
+        const made = [`${base}.png`];
+        await page.screenshot({ path: path.join(dir, `${base}.png`) });
+        if (await page.evaluate(isTall)) {
+          await page.evaluate(scrollToEnd);
+          await page.waitForTimeout(1500);
+          await page.screenshot({ path: path.join(dir, `${base}-end.png`) });
+          made.push(`${base}-end.png`);
+        }
+        return made;
+      }
+    )
+  );
   const names = taken.flat();
   result.metrics["shots"] = names.length;
   const before = audit.baselineDir

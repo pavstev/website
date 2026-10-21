@@ -6,14 +6,9 @@ import {
 } from "node:http";
 import { after, before, test } from "node:test";
 
-import type { Context } from "./types.ts";
+import type { Context, Page, Result } from "./types.ts";
 
 import check, { mcpTools } from "./check-worker.ts";
-
-interface Call {
-  method: string;
-  session: string | undefined;
-}
 
 type Handler = (
   request: IncomingMessage,
@@ -22,7 +17,7 @@ type Handler = (
 ) => void;
 
 const routes = new Map<string, Handler>();
-const seen: Call[] = [];
+const seen: Array<{ method: string; session: string | undefined }> = [];
 let base = "";
 let server: ReturnType<typeof createServer> | undefined;
 
@@ -31,66 +26,19 @@ const secure = {
   "referrer-policy": "no-referrer",
   "x-content-type-options": "nosniff",
 };
-
 const goodWhere = {
   "cache-control": "private, no-store",
   "x-robots-tag": "noindex",
 };
-
 const nullWhere = { city: null, far: null, lat: null, lon: null };
 
-const json = (
-  response: ServerResponse,
-  body: unknown,
-  headers: Record<string, string> = {}
-): void => {
-  response.writeHead(200, {
-    "content-type": "application/json",
-    ...headers,
-  });
-  response.end(JSON.stringify(body));
-};
-
-const readMessage = (body: string): { id: number; method: string } => {
-  const parsed: unknown = JSON.parse(body);
-  if (
-    typeof parsed === "object" &&
-    parsed !== null &&
-    "method" in parsed &&
-    typeof parsed.method === "string"
-  ) {
-    const id = "id" in parsed && typeof parsed.id === "number" ? parsed.id : 0;
-    return { id, method: parsed.method };
-  }
-  throw new TypeError("not a JSON-RPC message");
-};
-
-const mcp: Handler = (request, body, response) => {
-  const message = readMessage(body);
-  seen.push({
-    method: message.method,
-    session: request.headers["mcp-session-id"]?.toString(),
-  });
-  if (message.method === "initialize") {
-    json(
-      response,
-      { id: message.id, jsonrpc: "2.0", result: { capabilities: {} } },
-      { "mcp-session-id": "s1" }
-    );
-    return;
-  }
-  if (message.method === "notifications/initialized") {
-    response.writeHead(202).end();
-    return;
-  }
-  const answer = {
-    id: message.id,
-    jsonrpc: "2.0",
-    result: { tools: [{ name: "a" }, { name: "b" }] },
+const reply =
+  (body: unknown, headers: Record<string, string> = {}): Handler =>
+  (_request, _body, response) => {
+    response
+      .writeHead(200, { "content-type": "application/json", ...headers })
+      .end(JSON.stringify(body));
   };
-  response.writeHead(200, { "content-type": "text/event-stream" });
-  response.end(`event: message\ndata: ${JSON.stringify(answer)}\n\n`);
-};
 
 const html =
   (headers: Record<string, string>, body: string): Handler =>
@@ -100,7 +48,31 @@ const html =
       .end(body);
   };
 
-const context = (pages: Context["pages"]): Context => ({
+const mcp: Handler = (request, body, response) => {
+  const message = JSON.parse(body) as { id?: number; method: string };
+  seen.push({
+    method: message.method,
+    session: request.headers["mcp-session-id"]?.toString(),
+  });
+  if (message.method === "initialize")
+    reply(
+      { id: message.id, jsonrpc: "2.0", result: { capabilities: {} } },
+      { "mcp-session-id": "s1" }
+    )(request, body, response);
+  else if (message.method === "notifications/initialized")
+    response.writeHead(202).end();
+  else {
+    const answer = {
+      id: message.id,
+      jsonrpc: "2.0",
+      result: { tools: [{ name: "a" }, { name: "b" }] },
+    };
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    response.end(`event: message\ndata: ${JSON.stringify(answer)}\n\n`);
+  }
+};
+
+const context = (pages: Page[]): Context => ({
   base,
   baseline: undefined,
   baselineDir: undefined,
@@ -111,18 +83,29 @@ const context = (pages: Context["pages"]): Context => ({
   sitemap: "",
 });
 
-const page = (kind: string, path: string): Context["pages"][number] => ({
+const page = (kind: string, path: string): Page => ({
   kind,
   live: undefined,
   path,
   url: "",
 });
 
+const checked = async (
+  where: Handler | undefined,
+  pages: Page[] = []
+): Promise<Result> => {
+  if (where) routes.set("/where", where);
+  else routes.delete("/where");
+  return check(context(pages));
+};
+
+const hasLine = (result: Result, line: string): void => {
+  assert.ok(result.lines.includes(line), result.lines.join("\n"));
+};
+
 before(async () => {
   routes.set("/mcp", mcp);
-  routes.set("/where", (_request, _body, response) => {
-    json(response, nullWhere, goodWhere);
-  });
+  routes.set("/where", reply(nullWhere, goodWhere));
   routes.set(
     "/",
     html(secure, '<html><script src="/_astro/app.js"></script></html>')
@@ -171,21 +154,14 @@ test("mcpTools names the step that failed", async () => {
 });
 
 test("the check passes on a good Worker and fails on missing headers", async () => {
-  const result = await check(
-    context([
-      page("home", "/"),
-      page("other", "/bare"),
-      page("404", "/missing"),
-    ])
-  );
+  const result = await checked(reply(nullWhere, goodWhere), [
+    page("home", "/"),
+    page("other", "/bare"),
+    page("404", "/missing"),
+  ]);
   assert.equal(result.metrics["mcp_tools"], 2);
-  assert.ok(
-    result.lines.includes("INFO /where: city null, far null"),
-    result.lines.join("\n")
-  );
-  assert.ok(
-    result.lines.includes("FAIL /bare: no Content-Security-Policy header")
-  );
+  hasLine(result, "INFO /where: city null, far null");
+  hasLine(result, "FAIL /bare: no Content-Security-Policy header");
   assert.ok(
     result.lines.some((line) =>
       line.startsWith("WARN /_astro/app.js: cache-control")
@@ -205,25 +181,13 @@ test("the check passes on a good Worker and fails on missing headers", async () 
 });
 
 test("wrong /where headers are FAIL lines", async () => {
-  routes.set("/where", (_request, _body, response) => {
-    json(response, nullWhere);
-  });
-  const result = await check(context([]));
-  assert.ok(
-    result.lines.includes('FAIL /where has no X-Robots-Tag noindex (got "")'),
-    result.lines.join("\n")
-  );
-  assert.ok(
-    result.lines.includes('FAIL /where cache-control is "", want no-store'),
-    result.lines.join("\n")
-  );
+  const result = await checked(reply(nullWhere));
+  hasLine(result, 'FAIL /where has no X-Robots-Tag noindex (got "")');
+  hasLine(result, 'FAIL /where cache-control is "", want no-store');
 });
 
 test("a /where answer without the four keys is a FAIL line", async () => {
-  routes.set("/where", (_request, _body, response) => {
-    json(response, { city: "x" }, goodWhere);
-  });
-  const result = await check(context([]));
+  const result = await checked(reply({ city: "x" }, goodWhere));
   assert.ok(
     result.lines.some((line) =>
       line.startsWith("FAIL /where lacks city, far, lat, lon")
@@ -233,10 +197,5 @@ test("a /where answer without the four keys is a FAIL line", async () => {
 });
 
 test("a missing /where is a FAIL line, not a crash", async () => {
-  routes.delete("/where");
-  const result = await check(context([]));
-  assert.ok(
-    result.lines.includes("FAIL /where answers 404"),
-    result.lines.join("\n")
-  );
+  hasLine(await checked(undefined), "FAIL /where answers 404");
 });

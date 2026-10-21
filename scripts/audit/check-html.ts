@@ -2,7 +2,7 @@ import { HtmlValidate } from "html-validate";
 
 import type { Check } from "./types.ts";
 
-import { fetchText, newResult, note } from "./lib.ts";
+import { baselineMetrics, fetchText, newResult, note } from "./lib.ts";
 
 const validator = new HtmlValidate({
   extends: ["html-validate:recommended"],
@@ -45,9 +45,7 @@ const check: Check = async (context) => {
       byRule.set(message.ruleId, list);
     }
   }
-  const old =
-    context.baseline?.results.find((entry) => entry.name === "html")?.metrics ??
-    {};
+  const old = baselineMetrics(context, "html");
   const rules = byRule
     .entries()
     .toArray()

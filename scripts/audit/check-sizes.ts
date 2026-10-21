@@ -4,7 +4,15 @@ import { brotliCompressSync, constants } from "node:zlib";
 
 import type { Check, Page, Result } from "./types.ts";
 
-import { newResult, note, pageSlug, root, skip } from "./lib.ts";
+import {
+  baselineMetrics,
+  firstPostOnly,
+  newResult,
+  note,
+  pageSlug,
+  root,
+  skip,
+} from "./lib.ts";
 
 type Kind = "css" | "font" | "html" | "image" | "js" | "other";
 
@@ -183,21 +191,12 @@ const check: Check = (context) => {
   const result = newResult("sizes");
   const dist = path.join(root, "dist");
   const count = totalDist(result, dist);
-  const pages = context.pages.filter((page) => page.kind !== "404");
-  const firstPost = pages.find((page) => page.kind === "post");
-  const measured = pages.filter(
-    (page) => page.kind !== "post" || page === firstPost
+  const measured = firstPostOnly(
+    context.pages.filter((page) => page.kind !== "404")
   );
-  const baseline = context.baseline?.results.find(
-    (entry) => entry.name === "sizes"
-  );
+  const before = baselineMetrics(context, "sizes");
   for (const page of measured)
-    measurePage(
-      result,
-      page,
-      dist,
-      baseline?.metrics[`js_br_kb_${pageSlug(page.url)}`]
-    );
+    measurePage(result, page, dist, before[`js_br_kb_${pageSlug(page.url)}`]);
   const home = result.metrics["js_br_kb_home"];
   result.summary = `home first-load JS ${String(home ?? "?")} KB brotli, dist ${String(count)} files`;
   return Promise.resolve(result);

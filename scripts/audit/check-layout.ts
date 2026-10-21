@@ -1,50 +1,37 @@
-import fs from "node:fs";
 import path from "node:path";
 
 import type { Check, Level, Page } from "./types.ts";
 
-import { newResult, note, openPage, pageSlug, pool, settle } from "./lib.ts";
+import {
+  firstPostOnly,
+  newResult,
+  outDir,
+  pageSlug,
+  pool,
+  reporter,
+  withPage,
+} from "./lib.ts";
 
 type Dim = [number, number, number];
 
-const homeSizes: Dim[] = [
-  [320, 568, 1],
-  [360, 740, 1],
-  [375, 667, 1],
-  [390, 844, 1],
-  [414, 896, 1],
-  [430, 932, 1],
-  [844, 390, 1],
-  [932, 430, 1],
-  [768, 1024, 1],
-  [820, 1180, 1],
-  [1024, 768, 1],
-  [1024, 720, 0],
-  [1280, 720, 0],
-  [1366, 768, 0],
-  [1440, 900, 0],
-  [1920, 1080, 0],
-  [2560, 1440, 0],
-  [160, 320, 1],
-  [195, 422, 1],
-  [640, 360, 0],
-  [720, 450, 0],
-];
-const otherSizes: Dim[] = [
-  [320, 568, 1],
-  [390, 844, 1],
-  [195, 422, 1],
-  [768, 1024, 1],
-  [1280, 720, 0],
-  [1440, 900, 0],
-];
-const spacingSizes: Dim[] = [
-  [390, 844, 1],
-  [320, 568, 1],
-  [1024, 720, 0],
-  [1280, 720, 0],
-  [1440, 900, 0],
-];
+const parseSizes = (spec: string): Dim[] =>
+  spec
+    .trim()
+    .split(/\s+/u)
+    .map((item) => {
+      const [width = "", height = ""] = item.replace("t", "").split("x", 2);
+      return [Number(width), Number(height), item.endsWith("t") ? 1 : 0];
+    });
+
+const homeSizes = parseSizes(`
+  320x568t 360x740t 375x667t 390x844t 414x896t 430x932t 844x390t 932x430t
+  768x1024t 820x1180t 1024x768t 1024x720 1280x720 1366x768 1440x900 1920x1080
+  2560x1440 160x320t 195x422t 640x360 720x450
+`);
+const otherSizes = parseSizes(
+  "320x568t 390x844t 195x422t 768x1024t 1280x720 1440x900"
+);
+const spacingSizes = parseSizes("390x844t 320x568t 1024x720 1280x720 1440x900");
 const spacingCss =
   "*{line-height:1.5!important;letter-spacing:.12em!important;word-spacing:.16em!important}p{margin-bottom:2em!important}";
 
@@ -332,15 +319,12 @@ const measure = ({ H, touch, W }: MeasureInput): Findings => {
     }
     scrollTo(0, 0);
   }
-  found.clipped = [...new Set(found.clipped)];
-  found.covered = [...new Set(found.covered)];
-  found.offscreen = [...new Set(found.offscreen)];
-  found.overlaps = [...new Set(found.overlaps)];
-  found.small = [...new Set(found.small)];
-  found.tiny = [...new Set(found.tiny)];
-  found.truncated = [...new Set(found.truncated)];
-  found.unreachable = [...new Set(found.unreachable)];
-  return found;
+  return Object.fromEntries(
+    Object.entries(found).map(([key, value]) => [
+      key,
+      Array.isArray(value) ? [...new Set(value)] : value,
+    ])
+  ) as unknown as Findings;
 };
 
 interface Run {
@@ -352,13 +336,10 @@ interface Run {
 
 const check: Check = async (audit) => {
   const result = newResult("layout");
-  const dir = path.join(audit.out, "layout");
-  fs.mkdirSync(dir, { recursive: true });
-  const firstPost = audit.pages.find((entry) => entry.kind === "post");
+  const dir = outDir(audit, "layout");
   const spaced = audit.fast ? spacingSizes.slice(0, 3) : spacingSizes;
   const plan: Array<Omit<Run, "found">> = [];
-  for (const entry of audit.pages) {
-    if (entry !== firstPost && entry.kind === "post") continue;
+  for (const entry of firstPostOnly(audit.pages)) {
     const list = entry.kind === "home" && !audit.fast ? homeSizes : otherSizes;
     for (const size of list) plan.push({ entry, size, spacing: false });
     if (entry.kind === "home" || entry.kind === "post")
@@ -369,45 +350,48 @@ const check: Check = async (audit) => {
     plan,
     async ({ entry, size, spacing }): Promise<Run> => {
       const [W, H, touch] = size;
-      const { context, page } = await openPage({
-        reducedMotion: "reduce",
-        size: {
-          deviceScaleFactor: 1,
-          hasTouch: Boolean(touch),
-          isMobile: Boolean(touch),
-          viewport: { height: H, width: W },
+      const found = await withPage(
+        {
+          reducedMotion: "reduce",
+          size: {
+            deviceScaleFactor: 1,
+            hasTouch: Boolean(touch),
+            isMobile: Boolean(touch),
+            viewport: { height: H, width: W },
+          },
+          url: entry.url,
         },
-        url: entry.url,
-      });
-      await settle(page, 1000);
-      if (spacing) {
-        await page.addStyleTag({ content: spacingCss });
-        await page.waitForTimeout(700);
-      }
-      const found = await page.evaluate(measure, {
-        H,
-        touch: Boolean(touch),
-        W,
-      });
-      const tag = `${pageSlug(entry.url)}-${String(W)}x${String(H)}${spacing ? "-spacing" : ""}`;
-      await page.screenshot({ path: path.join(dir, `${tag}.png`) });
-      await context.close();
+        1000,
+        async ({ page }) => {
+          if (spacing) {
+            await page.addStyleTag({ content: spacingCss });
+            await page.waitForTimeout(700);
+          }
+          const measured = await page.evaluate(measure, {
+            H,
+            touch: Boolean(touch),
+            W,
+          });
+          const tag = `${pageSlug(entry.url)}-${String(W)}x${String(H)}${spacing ? "-spacing" : ""}`;
+          await page.screenshot({ path: path.join(dir, `${tag}.png`) });
+          return measured;
+        }
+      );
       return { entry, found, size, spacing };
     }
   );
   for (const { entry, found, size, spacing } of runs) {
     const [W, H, touch] = size;
-    const where = `${entry.path} ${String(W)}x${String(H)}${touch ? " touch" : ""}${spacing ? " text-spacing" : ""}`;
+    const say = reporter(
+      result,
+      `${entry.path} ${String(W)}x${String(H)}${touch ? " touch" : ""}${spacing ? " text-spacing" : ""}`
+    );
     const add = (level: Level, what: string, items: string[]): void => {
       if (items.length === 0) return;
       if (level !== "info") counts[level] += 1;
       const more =
         items.length > 5 ? ` (+${String(items.length - 5)} more)` : "";
-      note(
-        result,
-        level,
-        `${where}: ${what}: ${items.slice(0, 5).join("; ")}${more}`
-      );
+      say[level](`${what}: ${items.slice(0, 5).join("; ")}${more}`);
     };
     if (found.overflowX > 1)
       add("fail", "page scrolls sideways", [
