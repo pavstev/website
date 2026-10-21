@@ -1,5 +1,7 @@
 # build output
 dist/
+# site audit reports
+.audit/
 # generated types
 .astro/
 

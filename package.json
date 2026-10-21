@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "astro": "astro",
+    "audit:site": "node scripts/audit/index.ts",
     "build": "export BLOG_BUILT_AT=$(node -p \"new Date().toISOString()\") && astro build && node scripts/preload-guard.ts && node scripts/meta-guard.ts",
     "check": "pnpm types && prettier --check . --cache --log-level=warn && eslint . --max-warnings=0 --cache && astro check && tsc --noEmit -p worker/tsconfig.json && node --test --test-reporter=dot \"scripts/**/*.test.ts\" \"src/**/*.test.ts\" \"worker/**/*.test.ts\" && knip && knip --production --include files && pnpm build && node src/profile/cli.ts --check",
     "check:fast": "node scripts/check-fast.ts",
@@ -49,6 +50,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.14.0",
     "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",
     "@eslint/markdown": "^8.0.3",
     "@tailwindcss/vite": "^4.3.3",
@@ -69,8 +71,10 @@
     "eslint-plugin-security": "^4.2.0",
     "eslint-plugin-unicorn": "^77.0.0",
     "eslint-plugin-unused-imports": "^4.4.1",
+    "html-validate": "^11.17.0",
     "husky": "^9.1.7",
     "knip": "^6.39.0",
+    "lighthouse": "13.3.0",
     "playwright-core": "^1.64.0",
     "prettier": "^3.9.9",
     "prettier-plugin-astro": "^1.1.1",

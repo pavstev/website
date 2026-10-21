@@ -7,7 +7,7 @@ import { isScheduled } from "../src/lib/blog/schedule.ts";
 
 const host = "stevanpavlovic.com";
 export const origin = `https://${host}`;
-const key = "ee32ef309c036fb4c6b716d08e9bf922";
+export const key = "ee32ef309c036fb4c6b716d08e9bf922";
 const endpoint = "https://api.indexnow.org/IndexNow";
 const pollIntervalMs = 20_000;
 const pollLimitMs = 15 * 60_000;

@@ -3,6 +3,7 @@ import type { KnipConfig } from "knip";
 const config: KnipConfig = {
   entry: [
     "content/**/*.mdx",
+    "scripts/audit/index.ts!",
     "scripts/blog-fixtures.ts!",
     "scripts/blog-publish.ts!",
     "scripts/generate-images.ts!",
@@ -15,7 +16,8 @@ const config: KnipConfig = {
     "scripts/**/*.test.ts",
     "src/profile/**/*.test.ts",
   ],
-  ignoreDependencies: ["@fontsource/inter"],
+  ignoreBinaries: ["lychee"],
+  ignoreDependencies: ["@fontsource/inter", "lighthouse"],
   ignoreExportsUsedInFile: false,
   includeEntryExports: true,
   project: [

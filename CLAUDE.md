@@ -120,8 +120,8 @@ public/            _headers, fonts/, portraits/, favicons, generated og-image.jp
 
 ## Tools
 
-- Audit kit: `node ~/powertools/tools/site-audit/audit.ts` (sizes, SEO, links, a11y, layout, contrast, shots, Lighthouse). Probes are in `~/powertools/benches/web-perf/scripts/`.
+- Audit: `pnpm audit:site` (code in `scripts/audit/`; sizes, SEO, HTML, links, Worker, runtime, a11y, layout, contrast, shots, Lighthouse). It builds, serves `dist` with `wrangler dev` on port 8790 and writes `.audit/audit-<label>/report.md` (gitignored). `--fast`, `--only a,b`, `--skip a,b`, `--no-build`, `--url`, `--baseline` are the options. Browsers install once with `pnpm exec playwright-core install chromium`. The links check needs `lychee`. Probes stay in `~/powertools/benches/web-perf/scripts/`.
 - Run heavy audits once at the end, in the background. Measure speed on a throttled phone profile.
-- Worktrees: do not symlink `node_modules`. Run Playwright from `~/powertools/tools/site-audit` and open `http://localhost:4321`, not `127.0.0.1`.
+- Worktrees: do not symlink `node_modules`. For your own browser runs open `http://localhost:4321`, not `127.0.0.1`.
 - The Claude in Chrome tab is hidden. Run pointer flows in headless Playwright.
-- Keep test scripts, reports and screenshot tooling out of the repo.
+- The audit code is in the repo. Reports, screenshots and one-off test scripts stay out of git (`.audit/` is ignored).
