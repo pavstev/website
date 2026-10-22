@@ -7,7 +7,7 @@
   "scripts": {
     "astro": "astro",
     "audit:site": "node scripts/audit/index.ts",
-    "build": "export BLOG_BUILT_AT=$(node -p \"new Date().toISOString()\") && astro build && node scripts/preload-guard.ts && node scripts/meta-guard.ts",
+    "build": "export BLOG_BUILT_AT=$(node -p \"new Date().toISOString()\") && astro build && node scripts/preload-guard.ts && node scripts/meta-guard.ts && node scripts/timeline-guard.ts",
     "check": "pnpm types && prettier --check . --cache --log-level=warn && eslint . --max-warnings=0 --cache && astro check && tsc --noEmit -p worker/tsconfig.json && node --test --test-reporter=dot \"scripts/**/*.test.ts\" \"src/**/*.test.ts\" \"worker/**/*.test.ts\" && knip && knip --production --include files && pnpm build && node src/profile/cli.ts --check",
     "check:fast": "node scripts/check-fast.ts",
     "dev": "astro dev --port 4321",

@@ -105,9 +105,7 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   z-index: -1;
   height: 5rem;
   background: linear-gradient(var(--bar-tint), transparent);
-  -webkit-backdrop-filter: var(--bar-blur);
   backdrop-filter: var(--bar-blur);
-  -webkit-mask-image: linear-gradient(var(--black) 35%, transparent);
   mask-image: linear-gradient(var(--black) 35%, transparent);
   pointer-events: none;
 }
@@ -397,7 +395,6 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
 
 @media (forced-colors: active) {
   .blog-bar-glass {
-    -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: Canvas;
   }
@@ -1044,11 +1041,6 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
 }
 
 .tech-lane[data-overflow] > .tech-tags {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    var(--black) var(--lane-fade, 100%),
-    transparent
-  );
   mask-image: linear-gradient(
     to right,
     var(--black) var(--lane-fade, 100%),
@@ -2187,7 +2179,6 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   border: 1px solid var(--glass-float-edge);
   border-radius: 9px;
   background-color: var(--glass-float);
-  -webkit-backdrop-filter: var(--glass-blur-float);
   backdrop-filter: var(--glass-blur-float);
   color: var(--ui-key-ink);
   font-family: var(--font-ui);

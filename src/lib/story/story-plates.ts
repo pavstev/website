@@ -1,3 +1,4 @@
+import { fadeTo, moveTo, type Placed, wirePath } from "./story-dom.ts";
 import { type Box, overlapsRect } from "./story-scroll.ts";
 
 export interface PlateArea {
@@ -26,9 +27,7 @@ export interface PlateSpot {
   wire: [number, number, number, number] | undefined;
 }
 
-interface Plate {
-  alpha: number;
-  el: HTMLDivElement;
+interface Plate extends Placed<HTMLDivElement> {
   height: number;
   room: number;
   width: number;
@@ -84,13 +83,7 @@ const makePlate = (source: HTMLElement, box: HTMLElement): Plate => {
   el.className = "story-plate";
   el.append(...[...source.children].map((span) => rowOf(span)));
   box.append(el);
-  return { alpha: 0, el, height: 0, room: 0, width: 0 };
-};
-
-const fade = (plate: Plate, alpha: number): void => {
-  if (plate.alpha === alpha) return;
-  plate.alpha = alpha;
-  plate.el.style.opacity = String(alpha);
+  return { alpha: 0, at: "", el, height: 0, room: 0, width: 0 };
 };
 
 const measure = (plate: Plate, room: number): void => {
@@ -129,15 +122,9 @@ export const createPlates = (
   });
   const all = plates.flat();
   const [svg, path, dot] = makeWire(box);
-  let wireAlpha = -1;
+  const wire: Placed<SVGSVGElement> = { alpha: -1, at: "", el: svg };
   let lastWidth = -1;
   for (const strip of strips) strip?.removeAttribute("tabindex");
-
-  const showWire = (alpha: number): void => {
-    if (wireAlpha === alpha) return;
-    wireAlpha = alpha;
-    svg.style.opacity = String(alpha);
-  };
 
   const place: PlateBoard["place"] = (
     index,
@@ -152,10 +139,10 @@ export const createPlates = (
       for (const plate of all) plate.height = 0;
     }
     const plate = plates[index]?.[sub];
-    for (const other of all) if (other !== plate) fade(other, 0);
+    for (const other of all) if (other !== plate) fadeTo(other, 0);
     if (!plate || !anchor) {
-      if (plate) fade(plate, 0);
-      showWire(0);
+      if (plate) fadeTo(plate, 0);
+      fadeTo(wire, 0);
       return;
     }
     const natural = Math.min(maxWidth, area.width - 2 * pad);
@@ -163,7 +150,7 @@ export const createPlates = (
       plateSpot(anchor, { height: plate.height, width }, avoid[0], area, wide);
     measure(plate, spotFor(natural).width);
     const spot = spotFor(plate.width);
-    plate.el.style.transform = `translate3d(${spot.left.toFixed(1)}px,${spot.top.toFixed(1)}px,0)`;
+    moveTo(plate, spot.left, spot.top);
     const rect = {
       height: plate.height,
       left: spot.left,
@@ -173,19 +160,20 @@ export const createPlates = (
     const blocked =
       spot.width < 160 || avoid.some((text) => overlapsRect(rect, text, pad));
     const alpha = blocked ? 0 : 1;
-    fade(plate, alpha);
+    fadeTo(plate, alpha);
     if (blocked || !spot.wire) {
-      showWire(0);
+      fadeTo(wire, 0);
       return;
     }
     const [x0, y0, x1, y1] = spot.wire;
-    path.setAttribute(
-      "d",
-      `M${x0.toFixed(1)} ${y0.toFixed(1)}V${((y0 + y1) / 2).toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}`
-    );
-    dot.setAttribute("cx", x1.toFixed(1));
-    dot.setAttribute("cy", y1.toFixed(1));
-    showWire(alpha);
+    const d = wirePath(x0, y0, x1, y1);
+    if (d !== wire.at) {
+      wire.at = d;
+      path.setAttribute("d", d);
+      dot.setAttribute("cx", x1.toFixed(1));
+      dot.setAttribute("cy", y1.toFixed(1));
+    }
+    fadeTo(wire, alpha);
   };
 
   return {

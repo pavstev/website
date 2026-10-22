@@ -39,7 +39,7 @@ Path rules in `.claude/rules/` load when you touch matching files:
 ```bash
 pnpm dev          # astro dev on http://localhost:4321 (drafts show)
 pnpm dev:many     # the same plus 30 generated test posts (BLOG_FIXTURES=1)
-pnpm build        # astro build, preload guard, meta guard -> ./dist
+pnpm build        # astro build, preload, meta and timeline guards -> ./dist
 pnpm preview      # serve ./dist on port 4321
 pnpm check:fast   # prettier, eslint and related tests on changed files (--staged: staged files)
 pnpm check        # types, prettier, eslint, astro check, worker tsc, tests, knip (2 passes), build, profile

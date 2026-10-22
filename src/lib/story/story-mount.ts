@@ -14,6 +14,7 @@ import {
 import { createRenderer } from "./blueprint-gl";
 import { finaleStops, isSkillMap, stopAt, walkOf } from "./skill-map";
 import { isStepId, type StepId } from "./step-ids";
+import { fadeTo, moveTo, type Placed } from "./story-dom";
 import { createOrbit } from "./story-orbit";
 import { createPlates } from "./story-plates";
 import {
@@ -34,9 +35,7 @@ import {
   type StepOffset,
 } from "./story-scroll";
 
-interface Pin {
-  alpha: number;
-  el: HTMLSpanElement;
+interface Pin extends Placed<HTMLSpanElement> {
   height: number;
   text: string;
   tone: string;
@@ -59,6 +58,8 @@ const gridShare = 0.6;
 const maxYaw = (3 * Math.PI) / 180;
 const maxPitch = (2 * Math.PI) / 180;
 const stillEnd = 1 - 1e-9;
+const cssProgress =
+  typeof CSS !== "undefined" && CSS.supports("animation-timeline: view()");
 const countKeys = [
   "agents",
   "guardChecks",
@@ -247,7 +248,7 @@ export const mountStory = (root: HTMLElement): (() => void) => {
   const makePin = (): Pin => {
     const el = document.createElement("span");
     pinBox.append(el);
-    return { alpha: -1, el, height: 0, text: "", tone: "", width: 0 };
+    return { alpha: -1, at: "", el, height: 0, text: "", tone: "", width: 0 };
   };
 
   const placePins = (
@@ -284,28 +285,19 @@ export const mountStory = (root: HTMLElement): (() => void) => {
         y + shiftY - pin.height / 2,
         pinHeight - pin.height - pinPad
       );
-      pin.el.style.transform = `translate3d(${left.toFixed(1)}px,${top.toFixed(1)}px,0)`;
+      moveTo(pin, left, top);
       const spot = {
         height: pin.height,
         left: left - shiftX,
         top: top - shiftY,
         width: pin.width,
       };
-      const alpha = avoid.some((box) => overlapsRect(spot, box, textGap))
-        ? 0
-        : label.alpha;
-      if (pin.alpha === alpha) {
-        continue;
-      }
-
-      pin.alpha = alpha;
-      pin.el.style.opacity = alpha.toFixed(2);
+      fadeTo(
+        pin,
+        avoid.some((box) => overlapsRect(spot, box, textGap)) ? 0 : label.alpha
+      );
     }
-    for (const [id, pin] of pins) {
-      if (seen.has(id) || pin.alpha === 0) continue;
-      pin.alpha = 0;
-      pin.el.style.opacity = "0";
-    }
+    for (const [id, pin] of pins) if (!seen.has(id)) fadeTo(pin, 0);
   };
 
   const dimBox = (index: number, area: DOMRect): Box | undefined => {
@@ -372,9 +364,9 @@ export const mountStory = (root: HTMLElement): (() => void) => {
       Math.max(0, stopOf(index, t))
     );
     const progress = Math.round((shown / ids.length) * 1000) / 1000;
-    if (progress !== progressShown && !wide.matches) {
+    if (!cssProgress && progress !== progressShown && !wide.matches) {
       progressShown = progress;
-      root.style.setProperty("--story-progress", String(progress));
+      stage.style.setProperty("--story-progress", String(progress));
     }
     return goal === shown && tilt.settled();
   };

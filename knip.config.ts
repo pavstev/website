@@ -10,6 +10,7 @@ const config: KnipConfig = {
     "scripts/indexnow.ts!",
     "scripts/preload-guard.ts!",
     "scripts/meta-guard.ts!",
+    "scripts/timeline-guard.ts!",
     "scripts/check-fast.ts!",
     "scripts/generate-*.ts!",
     "src/profile/cli.ts!",

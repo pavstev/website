@@ -127,7 +127,6 @@
     --story-hair-strong: var(--border-strong);
     --story-plate: color-mix(in srgb, var(--story-paper) 90%, transparent);
     --story-shade: color-mix(in srgb, var(--story-paper) 74%, transparent);
-    --story-shade-mid: color-mix(in srgb, var(--story-paper) 42%, transparent);
     --story-grid-minor: rgb(255 255 255 / 0.04);
     --story-grid-major: rgb(255 255 255 / 0.08);
     --story-row: 4px;

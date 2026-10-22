@@ -11,6 +11,7 @@ Project facts by area. Read the bullet for the area you change. Rules for design
 - Routes: `/` (`index.astro`, layout `Base.astro`), `/work`, `/about`, the blog, `404`, `sitemap.xml`, `robots.txt`, `manifest.webmanifest`, `llms.txt`, `cv.json`, `resume.pdf`, `build.json`.
 - Blog routes are built only while a post is live (`blogLive`).
 - `astro.config.mjs` sets `devToolbar` off, `prefetch: false`, `build.inlineStylesheets: "always"` and `optimizeDeps.include: ["three"]`.
+- `vite.build.cssTarget` names the browsers (the Tailwind baseline: Chrome 111, Safari 16.4, Firefox 128). Without it the Vite CSS minifier (lightningcss) has no targets and folds `animation-timeline` into the `animation` shorthand, which no browser accepts, so every scroll-driven animation is dropped from the build. Dev does not minify, so dev looked right. This was the case until 2026-10-22. `scripts/timeline-guard.ts` runs after the build and fails it when a timeline sits inside an `animation` shorthand again. With targets the minifier also adds the `-webkit-` prefixes (`mask-image`, `mask-composite`, `backdrop-filter`, `user-select`), so the source CSS carries none.
 - `island-style-to-css` in the same file removes the invalid `<style>astro-island,...` that Astro writes into the body.
 - `pnpm types` (in `prepare` and at the start of `check`) runs `wrangler types` and `astro sync`. It makes the gitignored `worker-configuration.d.ts` and the `.astro` types.
 - `pnpm dev` runs `astro dev`. `pnpm dev:many` first writes 30 test posts with `scripts/blog-fixtures.ts`.
@@ -113,7 +114,7 @@ Project facts by area. Read the bullet for the area you change. Rules for design
 - The 16 px blur placeholder is made with sharp. The first image of a post is eager (`first-image.ts`).
 - Share images are drawn with satori and sharp at `/blog/<slug>/share.png`, linked with a `?v=` version of the drawn fields (`shareImageUrl` in `images.ts`). Inter `latin` and `latin-ext` come from `@fontsource/inter`, so satori never fetches a font.
 - `src/pages/build.json.ts` writes `{"sha","builtAt"}`. `pnpm build` exports `BLOG_BUILT_AT` once, and `astro build` and `build.json` both use it.
-- `scripts/preload-guard.ts` and `scripts/meta-guard.ts` run after `astro build`. The first fails on an image preload on a post page. The second keeps the 404 `noindex` and the share titles equal to the page title.
+- `scripts/preload-guard.ts`, `scripts/meta-guard.ts` and `scripts/timeline-guard.ts` run after `astro build`. The first fails on an image preload on a post page. The second keeps the 404 `noindex` and the share titles equal to the page title. The third fails when a scroll or view timeline sits inside an `animation` shorthand.
 - Charts read `content/blog/<slug>/data/*.json` (`chart-data.ts`). Diagrams are hand-made figures with copy in `diagrams.ts`.
 - Feeds: `feeds.ts` builds RSS 2.0 and JSON Feed 1.1 with the written offset. `sitemap.xml.ts` (writer `sitemap.ts`) lists posts with `updated ?? date`, then listings.
 - `llms.txt` has a `## Blog` section linking each `.md` copy. The Worker's `posts` and `post` tools read `feed.json` and the `.md` copies.

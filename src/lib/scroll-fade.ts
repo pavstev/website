@@ -16,7 +16,7 @@ export const watchScrollFade = (): void => {
         element.dataset["scrolled"] = "";
         getComputedStyle(element).getPropertyValue("scrollbar-color");
       }
-      element.dataset["scrolling"] = "";
+      element.dataset["scrolling"] ??= "";
       globalThis.clearTimeout(timers.get(element));
       timers.set(
         element,

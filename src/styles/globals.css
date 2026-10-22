@@ -937,11 +937,9 @@ html {
   .sky-trigger,
   .motion-switch-button
 ) {
-  -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
 
   @media (forced-colors: active) {
-    -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }
@@ -955,11 +953,9 @@ html {
   border: 1px solid var(--glass-float-edge);
   background-color: var(--glass-float);
   background-image: none;
-  -webkit-backdrop-filter: var(--glass-blur-float);
   backdrop-filter: var(--glass-blur-float);
 
   @media (forced-colors: active) {
-    -webkit-backdrop-filter: none;
     backdrop-filter: none;
     border-color: CanvasText;
     background-color: Canvas;
@@ -2670,7 +2666,6 @@ html:has([data-blog]) {
   cursor: grab;
   touch-action: none;
   user-select: none;
-  -webkit-user-select: none;
 }
 
 .sky-globe-stage[data-dragging] {
