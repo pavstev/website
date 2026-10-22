@@ -412,14 +412,24 @@ export const createRenderer = (
       gl.bindVertexArray(triArrays);
       upload(triBuffer, faces.subarray(0, faceVertices * triVertexFloats));
       gl.uniform1f(flat.round, 0);
-      gl.uniform1f(flat.dot, 1);
+      gl.uniform1f(flat.dot, 0);
       setDims(flat, boxes);
       gl.uniformMatrix4fv(flat.matrix, false, view);
+      gl.enable(gl.DEPTH_TEST);
+      gl.colorMask(false, false, false, false);
+      gl.drawArrays(gl.TRIANGLES, 0, faceVertices);
+      gl.colorMask(true, true, true, true);
+      gl.disable(gl.DEPTH_TEST);
       gl.drawArrays(gl.TRIANGLES, 0, faceVertices);
       gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+      gl.depthMask(false);
+      gl.uniform1f(flat.dot, 1);
       gl.drawArrays(gl.TRIANGLES, 0, faceVertices);
-      gl.disable(gl.DEPTH_TEST);
       gl.uniform1f(flat.dot, 0);
+      gl.depthMask(true);
+      gl.depthFunc(gl.LESS);
+      gl.disable(gl.DEPTH_TEST);
     }
 
     if (lineCount > 0) {
