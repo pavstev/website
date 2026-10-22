@@ -1,11 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { copyNumbers, lintCopy } from "./copy-rules.ts";
-import { sampleFacts } from "./sample-facts.ts";
+import { lintCopy } from "./copy-rules.ts";
 import { type StoryStep } from "./steps.ts";
 
-const allowed = copyNumbers(sampleFacts);
 const dash = String.fromCodePoint(0x20_14);
 
 const sentence = (count: number): string => `${"word ".repeat(count - 1)}end.`;
@@ -20,7 +18,7 @@ const base: StoryStep = {
 };
 
 const lint = (patch: Partial<StoryStep>): string[] =>
-  lintCopy({ ...base, ...patch }, allowed);
+  lintCopy({ ...base, ...patch });
 
 describe("lintCopy", () => {
   it("accepts a clean step", () => {
@@ -82,27 +80,18 @@ describe("lintCopy", () => {
       /city name/u
     );
   });
-  it("flags a typed number that is not a fact", () => {
+  it("flags every typed or spelled number", () => {
     const messages = lint({ note: "It is about 500 lines. It is plain." });
     assert.equal(messages.length, 1);
     assert.match(messages[0] ?? "", /number 500/u);
-  });
-  it("flags a spelled number that is not a fact", () => {
     assert.match(
       lint({ note: "It runs on nine systems. It is plain." })[0] ?? "",
       /number nine/u
     );
+    assert.match(lint({ line: "Tested on 3 systems." })[0] ?? "", /number 3/u);
   });
-  it("accepts numbers that come from the facts and the meta", () => {
-    assert.deepEqual(
-      lint({ note: "It has 39 tools and 807 tests. It is plain." }),
-      []
-    );
-    const messages = lint({
-      note: "It has three systems and 4,000 tests. It is plain.",
-    });
-    assert.equal(messages.length, 1);
-    assert.match(messages[0] ?? "", /number 4,000/u);
+  it("lets one stand as a word", () => {
+    assert.deepEqual(lint({ note: "One line installs it. It is plain." }), []);
   });
   it("does not check the eyebrow or the strip", () => {
     assert.deepEqual(
@@ -112,16 +101,5 @@ describe("lintCopy", () => {
       }),
       []
     );
-  });
-});
-
-describe("copyNumbers", () => {
-  it("holds the facts, the meta and the rounded Rust share", () => {
-    for (const value of [
-      250, 39, 17, 807, 8, 3, 5, 19, 2, 6, 300, 45, 1, 0, 91,
-    ]) {
-      assert.ok(allowed.has(value), String(value));
-    }
-    assert.equal(allowed.has(500), false);
   });
 });

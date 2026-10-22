@@ -1,8 +1,4 @@
-import {
-  skillUsage,
-  type SkillUsageData,
-  stepCopy,
-} from "../../data/dotfiles-story.ts";
+import { stepCopy } from "../../data/dotfiles-story.ts";
 import { type DotfilesFacts } from "../dotfiles-facts.ts";
 import { type StepId, stepOrder } from "./step-ids.ts";
 
@@ -26,11 +22,8 @@ const screensOf = (id: StepId, facts: DotfilesFacts): number => {
   return longSteps.has(id) ? 1.5 : 1;
 };
 
-export const buildSteps = (
-  facts: DotfilesFacts,
-  usage: SkillUsageData = skillUsage
-): StoryStep[] => {
-  const copy = stepCopy(facts, usage);
+export const buildSteps = (facts: DotfilesFacts): StoryStep[] => {
+  const copy = stepCopy();
   return stepOrder.map((id) => ({
     ...copy[id],
     id,

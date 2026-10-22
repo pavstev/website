@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { sceneCounts, skillUsage } from "../../data/dotfiles-story.ts";
+import { sceneCounts, skillEntries } from "../../data/dotfiles-story.ts";
 import {
   buildScene,
   frameMatrix,
@@ -184,14 +184,21 @@ describe("buildScene", () => {
     const fewer = build("h1", 1, 1, counts).lines.length;
     const more = build("h1", 1, 1).lines.length;
     assert.equal((more - fewer) / strides.line, 15);
-    const ledger = build("h2", 1, 1, { ...counts, hookMs: 9 }).labels.find(
-      ({ id }) => id === "ledger-2"
-    );
-    assert.equal(ledger?.text, "sh  9 ms less per call");
     const roster = build("h3", 1, 1, counts).labels.find(
       ({ id }) => id === "roster-0"
     );
-    assert.equal(roster?.text, "3 skills");
+    assert.equal(roster?.text, "skills · askme, pick, mic-drop");
+  });
+
+  it("prints no number in any label", () => {
+    const labelled: StepId[] = ["hero", "c01", "c04", "h2", "h3", "outro"];
+    for (const id of labelled) {
+      for (const label of build(id, 1, 1).labels) {
+        if (label.id === "title") continue;
+        const text = label.text.replaceAll(/\b[GHW]\d+\b/gu, "");
+        assert.doesNotMatch(text, /\d/u, `${id} ${label.id}`);
+      }
+    }
   });
 
   it("runs fast enough for every frame", () => {
@@ -202,7 +209,7 @@ describe("buildScene", () => {
 });
 
 describe("the skills walk", () => {
-  const map = skillMap(skillUsage);
+  const map = skillMap(skillEntries);
   const walk = (t: number, limit = Infinity): Scene =>
     buildScene("skills", t, 1, sampleCounts, limit, map);
   const stopT = (stop: number): number =>
@@ -232,7 +239,6 @@ describe("the skills walk", () => {
       end.labels.some((label) => label.id.startsWith("skill-")),
       false
     );
-    assert.ok(end.labels.some((label) => label.id === "trend"));
     assert.equal(
       end.labels.filter((label) => label.id.startsWith("phase-")).length,
       7

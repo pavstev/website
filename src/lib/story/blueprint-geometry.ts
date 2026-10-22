@@ -1,6 +1,5 @@
 import { clamp01, smoothstep } from "../math.ts";
 import { storyPalette } from "../theme.ts";
-import { percent } from "./number-words.ts";
 import {
   gaugeSpot,
   loopPhases,
@@ -45,14 +44,9 @@ export interface Scene {
 
 export interface SceneCounts {
   agents: number;
-  distros: number;
-  files: number;
   guardChecks: number;
-  handoffK: number;
-  helperCaps: readonly number[];
   homeFiles: number;
   hookEvents: number;
-  hookMs: number;
   outputStyles: number;
   presets: number;
   rustPrograms: number;
@@ -92,6 +86,8 @@ const tone = {
 const isoYaw = -0.72;
 const isoPitch = 0.615;
 const depth = 20;
+
+export const orbitPitch = { max: 1.45 - isoPitch, min: 0.12 - isoPitch };
 const slab = { hx: 1.3, hy: 0.09, hz: 0.85 } as const;
 const slabNames = ["docs/", "scripts/", "claude/", "home/", "rust/"] as const;
 const slabOrder = [2, 4, 3, 1, 0] as const;
@@ -592,23 +588,23 @@ const packetState = (a: number): "denied" | "normal" | "passed" => {
     : "normal";
 };
 
-const ledgerTexts = (counts: SceneCounts): string[] => [
+const ledgerTexts: readonly string[] = [
   "presets  off costs no tokens",
-  `sh  ${String(counts.hookMs)} ms less per call`,
+  "sh  not bash, less time per call",
   "router  opus plans, haiku looks, sonnet builds",
-  `G8 G7  ${counts.helperCaps.join(" · ")} helpers`,
-  `${String(counts.handoffK)}K  hand off to a file`,
+  "G8 G7  few helpers, fewer when ahead",
+  "status  copper, then hand off to a file",
 ];
 
 const rosterRows = (
   counts: SceneCounts
 ): ReadonlyArray<readonly [string, number, number, number]> => [
-  ["skills", counts.skills, 0.07, tone.line],
-  ["agents", counts.agents, 0.16, tone.accent],
-  ["presets", counts.presets, 0.14, tone.mark],
-  ["hook events", counts.hookEvents, 0.12, tone.line],
-  ["rust programs", counts.rustPrograms, 0.07, tone.line],
-  ["output styles", counts.outputStyles, 0.16, tone.line],
+  ["skills · askme, pick, mic-drop", counts.skills, 0.07, tone.line],
+  ["agents · worker, code-reviewer", counts.agents, 0.16, tone.accent],
+  ["presets · clock, pace, models", counts.presets, 0.14, tone.mark],
+  ["hooks · before and after each call", counts.hookEvents, 0.12, tone.line],
+  ["rust · guard, dots, ctx", counts.rustPrograms, 0.07, tone.line],
+  ["styles · plain and simple", counts.outputStyles, 0.16, tone.line],
 ];
 
 type Lab = (
@@ -628,7 +624,7 @@ const gaugeRadius = 0.24;
 const gaugeSteps = 28;
 const curveSteps = 14;
 const strandGap = 0.014;
-const spark = { x0: 0.75, x1: 2.35, z0: 0.95, z1: 0.55 } as const;
+const chainStrands = 3;
 
 const arcFloor = (
   cx: number,
@@ -658,7 +654,7 @@ const arcFloor = (
   }
 };
 
-const skillHeight = (share: number): number => 0.03 + 1.1 * share;
+const skillHeight = (links: number): number => 0.08 + 0.07 * links;
 
 const bridge = (
   from: Vec3,
@@ -753,8 +749,8 @@ const drawSkills = (
     const base = sy + lift;
     const shown = (seen ? 0.85 : 0.35) * alpha;
     const toneIndex = lit > 0.5 ? tone.accent : seen ? tone.line : tone.muted;
-    if (item.ran) {
-      const hy = skillHeight(item.share) / 2;
+    if (item.known) {
+      const hy = skillHeight(item.links) / 2;
       box(
         spot.x,
         base + hy,
@@ -787,14 +783,16 @@ const drawSkills = (
       );
     }
     if (k !== stop) continue;
-    const top = base + (item.ran ? skillHeight(item.share) : 0.004);
+    const top = base + (item.known ? skillHeight(item.links) : 0.004);
     anchor = { x: spot.x - skillFoot.hx, y: top, z: spot.z - skillFoot.hz };
   }
 
   if (current && walk < 1) {
     const spot = at(stop);
     const top =
-      sy + skillLift * arrive + (current.ran ? skillHeight(current.share) : 0);
+      sy +
+      skillLift * arrive +
+      (current.known ? skillHeight(current.links) : 0);
     lab(
       `skill-${String(stop)}`,
       current.skill.replace("ps:", ""),
@@ -846,7 +844,7 @@ const drawSkills = (
     const near = current?.phase === phase && walk < 1;
     lab(
       `phase-${phase}`,
-      `${phase} ${percent(share)}`,
+      phase,
       centre.x,
       floor,
       centre.z + (phase === "care" ? -0.36 : -0.34),
@@ -865,54 +863,7 @@ const drawSkills = (
           ? smoothstep(0.2, 0.8, u)
           : 0;
     if (reveal <= 0) continue;
-    const strands = 1 + Math.round(chain.share * 16);
-    bridge(at(chain.from), at(chain.to), reveal, strands, 0.5 * alpha);
-  }
-
-  const { trend } = map;
-  if (trend.length > 1) {
-    const shown = Math.min(walk, 1);
-    seg(
-      spark.x0,
-      floor,
-      spark.z0,
-      spark.x1,
-      floor,
-      spark.z0,
-      tone.white,
-      storyPalette.hairStrong * 2 * alpha
-    );
-    const last = (trend.length - 1) * shown;
-    for (let k = 0; k < trend.length - 1; k += 1) {
-      const r = clamp01(last - k);
-      if (r <= 0) break;
-      const xa = lerp(spark.x0, spark.x1, k / (trend.length - 1));
-      const xb = lerp(spark.x0, spark.x1, (k + 1) / (trend.length - 1));
-      const za = lerp(spark.z0, spark.z1, trend[k] ?? 0);
-      const zb = lerp(spark.z0, spark.z1, trend[k + 1] ?? 0);
-      seg(
-        xa,
-        floor,
-        za,
-        lerp(xa, xb, r),
-        floor,
-        lerp(za, zb, r),
-        tone.accent,
-        0.9 * alpha
-      );
-    }
-    const end =
-      trend[Math.min(trend.length - 1, Math.floor(last + 0.0001))] ?? 0;
-    lab(
-      "trend",
-      `sessions with a skill ${percent(end)}`,
-      spark.x0,
-      floor,
-      spark.z1 - 0.1,
-      "ink",
-      alpha * smoothstep(0, 0.05, shown),
-      false
-    );
+    bridge(at(chain.from), at(chain.to), reveal, chainStrands, 0.5 * alpha);
   }
 
   return anchor;
@@ -1174,7 +1125,7 @@ export const buildScene = (
     }
     lab(
       "copy-linux",
-      `Linux · ${String(counts.distros)} distros`,
+      "Linux · fresh containers",
       0,
       (ys[0] ?? 0) + 0.75,
       0,
@@ -1313,8 +1264,7 @@ export const buildScene = (
   }
 
   if (beat.ledgerAlpha > 0) {
-    const texts = ledgerTexts(counts);
-    for (const [i, text] of texts.entries()) {
+    for (const [i, text] of ledgerTexts.entries()) {
       const r =
         smoothstep(i * 0.16, i * 0.16 + 0.14, beat.ledgerProgress) *
         beat.ledgerAlpha;
@@ -1359,15 +1309,7 @@ export const buildScene = (
           );
         }
       }
-      lab(
-        `roster-${String(i)}`,
-        `${String(count)} ${name}`,
-        -1.3,
-        sy,
-        z - 0.2,
-        "ink",
-        r
-      );
+      lab(`roster-${String(i)}`, name, -1.3, sy, z - 0.2, "ink", r);
     }
   }
 
@@ -1378,9 +1320,7 @@ export const buildScene = (
 
   lab(
     "title",
-    beat.sheetTwo
-      ? "harness · sheet 2/2"
-      : `${String(counts.files)} files · sheet 1/2`,
+    beat.sheetTwo ? "harness · sheet 2/2" : "dotfiles · sheet 1/2",
     titleBlock.x,
     floorY,
     titleBlock.z,

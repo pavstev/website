@@ -158,7 +158,7 @@ const snapshot = ({ id, mode }: { id: string; mode: Mode }): Snapshot => {
   };
   const parts = [
     ...item.querySelectorAll<HTMLElement>(
-      ":scope .story-eyebrow, :scope .story-line, :scope .story-note, :scope .story-number, :scope .story-outro > *"
+      ":scope .story-eyebrow, :scope .story-line, :scope .story-note, :scope .story-name, :scope .story-outro > *"
     ),
   ];
   const found = item.querySelector<HTMLElement>(".story-strip");

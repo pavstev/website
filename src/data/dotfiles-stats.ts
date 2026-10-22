@@ -1,38 +1,60 @@
-import { type LoopPhase } from "../lib/story/skill-map.ts";
+import { type CatalogSkill, type LoopPhase } from "../lib/story/skill-map.ts";
 
 export const storyMeta = {
-  aiApps: 3,
-  checkedAt: "2026-10-21",
-  handoffK: 300,
-  heavierK: 45,
-  helperCaps: [3, 1, 0],
-  hookMs: 6,
-  osFamilies: 3,
   updatedAt: "2026-10-22",
 };
 
 export const skillCatalog = {
-  ask: [{ skill: "ps:askme", what: "Grills the plan before any work." }],
+  ask: [
+    {
+      next: "ps:handoff",
+      skill: "ps:askme",
+      what: "Grills the plan before any work.",
+    },
+  ],
   build: [
-    { skill: "ps:handoff", what: "Packs a brief for another session." },
-    { skill: "ps:autopilot", what: "Runs a brief to the end." },
-    { skill: "ps:iamrich", what: "Parallel helpers when tokens are plenty." },
+    {
+      next: "ps:autopilot",
+      skill: "ps:handoff",
+      what: "Packs a brief for another session.",
+    },
+    {
+      next: "ps:mic-drop",
+      skill: "ps:autopilot",
+      what: "Runs a brief to the end.",
+    },
+    {
+      next: "ps:review-panel",
+      skill: "ps:iamrich",
+      what: "Parallel helpers when tokens are plenty.",
+    },
   ],
   care: [
-    { skill: "ps:whatsleft", what: "Splits the open work between us." },
+    {
+      next: "ps:askme",
+      skill: "ps:whatsleft",
+      what: "Splits the open work between us.",
+    },
     { skill: "ps:sessions", what: "Finds, reads and links sessions." },
     { skill: "ps:bag-mode", what: "Keeps work alive in a bag." },
   ],
   design: [
     {
+      next: "ps:design-artifact",
       skill: "ps:design-brainstorm",
       what: "Interviews, researches, then builds knobs.",
     },
     { skill: "ps:design-artifact", what: "One page of live design knobs." },
     { skill: "ps:pick", what: "Numbered variants and a copy button." },
+    {
+      next: "ps:pick",
+      skill: "ps:design-ref",
+      what: "Turns reference sites into a design file.",
+    },
   ],
   research: [
     {
+      next: "ps:askme",
       skill: "ps:captain-research",
       what: "Fans research out to helper agents.",
     },
@@ -41,6 +63,7 @@ export const skillCatalog = {
   ],
   review: [
     {
+      next: "ps:mic-drop",
       skill: "ps:review-panel",
       what: "Several reviewers, one merged report.",
     },
@@ -50,11 +73,15 @@ export const skillCatalog = {
     },
   ],
   ship: [
-    { skill: "ps:mic-drop", what: "Proves the job is done." },
+    {
+      next: "ps:whatsleft",
+      skill: "ps:mic-drop",
+      what: "Proves the job is done.",
+    },
     { skill: "ps:standup", what: "Yesterday, today and blockers from git." },
     { skill: "ps:draft-reply", what: "Drafts a reply, sends after yes." },
   ],
 } as const satisfies Record<
   LoopPhase,
-  ReadonlyArray<{ skill: `ps:${string}`; what: string }>
+  ReadonlyArray<Omit<CatalogSkill, "phase">>
 >;

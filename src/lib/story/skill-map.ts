@@ -10,13 +10,19 @@ export const loopPhases = [
   "care",
 ] as const;
 
+export interface CatalogSkill {
+  next?: string;
+  phase: LoopPhase;
+  skill: string;
+  what: string;
+}
+
 export type LoopPhase = (typeof loopPhases)[number];
 
 export interface SkillMap {
   chains: SkillChain[];
   phases: number[];
   stops: SkillStop[];
-  trend: number[];
 }
 
 export interface SkillSpot {
@@ -25,37 +31,23 @@ export interface SkillSpot {
 }
 
 export interface SkillStop {
+  known: boolean;
+  links: number;
   phase: LoopPhase;
-  ran: boolean;
-  share: number;
   skill: string;
-}
-
-export interface UsageInput {
-  chains: ReadonlyArray<{ from: string; share: number; to: string }>;
-  phases: ReadonlyArray<{ phase: string; share: number }>;
-  skills: readonly UsageSkill[];
-  trend: ReadonlyArray<{ share: number }>;
 }
 
 interface SkillChain {
   from: number;
-  share: number;
   to: number;
-}
-
-interface UsageSkill {
-  phase: string;
-  share: number;
-  skill: string;
 }
 
 const columnX = [-1.9, -1.15, -0.4, 0.35, 1.1, 1.85] as const;
 const rowZ = [-0.75, -0.2, 0.35] as const;
 const careZ = 1;
 const careX = [-1.15, -0.4, 0.35] as const;
-const rowFrom = -0.8;
-const rowTo = 0.45;
+const rowFrom = -0.9;
+const rowTo = 0.5;
 const careFrom = -1.4;
 const careTo = 0.35;
 const gaugeZ = -1.35;
@@ -64,47 +56,39 @@ const careGaugeX = -1.9;
 const isPhase = (value: string): value is LoopPhase =>
   (loopPhases as readonly string[]).includes(value);
 
-const phaseFor = (usage: UsageInput, skill: string): LoopPhase => {
-  const phase = usage.skills.find((item) => item.skill === skill)?.phase;
-  return phase !== undefined && isPhase(phase) ? phase : "care";
-};
-
-const rankFor = (usage: UsageInput, skill: string): number => {
-  const rank = usage.skills.findIndex((item) => item.skill === skill);
-  return rank === -1 ? usage.skills.length : rank;
-};
-
 export const skillMap = (
-  usage: UsageInput,
-  names: readonly string[] = usage.skills.map((item) => item.skill)
+  catalog: readonly CatalogSkill[],
+  names: readonly string[] = catalog.map((item) => item.skill)
 ): SkillMap => {
+  const entry = (skill: string): CatalogSkill | undefined =>
+    catalog.find((item) => item.skill === skill);
+  const rank = (skill: string): number => {
+    const at = catalog.findIndex((item) => item.skill === skill);
+    return at === -1 ? catalog.length : at;
+  };
   const ordered = names.toSorted(
-    (a, b) => rankFor(usage, a) - rankFor(usage, b) || a.localeCompare(b)
+    (a, b) => rank(a) - rank(b) || a.localeCompare(b)
   );
-  const stops = loopPhases.flatMap((phase) =>
+  const placed = loopPhases.flatMap((phase) =>
     ordered
-      .filter((skill) => phaseFor(usage, skill) === phase)
-      .map((skill) => {
-        const share =
-          usage.skills.find((item) => item.skill === skill)?.share ?? 0;
-        return { phase, ran: share > 0, share, skill };
-      })
+      .filter((skill) => (entry(skill)?.phase ?? "care") === phase)
+      .map((skill) => ({ known: entry(skill) !== undefined, phase, skill }))
   );
-  const indexOf = (skill: string): number =>
-    stops.findIndex((stop) => stop.skill === skill);
+  const indexOf = (skill: string | undefined): number =>
+    placed.findIndex((stop) => stop.skill === skill);
+  const chains = placed
+    .map((stop, from) => ({ from, to: indexOf(entry(stop.skill)?.next) }))
+    .filter((chain) => chain.to >= 0 && chain.to !== chain.from);
+  const linksOf = (k: number): number =>
+    chains.filter((chain) => chain.from === k || chain.to === k).length;
   return {
-    chains: usage.chains
-      .map((chain) => ({
-        from: indexOf(chain.from),
-        share: chain.share,
-        to: indexOf(chain.to),
-      }))
-      .filter((chain) => chain.from >= 0 && chain.to >= 0),
+    chains,
     phases: loopPhases.map(
-      (phase) => usage.phases.find((item) => item.phase === phase)?.share ?? 0
+      (phase) =>
+        placed.filter((stop) => stop.phase === phase).length /
+        Math.max(1, placed.length)
     ),
-    stops,
-    trend: usage.trend.map((point) => point.share),
+    stops: placed.map((stop, k) => ({ ...stop, links: linksOf(k) })),
   };
 };
 
@@ -177,11 +161,14 @@ const isStop = (value: unknown): value is SkillStop => {
   const fields = fieldsOf(value);
   if (!fields) return false;
   const phase = fields.get("phase");
+  const links = fields.get("links");
   return (
     typeof phase === "string" &&
     isPhase(phase) &&
-    typeof fields.get("ran") === "boolean" &&
-    isShare(fields.get("share")) &&
+    typeof fields.get("known") === "boolean" &&
+    typeof links === "number" &&
+    Number.isSafeInteger(links) &&
+    links >= 0 &&
     typeof fields.get("skill") === "string"
   );
 };
@@ -198,7 +185,7 @@ const isChain = (value: unknown, count: number): value is SkillChain => {
       at < count
     );
   };
-  return index("from") && index("to") && isShare(fields.get("share"));
+  return index("from") && index("to");
 };
 
 export const isSkillMap = (value: unknown): value is SkillMap => {
@@ -207,7 +194,6 @@ export const isSkillMap = (value: unknown): value is SkillMap => {
   const stops = fields.get("stops");
   const chains = fields.get("chains");
   const phases = fields.get("phases");
-  const trend = fields.get("trend");
   return (
     Array.isArray(stops) &&
     stops.every(isStop) &&
@@ -215,8 +201,6 @@ export const isSkillMap = (value: unknown): value is SkillMap => {
     chains.every((chain) => isChain(chain, stops.length)) &&
     Array.isArray(phases) &&
     phases.length === loopPhases.length &&
-    phases.every(isShare) &&
-    Array.isArray(trend) &&
-    trend.every(isShare)
+    phases.every(isShare)
   );
 };

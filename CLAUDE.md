@@ -22,7 +22,7 @@ Path rules in `.claude/rules/` load when you touch matching files:
 
 - `GITHUB_TOKEN` is required for the build. It is a Cloudflare build variable. Locally `github.ts` asks `gh auth token`. A non-200 answer fails the build on purpose.
 - The résumé is the committed `src/data/cv.json`. Keep `basics.phone` empty. Move `updatedAt` on every edit: it is the sitemap `lastmod` and the `ProfilePage` `dateModified`.
-- The dotfiles story copy is `src/data/dotfiles-story.ts`. Its hand-kept numbers and the skill list live in `src/data/dotfiles-stats.ts`. Move `storyMeta.updatedAt` there on every copy or stats edit. Weekly refresh: `.claude/rules/story.md`.
+- The dotfiles story copy is `src/data/dotfiles-story.ts`. The skill catalog lives in `src/data/dotfiles-stats.ts`. Move `storyMeta.updatedAt` there on every copy or catalog edit. The page shows names, never counts or the owner's own usage: `.claude/rules/story.md`.
 - The owner has no iPhone. Never suggest a real-iPhone check. Emulate WebKit.
 - Every push to `main` deploys on Cloudflare. Never run `wrangler deploy` or `pnpm deploy`. Never deploy by hand.
 - Push only when asked. After a push, watch CI and the Cloudflare build. Wait until `https://stevanpavlovic.com/build.json` shows the new `sha` before you call it live.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { skillUsage } from "../../data/dotfiles-story.ts";
+import { skillEntries } from "../../data/dotfiles-story.ts";
 import {
   gaugeSpot,
   isSkillMap,
@@ -12,11 +12,11 @@ import {
   walkOf,
 } from "./skill-map.ts";
 
-const map = skillMap(skillUsage);
+const map = skillMap(skillEntries);
 
 describe("skillMap", () => {
   it("puts every skill in work loop order", () => {
-    assert.equal(map.stops.length, skillUsage.skills.length);
+    assert.equal(map.stops.length, skillEntries.length);
     const order = map.stops.map((stop) => loopPhases.indexOf(stop.phase));
     assert.deepEqual(
       order,
@@ -28,23 +28,23 @@ describe("skillMap", () => {
 
   it("takes the names it is given and draws a new skill dashed in care", () => {
     const names = ["ps:askme", "ps:zz-new", "ps:pick"];
-    const some = skillMap(skillUsage, names);
+    const some = skillMap(skillEntries, names);
     assert.deepEqual(
       some.stops.map((stop) => stop.skill),
       ["ps:askme", "ps:pick", "ps:zz-new"]
     );
     assert.deepEqual(some.stops[2], {
+      known: false,
+      links: 0,
       phase: "care",
-      ran: false,
-      share: 0,
       skill: "ps:zz-new",
     });
-    assert.ok(some.chains.every((chain) => chain.to < 3 && chain.from < 3));
+    assert.deepEqual(some.chains, []);
   });
 
   it("keeps a crowded phase apart", () => {
-    const crowd = skillMap(skillUsage, [
-      ...skillUsage.skills.map((item) => item.skill),
+    const crowd = skillMap(skillEntries, [
+      ...skillEntries.map((item) => item.skill),
       "ps:zz-a",
       "ps:zz-b",
     ]);
@@ -55,21 +55,15 @@ describe("skillMap", () => {
     }
   });
 
-  it("marks the skills with no run", () => {
-    const idle = map.stops
-      .filter((stop) => !stop.ran)
-      .map((stop) => stop.skill);
-    for (const skill of idle) {
-      assert.equal(
-        skillUsage.skills.find((item) => item.skill === skill)?.share,
-        0
-      );
-    }
+  it("draws the hand-offs of the catalog and counts the links of each stop", () => {
+    const handOffs = skillEntries.filter((item) => "next" in item);
+    assert.equal(map.chains.length, handOffs.length);
+    for (const chain of map.chains) assert.notEqual(chain.from, chain.to);
+    const askme = map.stops.find((stop) => stop.skill === "ps:askme");
+    assert.ok((askme?.links ?? 0) >= 2);
   });
 
-  it("points every chain at two stops and keeps phase shares in loop order", () => {
-    assert.equal(map.chains.length, skillUsage.chains.length);
-    for (const chain of map.chains) assert.notEqual(chain.from, chain.to);
+  it("keeps phase shares in loop order", () => {
     assert.equal(map.phases.length, loopPhases.length);
     const total = map.phases.reduce((sum, share) => sum + share, 0);
     assert.ok(Math.abs(total - 1) < 0.01);
@@ -78,10 +72,7 @@ describe("skillMap", () => {
   it("passes its own guard and refuses junk", () => {
     assert.ok(isSkillMap(structuredClone(map)));
     assert.equal(isSkillMap({ ...map, phases: [2] }), false);
-    assert.equal(
-      isSkillMap({ ...map, chains: [{ from: 0, share: 0.1, to: 99 }] }),
-      false
-    );
+    assert.equal(isSkillMap({ ...map, chains: [{ from: 0, to: 99 }] }), false);
     assert.equal(isSkillMap(null), false);
   });
 });

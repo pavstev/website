@@ -1,11 +1,42 @@
-import { storyMeta } from "../../data/dotfiles-stats.ts";
-import {
-  type SkillCopy,
-  type SkillUsageData,
-} from "../../data/dotfiles-story.ts";
-import { type DotfilesFacts } from "../dotfiles-facts.ts";
-import { digits, spelled } from "./number-words.ts";
+import { type SkillCopy } from "../../data/dotfiles-story.ts";
 import { type StoryStep } from "./steps.ts";
+
+const numberWords: readonly string[] = [
+  "zero",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+  "thirteen",
+  "fourteen",
+  "fifteen",
+  "sixteen",
+  "seventeen",
+  "eighteen",
+  "nineteen",
+  "twenty",
+];
+
+const tens: ReadonlyArray<[string, number]> = [
+  ["thirty", 30],
+  ["forty", 40],
+  ["fifty", 50],
+];
+
+const spelled: ReadonlyMap<string, number> = new Map([
+  ...numberWords.flatMap((word, value): Array<[string, number]> =>
+    value >= 2 ? [[word, value]] : []
+  ),
+  ...tens,
+]);
 
 const emDash = String.fromCodePoint(0x20_14);
 const titleSteps: ReadonlySet<StoryStep["id"]> = new Set(["harness", "hero"]);
@@ -20,16 +51,6 @@ const digitPattern = /\d[\d,.]*/gu;
 const trailingPunctuation = /[.,]+$/u;
 const wordPattern = /[A-Za-z]+/gu;
 const sentenceEnd = /[.!?]+(?:\s+|$)/u;
-
-const collect = (value: unknown, into: Set<number>): void => {
-  if (typeof value === "number") {
-    into.add(value);
-  } else if (Array.isArray(value)) {
-    for (const item of value as unknown[]) {
-      collect(item, into);
-    }
-  }
-};
 
 const countWords = (text: string): number =>
   text.split(/\s+/u).filter((word) => word.length > 0).length;
@@ -50,14 +71,7 @@ const numbersIn = (text: string): string[] => {
   return [...typed, ...spoken];
 };
 
-const valueOf = (token: string): number =>
-  spelled.get(token) ?? Number(token.replaceAll(",", ""));
-
-const textMessages = (
-  field: string,
-  text: string,
-  allowed: ReadonlySet<number>
-): string[] => {
+const textMessages = (field: string, text: string): string[] => {
   const messages: string[] = [];
   if (text.includes(emDash)) {
     messages.push(`${field} has an em dash`);
@@ -75,71 +89,34 @@ const textMessages = (
     messages.push(`${field} has a city name`);
   }
   for (const token of numbersIn(text)) {
-    if (!allowed.has(valueOf(token))) {
-      messages.push(`${field} has the number ${token} that is not a fact`);
-    }
+    messages.push(`${field} has the number ${token}`);
   }
   return messages;
 };
 
-const shareNumbers = (value: unknown, into: Set<number>): void => {
-  if (typeof value === "number" && value >= 0 && value <= 1) {
-    into.add(Math.round(value * 100));
-  } else if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/u.test(value)) {
-    into.add(Number(value.slice(8, 10)));
-  } else if (typeof value === "object" && value !== null) {
-    for (const item of Object.values(value)) shareNumbers(item, into);
-  }
-};
-
-export const copyNumbers = (
-  facts: DotfilesFacts,
-  usage?: SkillUsageData
-): ReadonlySet<number> => {
-  const numbers = new Set<number>();
-  if (usage) shareNumbers(usage, numbers);
-  for (const value of Object.values(facts)) {
-    collect(value, numbers);
-  }
-  for (const value of Object.values(storyMeta)) {
-    collect(value, numbers);
-  }
-  numbers.add(Math.round(facts.rustShare * 100));
-  return numbers;
-};
-
-export const lintSkill = (
-  copy: SkillCopy,
-  allowed: ReadonlySet<number>
-): string[] => {
+export const lintSkill = (copy: SkillCopy): string[] => {
   const messages = [
-    ...textMessages(`${copy.skill} what`, copy.what, allowed),
-    ...textMessages(`${copy.skill} metric`, copy.metric, allowed),
+    ...textMessages(`${copy.skill} what`, copy.what),
+    ...textMessages(`${copy.skill} flow`, copy.flow),
   ];
   const words = countWords(copy.what);
   if (words < lineWords.min || words > lineWords.max) {
     messages.push(
-      `${copy.skill} what has ${digits(words)} words, it needs ${digits(lineWords.min)} to ${digits(lineWords.max)}`
+      `${copy.skill} what has ${String(words)} words, it needs ${String(lineWords.min)} to ${String(lineWords.max)}`
     );
   }
-  if (copy.what.length === 0 || copy.metric.length === 0) {
+  if (copy.what.length === 0 || copy.flow.length === 0) {
     messages.push(`${copy.skill} has no copy`);
   }
   return messages;
 };
 
-export const lintFact = (
-  line: string,
-  allowed: ReadonlySet<number>
-): string[] => textMessages("fact", line, allowed);
+export const lintFact = (line: string): string[] => textMessages("fact", line);
 
-export const lintCopy = (
-  step: StoryStep,
-  allowed: ReadonlySet<number>
-): string[] => {
+export const lintCopy = (step: StoryStep): string[] => {
   const messages = [
-    ...textMessages("line", step.line, allowed),
-    ...textMessages("note", step.note, allowed),
+    ...textMessages("line", step.line),
+    ...textMessages("note", step.note),
   ];
   const words = countWords(step.line);
   if (
@@ -147,19 +124,19 @@ export const lintCopy = (
     (words < lineWords.min || words > lineWords.max)
   ) {
     messages.push(
-      `line has ${digits(words)} words, it needs ${digits(lineWords.min)} to ${digits(lineWords.max)}`
+      `line has ${String(words)} words, it needs ${String(lineWords.min)} to ${String(lineWords.max)}`
     );
   }
   const sentences = countSentences(step.note);
   if (sentences < noteSentences.min || sentences > noteSentences.max) {
     messages.push(
-      `note has ${digits(sentences)} sentences, it needs ${digits(noteSentences.min)} to ${digits(noteSentences.max)}`
+      `note has ${String(sentences)} sentences, it needs ${String(noteSentences.min)} to ${String(noteSentences.max)}`
     );
   }
   const noteWords = countWords(step.note);
   if (noteWords > noteWordsMax) {
     messages.push(
-      `note has ${digits(noteWords)} words, it needs ${digits(noteWordsMax)} at most`
+      `note has ${String(noteWords)} words, it needs ${String(noteWordsMax)} at most`
     );
   }
   return messages;

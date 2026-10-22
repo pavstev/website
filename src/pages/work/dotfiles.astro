@@ -11,9 +11,9 @@ import {
   bootstrapLine,
   sceneCounts,
   skillCopy,
+  skillEntries,
   skillFacts,
-  skillUsage,
-  storyNumbers,
+  storyNames,
   uninstallLine,
 } from "@/data/dotfiles-story";
 import BlogLayout from "@/layouts/BlogLayout.astro";
@@ -32,11 +32,7 @@ import { serializeJsonLd, storyGraph } from "@/lib/structured-data";
 const facts = await getDotfilesFacts();
 const counts = sceneCounts(facts);
 const steps = buildSteps(facts);
-const numbers = storyNumbers(facts);
-const numbersFor: Record<string, typeof numbers.hero> = {
-  harness: numbers.harness,
-  hero: numbers.hero,
-};
+const namesFor: Record<string, typeof storyNames.hero> = storyNames;
 const posterAttrs = (kind: "tall" | "wide"): string =>
   `class="story-poster story-poster-${kind}" preserveAspectRatio="xMidYMid meet"`;
 const wide = posterSvg(1440, 900, counts, posterAttrs("wide"));
@@ -46,9 +42,9 @@ const tall = sceneSvg(
   844,
   posterAttrs("tall")
 );
-const map = skillMap(skillUsage, facts.skillNames);
-const skills = skillCopy(skillUsage, facts.skillNames);
-const chartLines = skillFacts();
+const map = skillMap(skillEntries, facts.skillNames);
+const skills = skillCopy(facts.skillNames);
+const chartLines = skillFacts(facts.skillNames);
 const skillPoster = sceneSvg(
   buildScene("skills", 1, 1, counts, Infinity, map),
   720,
@@ -82,7 +78,7 @@ const jsonLd = serializeJsonLd(storyGraph(storyMeta.updatedAt));
       <ol class="story-steps">
         {steps.map((step) => (
           <StoryStep
-            numbers={numbersFor[step.id] ?? []}
+            names={namesFor[step.id] ?? []}
             step={step}
             stops={step.id === "skills" ? skills.length : undefined}
           >
@@ -95,7 +91,7 @@ const jsonLd = serializeJsonLd(storyGraph(storyMeta.updatedAt));
                       <span class="story-strip-row">
                         {item.phase} · {item.what}
                       </span>
-                      <span class="story-strip-row">{item.metric}</span>
+                      <span class="story-strip-row">{item.flow}</span>
                     </li>
                   ))}
                 </ol>

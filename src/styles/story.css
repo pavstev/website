@@ -288,6 +288,16 @@
   opacity: 1;
 }
 
+[data-story-state="live"] .story-stage {
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+[data-story-drag] .story-stage {
+  cursor: grabbing;
+  user-select: none;
+}
+
 [data-story-state="live"] .story-poster {
   display: none;
 }
@@ -352,7 +362,7 @@
 .story-plate-title,
 .story-strip-title,
 .story-eyebrow,
-.story-number-label,
+.story-name-label,
 .story-label {
   color: var(--story-muted);
   letter-spacing: 0.1em;
@@ -360,7 +370,7 @@
 }
 
 .story-eyebrow,
-.story-number-label,
+.story-name-label,
 .story-label {
   font-family: var(--font-mono);
   font-size: var(--fs-2xs);
@@ -705,7 +715,7 @@
   line-height: 1.55;
 }
 
-.story-numbers {
+.story-names {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-3) var(--sp-5);
@@ -714,16 +724,16 @@
   list-style: none;
 }
 
-.story-number {
+.story-name {
   display: flex;
   flex-direction: column;
   gap: var(--sp-1);
 }
 
-.story-number-value {
+.story-name-value {
   color: var(--story-ink);
+  font-family: var(--font-mono);
   font-size: var(--fs-lg);
-  font-variant-numeric: tabular-nums;
   font-weight: 600;
   line-height: 1;
 }

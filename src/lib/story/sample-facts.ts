@@ -2,19 +2,12 @@ import { type DotfilesFacts } from "../dotfiles-facts.ts";
 
 export const sampleFacts: DotfilesFacts = {
   agents: 8,
-  distros: 5,
-  doctorChecks: 8,
-  files: 250,
-  forks: 0,
   guardChecks: 19,
   homeFiles: 23,
   hookEvents: 6,
-  installSteps: 17,
   outputStyles: 2,
   presets: 7,
-  pushedAt: "2026-10-21T15:26:09Z",
   rustPrograms: 19,
-  rustShare: 0.91,
   skillNames: [
     "ps:askme",
     "ps:autopilot",
@@ -35,7 +28,4 @@ export const sampleFacts: DotfilesFacts = {
     "ps:yt-learn",
   ],
   skills: 17,
-  stars: 3,
-  tests: 807,
-  tools: 39,
 };

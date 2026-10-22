@@ -5,6 +5,7 @@ import { fieldsOf, readJson } from "@/lib/record";
 import {
   buildScene,
   frameMatrix,
+  orbitPitch,
   phoneLabelLimit,
   project,
   type Scene,
@@ -13,6 +14,7 @@ import {
 import { createRenderer } from "./blueprint-gl";
 import { finaleStops, isSkillMap, stopAt, walkOf } from "./skill-map";
 import { isStepId, type StepId } from "./step-ids";
+import { createOrbit } from "./story-orbit";
 import { createPlates } from "./story-plates";
 import {
   createPointerTilt,
@@ -59,13 +61,9 @@ const maxPitch = (2 * Math.PI) / 180;
 const stillEnd = 1 - 1e-9;
 const countKeys = [
   "agents",
-  "distros",
-  "files",
   "guardChecks",
-  "handoffK",
   "homeFiles",
   "hookEvents",
-  "hookMs",
   "outputStyles",
   "presets",
   "rustPrograms",
@@ -77,12 +75,8 @@ const isNumber = (value: unknown): value is number =>
 
 const isCounts = (value: unknown): value is SceneCounts => {
   const fields = fieldsOf(value);
-  if (!fields) return false;
-  const caps = fields.get("helperCaps");
   return (
-    countKeys.every((key) => isNumber(fields.get(key))) &&
-    Array.isArray(caps) &&
-    caps.every(isNumber)
+    fields !== undefined && countKeys.every((key) => isNumber(fields.get(key)))
   );
 };
 
@@ -160,6 +154,7 @@ export const mountStory = (root: HTMLElement): (() => void) => {
   let handle = 0;
   let last = 0;
   let disposed = false;
+  let stillHandle = 0;
 
   const gates = (): LoopGates => ({
     inView,
@@ -211,7 +206,7 @@ export const mountStory = (root: HTMLElement): (() => void) => {
 
   const stillGoal = (index: number, t: number): number => {
     const count = stopCounts[index] ?? 1;
-    return count > 1
+    return count > 1 && walkOf(t, count) < 1
       ? (stopOf(index, t) + 1) / (count + finaleStops) - 1e-6
       : stillEnd;
   };
@@ -330,10 +325,9 @@ export const mountStory = (root: HTMLElement): (() => void) => {
     return [index, index - 1, index + 1]
       .map((near) => dimBox(near, area))
       .filter(
-        (box): box is Box =>
+        (box, i): box is Box =>
           box !== undefined &&
-          box.top < canvasHeight &&
-          box.top + box.height > 0
+          (i === 0 || (box.top < canvasHeight && box.top + box.height > 0))
       );
   };
 
@@ -352,12 +346,17 @@ export const mountStory = (root: HTMLElement): (() => void) => {
       map
     );
     const aspect = canvasWidth / canvasHeight;
-    const view = frameMatrix(aspect, scene, tilt.yaw, tilt.pitch);
+    const view = frameMatrix(
+      aspect,
+      scene,
+      tilt.yaw + orbit.yaw,
+      tilt.pitch + orbit.pitch
+    );
     const grid = frameMatrix(
       aspect,
       scene,
-      tilt.yaw * gridShare,
-      tilt.pitch * gridShare
+      tilt.yaw * gridShare + orbit.yaw,
+      tilt.pitch * gridShare + orbit.pitch
     );
     renderer.draw(scene, view, grid, texts);
     placePins(scene, view, texts);
@@ -411,6 +410,28 @@ export const mountStory = (root: HTMLElement): (() => void) => {
     handle = 0;
     last = 0;
   };
+
+  const redraw = (): void => {
+    if (!viewable()) return;
+    if (!still.matches) {
+      schedule();
+      return;
+    }
+    if (stillHandle !== 0) return;
+    stillHandle = globalThis.requestAnimationFrame(() => {
+      stillHandle = 0;
+      if (viewable()) paint(0);
+    });
+  };
+
+  const orbit = createOrbit(stage, {
+    change: redraw,
+    drag: (active) => {
+      if (active) root.dataset["storyDrag"] = "";
+      else delete root.dataset["storyDrag"];
+    },
+    limits: orbitPitch,
+  });
 
   const onScroll = (): void => {
     const before = current;
@@ -477,6 +498,10 @@ export const mountStory = (root: HTMLElement): (() => void) => {
     if (disposed) return;
     disposed = true;
     sleep();
+    globalThis.cancelAnimationFrame(stillHandle);
+    stillHandle = 0;
+    orbit.dispose();
+    delete root.dataset["storyDrag"];
     listeners.abort();
     still.removeEventListener("change", onMotion);
     pointer?.dispose();
