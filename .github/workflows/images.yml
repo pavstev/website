@@ -10,6 +10,7 @@ on:
       - public/fonts/geist-mono-latin-400-*
       - public/portraits/portrait-800.webp
       - scripts/generate-images.ts
+      - src/data/dotfiles-stats.ts
       - src/data/dotfiles-story.ts
       - src/lib/dotfiles-facts.ts
       - src/lib/geo.ts
@@ -52,6 +53,7 @@ concurrency:
 jobs:
   generate:
     permissions:
+      actions: write
       contents: write
       issues: write
     runs-on: ubuntu-latest
@@ -85,6 +87,22 @@ jobs:
           git push origin HEAD:main
           echo "pushed=true" >> "$GITHUB_OUTPUT"
           echo "Pushed the new images." >> "$GITHUB_STEP_SUMMARY"
+      - name: Rebuild the site
+        if: github.event_name != 'push' && github.ref == 'refs/heads/main' && steps.push.outputs.pushed != 'true'
+        env:
+          CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$CLOUDFLARE_DEPLOY_HOOK" ]; then
+            echo "CLOUDFLARE_DEPLOY_HOOK is not set." >&2
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 30 --request POST --output /dev/null "$CLOUDFLARE_DEPLOY_HOOK"
+          echo "Asked Cloudflare for a fresh build, so the live dotfiles facts refresh." >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the schedule alive
+        if: always() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/images.yml/enable"
       - name: Report the failure
         if: failure() && github.ref == 'refs/heads/main'
         env:

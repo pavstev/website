@@ -26,7 +26,7 @@ Path rules in `.claude/rules/` load when you touch matching files:
 - The owner has no iPhone. Never suggest a real-iPhone check. Emulate WebKit.
 - Every push to `main` deploys on Cloudflare. Never run `wrangler deploy` or `pnpm deploy`. Never deploy by hand.
 - Push only when asked. After a push, watch CI and the Cloudflare build. Wait until `https://stevanpavlovic.com/build.json` shows the new `sha` before you call it live.
-- `blog-publish.yml` runs every 15 minutes and calls the deploy hook (`CLOUDFLARE_DEPLOY_HOOK`) when a scheduled post is due. Schedule a post with a future `date`.
+- `blog-publish.yml` runs every 15 minutes and calls the deploy hook (`CLOUDFLARE_DEPLOY_HOOK`) when a scheduled post is due. Schedule a post with a future `date`. The Monday `images.yml` run calls it too when it pushes nothing, so the GitHub facts refresh weekly.
 - LinkedIn stays manual. No API edits a personal profile. Never offer to fill it through the browser. The cover image from `images.yml` is uploaded by hand.
 - `pavstev/pavstev` is a generated mirror (`profile.yml`, `src/profile/`). Change the source here, never the mirror.
 - Open-Meteo is CC BY 4.0. The "Weather: Open-Meteo" credit stays visible in the home footer. Only the home reads live weather.

@@ -140,7 +140,7 @@ export const stepCopy = (
     c03: {
       eyebrow: "03",
       line: "Safe to run twice.",
-      note: `Every step skips what is already there. An older file moves to a .bak copy before its link goes in. When something feels off I run dots doctor, which prints one PASS or FAIL line for each of its ${n(meta.doctorChecks)} checks. A check changes nothing.`,
+      note: `Every step skips what is already there. An older file moves to a .bak copy before its link goes in. When something feels off I run dots doctor, which prints one PASS or FAIL line for each of its ${n(facts.doctorChecks)} checks. A check changes nothing.`,
       strip: {
         command: "dots doctor",
         output: [
@@ -154,7 +154,7 @@ export const stepCopy = (
     c04: {
       eyebrow: "04",
       line: `Tested on ${systems} systems.`,
-      note: `macOS, ${say(meta.distros)} Linux distros and Windows in Git Bash are all first class. A change must keep each one working, so one command runs the check on all ${systems} at once. macOS runs here, Linux in fresh containers, Windows in a throwaway VM. The Rust side has ${n(meta.tests)} tests.`,
+      note: `macOS, ${say(facts.distros)} Linux distros and Windows in Git Bash are all first class. A change must keep each one working, so one command runs the check on all ${systems} at once. macOS runs here, Linux in fresh containers, Windows in a throwaway VM. The Rust side has ${n(facts.tests)} tests.`,
       strip: {
         command: "bash scripts/os-check.sh all",
         output: [
@@ -221,7 +221,7 @@ export const stepCopy = (
     h3: {
       eyebrow: "H3",
       line: "The roster, pinned down.",
-      note: `${n(facts.skills)} skills, ${n(facts.agents)} agents, ${n(facts.presets)} presets, ${n(facts.hookEvents)} hook events, ${n(meta.rustPrograms)} Rust programs and ${n(meta.outputStyles)} output styles. Each agent is pinned to a model and an effort, and gets only the tools its job needs. Every hand-back starts with a status word and has a character cap. A pre-commit check keeps the skill descriptions honest.`,
+      note: `${n(facts.skills)} skills, ${n(facts.agents)} agents, ${n(facts.presets)} presets, ${n(facts.hookEvents)} hook events, ${n(facts.rustPrograms)} Rust programs and ${n(facts.outputStyles)} output styles. Each agent is pinned to a model and an effort, and gets only the tools its job needs. Every hand-back starts with a status word and has a character cap. A pre-commit check keeps the skill descriptions honest.`,
       strip: {
         command:
           'rg "^(name|model|effort|tools|disallowedTools):" claude/agents/worker.md',
@@ -259,7 +259,7 @@ export const stepCopy = (
 
 export const sceneCounts = (facts: DotfilesFacts): SceneCounts => ({
   agents: facts.agents,
-  distros: storyMeta.distros,
+  distros: facts.distros,
   files: facts.files,
   guardChecks: facts.guardChecks,
   handoffK: storyMeta.handoffK,
@@ -267,9 +267,9 @@ export const sceneCounts = (facts: DotfilesFacts): SceneCounts => ({
   homeFiles: facts.homeFiles,
   hookEvents: facts.hookEvents,
   hookMs: storyMeta.hookMs,
-  outputStyles: storyMeta.outputStyles,
+  outputStyles: facts.outputStyles,
   presets: facts.presets,
-  rustPrograms: storyMeta.rustPrograms,
+  rustPrograms: facts.rustPrograms,
   skills: facts.skills,
 });
 

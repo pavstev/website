@@ -47,7 +47,7 @@ The README on [github.com/pavstev](https://github.com/pavstev) is generated here
 
 ## Deploy
 
-Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). It needs `GITHUB_TOKEN` as a build variable. A blog post with a future `date` goes live through `.github/workflows/blog-publish.yml`, which starts a build with the deploy hook `CLOUDFLARE_DEPLOY_HOOK`. Nobody deploys by hand.
+Every push to `main` makes Cloudflare build the repo and publish `dist/` with the Worker (`wrangler.jsonc`). It needs `GITHUB_TOKEN` as a build variable. A blog post with a future `date` goes live through `.github/workflows/blog-publish.yml`, which starts a build with the deploy hook `CLOUDFLARE_DEPLOY_HOOK`. The Monday run of `.github/workflows/images.yml` starts a build too (its own push, or the same hook when it pushes nothing), so the live GitHub facts refresh every week. Nobody deploys by hand.
 
 ## Contact
 

@@ -3,16 +3,11 @@ import { type LoopPhase } from "../lib/story/skill-map.ts";
 export const storyMeta = {
   aiApps: 3,
   checkedAt: "2026-10-21",
-  distros: 5,
-  doctorChecks: 8,
   handoffK: 300,
   heavierK: 45,
   helperCaps: [3, 1, 0],
   hookMs: 6,
   osFamilies: 3,
-  outputStyles: 2,
-  rustPrograms: 19,
-  tests: 807,
   updatedAt: "2026-10-22",
 };
 
