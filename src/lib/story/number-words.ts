@@ -38,3 +38,6 @@ export const spelled: ReadonlyMap<string, number> = new Map([
 export const say = (value: number): string => words[value] ?? String(value);
 
 export const digits = String;
+
+export const percent = (share: number): string =>
+  `${digits(Math.round(share * 100))}%`;

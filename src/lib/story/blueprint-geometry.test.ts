@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { sceneCounts } from "../../data/dotfiles-story.ts";
+import { sceneCounts, skillUsage } from "../../data/dotfiles-story.ts";
 import {
   buildScene,
   frameMatrix,
@@ -13,6 +13,7 @@ import {
   viewMatrix,
 } from "./blueprint-geometry.ts";
 import { sampleFacts } from "./sample-facts.ts";
+import { finaleStops, skillMap } from "./skill-map.ts";
 import { type StepId } from "./step-ids.ts";
 
 const sampleCounts = sceneCounts(sampleFacts);
@@ -36,6 +37,7 @@ const steps: StepId[] = [
   "h1",
   "h2",
   "h3",
+  "skills",
   "outro",
 ];
 
@@ -154,13 +156,9 @@ describe("buildScene", () => {
     assert.equal(toneOf(0), "line");
   });
 
-  it("ranks labels in drawing order and puts the title last", () => {
+  it("puts the title label last", () => {
     for (const step of steps) {
-      const { labels } = build(step, 1, 1);
-      for (const [index, label] of labels.entries()) {
-        assert.equal(label.rank, index);
-      }
-      assert.equal(labels.at(-1)?.id, "title");
+      assert.equal(build(step, 1, 1).labels.at(-1)?.id, "title");
     }
   });
 
@@ -203,6 +201,57 @@ describe("buildScene", () => {
   });
 });
 
+describe("the skills walk", () => {
+  const map = skillMap(skillUsage);
+  const walk = (t: number, limit = Infinity): Scene =>
+    buildScene("skills", t, 1, sampleCounts, limit, map);
+  const stopT = (stop: number): number =>
+    (stop + 0.9) / (map.stops.length + finaleStops);
+
+  it("lights the current skill and anchors its plate on it", () => {
+    for (const stop of [0, 5, 16]) {
+      const scene = walk(stopT(stop));
+      const name = map.stops[stop]?.skill.replace("ps:", "") ?? "";
+      assert.equal(
+        scene.labels.find((label) => label.tone === "accent")?.text,
+        name
+      );
+      assert.ok(scene.plate);
+    }
+  });
+
+  it("draws more of the path and the charts as the walk goes on", () => {
+    const early = walk(stopT(1)).lines.length;
+    const late = walk(stopT(12)).lines.length;
+    assert.ok(late > early);
+  });
+
+  it("shows the whole map with no packet at the end", () => {
+    const end = walk(1);
+    assert.equal(
+      end.labels.some((label) => label.id.startsWith("skill-")),
+      false
+    );
+    assert.ok(end.labels.some((label) => label.id === "trend"));
+    assert.equal(
+      end.labels.filter((label) => label.id.startsWith("phase-")).length,
+      7
+    );
+  });
+
+  it("keeps the current skill and its phase on a phone", () => {
+    const scene = walk(stopT(7), 4);
+    assert.equal(scene.labels.length, 4);
+    assert.equal(scene.labels[0]?.id, "skill-7");
+    assert.equal(scene.labels[1]?.id, `phase-${map.stops[7]?.phase ?? ""}`);
+  });
+
+  it("draws nothing for the map without the data", () => {
+    const bare = buildScene("skills", 0.5, 1, sampleCounts);
+    assert.equal(bare.plate, undefined);
+  });
+});
+
 describe("frameMatrix", () => {
   it("keeps the slabs in the upper right of a desktop frame", () => {
     const scene = build("outro", 1, 1);
@@ -216,9 +265,21 @@ describe("frameMatrix", () => {
     }
   });
 
-  it("does not shift a portrait frame", () => {
+  it("lifts a phone frame clear of the step text", () => {
     const scene = build("outro", 1, 1);
-    const m = frameMatrix(0.8, scene, 0, 0);
+    const m = frameMatrix(390 / 844, scene, 0, 0);
+    assert.equal(m[12], 0);
+    assert.ok((m[13] ?? 0) > 0);
+    for (const { at, id } of scene.labels) {
+      if (!id.startsWith("slab-")) continue;
+      const [, y] = project(m, at, 390, 844);
+      assert.ok(y > 844 * 0.06 && y < 844 * 0.55, `y ${String(y)}`);
+    }
+  });
+
+  it("does not lift a square frame", () => {
+    const scene = build("outro", 1, 1);
+    const m = frameMatrix(1, scene, 0, 0);
     assert.equal(m[12], 0);
     assert.equal(m[13], 0);
   });

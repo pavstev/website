@@ -50,6 +50,22 @@ describe("posterSvg", () => {
     assert.ok(denied.includes('class="tone-denied"'));
   });
 
+  it("fills every slab face and the title block with a plane dot pattern", () => {
+    assert.equal(svg.match(/<pattern id="dots-1200x630-/g)?.length, 6);
+    assert.equal(svg.match(/fill="url\(#dots-1200x630-/g)?.length, 6);
+    assert.ok(svg.includes('patternTransform="matrix('));
+  });
+
+  it("drops the dots when their spacing is too small", () => {
+    assert.ok(!sceneSvg(build("outro", 1), 90, 60).includes("<pattern"));
+  });
+
+  it("keeps ids apart for two sizes", () => {
+    const small = sceneSvg(build("outro", 1), 800, 450);
+    assert.ok(small.includes('id="dots-800x450-'));
+    assert.ok(!small.includes("dots-1200x630-"));
+  });
+
   it("follows the size it is given", () => {
     assert.ok(svg.includes('viewBox="0 0 1200 630"'));
     assert.ok(posterSvg(800, 800, counts).includes('viewBox="0 0 800 800"'));

@@ -1,4 +1,4 @@
-import { easeToward } from "./story-scroll.ts";
+import { type Box, easeToward } from "./story-scroll.ts";
 
 export interface LoopGates {
   inView: boolean;
@@ -21,21 +21,14 @@ export interface PointerTilt {
 }
 
 export interface TiltHooks {
-  area?: () => TiltArea;
+  area?: () => Box;
   wake?: () => void;
 }
 
 export interface TiltTarget {
   addEventListener: (type: string, listener: (event: Event) => void) => void;
-  getBoundingClientRect?: () => TiltArea;
+  getBoundingClientRect?: () => Box;
   removeEventListener: (type: string, listener: (event: Event) => void) => void;
-}
-
-interface TiltArea {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
 }
 
 const tiltRate = 6;
@@ -90,7 +83,7 @@ export const createPointerTilt = (
   let goalYaw = 0;
   let goalPitch = 0;
 
-  const boxOf = (): TiltArea =>
+  const boxOf = (): Box =>
     hooks.area?.() ??
     target.getBoundingClientRect?.() ?? {
       height: 0,

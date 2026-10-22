@@ -1,4 +1,14 @@
+import { clamp01, smoothstep } from "../math.ts";
 import { storyPalette } from "../theme.ts";
+import { percent } from "./number-words.ts";
+import {
+  gaugeSpot,
+  loopPhases,
+  type SkillMap,
+  skillSpots,
+  stopAt,
+  walkOf,
+} from "./skill-map.ts";
 import { type StepId } from "./step-ids.ts";
 
 export interface Vec3 {
@@ -25,6 +35,7 @@ export interface Scene {
   labels: Label[];
   lineColors: Float32Array;
   lines: Float32Array;
+  plate: undefined | Vec3;
   points: Float32Array;
   slabSegments: number;
   span: number;
@@ -53,7 +64,6 @@ interface Label {
   at: Vec3;
   center: boolean;
   id: string;
-  rank: number;
   text: string;
   tone: ToneName;
 }
@@ -107,15 +117,11 @@ const edges = [
 export const phoneLabelLimit = 4;
 const pathNodes = 7;
 const guardNode = 2;
+const pathX0 = -2.05;
+const pathX1 = 2.05;
 const labelFloor = 0.2;
+const tallLift = 0.3;
 
-const clamp01 = (x: number): number =>
-  Number.isNaN(x) ? 0 : Math.min(1, Math.max(0, x));
-const ease = (x: number): number => {
-  const c = clamp01(x);
-  return c * c * (3 - 2 * c);
-};
-const sm = (a: number, b: number, x: number): number => ease((x - a) / (b - a));
 const lerp = (a: number, b: number, k: number): number => a + (b - a) * k;
 
 interface Floats {
@@ -298,10 +304,16 @@ const faceY = (
   hx: number,
   hz: number,
   toneIndex: number,
-  alpha: number
+  alpha: number,
+  cx = 0,
+  cz = 0
 ): void => {
-  triangle(-hx, y, -hz, hx, y, -hz, hx, y, hz, toneIndex, alpha);
-  triangle(-hx, y, -hz, hx, y, hz, -hx, y, hz, toneIndex, alpha);
+  const x0 = cx - hx;
+  const x1 = cx + hx;
+  const z0 = cz - hz;
+  const z1 = cz + hz;
+  triangle(x0, y, z0, x1, y, z0, x1, y, z1, toneIndex, alpha);
+  triangle(x0, y, z0, x1, y, z1, x0, y, z1, toneIndex, alpha);
 };
 
 const point = (
@@ -347,6 +359,7 @@ interface Beat {
   ledgerProgress: number;
   links: number;
   lock: number;
+  mapAlpha: number;
   outside: number;
   pathAlpha: number;
   pathProgress: number;
@@ -360,6 +373,7 @@ interface Beat {
   spread: number;
   tileReveal: number;
   tilesAlpha: number;
+  walk: number;
   zoom: number;
 }
 
@@ -374,6 +388,7 @@ const beat: Beat = {
   ledgerProgress: 0,
   links: 0,
   lock: 0,
+  mapAlpha: 0,
   outside: 0,
   pathAlpha: 0,
   pathProgress: 0,
@@ -387,6 +402,7 @@ const beat: Beat = {
   spread: 0.35,
   tileReveal: 1,
   tilesAlpha: 0.9,
+  walk: 0,
   zoom: 0,
 };
 
@@ -401,6 +417,7 @@ const resetBeat = (): void => {
   beat.ledgerProgress = 0;
   beat.links = 0;
   beat.lock = 0;
+  beat.mapAlpha = 0;
   beat.outside = 0;
   beat.pathAlpha = 0;
   beat.pathProgress = 0;
@@ -414,10 +431,14 @@ const resetBeat = (): void => {
   beat.spread = 0.35;
   beat.tileReveal = 1;
   beat.tilesAlpha = 0.9;
+  beat.walk = 0;
   beat.zoom = 0;
 };
 
-const bump = (t: number): number => sm(0, 0.12, t) * (1 - sm(0.12, 0.38, t));
+const walkFade = 0.03;
+
+const bump = (t: number): number =>
+  smoothstep(0, 0.12, t) * (1 - smoothstep(0.12, 0.38, t));
 
 const harnessBase = (): void => {
   beat.slabAlpha.fill(0.1);
@@ -432,20 +453,20 @@ const applyBeat = (step: StepId, t: number): void => {
   resetBeat();
   switch (step) {
     case "c01": {
-      const k = sm(0, 0.2, t);
+      const k = smoothstep(0, 0.2, t);
       beat.spread = 0.35 * k;
       for (const i of [0, 1, 2, 4]) beat.slabAlpha[i] = 1 - 0.88 * k;
       beat.tileReveal = clamp01(t * 1.5);
-      beat.ghost = sm(0.35, 0.55, t);
-      beat.links = sm(0.45, 1, t);
+      beat.ghost = smoothstep(0.35, 0.55, t);
+      beat.links = smoothstep(0.45, 1, t);
       break;
     }
     case "c02": {
-      const sink = sm(0, 0.15, t);
-      beat.ghost = 1 - sm(0, 0.25, t);
+      const sink = smoothstep(0, 0.15, t);
+      beat.ghost = 1 - smoothstep(0, 0.25, t);
       beat.links = beat.ghost;
       for (const [k, i] of [4, 2, 1, 0].entries()) {
-        const rise = sm(0.2 + k * 0.16, 0.42 + k * 0.16, t);
+        const rise = smoothstep(0.2 + k * 0.16, 0.42 + k * 0.16, t);
         beat.slabAlpha[i] = Math.max(rise, 0.12 * (1 - sink));
         beat.slabDrop[i] = -3.2 * (1 - rise) * sink;
       }
@@ -453,29 +474,30 @@ const applyBeat = (step: StepId, t: number): void => {
     }
     case "c03": {
       beat.spread = 0.35 + 0.45 * bump(t);
-      beat.replayOffset = 2.6 * (1 - sm(0, 0.5, t));
-      beat.replayAlpha = 0.85 * sm(0, 0.1, t) * (1 - sm(0.55, 0.75, t));
+      beat.replayOffset = 2.6 * (1 - smoothstep(0, 0.5, t));
+      beat.replayAlpha =
+        0.85 * smoothstep(0, 0.1, t) * (1 - smoothstep(0.55, 0.75, t));
       break;
     }
     case "c04": {
       beat.spread = 0.35 + 0.45 * bump(t);
-      beat.copies = sm(0.05, 0.35, t) * (1 - sm(0.7, 0.95, t));
+      beat.copies = smoothstep(0.05, 0.35, t) * (1 - smoothstep(0.7, 0.95, t));
       break;
     }
     case "c05": {
       beat.spread = 0.35 + 0.45 * bump(t);
-      beat.hatch = sm(0.1, 0.4, t);
-      beat.lock = sm(0.3, 0.6, t);
-      beat.outside = sm(0.55, 0.85, t);
+      beat.hatch = smoothstep(0.1, 0.4, t);
+      beat.lock = smoothstep(0.3, 0.6, t);
+      beat.outside = smoothstep(0.55, 0.85, t);
       break;
     }
     case "c06": {
-      const carry = 1 - sm(0, 0.15, t);
+      const carry = 1 - smoothstep(0, 0.15, t);
       beat.spread = 0.35 + 0.45 * bump(t);
       beat.hatch = carry;
       beat.lock = carry;
       beat.outside = carry;
-      beat.fan = sm(0.1, 0.5, t);
+      beat.fan = smoothstep(0.1, 0.5, t);
       beat.claudeTone = t > 0.1 ? tone.mark : tone.line;
       break;
     }
@@ -487,7 +509,7 @@ const applyBeat = (step: StepId, t: number): void => {
     }
     case "h2": {
       harnessBase();
-      beat.pathAlpha = 1 - sm(0, 0.12, t);
+      beat.pathAlpha = 1 - smoothstep(0, 0.12, t);
       beat.pathProgress = 1;
       beat.ledgerAlpha = 1;
       beat.ledgerProgress = t;
@@ -495,18 +517,18 @@ const applyBeat = (step: StepId, t: number): void => {
     }
     case "h3": {
       harnessBase();
-      beat.ledgerAlpha = 1 - sm(0, 0.12, t);
+      beat.ledgerAlpha = 1 - smoothstep(0, 0.12, t);
       beat.ledgerProgress = 1;
       beat.rosterAlpha = 1;
       beat.rosterProgress = t;
       break;
     }
     case "harness": {
-      const fade = sm(0.1, 0.6, t);
-      beat.fan = 1 - sm(0, 0.25, t);
+      const fade = smoothstep(0.1, 0.6, t);
+      beat.fan = 1 - smoothstep(0, 0.25, t);
       beat.claudeTone = beat.fan > 0.05 ? tone.mark : tone.line;
       beat.slabAlpha.fill(1 - 0.9 * fade);
-      beat.spread = 0.35 - 0.15 * sm(0, 0.5, t);
+      beat.spread = 0.35 - 0.15 * smoothstep(0, 0.5, t);
       beat.labels = 1 - fade;
       beat.tilesAlpha = 0.9 * (1 - fade);
       beat.sheetTwo = t >= 0.5;
@@ -514,20 +536,29 @@ const applyBeat = (step: StepId, t: number): void => {
       break;
     }
     case "hero": {
-      beat.spread = 1 - sm(0.4, 1, t);
+      beat.spread = 1 - smoothstep(0.4, 1, t);
       beat.tilesAlpha = 0;
       break;
     }
     case "outro": {
-      const show = sm(0.3, 0.8, t);
-      beat.spread = 0.2 + 0.8 * sm(0, 0.35, t);
-      beat.slabAlpha.fill(0.1 + 0.9 * sm(0.1, 0.5, t));
+      const show = smoothstep(0.3, 0.8, t);
+      beat.spread = 0.2 + 0.8 * smoothstep(0, 0.35, t);
+      beat.slabAlpha.fill(0.1 + 0.9 * smoothstep(0.1, 0.5, t));
       beat.labels = show;
       beat.tilesAlpha = 0.9 * show;
-      beat.rosterAlpha = 1 - sm(0, 0.2, t);
-      beat.rosterProgress = 1;
+      beat.mapAlpha = 1 - smoothstep(0, 0.2, t);
+      beat.walk = 1;
       beat.sheetTwo = t < 0.3;
-      beat.zoom = 1 - sm(0, 0.35, t);
+      beat.zoom = 1 - smoothstep(0, 0.35, t);
+      break;
+    }
+    case "skills": {
+      harnessBase();
+      beat.slabAlpha.fill(0.04);
+      beat.rosterAlpha = 1 - smoothstep(0, walkFade, t);
+      beat.rosterProgress = 1;
+      beat.mapAlpha = smoothstep(0, walkFade, t);
+      beat.walk = t;
       break;
     }
   }
@@ -547,14 +578,18 @@ const guardStop = guardNode / (pathNodes - 1);
 
 const packetPosition = (a: number): number => {
   if (a < 0.5) return -1;
-  if (a < 0.64) return guardStop * sm(0.5, 0.64, a);
+  if (a < 0.64) return guardStop * smoothstep(0.5, 0.64, a);
   if (a < 0.76) return guardStop;
-  return a < 0.82 ? guardStop * (1 - sm(0.76, 0.82, a)) : sm(0.82, 1, a);
+  return a < 0.82
+    ? guardStop * (1 - smoothstep(0.76, 0.82, a))
+    : smoothstep(0.82, 1, a);
 };
 
 const packetState = (a: number): "denied" | "normal" | "passed" => {
   if (a >= 0.64 && a < 0.76) return "denied";
-  return a >= 0.82 && sm(0.82, 1, a) > guardStop + 0.02 ? "passed" : "normal";
+  return a >= 0.82 && smoothstep(0.82, 1, a) > guardStop + 0.02
+    ? "passed"
+    : "normal";
 };
 
 const ledgerTexts = (counts: SceneCounts): string[] => [
@@ -576,12 +611,320 @@ const rosterRows = (
   ["output styles", counts.outputStyles, 0.16, tone.line],
 ];
 
+type Lab = (
+  id: string,
+  text: string,
+  x: number,
+  y: number,
+  z: number,
+  toneName: ToneName,
+  alpha: number,
+  center?: boolean
+) => void;
+
+const skillFoot = { hx: 0.2, hz: 0.14 } as const;
+const skillLift = 0.18;
+const gaugeRadius = 0.24;
+const gaugeSteps = 28;
+const curveSteps = 14;
+const strandGap = 0.014;
+const spark = { x0: 0.75, x1: 2.35, z0: 0.95, z1: 0.55 } as const;
+
+const arcFloor = (
+  cx: number,
+  y: number,
+  cz: number,
+  sweep: number,
+  toneIndex: number,
+  alpha: number,
+  dashed: boolean
+): void => {
+  const steps = Math.ceil(gaugeSteps * sweep);
+  for (let k = 0; k < steps; k += 1) {
+    if (dashed && k % 2 === 1) continue;
+    const a = -Math.PI / 2 + (2 * Math.PI * k) / gaugeSteps;
+    const b =
+      -Math.PI / 2 + 2 * Math.PI * Math.min(sweep, (k + 1) / gaugeSteps);
+    seg(
+      cx + Math.cos(a) * gaugeRadius,
+      y,
+      cz + Math.sin(a) * gaugeRadius,
+      cx + Math.cos(b) * gaugeRadius,
+      y,
+      cz + Math.sin(b) * gaugeRadius,
+      toneIndex,
+      alpha
+    );
+  }
+};
+
+const skillHeight = (share: number): number => 0.03 + 1.1 * share;
+
+const bridge = (
+  from: Vec3,
+  to: Vec3,
+  reveal: number,
+  strands: number,
+  alpha: number
+): void => {
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  const length = Math.hypot(dx, dz) || 1;
+  const nx = -dz / length;
+  const nz = dx / length;
+  const rise = 0.3 + 0.12 * length;
+  const steps = Math.ceil(curveSteps * reveal);
+  for (let strand = 0; strand < strands; strand += 1) {
+    const off = (strand - (strands - 1) / 2) * strandGap;
+    for (let k = 0; k < steps; k += 1) {
+      const a = k / curveSteps;
+      const b = Math.min(reveal, (k + 1) / curveSteps);
+      seg(
+        lerp(from.x, to.x, a) + nx * off,
+        lerp(from.y, to.y, a) + 4 * a * (1 - a) * rise,
+        lerp(from.z, to.z, a) + nz * off,
+        lerp(from.x, to.x, b) + nx * off,
+        lerp(from.y, to.y, b) + 4 * b * (1 - b) * rise,
+        lerp(from.z, to.z, b) + nz * off,
+        tone.markAlt,
+        alpha
+      );
+    }
+  }
+};
+
+const drawSkills = (
+  map: SkillMap,
+  scroll: number,
+  alpha: number,
+  sy: number,
+  lab: Lab
+): undefined | Vec3 => {
+  const count = map.stops.length;
+  if (count === 0) return undefined;
+  const walk = walkOf(scroll, count);
+  const { stop, u } = stopAt(walk, count);
+  const arrive = smoothstep(0, 0.35, u);
+  const reached = (k: number): number => {
+    if (k < stop) return 1;
+    return k === stop ? arrive : 0;
+  };
+  const spots = skillSpots(map.stops);
+  const floor = sy + 0.002;
+  const at = (k: number): Vec3 => ({
+    x: spots[k]?.x ?? 0,
+    y: floor,
+    z: spots[k]?.z ?? 0,
+  });
+
+  for (let k = 1; k < count; k += 1) {
+    const r = reached(k);
+    if (r <= 0) continue;
+    const a = at(k - 1);
+    const b = at(k);
+    seg(
+      a.x,
+      floor,
+      a.z,
+      lerp(a.x, b.x, r),
+      floor,
+      lerp(a.z, b.z, r),
+      tone.accent,
+      0.75 * alpha
+    );
+  }
+
+  const head = at(stop);
+  const tail = at(Math.max(0, stop - 1));
+  const hx = stop === 0 ? head.x : lerp(tail.x, head.x, arrive);
+  const hz = stop === 0 ? head.z : lerp(tail.z, head.z, arrive);
+  if (walk < 1) {
+    point(hx, floor + 0.05, hz, tone.ink, alpha, 6);
+    point(hx, floor + 0.05, hz, tone.accent, 0.35 * alpha, 22);
+  }
+
+  let anchor: undefined | Vec3;
+  const current = map.stops[stop];
+  for (const [k, item] of map.stops.entries()) {
+    const spot = at(k);
+    const seen = k <= stop || walk >= 1;
+    const lit = k === stop && walk < 1 ? arrive : 0;
+    const lift = skillLift * lit;
+    const base = sy + lift;
+    const shown = (seen ? 0.85 : 0.35) * alpha;
+    const toneIndex = lit > 0.5 ? tone.accent : seen ? tone.line : tone.muted;
+    if (item.ran) {
+      const hy = skillHeight(item.share) / 2;
+      box(
+        spot.x,
+        base + hy,
+        spot.z,
+        skillFoot.hx,
+        hy,
+        skillFoot.hz,
+        toneIndex,
+        shown
+      );
+      faceY(
+        base + 2 * hy,
+        skillFoot.hx,
+        skillFoot.hz,
+        tone.white,
+        storyPalette.face * (seen ? 1 : 0.4) * alpha,
+        spot.x,
+        spot.z
+      );
+    } else {
+      rectY(
+        base + 0.004,
+        spot.x,
+        spot.z,
+        skillFoot.hx,
+        skillFoot.hz,
+        toneIndex,
+        shown,
+        6
+      );
+    }
+    if (k !== stop) continue;
+    const top = base + (item.ran ? skillHeight(item.share) : 0.004);
+    anchor = { x: spot.x - skillFoot.hx, y: top, z: spot.z - skillFoot.hz };
+  }
+
+  if (current && walk < 1) {
+    const spot = at(stop);
+    const top =
+      sy + skillLift * arrive + (current.ran ? skillHeight(current.share) : 0);
+    lab(
+      `skill-${String(stop)}`,
+      current.skill.replace("ps:", ""),
+      spot.x,
+      top + 0.22,
+      spot.z,
+      "accent",
+      alpha * arrive,
+      true
+    );
+  }
+
+  const phaseOrder = loopPhases
+    .map((phase, j) => ({ j, phase }))
+    .toSorted(
+      (a, b) =>
+        Number(b.phase === current?.phase) - Number(a.phase === current?.phase)
+    );
+  for (const { j, phase } of phaseOrder) {
+    const first = map.stops.findIndex((item) => item.phase === phase);
+    if (first === -1) continue;
+    const reveal =
+      walk >= 1 || first < stop
+        ? 1
+        : first === stop
+          ? smoothstep(0.1, 0.6, u)
+          : 0;
+    const centre = gaugeSpot(phase);
+    const share = map.phases[j] ?? 0;
+    arcFloor(
+      centre.x,
+      floor,
+      centre.z,
+      1,
+      tone.white,
+      storyPalette.hairStrong * 2 * alpha,
+      true
+    );
+    if (reveal > 0)
+      arcFloor(
+        centre.x,
+        floor,
+        centre.z,
+        share * reveal,
+        tone.mark,
+        0.9 * alpha,
+        false
+      );
+    const near = current?.phase === phase && walk < 1;
+    lab(
+      `phase-${phase}`,
+      `${phase} ${percent(share)}`,
+      centre.x,
+      floor,
+      centre.z + (phase === "care" ? -0.36 : -0.34),
+      near ? "mark" : "muted",
+      alpha * (near ? 1 : 0.85 * Math.max(0.35, reveal)),
+      true
+    );
+  }
+
+  for (const chain of map.chains) {
+    const later = Math.max(chain.from, chain.to);
+    const reveal =
+      walk >= 1 || later < stop
+        ? 1
+        : later === stop
+          ? smoothstep(0.2, 0.8, u)
+          : 0;
+    if (reveal <= 0) continue;
+    const strands = 1 + Math.round(chain.share * 16);
+    bridge(at(chain.from), at(chain.to), reveal, strands, 0.5 * alpha);
+  }
+
+  const { trend } = map;
+  if (trend.length > 1) {
+    const shown = Math.min(walk, 1);
+    seg(
+      spark.x0,
+      floor,
+      spark.z0,
+      spark.x1,
+      floor,
+      spark.z0,
+      tone.white,
+      storyPalette.hairStrong * 2 * alpha
+    );
+    const last = (trend.length - 1) * shown;
+    for (let k = 0; k < trend.length - 1; k += 1) {
+      const r = clamp01(last - k);
+      if (r <= 0) break;
+      const xa = lerp(spark.x0, spark.x1, k / (trend.length - 1));
+      const xb = lerp(spark.x0, spark.x1, (k + 1) / (trend.length - 1));
+      const za = lerp(spark.z0, spark.z1, trend[k] ?? 0);
+      const zb = lerp(spark.z0, spark.z1, trend[k + 1] ?? 0);
+      seg(
+        xa,
+        floor,
+        za,
+        lerp(xa, xb, r),
+        floor,
+        lerp(za, zb, r),
+        tone.accent,
+        0.9 * alpha
+      );
+    }
+    const end =
+      trend[Math.min(trend.length - 1, Math.floor(last + 0.0001))] ?? 0;
+    lab(
+      "trend",
+      `sessions with a skill ${percent(end)}`,
+      spark.x0,
+      floor,
+      spark.z1 - 0.1,
+      "ink",
+      alpha * smoothstep(0, 0.05, shown),
+      false
+    );
+  }
+
+  return anchor;
+};
+
 export const buildScene = (
   step: StepId,
   t: number,
   explode: number,
   counts: SceneCounts,
-  labelLimit = Infinity
+  labelLimit = Infinity,
+  map?: SkillMap
 ): Scene => {
   const local = clamp01(t);
   applyBeat(step, local);
@@ -594,23 +937,13 @@ export const buildScene = (
   const labels: Label[] = [];
   const room = (alpha: number): boolean =>
     alpha >= labelFloor && labels.length < labelLimit;
-  const lab = (
-    id: string,
-    text: string,
-    x: number,
-    y: number,
-    z: number,
-    toneName: ToneName,
-    alpha: number,
-    center = false
-  ): void => {
+  const lab: Lab = (id, text, x, y, z, toneName, alpha, center = false) => {
     if (!room(alpha)) return;
     labels.push({
       alpha,
       at: { x, y, z },
       center,
       id,
-      rank: labels.length,
       text,
       tone: toneName,
     });
@@ -650,6 +983,15 @@ export const buildScene = (
     tone.white,
     storyPalette.hairStrong,
     40
+  );
+  faceY(
+    floorY,
+    titleBlock.hx,
+    titleBlock.hz,
+    tone.white,
+    storyPalette.face * 0.5,
+    titleBlock.x,
+    titleBlock.z
   );
   rectY(
     floorY,
@@ -874,13 +1216,13 @@ export const buildScene = (
   if (beat.pathAlpha > 0) {
     const a = beat.pathProgress;
     const fade = beat.pathAlpha;
-    const x0 = -2.05;
-    const x1 = 2.05;
-    const nodeX = (i: number): number => lerp(x0, x1, i / (pathNodes - 1));
+    const nodeX = (i: number): number =>
+      lerp(pathX0, pathX1, i / (pathNodes - 1));
     const pos = packetPosition(a);
     const state = packetState(a);
-    const denyAlpha = sm(0.64, 0.68, a) * (1 - sm(0.74, 0.78, a)) * fade;
-    const passAlpha = sm(0.88, 0.94, a) * fade;
+    const denyAlpha =
+      smoothstep(0.64, 0.68, a) * (1 - smoothstep(0.74, 0.78, a)) * fade;
+    const passAlpha = smoothstep(0.88, 0.94, a) * fade;
     lab(
       "deny",
       "G14 denied",
@@ -904,7 +1246,8 @@ export const buildScene = (
     const reveals: number[] = [];
     for (let i = 0; i < pathNodes; i += 1) {
       const r =
-        sm((i / pathNodes) * 0.4, (i / pathNodes) * 0.4 + 0.12, a) * fade;
+        smoothstep((i / pathNodes) * 0.4, (i / pathNodes) * 0.4 + 0.12, a) *
+        fade;
       reveals.push(r);
       if (r <= 0) continue;
       const x = nodeX(i);
@@ -957,7 +1300,7 @@ export const buildScene = (
       }
     }
     if (pos >= 0) {
-      const px = lerp(x0, x1, pos);
+      const px = lerp(pathX0, pathX1, pos);
       const glow =
         state === "denied"
           ? tone.denied
@@ -973,7 +1316,8 @@ export const buildScene = (
     const texts = ledgerTexts(counts);
     for (const [i, text] of texts.entries()) {
       const r =
-        sm(i * 0.16, i * 0.16 + 0.14, beat.ledgerProgress) * beat.ledgerAlpha;
+        smoothstep(i * 0.16, i * 0.16 + 0.14, beat.ledgerProgress) *
+        beat.ledgerAlpha;
       if (r <= 0) continue;
       const z = -0.9 + i * 0.36;
       rectY(sy, -1.9, z, 0.26, 0.1, tone.accent, 0.85 * r);
@@ -996,7 +1340,8 @@ export const buildScene = (
       counts
     ).entries()) {
       const r =
-        sm(i * 0.14, i * 0.14 + 0.14, beat.rosterProgress) * beat.rosterAlpha;
+        smoothstep(i * 0.14, i * 0.14 + 0.14, beat.rosterProgress) *
+        beat.rosterAlpha;
       if (r <= 0) continue;
       const z = -1.35 + i * 0.52;
       const step2 = size * 2 + 0.07;
@@ -1026,6 +1371,11 @@ export const buildScene = (
     }
   }
 
+  const skillAnchor =
+    map && beat.mapAlpha > 0
+      ? drawSkills(map, beat.walk, beat.mapAlpha, sy, lab)
+      : undefined;
+
   lab(
     "title",
     beat.sheetTwo
@@ -1039,17 +1389,40 @@ export const buildScene = (
     true
   );
 
+  const slabCorner = (i: number): Vec3 => ({
+    x: -slab.hx,
+    y: (ys[i] ?? 0) + slab.hy,
+    z: -slab.hz,
+  });
+  const plates: Partial<Record<StepId, undefined | Vec3>> = {
+    c01: slabCorner(3),
+    c02: slabCorner(0),
+    c03: slabCorner(1),
+    c04: slabCorner(1),
+    c05: slabCorner(3),
+    c06: slabCorner(2),
+    h1: {
+      x: lerp(pathX0, pathX1, guardNode / (pathNodes - 1)),
+      y: sy,
+      z: -0.16,
+    },
+    h3: { x: -1.3, y: sy, z: -0.83 },
+    skills: skillAnchor,
+  };
+
   const { copies } = beat;
   return {
     focus: beat.zoom,
     gridPoints,
-    half: 3.2 + 0.9 * spread + 0.5 * copies - 0.7 * beat.zoom,
+    half:
+      3.2 + 0.9 * spread + 0.5 * copies - 0.7 * beat.zoom - 0.3 * beat.mapAlpha,
     labels,
     lineColors: lineColorBuf.data.slice(0, lineColorBuf.length),
     lines: lineBuf.data.slice(0, lineBuf.length),
+    plate: plates[step],
     points: pointBuf.data.slice(0, pointBuf.length),
     slabSegments,
-    span: 2.9 + 1.4 * copies,
+    span: 2.9 + 1.4 * copies - 0.45 * beat.mapAlpha,
     triColors: triColorBuf.data.slice(0, triColorBuf.length),
     tris: triBuf.data.slice(0, triBuf.length),
   };
@@ -1108,8 +1481,9 @@ export const frameMatrix = (
     half
   );
   const wide = clamp01((aspect - 1) / 0.5);
+  const tall = clamp01((1 - aspect) / 0.4);
   m[12] = 0.28 * wide;
-  m[13] = 0.02 * wide + (2.4 * scene.focus) / half;
+  m[13] = 0.02 * wide + tallLift * tall + (2.4 * scene.focus) / half;
   return m;
 };
 

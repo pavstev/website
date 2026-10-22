@@ -53,6 +53,7 @@ export const ditherOutline = "#C9D6FF";
 export const storyPalette = {
   accent: "#7AA2FF",
   denied: "#F5897F",
+  dot: 0.2,
   face: 0.04,
   grid: 0.08,
   hair: 0.1,

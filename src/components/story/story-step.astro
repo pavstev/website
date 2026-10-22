@@ -6,9 +6,10 @@ import { fillText } from "@/lib/template";
 interface Props {
   numbers?: ReadonlyArray<{ label: string; value: number }>;
   step: StoryStep;
+  stops?: number | undefined;
 }
 
-const { numbers = [], step } = Astro.props;
+const { numbers = [], step, stops } = Astro.props;
 const { strip } = step;
 const isCommand = strip !== undefined && "command" in strip;
 const stripHead =
@@ -23,11 +24,15 @@ const stripHeadClass = isCommand ? "story-strip-command" : "story-strip-title";
   class="story-step"
   data-screens={String(step.screens)}
   data-step={step.id}
+  data-stops={stops === undefined ? undefined : String(stops)}
+  style={stops === undefined ? undefined : `--story-stops: ${String(stops)}`}
   id={step.id === "outro" ? "story-end" : undefined}
 >
   <div class="story-body">
     <p class="story-eyebrow">{step.eyebrow}</p>
-    <h2 class="story-line">{step.line}</h2>
+    <h2 class="story-line">
+      <span class="story-morph-name">{step.line}</span>
+    </h2>
     <p class="story-note">{step.note}</p>
     {numbers.length > 0 && (
       <ul class="story-numbers">

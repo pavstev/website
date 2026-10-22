@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 
-import { storyMeta } from "@/data/dotfiles-story";
+import { storyMeta } from "@/data/dotfiles-stats";
 import { showDrafts } from "@/lib/blog/build-env";
 import { absoluteUrl, shareImagePath } from "@/lib/blog/images";
 import { listPosts } from "@/lib/blog/posts";

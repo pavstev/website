@@ -129,7 +129,7 @@ Siblings: `motion.md`, `sky.md`. Colors and tokens are in `src/styles/tokens.css
 - One component, `site-footer.astro`, two layouts. No `·` separators.
 - Home: tier 1 is `© year name`. Tier 2 is the `SkyControls` pill and the credit link "Weather: Open-Meteo". "Open-Meteo" never breaks at its hyphen.
 - The credit is required by the CC BY 4.0 licence and shows on the home only.
-- Night pages (`links`): one row under the gradient line. Left: `© year name` and the Motion switch. Right: `FooterContacts`, five 32 px keys.
+- Night pages (`links`): one row under the gradient line, as wide as the page content (edges line up with `.work-page` and the `/about` column; full width on the story page, see `blog.md`). Left: `© year name` and the Motion switch. Right: `FooterContacts`, five 32 px keys.
 - The keys are GitHub, LinkedIn, Email, Résumé and RSS (RSS only while the blog is live). They share `ContactKey` and `contactEntries` with the home links.
 - Each key has an `aria-label`, a tone dot, a tooltip, `rel="me noopener noreferrer"` on external ones and a new-tab note.
 - Under `42em` of footer width the row stacks centered. No pill, credit or weather on night pages.
@@ -153,16 +153,18 @@ Siblings: `motion.md`, `sky.md`. Colors and tokens are in `src/styles/tokens.css
 - `work.astro` uses `BlogLayout`, `BlogHeader` and the blog column. Products come first (`#products`), then Open source projects (`#projects`).
 - `src/lib/work.ts` is the one place to configure the page: `productKeys`, `repos.pinned`, `repos.hidden`, `repos.max`.
 - Cards and rows are glass cards (`.mat-panel`, `--glass-card`). Hover or focus turns the edge to the accent.
-- Every card and row is one stretched link that opens in a new tab. The CSS lives in `blog.css` (`.work-*`, `.repo-*`, `.logo-planet`).
-- A repo listed in `workConfig.repos.stories` (only dotfiles) has a second link under the tech lane: "See the story" (`.work-card-story`, raised above the stretched link, same tab, 44 px hit area). The card box and name morph into the story sheet and title under `html[data-story-morph]` (`story-morph.ts`, set only for `/work` to a story path and back).
-- No featured card. All repo cards have the same width and weight in an auto grid: as many 15rem columns as fit (`auto-fill`). Cards in a row share one height.
-- Cards show the name, stars and forks (only above 0), the arrow, the full description, then the tech lane pinned to the card bottom.
+- Product rows are one stretched link that opens in a new tab. Repo cards are not: only the name and the action keys are links, and the card body has no pointer. The CSS lives in `blog.css` (`.work-*`, `.repo-*`, `.logo-planet`).
+- A repo card ends with `.work-card-actions`: quiet accent text links `.work-card-action`, no keycap (owner pick 2026-10-22, the same family as the product domain link and "+N more"). Every card has "View on GitHub" with `lucide:arrow-up-right` (new tab, `aria-label` "View on GitHub: name"). A repo in `workConfig.repos.stories` (only dotfiles) adds "See the story" with `lucide:arrow-right` (same tab, `data-story-link`). Both use `--ui-accent`, turn ink with a 1px underline on hover or focus, carry a 44 px `::after` hit band like `.tech-more`, and are `LinkText` in forced colors. They wrap when the card is narrow.
+- The card box and name morph into the story sheet and title under `html[data-story-morph]` (`story-morph.ts`, set only for `/work` to a story path and back). Keep `data-story-path` on the card.
+- The edge lights up on `:focus-within` or while a link inside is hovered.
+- No featured card. All repo cards have the same width and weight. The column count comes from `@container work` ranges (1 column, then 2 from 30.75rem, 3 from 46.5rem, 4 from 62.25rem), the same widths a 15rem `auto-fill` grid would use. Rows size to their content; cards in one row share its height.
+- Cards show the name, stars and forks (only above 0), the full description, the tech lane, then the action row on the card bottom.
 - The tech lane (`repo-tags.tsx`, `tech-lanes.ts`) is one line. When it does not fit, the first clipped tag fades out and a blue "+N more" button follows. Its popover (`popover="auto"`, `anchored-popovers.ts`) lists only the hidden tags. Hover opens it on fine pointers, a click pins it, tap and Enter toggle it, Escape closes it.
 - A `ResizeObserver` refits each lane on width and text-size changes. Hidden lane tags get `aria-hidden`. Without JS the full list wraps.
 - Tech tags (`tech-tag.tsx`) are plain: a simple-icons logo and the name, no box. Language logos use the GitHub Linguist color. Topics map through `topicTech` in `tech-logos.ts`.
 - A technology with no logo gets a 6 px dot. Topics that are not technologies are dropped. A new technology needs a `topicTech` entry and `pnpm icons`.
 - Product rows show the logo mark, name and line, and a side column with role, period and the bare domain. Under 36em the side column moves under the text.
-- The "All on GitHub" link sits at the right end of the projects heading row.
+- The last grid cell is the "All on GitHub" card (`.work-all`): one link to the repositories tab, dashed `--work-all-edge`, no fill, muted ink at rest. Hover and focus move the edge and ink to the accent with a soft text glow. It sits in one line (mark, label, arrow). When it shares a row it stretches to the card height. When it is alone in its row (`nth-child(Nn + 1)` for N columns, so every 1-column layout) it spans the full row and stays short: key height plus `--sp-3` padding. The heading row has no link.
 - No WebGL and no island on the page.
 
 ## 404

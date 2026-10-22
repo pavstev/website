@@ -111,16 +111,18 @@ const place = ({ id, mode }: { id: string; mode: Mode }): void => {
   const stage = document.querySelector<HTMLElement>("[data-story-stage]");
   const body = item?.querySelector<HTMLElement>(".story-body");
   if (!item || !stage || !body) throw new Error(`no step ${id}`);
-  const wide = matchMedia("(min-width: 48em)").matches;
-  const anchor = wide ? 0 : stage.offsetHeight;
+  const readGap =
+    (document.querySelector<HTMLElement>("[data-blog-bar]")?.offsetHeight ??
+      0) + 8;
   const itemTop = item.getBoundingClientRect().top + scrollY;
-  const bodyTop = body.getBoundingClientRect().top + scrollY;
   const share = mode === "early" ? 0.05 : 0.95;
-  let top = itemTop + share * item.offsetHeight - anchor;
-  if (mode === "read")
-    top = wide
-      ? itemTop + item.offsetHeight - innerHeight
-      : bodyTop - anchor - 8;
+  const top =
+    mode === "read"
+      ? Math.min(
+          itemTop + item.offsetHeight - innerHeight,
+          body.getBoundingClientRect().top + scrollY - readGap
+        )
+      : itemTop + share * item.offsetHeight;
   scrollTo({ behavior: "instant", top });
 };
 
@@ -136,7 +138,6 @@ const snapshot = ({ id, mode }: { id: string; mode: Mode }): Snapshot => {
     };
   };
   const wide = matchMedia("(min-width: 48em)").matches;
-  const textChecks = mode === "read" || wide;
   const item = document.querySelector<HTMLElement>(
     `.story-step[data-step="${CSS.escape(id)}"]`
   );
@@ -160,29 +161,29 @@ const snapshot = ({ id, mode }: { id: string; mode: Mode }): Snapshot => {
       ":scope .story-eyebrow, :scope .story-line, :scope .story-note, :scope .story-number, :scope .story-outro > *"
     ),
   ];
-  const strip = item.querySelector<HTMLElement>(".story-strip");
-  const texts = textChecks
-    ? [
-        ...parts.map((el) => ({
-          box: textOf(el),
-          name: el.className.split(" ", 1)[0] ?? el.tagName,
-        })),
-        ...(strip ? [{ box: rect(strip), name: "story-strip" }] : []),
-      ]
-    : [];
+  const found = item.querySelector<HTMLElement>(".story-strip");
+  const strip =
+    found && found.getBoundingClientRect().width > 2 ? found : undefined;
+  const texts = [
+    ...parts.map((el) => ({
+      box: textOf(el),
+      name: el.className.split(" ", 1)[0] ?? el.tagName,
+    })),
+    ...(strip ? [{ box: rect(strip), name: "story-strip" }] : []),
+  ];
   const covered: string[] = [];
-  if (textChecks)
-    for (const el of [...parts, ...(strip ? [strip] : [])]) {
-      const box = el === strip ? rect(el) : textOf(el);
-      const x = (box.left + box.right) / 2;
-      const y = (box.top + box.bottom) / 2;
-      if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue;
-      const hit = document.elementFromPoint(x, y);
-      if (hit && !el.contains(hit) && !hit.contains(el))
-        covered.push(
-          `${el.className.split(" ", 1)[0] ?? el.tagName} under ${hit.tagName.toLowerCase()}.${hit.className}`
-        );
-    }
+  const readable = mode === "read" ? [...parts, ...(strip ? [strip] : [])] : [];
+  for (const el of readable) {
+    const box = el === strip ? rect(el) : textOf(el);
+    const x = (box.left + box.right) / 2;
+    const y = (box.top + box.bottom) / 2;
+    if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue;
+    const hit = document.elementFromPoint(x, y);
+    if (hit && !el.contains(hit) && !hit.contains(el))
+      covered.push(
+        `${el.className.split(" ", 1)[0] ?? el.tagName} under ${hit.tagName.toLowerCase()}.${hit.className}`
+      );
+  }
   const posters = [
     ...document.querySelectorAll<SVGElement>(".story-poster"),
   ].filter(
@@ -195,7 +196,7 @@ const snapshot = ({ id, mode }: { id: string; mode: Mode }): Snapshot => {
     covered,
     current: root.dataset["storyStep"] ?? "",
     pins: [
-      ...document.querySelectorAll(".story-labels > *"),
+      ...document.querySelectorAll(".story-labels > :not(svg)"),
       ...posters.flatMap((poster) => [...poster.querySelectorAll("text")]),
     ]
       .filter((pin) => Number(getComputedStyle(pin).opacity) > 0.05)
@@ -203,12 +204,12 @@ const snapshot = ({ id, mode }: { id: string; mode: Mode }): Snapshot => {
     poster: posters.length > 0,
     scrollWidth: document.documentElement.scrollWidth,
     stage: rect(stage),
-    strips: [...document.querySelectorAll<HTMLElement>(".story-strip")].map(
-      (el) => ({
+    strips: [...document.querySelectorAll<HTMLElement>(".story-strip")]
+      .filter((el) => el.getBoundingClientRect().width > 2)
+      .map((el) => ({
         box: rect(el),
         id: el.closest<HTMLElement>(".story-step")?.dataset["step"] ?? "",
-      })
-    ),
+      })),
     texts,
     viewport,
     wide,
@@ -365,7 +366,7 @@ const runEntry = async (base: string): Promise<Result> => {
     async ({ errors, page }) => {
       const sky = page.locator("canvas[data-space]");
       if ((await sky.count()) === 0) say.fail("/work has no sky canvas");
-      await page.locator("a.work-card-story").first().click();
+      await page.locator("a[data-story-link]").first().click();
       try {
         await page.waitForURL("**/work/dotfiles", { timeout: 15_000 });
       } catch {

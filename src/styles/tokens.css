@@ -122,10 +122,21 @@
     --story-denied: var(--red-300);
     --story-paper: var(--night-950);
     --story-white: var(--white);
-    --story-face: rgb(255 255 255 / 0.04);
-    --story-grid: rgb(255 255 255 / 0.08);
-    --story-hair: var(--border);
+    --story-dot: rgb(255 255 255 / 0.2);
+    --story-frost-soft: color-mix(in srgb, var(--black) 35%, transparent);
     --story-hair-strong: var(--border-strong);
+    --story-plate: color-mix(in srgb, var(--story-paper) 90%, transparent);
+    --story-shade: color-mix(in srgb, var(--story-paper) 74%, transparent);
+    --story-shade-mid: color-mix(in srgb, var(--story-paper) 42%, transparent);
+    --story-grid-minor: rgb(255 255 255 / 0.04);
+    --story-grid-major: rgb(255 255 255 / 0.08);
+    --story-row: 4px;
+    --story-col: 1.5px;
+    --story-cell: 40px;
+    --story-cell-major: 200px;
+    --story-floor-dim: color-mix(in srgb, var(--black) 55%, transparent);
+    --story-wave-minor: rgb(255 255 255 / 0.1);
+    --story-wave-major: rgb(255 255 255 / 0.2);
 
     --glass-blur: blur(6px);
     --glass-blur-float: blur(10px);
@@ -144,6 +155,12 @@
       var(--ui-accent) 55%,
       transparent
     );
+    --work-all-edge: rgb(255 255 255 / 0.2);
+    --work-all-edge-lit: color-mix(in srgb, var(--ui-accent) 75%, transparent);
+    --work-all-ink: var(--muted-foreground);
+    --work-all-mark: var(--muted-foreground);
+    --work-all-ink-lit: var(--ui-accent);
+    --work-all-glow: color-mix(in srgb, var(--ui-accent) 40%, transparent);
     --glass-lift: 0 14px 34px -16px rgb(0 0 0 / 0.55);
     --pill-shine: rgb(255 255 255 / 0.4);
     --pill-shine-day: rgb(255 255 255 / 0.85);

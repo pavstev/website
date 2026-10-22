@@ -1,4 +1,11 @@
 import {
+  dotDepthFade,
+  dotGain,
+  dotPitch,
+  dotRadius,
+  dotSpacingFade,
+} from "./blueprint-dots.ts";
+import {
   buildScene,
   frameMatrix,
   project,
@@ -37,10 +44,49 @@ const splitKey = (key: string): [number, number] => {
 
 const slabEdges = 12;
 
+interface Plane {
+  alpha: number;
+  depth: number;
+  pieces: string[];
+  tone: number;
+  y: number;
+}
+
+const clipDepth = (m: Float32Array, x: number, y: number, z: number): number =>
+  (m[2] ?? 0) * x + (m[6] ?? 0) * y + (m[10] ?? 0) * z + (m[14] ?? 0);
+
+const planePattern = (
+  m: Float32Array,
+  plane: Plane,
+  id: string,
+  width: number,
+  height: number
+): undefined | { opacity: number; pattern: string } => {
+  const [x0, y0] = project(m, { x: 0, y: plane.y, z: 0 }, width, height);
+  const [x1, y1] = project(m, { x: 1, y: plane.y, z: 0 }, width, height);
+  const [x2, y2] = project(m, { x: 0, y: plane.y, z: 1 }, width, height);
+  const a = x1 - x0;
+  const b = y1 - y0;
+  const c = x2 - x0;
+  const d = y2 - y0;
+  const spacing = dotPitch * Math.min(Math.hypot(a, b), Math.hypot(c, d));
+  const fade = dotSpacingFade(spacing);
+  const scale = Math.sqrt(Math.abs(a * d - b * c));
+  if (scale === 0 || fade <= 0.001) return undefined;
+  const half = dotPitch / 2;
+  const depth = dotDepthFade(plane.depth / Math.max(1, plane.pieces.length));
+  const matrix = [a, b, c, d, x0, y0].map((n) => n.toFixed(3)).join(" ");
+  return {
+    opacity: plane.alpha * dotGain * fade * depth,
+    pattern: `<pattern id="${id}"${toneClass(plane.tone)} width="${String(dotPitch)}" height="${String(dotPitch)}" patternUnits="userSpaceOnUse" patternTransform="matrix(${matrix})"><circle cx="${String(half)}" cy="${String(half)}" r="${(dotRadius / scale).toFixed(4)}" fill="currentColor" stroke="none"/></pattern>`,
+  };
+};
+
 export const sceneSvg = (
   scene: Scene,
   width: number,
-  height: number
+  height: number,
+  svgAttrs = ""
 ): string => {
   const m = frameMatrix(width / height, scene, 0, 0);
   const at = (x: number, y: number, z: number): string => {
@@ -80,16 +126,43 @@ export const sceneSvg = (
   }
 
   const faces = new Map<string, string[]>();
+  const planes = new Map<string, Plane>();
   for (let k = 0; k < tris.length / strides.tri; k += 1) {
     const o = k * strides.tri;
-    const corners = [0, 3, 6].map((j) =>
-      at(tris[o + j] ?? 0, tris[o + j + 1] ?? 0, tris[o + j + 2] ?? 0)
-    );
-    group(
-      faces,
-      triColors[k * strides.triColor] ?? 0,
-      triColors[k * strides.triColor + 1] ?? 1,
-      `M${corners.join("L")}Z`
+    const toneIndex = triColors[k * strides.triColor] ?? 0;
+    const alpha = triColors[k * strides.triColor + 1] ?? 1;
+    const piece = `M${[0, 3, 6]
+      .map((j) =>
+        at(tris[o + j] ?? 0, tris[o + j + 1] ?? 0, tris[o + j + 2] ?? 0)
+      )
+      .join("L")}Z`;
+    group(faces, toneIndex, alpha, piece);
+    const y = tris[o + 1] ?? 0;
+    if (tris[o + 4] !== y || tris[o + 7] !== y) continue;
+    const key = `${y.toFixed(3)}:${String(toneIndex)}:${alpha.toFixed(3)}`;
+    const plane = planes.get(key) ?? {
+      alpha,
+      depth: 0,
+      pieces: [],
+      tone: toneIndex,
+      y,
+    };
+    plane.pieces.push(piece);
+    for (const j of [0, 3, 6]) {
+      plane.depth +=
+        clipDepth(m, tris[o + j] ?? 0, y, tris[o + j + 2] ?? 0) / 3;
+    }
+    planes.set(key, plane);
+  }
+  const patterns: string[] = [];
+  const dotted: string[] = [];
+  for (const plane of planes.values()) {
+    const id = `dots-${String(width)}x${String(height)}-${String(patterns.length)}`;
+    const dotPattern = planePattern(m, plane, id, width, height);
+    if (!dotPattern) continue;
+    patterns.push(dotPattern.pattern);
+    dotted.push(
+      `<g${toneClass(plane.tone)}><path class="dots" fill="url(#${id})" fill-opacity="${dotPattern.opacity.toFixed(3)}" d="${plane.pieces.join("")}"/></g>`
     );
   }
 
@@ -125,8 +198,10 @@ export const sceneSvg = (
   });
 
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${String(width)} ${String(height)}" width="${String(width)}" height="${String(height)}" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">`,
+    `<svg ${svgAttrs ? `${svgAttrs} ` : ""}xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${String(width)} ${String(height)}" width="${String(width)}" height="${String(height)}" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">`,
+    ...(patterns.length > 0 ? [`<defs>${patterns.join("")}</defs>`] : []),
     ...paths(faces, ' fill="currentColor" stroke="none"', "face"),
+    ...(dotted.length > 0 ? [`<g stroke="none">${dotted.join("")}</g>`] : []),
     `<g stroke-width="1.25">${slabs.join("")}</g>`,
     `<g stroke-width="1">${paths(hairlines, "", "hair").join("")}</g>`,
     `<g stroke-width="2">${paths(dots, "", "dot").join("")}</g>`,
@@ -138,5 +213,7 @@ export const sceneSvg = (
 export const posterSvg = (
   width: number,
   height: number,
-  counts: SceneCounts
-): string => sceneSvg(buildScene("outro", 1, 1, counts), width, height);
+  counts: SceneCounts,
+  svgAttrs = ""
+): string =>
+  sceneSvg(buildScene("outro", 1, 1, counts), width, height, svgAttrs);

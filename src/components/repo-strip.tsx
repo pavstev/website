@@ -6,6 +6,7 @@ import { CompoundText } from "@/components/compound-text";
 import { Icon } from "@/components/icon";
 import { RepoTags } from "@/components/repo-tags";
 import { en } from "@/lib/i18n";
+import { fillText } from "@/lib/template";
 import { storyPath } from "@/lib/work";
 
 const mainLanguage = (repo: Repo): RepoLanguage | undefined =>
@@ -17,6 +18,14 @@ const tone = (repo: Repo): CSSProperties | undefined => {
   const color = mainLanguage(repo)?.color;
   return color ? ({ "--lang": color } as CSSProperties) : undefined;
 };
+
+const cardRows = (count: number): CSSProperties =>
+  Object.fromEntries(
+    [1, 2, 3, 4].map((columns) => [
+      `--rows-${String(columns)}`,
+      String(Math.ceil(count / columns)),
+    ])
+  );
 
 interface RepoProps {
   newTabId: string;
@@ -43,6 +52,42 @@ const RepoFacts = ({ repo }: { repo: Repo }): null | ReactElement =>
     </span>
   ) : null;
 
+const RepoActions = ({
+  name,
+  newTabId,
+  story,
+  url,
+}: {
+  name: string;
+  newTabId: string;
+  story: string | undefined;
+  url: string;
+}): ReactElement => (
+  <div className="work-card-actions">
+    <a
+      aria-describedby={newTabId}
+      aria-label={fillText(en.repos.viewOnGithubLabel, { name })}
+      className="work-card-action focus-ring"
+      href={url}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      <span className="work-card-action-label">{en.repos.viewOnGithub}</span>
+      <Icon aria-hidden name="lucide:arrow-up-right" size="0.875rem" />
+    </a>
+    {story ? (
+      <a
+        className="work-card-action focus-ring"
+        data-story-link=""
+        href={story}
+      >
+        <span className="work-card-action-label">{en.repos.seeStory}</span>
+        <Icon aria-hidden name="lucide:arrow-right" size="0.875rem" />
+      </a>
+    ) : null}
+  </div>
+);
+
 const RepoCard = ({ newTabId, repo }: RepoProps): ReactElement => {
   const story = storyPath(repo.name);
   return (
@@ -55,23 +100,15 @@ const RepoCard = ({ newTabId, repo }: RepoProps): ReactElement => {
         <h3 className="post-row-title work-card-name">
           <a
             aria-describedby={newTabId}
-            className="post-row-link focus-ring"
+            className="work-card-link focus-ring"
             href={repo.url}
             rel="noopener noreferrer"
             target="_blank"
           >
-            {repo.name}
+            <span className="story-morph-name">{repo.name}</span>
           </a>
         </h3>
-        <span className="work-card-side">
-          <RepoFacts repo={repo} />
-          <Icon
-            aria-hidden
-            className="work-card-mark"
-            name="lucide:arrow-up-right"
-            size="1rem"
-          />
-        </span>
+        <RepoFacts repo={repo} />
       </div>
       <p className="post-row-text">
         <CompoundText text={repo.description} />
@@ -81,28 +118,54 @@ const RepoCard = ({ newTabId, repo }: RepoProps): ReactElement => {
         languages={repo.languages}
         topics={repo.topics}
       />
-      {story ? (
-        <a className="work-card-story focus-ring" href={story}>
-          {en.repos.seeStory}
-          <Icon aria-hidden name="lucide:arrow-right" size="0.875rem" />
-        </a>
-      ) : null}
+      <RepoActions
+        name={repo.name}
+        newTabId={newTabId}
+        story={story}
+        url={repo.url}
+      />
     </li>
   );
 };
 
+const AllRepos = ({ href }: { href: string }): ReactElement => (
+  <li className="work-all-cell">
+    <a
+      className="work-all focus-ring"
+      href={href}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      <Icon
+        aria-hidden
+        className="work-all-mark"
+        name="simple-icons:github"
+        size="1.25rem"
+      />
+      <span className="work-all-text">
+        {en.repos.all}
+        <Icon aria-hidden name="lucide:arrow-up-right" size="0.875rem" />
+      </span>
+      <span className="sr-only"> {en.card.newTab}</span>
+    </a>
+  </li>
+);
+
 interface RepoStripProps {
+  allHref: string;
   newTabId: string;
   repos: Repo[];
 }
 
 export const RepoStrip = ({
+  allHref,
   newTabId,
   repos,
 }: RepoStripProps): ReactElement => (
-  <ol className="work-repos" data-repos="">
+  <ol className="work-repos" data-repos="" style={cardRows(repos.length)}>
     {repos.map((repo) => (
       <RepoCard key={repo.url} newTabId={newTabId} repo={repo} />
     ))}
+    <AllRepos href={allHref} />
   </ol>
 );

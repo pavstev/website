@@ -110,6 +110,8 @@ Siblings: `sky.md`, `card.md`, `motion.md`. The full design is in the Blog bulle
 - The bar surface (`.blog-bar-glass`) is a 5rem blur-fade layer with no border and no shadow.
 - The TOC has three forms in one `nav.post-toc`: the rail, the drawer and a `<details>` list without JS. From `@container page (min-width: 80em)` the rail shows.
 - The footer holds the contact keys. `BlogLayout.astro` renders it once, outside `main`.
+- `--measure`, `--rail`, `--rail-gap`, `--frame-wide` and `--frame` live on `[data-blog]`, so the footer reads them too. The footer is as wide as the page content (`min(100% - 2 * --container-px, --frame)`). It cannot read the `page` container, so `blog.css` repeats the `--frame-wide` switches with media queries: `(min-width: 60em)` with `.blog-index`, `(min-width: 80em)` with `.post-rail`. Change a switch in both places.
+- On the story page (`[data-story]`) the bar row has no max width and the footer spans the viewport minus `--container-px` on each side. The `story-bar` group stays a full-width bar on both pages, so only the row content moves.
 
 ## Look
 

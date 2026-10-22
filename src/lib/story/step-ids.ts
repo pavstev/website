@@ -10,6 +10,7 @@ export const stepOrder = [
   "h1",
   "h2",
   "h3",
+  "skills",
   "outro",
 ] as const;
 

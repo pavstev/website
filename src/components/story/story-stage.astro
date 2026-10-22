@@ -5,17 +5,11 @@ interface Props {
 }
 
 const { tall, wide } = Astro.props;
-
-const mark = (svg: string, kind: "tall" | "wide"): string =>
-  svg.replace(
-    "<svg ",
-    `<svg class="story-poster story-poster-${kind}" preserveAspectRatio="xMidYMid meet" `
-  );
 ---
 
 <div class="story-stage" data-story-stage="">
-  <Fragment set:html={mark(wide, "wide")} />
-  <Fragment set:html={mark(tall, "tall")} />
+  <Fragment set:html={wide} />
+  <Fragment set:html={tall} />
   <canvas aria-hidden="true" class="story-canvas"></canvas>
   <div aria-hidden="true" class="story-labels"></div>
 </div>
