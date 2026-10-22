@@ -63,7 +63,7 @@ export const sitemapEntries = ({
     { images: homeImages, lastmod: homeModified, loc: site },
     ...pagePaths.map((path) => ({
       images: [],
-      lastmod: undefined,
+      lastmod: homeModified,
       loc: `${site}${path}`,
     })),
     ...stories.map((story) => ({

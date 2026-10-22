@@ -26,6 +26,7 @@ import seo from "./check-seo.ts";
 import shots from "./check-shots.ts";
 import sizes from "./check-sizes.ts";
 import story from "./check-story.ts";
+import webkit from "./check-webkit.ts";
 import worker from "./check-worker.ts";
 import { closeBrowser, root, setWorkers, sitemapTags, sleep } from "./lib.ts";
 import { classify, notFoundPath } from "./pages.ts";
@@ -42,6 +43,7 @@ const checks: Record<string, Check> = {
   shots,
   sizes,
   story,
+  webkit,
   worker,
 };
 const checkNames = Object.keys(checks);

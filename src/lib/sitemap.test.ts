@@ -172,8 +172,8 @@ describe("sitemapEntries", () => {
       ]
     );
     assert.equal(entries[0]?.lastmod, "2026-10-12T09:03:17.113Z");
-    assert.equal(entries[1]?.lastmod, undefined);
-    assert.equal(entries[2]?.lastmod, undefined);
+    assert.equal(entries[1]?.lastmod, "2026-10-12T09:03:17.113Z");
+    assert.equal(entries[2]?.lastmod, "2026-10-12T09:03:17.113Z");
     assert.equal(entries[3]?.lastmod, "2026-10-21");
     assert.deepEqual(entries[5]?.images, [
       `${site}/blog-media/alpha/share.png`,

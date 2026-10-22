@@ -191,7 +191,7 @@ export const SkyControls = ({
   const settled = useRef<LatLon>({ lat, lon });
   const table = useRef<PlaceTable>(undefined);
   const round = useRef(0);
-  const root = useRef<HTMLSpanElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const tabButtons = useRef<Partial<Record<SkyTab, HTMLButtonElement>>>({});
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -430,7 +430,7 @@ export const SkyControls = ({
   );
 
   return (
-    <span className="sky-controls" data-nosnippet="" ref={root}>
+    <div className="sky-controls" data-nosnippet="" ref={root}>
       <button
         aria-expanded="false"
         aria-haspopup="dialog"
@@ -690,6 +690,6 @@ export const SkyControls = ({
         </div>
         <div className="sky-motion">{children}</div>
       </div>
-    </span>
+    </div>
   );
 };

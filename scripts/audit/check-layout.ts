@@ -205,6 +205,7 @@ const measure = ({ H, touch, W }: MeasureInput): Findings => {
     return { clippedBy: null, scroller: false };
   };
   for (const { el, r } of lines) {
+    if (el.closest('[data-tech-lane] [aria-hidden="true"]')) continue;
     const { clippedBy, scroller } = inspect(el, r);
     if (clippedBy) {
       const style = getComputedStyle(clippedBy);

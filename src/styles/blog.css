@@ -191,6 +191,11 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   inset: -0.5rem;
 }
 
+.blog-crumbs-item[data-home] > .blog-crumbs-link {
+  justify-content: center;
+  min-width: 1.75rem;
+}
+
 .blog-crumbs-link:hover {
   color: var(--ui-key-ink);
 }
