@@ -1,0 +1,203 @@
+{
+  "chains": [
+    { "from": "ps:whatsleft", "share": 0.147, "to": "ps:askme" },
+    { "from": "ps:askme", "share": 0.141, "to": "ps:whatsleft" },
+    { "from": "ps:askme", "share": 0.084, "to": "ps:mic-drop" },
+    { "from": "ps:whatsleft", "share": 0.068, "to": "ps:mic-drop" },
+    { "from": "ps:whatsleft", "share": 0.063, "to": "ps:handoff" },
+    { "from": "ps:mic-drop", "share": 0.052, "to": "ps:whatsleft" },
+    { "from": "ps:askme", "share": 0.047, "to": "ps:handoff" },
+    { "from": "ps:autopilot", "share": 0.037, "to": "ps:mic-drop" },
+    { "from": "ps:autopilot", "share": 0.037, "to": "ps:whatsleft" },
+    { "from": "ps:handoff", "share": 0.037, "to": "ps:whatsleft" }
+  ],
+  "period": { "from": "2026-10-03", "to": "2026-10-22" },
+  "phases": [
+    { "phase": "ask", "share": 0.22 },
+    { "phase": "build", "share": 0.22 },
+    { "phase": "care", "share": 0.359 },
+    { "phase": "design", "share": 0.047 },
+    { "phase": "research", "share": 0.028 },
+    { "phase": "review", "share": 0.005 },
+    { "phase": "ship", "share": 0.121 }
+  ],
+  "sample": { "ownerSessions": 116, "runs": 387, "sessions": 236 },
+  "shares": {
+    "agentStarted": 0.556,
+    "handoffSessionsWithSkill": 0.879,
+    "ownerSessionsWithSkill": 0.698,
+    "sideSessionsWithSkill": 0.194,
+    "skillsUsed": 0.611,
+    "skillToSkill": 0.188,
+    "unprompted": 0.313
+  },
+  "skills": [
+    {
+      "firstRun": "2026-10-03",
+      "outcome": { "metric": "batched", "sample": 85, "share": 0.6 },
+      "phase": "ask",
+      "sessions": 0.25,
+      "share": 0.22,
+      "skill": "ps:askme"
+    },
+    {
+      "firstRun": "2026-10-12",
+      "outcome": { "metric": "briefOpened", "sample": 52, "share": 0.788 },
+      "phase": "build",
+      "sessions": 0.212,
+      "share": 0.134,
+      "skill": "ps:handoff"
+    },
+    {
+      "firstRun": "2026-10-12",
+      "outcome": { "metric": "noQuestion", "sample": 28, "share": 0.821 },
+      "phase": "build",
+      "sessions": 0.114,
+      "share": 0.072,
+      "skill": "ps:autopilot"
+    },
+    {
+      "firstRun": "2026-10-08",
+      "outcome": { "metric": "fanOut", "sample": 5, "share": 1 },
+      "phase": "build",
+      "sessions": 0.017,
+      "share": 0.013,
+      "skill": "ps:iamrich"
+    },
+    {
+      "firstRun": "2026-10-06",
+      "outcome": { "metric": "handedOn", "sample": 136, "share": 0.147 },
+      "phase": "care",
+      "sessions": 0.322,
+      "share": 0.351,
+      "skill": "ps:whatsleft"
+    },
+    {
+      "firstRun": null,
+      "outcome": null,
+      "phase": "care",
+      "sessions": 0,
+      "share": 0,
+      "skill": "ps:sessions"
+    },
+    {
+      "firstRun": "2026-10-07",
+      "outcome": null,
+      "phase": "care",
+      "sessions": 0.013,
+      "share": 0.008,
+      "skill": "ps:bag-mode"
+    },
+    {
+      "firstRun": "2026-10-20",
+      "outcome": null,
+      "phase": "design",
+      "sessions": 0.004,
+      "share": 0.003,
+      "skill": "ps:design-brainstorm"
+    },
+    {
+      "firstRun": null,
+      "outcome": null,
+      "phase": "design",
+      "sessions": 0,
+      "share": 0,
+      "skill": "ps:design-artifact"
+    },
+    {
+      "firstRun": "2026-10-12",
+      "outcome": { "metric": "pickPage", "sample": 17, "share": 0.941 },
+      "phase": "design",
+      "sessions": 0.072,
+      "share": 0.044,
+      "skill": "ps:pick"
+    },
+    {
+      "firstRun": "2026-10-08",
+      "outcome": { "metric": "fanOut", "sample": 11, "share": 1 },
+      "phase": "research",
+      "sessions": 0.047,
+      "share": 0.028,
+      "skill": "ps:captain-research"
+    },
+    {
+      "firstRun": null,
+      "outcome": null,
+      "phase": "research",
+      "sessions": 0,
+      "share": 0,
+      "skill": "ps:yt-learn"
+    },
+    {
+      "firstRun": null,
+      "outcome": null,
+      "phase": "research",
+      "sessions": 0,
+      "share": 0,
+      "skill": "ps:map"
+    },
+    {
+      "firstRun": null,
+      "outcome": null,
+      "phase": "review",
+      "sessions": 0,
+      "share": 0,
+      "skill": "ps:review-panel"
+    },
+    {
+      "firstRun": "2026-10-19",
+      "outcome": null,
+      "phase": "review",
+      "sessions": 0.008,
+      "share": 0.005,
+      "skill": "ps:harness-optimize"
+    },
+    {
+      "firstRun": "2026-10-07",
+      "outcome": { "metric": "checked", "sample": 47, "share": 0.596 },
+      "phase": "ship",
+      "sessions": 0.169,
+      "share": 0.121,
+      "skill": "ps:mic-drop"
+    },
+    {
+      "firstRun": null,
+      "outcome": null,
+      "phase": "ship",
+      "sessions": 0,
+      "share": 0,
+      "skill": "ps:standup"
+    },
+    {
+      "firstRun": null,
+      "outcome": null,
+      "phase": "ship",
+      "sessions": 0,
+      "share": 0,
+      "skill": "ps:draft-reply"
+    }
+  ],
+  "trend": [
+    { "date": "2026-10-03", "share": 0.5 },
+    { "date": "2026-10-04", "share": 0.308 },
+    { "date": "2026-10-05", "share": 0.414 },
+    { "date": "2026-10-06", "share": 0.485 },
+    { "date": "2026-10-07", "share": 0.581 },
+    { "date": "2026-10-08", "share": 0.611 },
+    { "date": "2026-10-09", "share": 0.613 },
+    { "date": "2026-10-10", "share": 0.617 },
+    { "date": "2026-10-11", "share": 0.686 },
+    { "date": "2026-10-12", "share": 0.792 },
+    { "date": "2026-10-13", "share": 0.771 },
+    { "date": "2026-10-14", "share": 0.756 },
+    { "date": "2026-10-15", "share": 0.756 },
+    { "date": "2026-10-16", "share": 0.784 },
+    { "date": "2026-10-17", "share": 0.806 },
+    { "date": "2026-10-18", "share": 0.806 },
+    { "date": "2026-10-19", "share": 0.774 },
+    { "date": "2026-10-20", "share": 0.8 },
+    { "date": "2026-10-21", "share": 0.808 },
+    { "date": "2026-10-22", "share": 0.81 }
+  ],
+  "updatedAt": "2026-10-22T11:02:58+02:00"
+}

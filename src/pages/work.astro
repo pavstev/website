@@ -1,6 +1,5 @@
 ---
 import BlogHeader from "@/components/blog/blog-header.astro";
-import { Icon } from "@/components/icon";
 import { ProductStrip } from "@/components/product-strip";
 import { RepoStrip } from "@/components/repo-strip";
 import BlogLayout from "@/layouts/BlogLayout.astro";
@@ -55,23 +54,12 @@ const metadata = listMetadata({
               <h2 class="work-heading" id="projects">
                 {en.work.projectsHeading}
               </h2>
-              <a
-                class="work-all focus-ring"
-                href={`${personalData.github}?tab=repositories`}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <Icon aria-hidden name="simple-icons:github" size="0.9375rem" />
-                {en.repos.all}
-                <Icon
-                  aria-hidden
-                  name="lucide:arrow-up-right"
-                  size="0.875rem"
-                />
-                <span class="sr-only"> {en.card.newTab}</span>
-              </a>
             </div>
-            <RepoStrip newTabId="work-new-tab" repos={repos} />
+            <RepoStrip
+              allHref={`${personalData.github}?tab=repositories`}
+              newTabId="work-new-tab"
+              repos={repos}
+            />
           </section>
         )}
       </div>

@@ -106,9 +106,7 @@ describe("theme.ts mirrors tokens.css", () => {
   });
 
   const alphas: Array<[number, string]> = [
-    [storyPalette.face, "--story-face"],
-    [storyPalette.grid, "--story-grid"],
-    [storyPalette.hair, "--story-hair"],
+    [storyPalette.dot, "--story-dot"],
     [storyPalette.hairStrong, "--story-hair-strong"],
   ];
 

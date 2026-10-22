@@ -6,18 +6,19 @@ const workPath = "/work";
 const storyPaths = (): string[] =>
   Object.values(workConfig.repos.stories ?? {});
 
-export const storyMorph = (fromPath: string, toPath: string): boolean => {
+export type StoryMorph = "in" | "out";
+
+export const storyMorph = (
+  fromPath: string,
+  toPath: string
+): StoryMorph | undefined => {
   const from = clean(fromPath);
   const to = clean(toPath);
   const stories = storyPaths();
-  return (
-    (from === workPath && stories.includes(to)) ||
-    (to === workPath && stories.includes(from))
-  );
+  if (from === workPath && stories.includes(to)) return "in";
+  return to === workPath && stories.includes(from) ? "out" : undefined;
 };
 
 export const watchStoryMorph = (): void => {
-  watchRouteFlag("data-story-morph", (from, to) =>
-    storyMorph(from, to) ? "" : undefined
-  );
+  watchRouteFlag("data-story-morph", storyMorph);
 };

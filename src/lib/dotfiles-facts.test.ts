@@ -48,6 +48,7 @@ describe("countTree", () => {
       files: 6,
       homeFiles: 1,
       presets: 1,
+      skillNames: ["ps:pick"],
       skills: 1,
     });
   });

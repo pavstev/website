@@ -95,7 +95,7 @@ describe("lintCopy", () => {
   });
   it("accepts numbers that come from the facts and the meta", () => {
     assert.deepEqual(
-      lint({ note: "It has 39 tools and 769 tests. It is plain." }),
+      lint({ note: "It has 39 tools and 807 tests. It is plain." }),
       []
     );
     const messages = lint({
@@ -118,7 +118,7 @@ describe("lintCopy", () => {
 describe("copyNumbers", () => {
   it("holds the facts, the meta and the rounded Rust share", () => {
     for (const value of [
-      243, 39, 18, 769, 8, 3, 5, 17, 2, 6, 300, 45, 1, 0, 91,
+      250, 39, 17, 807, 8, 3, 5, 19, 2, 6, 300, 45, 1, 0, 91,
     ]) {
       assert.ok(allowed.has(value), String(value));
     }

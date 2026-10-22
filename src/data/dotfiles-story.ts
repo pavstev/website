@@ -1,38 +1,115 @@
 import { type DotfilesFacts } from "../lib/dotfiles-facts.ts";
 import { type SceneCounts } from "../lib/story/blueprint-geometry.ts";
-import { digits as n, say } from "../lib/story/number-words.ts";
+import { digits as n, percent, say } from "../lib/story/number-words.ts";
+import { loopPhases, skillMap } from "../lib/story/skill-map.ts";
 import { type StepId } from "../lib/story/step-ids.ts";
 import { type StoryStep } from "../lib/story/steps.ts";
+import { skillCatalog, storyMeta } from "./dotfiles-stats.ts";
+import skillUsage from "./skill-usage.json" with { type: "json" };
 
-export const storyMeta = {
-  aiApps: 3,
-  checkedAt: "2026-10-21",
-  distros: 5,
-  doctorChecks: 8,
-  handoffK: 300,
-  heavierK: 45,
-  helperCaps: [3, 1, 0],
-  hookMs: 6,
-  osFamilies: 3,
-  outputStyles: 2,
-  rustPrograms: 17,
-  tests: 769,
-  updatedAt: "2026-10-21",
-};
+export type SkillUsageData = typeof skillUsage;
 
 export const bootstrapLine =
   'sh -c "$(curl -fsSL https://raw.githubusercontent.com/pavstev/dotfiles/main/bootstrap.sh)"';
 
 export const uninstallLine = "dots uninstall";
 
+export interface SkillCopy {
+  metric: string;
+  phase: string;
+  skill: string;
+  what: string;
+}
+
 type StoryCopy = Pick<StoryStep, "eyebrow" | "line" | "note" | "strip">;
+
+const skillWhat = new Map<string, string>(
+  Object.values(skillCatalog).flatMap((entries) =>
+    entries.map((entry) => [entry.skill, entry.what] as const)
+  )
+);
+
+const outcomeLines: Record<string, (share: string) => string> = {
+  batched: (share) =>
+    `${share} of runs batched the first questions in one card.`,
+  briefOpened: (share) => `${share} of briefs were opened by a later session.`,
+  checked: (share) => `${share} of runs ran a real check command.`,
+  fanOut: (share) => `${share} of runs fanned out to helper agents.`,
+  noQuestion: (share) => `${share} of runs asked me no question.`,
+  pickPage: (share) => `${share} of runs showed a pick page.`,
+};
+
+const shortDay = (date: string): string =>
+  new Date(`${date}T12:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+
+const bare = (skill: string): string => skill.replace("ps:", "");
+
+const metricOf = (item: SkillUsageData["skills"][number]): string => {
+  const outcome = item.outcome ? outcomeLines[item.outcome.metric] : undefined;
+  if (outcome && item.outcome) return outcome(percent(item.outcome.share));
+  if (item.share <= 0) return newSkill;
+  return Math.round(item.share * 100) === 0
+    ? "Fewer than one in a hundred skill runs."
+    : `${percent(item.share)} of all skill runs.`;
+};
+
+const newSkill = "New, no run yet.";
+const newWhat = "A new skill in the harness.";
+
+export const skillCopy = (
+  usage: SkillUsageData = skillUsage,
+  names?: readonly string[]
+): SkillCopy[] =>
+  skillMap(usage, names).stops.map((stop) => {
+    const item = usage.skills.find((entry) => entry.skill === stop.skill);
+    return {
+      metric: item ? metricOf(item) : newSkill,
+      phase: stop.phase,
+      skill: stop.skill,
+      what: skillWhat.get(stop.skill) ?? newWhat,
+    };
+  });
+
+export const skillFacts = (usage: SkillUsageData = skillUsage): string[] => {
+  const phases = loopPhases
+    .map((phase) => {
+      const share =
+        usage.phases.find((item) => item.phase === phase)?.share ?? 0;
+      return `${phase} ${percent(share)}`;
+    })
+    .join(", ");
+  const chains = usage.chains
+    .map(
+      (chain) =>
+        `${bare(chain.from)} then ${bare(chain.to)} ${percent(chain.share)}`
+    )
+    .join(", ");
+  const first = usage.trend[0];
+  const last = usage.trend.at(-1);
+  const trend =
+    first && last
+      ? `Sessions I opened that ran a skill, counted over the week before each day: ${percent(first.share)} on ${shortDay(first.date)}, ${percent(last.share)} on ${shortDay(last.date)}.`
+      : "";
+  return [
+    `Share of skill runs by phase: ${phases}.`,
+    `Which skill came next in one session, as a share of all such links: ${chains}.`,
+    trend,
+  ].filter((line) => line.length > 0);
+};
 
 interface StoryNumber {
   label: string;
   value: number;
 }
 
-export const stepCopy = (facts: DotfilesFacts): Record<StepId, StoryCopy> => {
+export const stepCopy = (
+  facts: DotfilesFacts,
+  usage: SkillUsageData = skillUsage
+): Record<StepId, StoryCopy> => {
   const meta = storyMeta;
   const apps = say(meta.aiApps);
   const systems = say(meta.osFamilies);
@@ -41,7 +118,7 @@ export const stepCopy = (facts: DotfilesFacts): Record<StepId, StoryCopy> => {
     c01: {
       eyebrow: "01",
       line: "Plain git. No manager.",
-      note: `The repo is the single source of truth. The ${n(facts.homeFiles)} files in home/ mirror $HOME, and each one is a symlink back, so I edit either side and the change is live at once. No manager, no template engine, no apply step. Fewer parts, fewer ways to drift.`,
+      note: `The repo is the single source of truth. The ${n(facts.homeFiles)} files in home/ mirror $HOME, and each one is reached through a symlink back, so I edit either side and the change is live at once. No manager, no template engine, no apply step. Fewer parts, fewer ways to drift.`,
       strip: {
         command: 'readlink ~/.zshrc | sed "s|$HOME|~|"',
         output: ["~/dotfiles/home/.zshrc"],
@@ -91,7 +168,7 @@ export const stepCopy = (facts: DotfilesFacts): Record<StepId, StoryCopy> => {
     c05: {
       eyebrow: "05",
       line: "Public, but private.",
-      note: "The repo is public, so it holds nothing personal: no names, no emails, no home paths, no secrets. My own rules live in one ignored file. Git hooks block private words before a commit and before a push. The guard will not read the file that holds my secrets.",
+      note: "The repo is public, so it holds nothing personal: no names, no emails, no home paths, no secrets. My own rules live in one private file outside the repo. Git hooks block private words before a commit and before a push. The guard will not read the file that holds my secrets.",
       strip: {
         command: "sed -n 6,9p .gitignore",
         output: [
@@ -105,7 +182,7 @@ export const stepCopy = (facts: DotfilesFacts): Record<StepId, StoryCopy> => {
     c06: {
       eyebrow: "06",
       line: `One source, ${apps} AIs.`,
-      note: `Claude Code, Cursor and Opencode read the same rules, ${n(facts.skills)} skills and ${n(facts.agents)} agents from one folder. Claude gets symlinks. Cursor and Opencode get a generated copy with a marker that says it is ours. A file without the marker is yours and is never touched.`,
+      note: `Claude Code, Cursor and Opencode read the same rules, ${n(facts.skills)} skills and ${n(facts.agents)} agents from one folder. Claude gets symlinks. Cursor and Opencode read the skills in place and get generated rules and agents with a marker that says they are ours. A file without the marker is yours and is never touched.`,
       strip: {
         command: 'rg -o "generated-by: dotfiles" .cursor/rules',
         output: [
@@ -160,7 +237,7 @@ export const stepCopy = (facts: DotfilesFacts): Record<StepId, StoryCopy> => {
     harness: {
       eyebrow: "H0",
       line: "The harness",
-      note: `Every tool call my AI agents make passes through a Rust guard with ${n(facts.guardChecks)} checks. Time and tokens are the cost that counts, so the rules live in code, not in a prompt.`,
+      note: `Every tool call my AI agents make passes through a Rust guard: all ${n(facts.guardChecks)} checks in Claude Code, a few in Cursor and Opencode. Time and tokens are the cost that counts, so the rules live in code, not in a prompt.`,
     },
     hero: {
       eyebrow: "00",
@@ -171,6 +248,11 @@ export const stepCopy = (facts: DotfilesFacts): Record<StepId, StoryCopy> => {
       eyebrow: "end",
       line: "Take it all back.",
       note: `One line installs it. One command takes it back: ${uninstallLine}. It removes the links and the generated files, and puts the old files back. Your own tools and settings stay.`,
+    },
+    skills: {
+      eyebrow: "H4",
+      line: "The work loop, walked.",
+      note: `All ${n(facts.skills)} skills sit along the way I work, from the first question to the end of a session. The shares come from my own Claude Code sessions in every work project, ${shortDay(usage.period.from)} to ${shortDay(usage.period.to)}. ${percent(usage.shares.ownerSessionsWithSkill)} of the sessions I opened ran a skill, and the agent started ${percent(usage.shares.agentStarted)} of the runs itself.`,
     },
   };
 };
@@ -209,3 +291,5 @@ export const storyNumbers = (
     { label: "guard checks", value: facts.guardChecks },
   ],
 });
+
+export { default as skillUsage } from "./skill-usage.json" with { type: "json" };

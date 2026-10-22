@@ -6,10 +6,13 @@ import { Icon } from "@/components/icon";
 import StoryRail from "@/components/story/story-rail.astro";
 import StoryStage from "@/components/story/story-stage.astro";
 import StoryStep from "@/components/story/story-step.astro";
+import { storyMeta } from "@/data/dotfiles-stats";
 import {
   bootstrapLine,
   sceneCounts,
-  storyMeta,
+  skillCopy,
+  skillFacts,
+  skillUsage,
   storyNumbers,
   uninstallLine,
 } from "@/data/dotfiles-story";
@@ -18,8 +21,9 @@ import { type Crumb } from "@/lib/blog/crumbs";
 import { getDotfilesFacts } from "@/lib/dotfiles-facts";
 import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
-import { buildScene, phoneLabelLimit } from "@/lib/story/blueprint-geometry";
+import { buildScene } from "@/lib/story/blueprint-geometry";
 import { posterSvg, sceneSvg } from "@/lib/story/blueprint-svg";
+import { skillMap } from "@/lib/story/skill-map";
 import { storyMetadata } from "@/lib/story/metadata";
 import { dotfilesStory } from "@/lib/work";
 import { buildSteps } from "@/lib/story/steps";
@@ -33,11 +37,23 @@ const numbersFor: Record<string, typeof numbers.hero> = {
   harness: numbers.harness,
   hero: numbers.hero,
 };
-const wide = posterSvg(1440, 900, counts);
+const posterAttrs = (kind: "tall" | "wide"): string =>
+  `class="story-poster story-poster-${kind}" preserveAspectRatio="xMidYMid meet"`;
+const wide = posterSvg(1440, 900, counts, posterAttrs("wide"));
 const tall = sceneSvg(
-  buildScene("outro", 1, 1, counts, phoneLabelLimit),
+  buildScene("outro", 1, 1, counts, 0),
   390,
-  480
+  844,
+  posterAttrs("tall")
+);
+const map = skillMap(skillUsage, facts.skillNames);
+const skills = skillCopy(skillUsage, facts.skillNames);
+const chartLines = skillFacts();
+const skillPoster = sceneSvg(
+  buildScene("skills", 1, 1, counts, Infinity, map),
+  720,
+  540,
+  'class="story-skill-poster"'
 );
 const crumbs: Crumb[] = [
   { current: false, label: en.blog.crumbHome, path: "/" },
@@ -59,13 +75,36 @@ const jsonLd = serializeJsonLd(storyGraph(storyMeta.updatedAt));
       class="story"
       data-story-counts={JSON.stringify(counts)}
       data-story-root=""
+      data-story-skills={JSON.stringify(map)}
     >
-      <StoryRail steps={steps} />
+      <StoryRail skills={skills.map((item) => item.skill)} steps={steps} />
       <StoryStage tall={tall} wide={wide} />
-      <p aria-hidden="true" class="story-progress"></p>
       <ol class="story-steps">
         {steps.map((step) => (
-          <StoryStep numbers={numbersFor[step.id] ?? []} step={step}>
+          <StoryStep
+            numbers={numbersFor[step.id] ?? []}
+            step={step}
+            stops={step.id === "skills" ? skills.length : undefined}
+          >
+            {step.id === "skills" && (
+              <div class="story-skills">
+                <ol aria-label={en.story.skillsList} class="story-skill-list">
+                  {skills.map((item) => (
+                    <li class="story-skill" data-plate="">
+                      <span class="story-strip-name">{item.skill}</span>
+                      <span class="story-strip-row">
+                        {item.phase} · {item.what}
+                      </span>
+                      <span class="story-strip-row">{item.metric}</span>
+                    </li>
+                  ))}
+                </ol>
+                {chartLines.map((line) => (
+                  <p class="story-skill-fact">{line}</p>
+                ))}
+                <Fragment set:html={skillPoster} />
+              </div>
+            )}
             {step.id === "outro" && (
               <div class="story-outro">
                 <p class="story-label">{en.story.install}</p>

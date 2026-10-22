@@ -20,6 +20,7 @@ export interface DotfilesFacts {
   presets: number;
   pushedAt: string;
   rustShare: number;
+  skillNames: string[];
   skills: number;
   stars: number;
   tools: number;
@@ -32,7 +33,7 @@ export interface TreeEntry {
 
 type TreeCounts = Pick<
   DotfilesFacts,
-  "agents" | "files" | "homeFiles" | "presets" | "skills"
+  "agents" | "files" | "homeFiles" | "presets" | "skillNames" | "skills"
 >;
 
 const owner = "pavstev";
@@ -105,6 +106,10 @@ export const countTree = (entries: TreeEntry[]): TreeCounts => {
     files: paths.length,
     homeFiles: paths.filter((path) => path.startsWith("home/")).length,
     presets: paths.filter((path) => presetPattern.test(path)).length,
+    skillNames: paths
+      .filter((path) => skillPattern.test(path))
+      .map((path) => `ps:${path.split("/", 3)[2]?.slice(3) ?? ""}`)
+      .toSorted((a, b) => a.localeCompare(b)),
     skills: paths.filter((path) => skillPattern.test(path)).length,
   };
 };

@@ -52,6 +52,14 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   scroll-padding-top: calc(3rem + 0.5rem);
 }
 
+[data-blog] {
+  --measure: 37.5rem;
+  --rail: 16rem;
+  --rail-gap: 3rem;
+  --frame-wide: calc(var(--measure) + var(--rail-gap) + var(--rail));
+  --frame: var(--measure);
+}
+
 .blog-main {
   position: relative;
   container: page / inline-size;
@@ -59,11 +67,6 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   overflow-x: clip;
   text-align: start;
   --display-font: "Geist", "Geist Fallback", var(--font-sans);
-  --measure: 37.5rem;
-  --rail: 16rem;
-  --rail-gap: 3rem;
-  --frame-wide: calc(var(--measure) + var(--rail-gap) + var(--rail));
-  --frame: var(--measure);
 }
 
 .blog-bar-row,
@@ -606,43 +609,6 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   text-wrap: balance;
 }
 
-.work-all {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  border-radius: 0.25rem;
-  color: var(--ui-accent);
-  font-family: var(--font-ui);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  line-height: 1.5;
-  letter-spacing: normal;
-  text-decoration: none;
-  transition: color var(--duration-normal) var(--ease-smooth);
-}
-
-.work-all::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  top: 50%;
-  height: 2.75rem;
-  translate: 0 -50%;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .work-all:hover {
-    color: var(--ui-ink);
-  }
-}
-
-@media (forced-colors: active) {
-  .work-all {
-    color: LinkText;
-  }
-}
-
 .work-repos,
 .work-products {
   display: grid;
@@ -653,7 +619,40 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
 }
 
 .work-repos {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  grid-template-rows: repeat(var(--rows-1), 1fr);
+}
+
+@container work (30.75rem <= width < 46.5rem) {
+  .work-repos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows-2), 1fr);
+  }
+
+  .work-all-cell:nth-child(2n + 1) {
+    grid-column: 1 / -1;
+  }
+}
+
+@container work (46.5rem <= width < 62.25rem) {
+  .work-repos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows-3), 1fr);
+  }
+
+  .work-all-cell:nth-child(3n + 1) {
+    grid-column: 1 / -1;
+  }
+}
+
+@container work (width >= 62.25rem) {
+  .work-repos {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows-4), 1fr);
+  }
+
+  .work-all-cell:nth-child(4n + 1) {
+    grid-column: 1 / -1;
+  }
 }
 
 .work-card,
@@ -667,6 +666,33 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   flex-direction: column;
   gap: var(--sp-2);
   min-width: 0;
+  container: work-card / inline-size;
+}
+
+.work-card:is(:focus-within, :has(a:hover)) {
+  box-shadow: inset 0 0 0 1px var(--glass-card-edge-hover);
+}
+
+.work-card-link {
+  position: relative;
+  border-radius: 0.25rem;
+  color: inherit;
+  text-decoration: none;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.work-card-link::after {
+  content: "";
+  position: absolute;
+  inset-inline: -0.25rem;
+  top: 50%;
+  height: 2.75rem;
+  translate: 0 -50%;
+}
+
+.work-card-link:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
 }
 
 .work-card-name {
@@ -695,45 +721,124 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   gap: var(--sp-3);
 }
 
-.work-card-side {
-  display: inline-flex;
-  flex-shrink: 0;
+.work-card-actions {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-3);
-  color: var(--ui-ink-3);
+  gap: max(var(--sp-2), 2.75rem - 1.5 * var(--fs-sm)) var(--sp-4);
+  padding-top: var(--sp-2);
 }
 
-.work-card-mark {
-  align-self: center;
-}
-
-.work-card-story {
+.work-card-action {
   position: relative;
-  z-index: 1;
   display: inline-flex;
   align-items: center;
-  align-self: flex-start;
   gap: var(--sp-1);
-  margin-block: -0.5rem;
-  padding-block: 0.75rem;
   border-radius: 0.25rem;
   color: var(--ui-accent);
   font-family: var(--font-ui);
   font-size: var(--fs-sm);
   font-weight: 500;
-  line-height: 1.25rem;
+  line-height: 1.5;
   text-decoration: none;
+  white-space: nowrap;
   transition: color var(--duration-normal) var(--ease-smooth);
 }
 
+.work-card-action::after {
+  content: "";
+  position: absolute;
+  inset-inline: calc(var(--sp-2) * -1);
+  top: 50%;
+  height: 2.75rem;
+  translate: 0 -50%;
+}
+
+.work-card-action .work-card-action-label {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  transition: text-decoration-color var(--duration-normal) var(--ease-smooth);
+}
+
+.work-card-action:focus-visible .work-card-action-label {
+  text-decoration-color: currentColor;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .work-card-story:hover {
+  .work-card-action:hover {
     color: var(--ui-ink);
+  }
+
+  .work-card-action:hover .work-card-action-label {
+    text-decoration-color: currentColor;
   }
 }
 
 @media (forced-colors: active) {
-  .work-card-story {
+  .work-card-action {
+    color: LinkText;
+  }
+}
+
+.work-all-cell {
+  display: flex;
+  min-width: 0;
+}
+
+.work-all {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-block-size: calc(2.25rem + 2 * var(--sp-3));
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px dashed var(--work-all-edge);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--work-all-ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    border-color var(--duration-normal) var(--ease-smooth),
+    color var(--duration-normal) var(--ease-smooth),
+    text-shadow var(--duration-normal) var(--ease-smooth);
+}
+
+.work-all-text {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.work-all-mark {
+  color: var(--work-all-mark);
+  transition:
+    color var(--duration-normal) var(--ease-smooth),
+    filter var(--duration-normal) var(--ease-smooth);
+}
+
+.work-all:is(:hover, :focus-visible) {
+  border-color: var(--work-all-edge-lit);
+  color: var(--work-all-ink-lit);
+  text-shadow: 0 0 12px var(--work-all-glow);
+}
+
+.work-all:is(:hover, :focus-visible) .work-all-mark {
+  color: var(--work-all-ink-lit);
+  filter: drop-shadow(0 0 8px var(--work-all-glow));
+}
+
+@media (forced-colors: active) {
+  .work-all {
+    border-color: LinkText;
     color: LinkText;
   }
 }
@@ -743,15 +848,49 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   view-transition-class: morph;
 }
 
-:root[data-story-morph] .work-card[data-story-path] .work-card-name,
-:root[data-story-morph] .story-step[data-step="hero"] .story-line {
+:root[data-story-morph] .work-card[data-story-path] .story-morph-name,
+:root[data-story-morph] .story-step[data-step="hero"] .story-morph-name {
   view-transition-name: story-dotfiles-name;
   view-transition-class: morph;
+  text-shadow: none;
 }
 
 :root[data-story-morph] .story-stage {
   view-transition-name: story-dotfiles;
   view-transition-class: morph;
+}
+
+:root[data-story-morph] .blog-bar {
+  view-transition-name: story-bar;
+}
+
+:root[data-story-morph] .story-step[data-step="hero"] .story-body {
+  view-transition-name: story-dotfiles-text;
+  view-transition-class: story-text;
+}
+
+::view-transition-group(story-dotfiles) {
+  overflow: clip;
+}
+
+::view-transition-new(.story-text) {
+  animation: morph-fade-in 280ms cubic-bezier(0, 0, 0.2, 1) 160ms both;
+}
+
+::view-transition-old(.story-text) {
+  animation: morph-fade-out 120ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-old(story-dotfiles),
+::view-transition-new(story-dotfiles) {
+  block-size: 100%;
+  object-fit: none;
+  object-position: center;
+}
+
+:root[data-story-morph="in"]::view-transition-new(story-dotfiles),
+:root[data-story-morph="out"]::view-transition-old(story-dotfiles) {
+  object-fit: cover;
 }
 
 .work-product {
@@ -2406,8 +2545,28 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
 }
 
 .blog-footer {
-  width: min(100% - 2 * var(--container-px), 36rem);
+  width: min(100% - 2 * var(--container-px), var(--frame));
   margin: var(--sp-7) auto 0;
+}
+
+@media (min-width: 60em) {
+  [data-blog]:has(.blog-index) .blog-footer {
+    --frame: var(--frame-wide);
+  }
+}
+
+@media (min-width: 80em) {
+  [data-blog]:has(.post-rail) .blog-footer {
+    --frame: var(--frame-wide);
+  }
+}
+
+[data-story] .blog-bar-row {
+  max-width: none;
+}
+
+[data-story] .blog-footer {
+  width: calc(100% - 2 * var(--container-px));
 }
 
 @media print {

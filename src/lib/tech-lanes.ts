@@ -97,7 +97,7 @@ export const watchTechLanes = (): void => {
     stop = lanes.length > 0 ? initTechLanes(lanes) : idle;
   };
   start();
-  document.addEventListener("astro:page-load", start);
+  document.addEventListener("astro:after-swap", start);
   document.addEventListener("astro:before-swap", () => {
     stop();
     stop = idle;

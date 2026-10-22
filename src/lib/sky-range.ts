@@ -1,4 +1,4 @@
-import { clamp01 } from "./math.ts";
+import { clamp01, magnet } from "./math.ts";
 import { type WeatherName } from "./weather.ts";
 
 export interface RangeMark<T> {
@@ -112,10 +112,13 @@ export const clampStop = (stop: number): number =>
 export const snapStop = (stop: number): number => {
   const position = clampStop(stop);
   const near = Math.round(position);
-  const reach = Math.round((snap / 2) * stepsPerStop);
-  return Math.round(Math.abs(position - near) * stepsPerStop) <= reach
-    ? near
-    : position;
+  const anchor = near * stepsPerStop;
+  const pulled = magnet(
+    Math.round(position * stepsPerStop),
+    [anchor],
+    Math.round((snap / 2) * stepsPerStop)
+  );
+  return pulled === anchor ? near : position;
 };
 
 export const stopBlend = (stop: number): StopBlend => {

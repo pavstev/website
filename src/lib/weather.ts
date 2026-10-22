@@ -1,4 +1,5 @@
 import { clamp, deg, mix } from "./math.ts";
+import { isRecord } from "./record.ts";
 
 export interface SkyWeather {
   alto: number;
@@ -252,9 +253,6 @@ export const windDrift = (
   const side = Math.sin((windFrom + 180 - viewAzimuth) * deg);
   return side < 0 ? -speed : speed;
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const finite = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);

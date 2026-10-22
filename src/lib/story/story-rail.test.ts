@@ -32,11 +32,15 @@ const buildTick = (id: string): FakeTick => {
   });
 };
 
-const build = (still: boolean): Fixture => {
+const build = (still: boolean, textHeight = 200): Fixture => {
+  Object.assign(globalThis, { innerHeight: 800 });
   const ticks = ids.map((id) => buildTick(id));
   const scrolls = ids.map(() => mock.fn());
   const steps = ids.map((id, index) => ({
     dataset: { step: id },
+    querySelector: (): { offsetHeight: number } => ({
+      offsetHeight: textHeight,
+    }),
     scrollIntoView: scrolls[index],
   }));
   const rail = { querySelectorAll: (): FakeTick[] => ticks };
@@ -72,12 +76,12 @@ describe("bindRail", () => {
     assert.deepEqual(marks(ticks), [undefined, undefined, undefined]);
   });
 
-  it("scrolls the matching step to the top smoothly on a click", () => {
+  it("scrolls the matching step to its read spot smoothly on a click", () => {
     const { scrolls, ticks } = build(false);
     ticks[2]?.dispatchEvent(new Event("click"));
     assert.equal(scrolls[2]?.mock.callCount(), 1);
     assert.deepEqual(scrolls[2]?.mock.calls[0]?.arguments, [
-      { behavior: "smooth", block: "start" },
+      { behavior: "smooth", block: "end" },
     ]);
     assert.equal(scrolls[0]?.mock.callCount(), 0);
     assert.equal(scrolls[1]?.mock.callCount(), 0);
@@ -87,7 +91,15 @@ describe("bindRail", () => {
     const { scrolls, ticks } = build(true);
     ticks[1]?.dispatchEvent(new Event("click"));
     assert.deepEqual(scrolls[1]?.mock.calls[0]?.arguments, [
-      { behavior: "auto", block: "start" },
+      { behavior: "auto", block: "end" },
+    ]);
+  });
+
+  it("scrolls to the top of a step whose text is taller than the screen", () => {
+    const { scrolls, ticks } = build(false, 700);
+    ticks[1]?.dispatchEvent(new Event("click"));
+    assert.deepEqual(scrolls[1]?.mock.calls[0]?.arguments, [
+      { behavior: "smooth", block: "start" },
     ]);
   });
 

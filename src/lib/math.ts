@@ -3,7 +3,8 @@ export const deg = Math.PI / 180;
 export const clamp = (value: number, low: number, high: number): number =>
   Math.min(high, Math.max(low, value));
 
-export const clamp01 = (value: number): number => clamp(value, 0, 1);
+export const clamp01 = (value: number): number =>
+  Number.isNaN(value) ? 0 : clamp(value, 0, 1);
 
 const mixAny = (from: unknown, to: unknown, share: number): unknown => {
   if (typeof from === "number" && typeof to === "number") {
@@ -34,4 +35,20 @@ export const mix = <T>(from: T, to: T, share: number): T =>
 export const smoothstep = (from: number, to: number, value: number): number => {
   const t = clamp01((value - from) / (to - from));
   return t * t * (3 - 2 * t);
+};
+
+export const magnet = (
+  value: number,
+  anchors: readonly number[],
+  reach: number
+): number => {
+  let pulled = value;
+  let gap = reach;
+  for (const anchor of anchors) {
+    const distance = Math.abs(value - anchor);
+    if (distance > gap) continue;
+    pulled = anchor;
+    gap = distance;
+  }
+  return pulled;
 };

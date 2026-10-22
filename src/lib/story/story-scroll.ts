@@ -1,5 +1,12 @@
 import { clamp01, smoothstep } from "../math.ts";
 
+export interface Box {
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+}
+
 export interface StepOffset {
   height: number;
   top: number;
@@ -10,18 +17,7 @@ export interface StepPosition {
   t: number;
 }
 
-export interface TextRect {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
-}
-
-export const overlapsRect = (
-  box: TextRect,
-  text: TextRect,
-  gap: number
-): boolean =>
+export const overlapsRect = (box: Box, text: Box, gap: number): boolean =>
   box.left < text.left + text.width + gap &&
   box.left + box.width > text.left - gap &&
   box.top < text.top + text.height + gap &&

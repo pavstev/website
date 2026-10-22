@@ -176,7 +176,7 @@ const storyBody = (counts: SceneCounts, badge: string): string => `
   .map((tone) => `.tone-${tone}{color:${storyPalette[tone]}}`)
   .join("")}</style>
 <div style="position:absolute;inset:0;color:${storyPalette.ink}">
-  ${posterSvg(storyWidth, storyHeight, counts).replace("<svg ", '<svg style="position:absolute;inset:0" ')}
+  ${posterSvg(storyWidth, storyHeight, counts, 'style="position:absolute;inset:0"')}
   ${drawnBy(badge)}
   <div style="position:absolute;left:72px;bottom:56px;font-family:Geist;font-size:132px;font-weight:600;letter-spacing:-0.03em;line-height:1;color:${storyPalette.ink}">${escapeHtml(en.story.crumb)}</div>
 </div>`;

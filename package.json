@@ -20,6 +20,7 @@
     "prepare": "husky && pnpm types",
     "preview": "astro preview --port 4321",
     "profile:build": "node src/profile/cli.ts",
+    "skills:usage": "node scripts/generate-skill-usage.ts",
     "types": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false wrangler types > /dev/null && astro sync > /dev/null"
   },
   "dependencies": {

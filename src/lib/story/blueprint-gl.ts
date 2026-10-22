@@ -1,14 +1,17 @@
 import { hexBytes, storyPalette } from "@/lib/theme";
 import { compileShader, isSoftwareRenderer, linkProgram } from "@/lib/webgl";
 
+import {
+  dotDepthMin,
+  dotDepthSpan,
+  dotFadeFrom,
+  dotFadeTo,
+  dotGain,
+  dotPitch,
+  dotRadius,
+} from "./blueprint-dots";
 import { type Scene, strides, toneNames } from "./blueprint-geometry";
-
-export interface DimBox {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
-}
+import { type Box } from "./story-scroll";
 
 export interface Renderer {
   dispose(): void;
@@ -16,14 +19,15 @@ export interface Renderer {
     scene: Scene,
     view: Float32Array,
     gridView: Float32Array,
-    dim: DimBox | undefined
+    dims: readonly Box[]
   ): void;
   resize(): void;
 }
 
 const maxRatio = 1.5;
 const dimTo = 0.35;
-const dimEdge = 8;
+const dimEdge = 72;
+const dimSlots = 3;
 const pointFloats = strides.point;
 const triVertexFloats = pointFloats;
 
@@ -58,17 +62,30 @@ const lineVertex = [
   "}",
 ].join("\n");
 
+const dimShader = [
+  `uniform vec4 uDim[${String(dimSlots)}];`,
+  "uniform int uDimCount;",
+  "uniform float uDimTo;",
+  "float dimFactor(){",
+  "float inside=0.0;",
+  `for(int i=0;i<${String(dimSlots)};i++){`,
+  "if(i>=uDimCount)break;",
+  "vec2 q=abs(gl_FragCoord.xy-uDim[i].xy)-uDim[i].zw;",
+  "float d=length(max(q,0.0))+min(max(q.x,q.y),0.0);",
+  `inside=max(inside,1.0-smoothstep(0.0,${dimEdge.toFixed(1)},d));`,
+  "}",
+  "return mix(1.0,uDimTo,inside);",
+  "}",
+];
+
 const lineFragment = [
   "#version 300 es",
   "precision highp float;",
   "in vec4 vCol;",
-  "uniform vec4 uDim;",
-  "uniform float uDimTo;",
+  ...dimShader,
   "out vec4 o;",
   "void main(){",
-  "vec2 q=abs(gl_FragCoord.xy-uDim.xy)-uDim.zw;",
-  `float inside=1.0-smoothstep(-${dimEdge.toFixed(1)},${dimEdge.toFixed(1)},max(q.x,q.y));`,
-  "o=vec4(vCol.rgb,vCol.a*mix(1.0,uDimTo,inside));",
+  "o=vec4(vCol.rgb,vCol.a*dimFactor());",
   "}",
 ].join("\n");
 
@@ -77,25 +94,53 @@ const flatVertex = [
   "layout(location=0) in vec3 aPos;",
   "layout(location=1) in vec3 aMeta;",
   "uniform mat4 uM;",
-  "uniform float uScale;",
+  "uniform float uRatio;",
   "uniform vec3 uTone[8];",
   "out vec4 vCol;",
+  "out vec2 vPlane;",
+  "out float vDepth;",
   "void main(){",
   "gl_Position=uM*vec4(aPos,1.0);",
-  "gl_PointSize=aMeta.z*uScale;",
+  "gl_PointSize=aMeta.z*uRatio;",
   "vCol=vec4(uTone[int(aMeta.x)],aMeta.y);",
+  "vPlane=aPos.xz;",
+  "vDepth=gl_Position.z/gl_Position.w;",
   "}",
 ].join("\n");
+
+const dotShader = [
+  "float dotFactor(){",
+  "mat2 j=mat2(dFdx(vPlane),dFdy(vPlane));",
+  "if(abs(determinant(j))<1e-12)return 0.0;",
+  "mat2 ji=inverse(j);",
+  `float spacing=min(length(ji*vec2(${dotPitch.toFixed(3)},0.0)),length(ji*vec2(0.0,${dotPitch.toFixed(3)})))/uRatio;`,
+  `float fade=smoothstep(${dotFadeFrom.toFixed(1)},${dotFadeTo.toFixed(1)},spacing);`,
+  `vec2 f=fract(vPlane/${dotPitch.toFixed(3)})-0.5;`,
+  `float d=length(ji*(f*${dotPitch.toFixed(3)}));`,
+  `float r=${dotRadius.toFixed(2)}*uRatio;`,
+  "float m=1.0-smoothstep(r-0.5,r+0.5,d);",
+  `float depth=mix(1.0,${dotDepthMin.toFixed(2)},smoothstep(${(-dotDepthSpan).toFixed(2)},${dotDepthSpan.toFixed(2)},vDepth));`,
+  "return m*fade*depth;",
+  "}",
+];
 
 const flatFragment = [
   "#version 300 es",
   "precision highp float;",
   "in vec4 vCol;",
+  "in vec2 vPlane;",
+  "in float vDepth;",
   "uniform float uRound;",
+  "uniform float uDot;",
+  "uniform float uRatio;",
+  ...dimShader,
+  ...dotShader,
   "out vec4 o;",
   "void main(){",
   "float a=uRound>0.5?smoothstep(0.5,0.26,length(gl_PointCoord-0.5)):1.0;",
-  "o=vec4(vCol.rgb,vCol.a*a);",
+  "float k=uDot>0.5?dotFactor():0.0;",
+  `float dots=k>0.0?k*${dotGain.toFixed(2)}*dimFactor():0.0;`,
+  "o=vec4(vCol.rgb,vCol.a*(uDot>0.5?dots:a));",
   "}",
 ].join("\n");
 
@@ -156,10 +201,11 @@ export const createRenderer = (
   canvas: HTMLCanvasElement
 ): Renderer | undefined => {
   const gl = canvas.getContext("webgl2", {
-    alpha: false,
+    alpha: true,
     antialias: true,
-    depth: false,
+    depth: true,
     powerPreference: "low-power",
+    preserveDrawingBuffer: true,
     stencil: false,
   });
   if (!gl) return undefined;
@@ -213,6 +259,7 @@ export const createRenderer = (
     gl.getUniformLocation(program.handle, name);
   const line = {
     dim: where(lineProgram, "uDim"),
+    dimCount: where(lineProgram, "uDimCount"),
     dimTo: where(lineProgram, "uDimTo"),
     matrix: where(lineProgram, "uM"),
     res: where(lineProgram, "uRes"),
@@ -221,9 +268,13 @@ export const createRenderer = (
     width: where(lineProgram, "uWidth"),
   };
   const flat = {
+    dim: where(flatProgram, "uDim"),
+    dimCount: where(flatProgram, "uDimCount"),
+    dimTo: where(flatProgram, "uDimTo"),
+    dot: where(flatProgram, "uDot"),
     matrix: where(flatProgram, "uM"),
+    ratio: where(flatProgram, "uRatio"),
     round: where(flatProgram, "uRound"),
-    scale: where(flatProgram, "uScale"),
     tone: where(flatProgram, "uTone"),
   };
   gl.useProgram(lineProgram.handle);
@@ -244,11 +295,16 @@ export const createRenderer = (
   gl.bindVertexArray(null);
 
   gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  const [pr, pg, pb] = hexBytes(storyPalette.paper);
-  gl.clearColor(pr / 255, pg / 255, pb / 255, 1);
+  gl.blendFuncSeparate(
+    gl.SRC_ALPHA,
+    gl.ONE_MINUS_SRC_ALPHA,
+    gl.ONE,
+    gl.ONE_MINUS_SRC_ALPHA
+  );
+  gl.clearColor(0, 0, 0, 0);
 
   let ratio = 1;
+  const dimData = new Float32Array(dimSlots * 4);
   let cssWidth = 1;
   let cssHeight = 1;
   let faces = new Float32Array(triVertexFloats * 3 * 32);
@@ -296,6 +352,19 @@ export const createRenderer = (
     return count * 3;
   };
 
+  const setDims = (
+    target: {
+      dim: null | WebGLUniformLocation;
+      dimCount: null | WebGLUniformLocation;
+      dimTo: null | WebGLUniformLocation;
+    },
+    boxes: readonly Box[]
+  ): void => {
+    gl.uniform4fv(target.dim, dimData);
+    gl.uniform1i(target.dimCount, boxes.length);
+    gl.uniform1f(target.dimTo, dimTo);
+  };
+
   const drawPoints = (
     first: number,
     count: number,
@@ -310,15 +379,29 @@ export const createRenderer = (
     scene: Scene,
     view: Float32Array,
     gridView: Float32Array,
-    dim: DimBox | undefined
+    dims: readonly Box[]
   ): void => {
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     const pointCount = scene.points.length / pointFloats;
     const faceVertices = expandFaces(scene);
     const lineCount = scene.lines.length / strides.line;
 
+    const sx = canvas.width / cssWidth;
+    const sy = canvas.height / cssHeight;
+    const boxes = dims.slice(0, dimSlots);
+    for (const [slot, box] of boxes.entries())
+      dimData.set(
+        [
+          (box.left + box.width / 2) * sx,
+          (cssHeight - box.top - box.height / 2) * sy,
+          (box.width / 2) * sx,
+          (box.height / 2) * sy,
+        ],
+        slot * 4
+      );
+
     gl.useProgram(flatProgram.handle);
-    gl.uniform1f(flat.scale, ratio);
+    gl.uniform1f(flat.ratio, ratio);
     if (pointCount > 0) {
       gl.bindVertexArray(pointArrays);
       upload(pointBuffer, scene.points);
@@ -329,8 +412,14 @@ export const createRenderer = (
       gl.bindVertexArray(triArrays);
       upload(triBuffer, faces.subarray(0, faceVertices * triVertexFloats));
       gl.uniform1f(flat.round, 0);
+      gl.uniform1f(flat.dot, 1);
+      setDims(flat, boxes);
       gl.uniformMatrix4fv(flat.matrix, false, view);
       gl.drawArrays(gl.TRIANGLES, 0, faceVertices);
+      gl.enable(gl.DEPTH_TEST);
+      gl.drawArrays(gl.TRIANGLES, 0, faceVertices);
+      gl.disable(gl.DEPTH_TEST);
+      gl.uniform1f(flat.dot, 0);
     }
 
     if (lineCount > 0) {
@@ -342,20 +431,7 @@ export const createRenderer = (
       gl.uniform2f(line.res, cssWidth, cssHeight);
       gl.uniform2f(line.width, 1, 1.25);
       gl.uniform1f(line.slab, scene.slabSegments);
-      const sx = canvas.width / cssWidth;
-      const sy = canvas.height / cssHeight;
-      if (dim) {
-        gl.uniform4f(
-          line.dim,
-          (dim.left + dim.width / 2) * sx,
-          (cssHeight - dim.top - dim.height / 2) * sy,
-          (dim.width / 2) * sx,
-          (dim.height / 2) * sy
-        );
-        gl.uniform1f(line.dimTo, dimTo);
-      } else {
-        gl.uniform1f(line.dimTo, 1);
-      }
+      setDims(line, boxes);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, lineCount);
     }
 

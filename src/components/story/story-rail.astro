@@ -4,10 +4,11 @@ import { fillText } from "@/lib/template";
 import { type StoryStep } from "@/lib/story/steps";
 
 interface Props {
+  skills: readonly string[];
   steps: readonly StoryStep[];
 }
 
-const { steps } = Astro.props;
+const { skills, steps } = Astro.props;
 const ticks = steps.filter((step) => step.tick);
 const chapters: Record<string, string> = en.story.chapters;
 ---
@@ -25,6 +26,25 @@ const chapters: Record<string, string> = en.story.chapters;
           data-tick={step.id}
           type="button"
         ></button>
+        {step.id === "skills" && (
+          <ol class="story-rail-subs">
+            {skills.map((skill, index) => (
+              <li>
+                <button
+                  aria-label={fillText(en.story.railSkill, {
+                    index: String(index + 1),
+                    skill,
+                    total: String(skills.length),
+                  })}
+                  class="story-sub focus-ring"
+                  data-sub={String(index)}
+                  data-sub-step={step.id}
+                  type="button"
+                ></button>
+              </li>
+            ))}
+          </ol>
+        )}
       </li>
     ))}
   </ol>

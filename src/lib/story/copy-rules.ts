@@ -1,4 +1,8 @@
-import { storyMeta } from "../../data/dotfiles-story.ts";
+import { storyMeta } from "../../data/dotfiles-stats.ts";
+import {
+  type SkillCopy,
+  type SkillUsageData,
+} from "../../data/dotfiles-story.ts";
 import { type DotfilesFacts } from "../dotfiles-facts.ts";
 import { digits, spelled } from "./number-words.ts";
 import { type StoryStep } from "./steps.ts";
@@ -78,8 +82,22 @@ const textMessages = (
   return messages;
 };
 
-export const copyNumbers = (facts: DotfilesFacts): ReadonlySet<number> => {
+const shareNumbers = (value: unknown, into: Set<number>): void => {
+  if (typeof value === "number" && value >= 0 && value <= 1) {
+    into.add(Math.round(value * 100));
+  } else if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/u.test(value)) {
+    into.add(Number(value.slice(8, 10)));
+  } else if (typeof value === "object" && value !== null) {
+    for (const item of Object.values(value)) shareNumbers(item, into);
+  }
+};
+
+export const copyNumbers = (
+  facts: DotfilesFacts,
+  usage?: SkillUsageData
+): ReadonlySet<number> => {
   const numbers = new Set<number>();
+  if (usage) shareNumbers(usage, numbers);
   for (const value of Object.values(facts)) {
     collect(value, numbers);
   }
@@ -89,6 +107,31 @@ export const copyNumbers = (facts: DotfilesFacts): ReadonlySet<number> => {
   numbers.add(Math.round(facts.rustShare * 100));
   return numbers;
 };
+
+export const lintSkill = (
+  copy: SkillCopy,
+  allowed: ReadonlySet<number>
+): string[] => {
+  const messages = [
+    ...textMessages(`${copy.skill} what`, copy.what, allowed),
+    ...textMessages(`${copy.skill} metric`, copy.metric, allowed),
+  ];
+  const words = countWords(copy.what);
+  if (words < lineWords.min || words > lineWords.max) {
+    messages.push(
+      `${copy.skill} what has ${digits(words)} words, it needs ${digits(lineWords.min)} to ${digits(lineWords.max)}`
+    );
+  }
+  if (copy.what.length === 0 || copy.metric.length === 0) {
+    messages.push(`${copy.skill} has no copy`);
+  }
+  return messages;
+};
+
+export const lintFact = (
+  line: string,
+  allowed: ReadonlySet<number>
+): string[] => textMessages("fact", line, allowed);
 
 export const lintCopy = (
   step: StoryStep,

@@ -1,5 +1,6 @@
 import { finePointerQuery } from "@/lib/media";
 import { isMotionPaused, stillQuery } from "@/lib/motion-pause";
+import { fieldsOf, readJson } from "@/lib/record";
 
 import {
   buildScene,
@@ -9,8 +10,10 @@ import {
   type Scene,
   type SceneCounts,
 } from "./blueprint-geometry";
-import { createRenderer, type DimBox } from "./blueprint-gl";
+import { createRenderer } from "./blueprint-gl";
+import { finaleStops, isSkillMap, stopAt, walkOf } from "./skill-map";
 import { isStepId, type StepId } from "./step-ids";
+import { createPlates } from "./story-plates";
 import {
   createPointerTilt,
   type LoopGates,
@@ -20,6 +23,7 @@ import {
 } from "./story-pointer";
 import { bindRail } from "./story-rail";
 import {
+  type Box,
   easeToward,
   explodeAt,
   overlapsRect,
@@ -72,24 +76,14 @@ const isNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
 const isCounts = (value: unknown): value is SceneCounts => {
-  if (typeof value !== "object" || value === null) return false;
-  const fields = new Map<string, unknown>(Object.entries(value));
+  const fields = fieldsOf(value);
+  if (!fields) return false;
   const caps = fields.get("helperCaps");
   return (
     countKeys.every((key) => isNumber(fields.get(key))) &&
     Array.isArray(caps) &&
     caps.every(isNumber)
   );
-};
-
-const readCounts = (raw: string | undefined): SceneCounts | undefined => {
-  if (!raw) return undefined;
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    return isCounts(parsed) ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
 };
 
 const insideBy = (value: number, high: number): number =>
@@ -103,7 +97,11 @@ export const mountStory = (root: HTMLElement): (() => void) => {
   const items = [
     ...root.querySelectorAll<HTMLElement>(".story-step[data-step]"),
   ];
-  const counts = readCounts(root.dataset["storyCounts"]);
+  const counts = readJson(root.dataset["storyCounts"], isCounts);
+  const map = readJson(root.dataset["storySkills"], isSkillMap);
+  const stopCounts = items.map((item) =>
+    map && item.dataset["stops"] ? map.stops.length : 1
+  );
   const ids = items
     .map((item) => item.dataset["step"])
     .filter((id): id is StepId => isStepId(id));
@@ -121,6 +119,8 @@ export const mountStory = (root: HTMLElement): (() => void) => {
   const renderer = createRenderer(canvas);
   if (!renderer) return () => undefined;
 
+  const plates = createPlates(items, pinBox);
+  const bar = document.querySelector<HTMLElement>("[data-blog-bar]");
   const bodies = items.map((item) =>
     item.querySelector<HTMLElement>(".story-body")
   );
@@ -144,16 +144,17 @@ export const mountStory = (root: HTMLElement): (() => void) => {
     },
   };
   let offsets: StepOffset[] = [];
-  let stageHeight = 0;
   let canvasWidth = 1;
   let canvasHeight = 1;
   let pinWidth = 1;
   let pinHeight = 1;
   let shiftX = 0;
   let shiftY = 0;
+  let barHeight = 0;
   let goal = 0;
   let shown = 0;
   let current = -1;
+  let currentStop = -1;
   let progressShown = -1;
   let inView = true;
   let handle = 0;
@@ -185,19 +186,44 @@ export const mountStory = (root: HTMLElement): (() => void) => {
       const rect = item.getBoundingClientRect();
       return { height: rect.height, top: rect.top + scrolled };
     });
-    stageHeight = stage.offsetHeight;
     canvasWidth = Math.max(1, canvas.clientWidth);
     canvasHeight = Math.max(1, canvas.clientHeight);
     pinWidth = pinBox.clientWidth;
     pinHeight = pinBox.clientHeight;
     shiftX = canvas.offsetLeft - pinBox.offsetLeft;
     shiftY = canvas.offsetTop - pinBox.offsetTop;
+    barHeight = bar?.offsetHeight ?? 0;
+    for (const [i, item] of items.entries()) {
+      const body = bodies[i];
+      if (!body || !item.dataset["stops"]) continue;
+      const inset = Number(
+        getComputedStyle(body).insetBlockEnd.replace("px", "")
+      );
+      const room = pinHeight - barHeight - (Number.isFinite(inset) ? inset : 0);
+      item.toggleAttribute("data-story-loose", body.offsetHeight > room);
+    }
+  };
+
+  const stopOf = (index: number, t: number): number => {
+    const count = stopCounts[index] ?? 1;
+    return count > 1 ? stopAt(walkOf(t, count), count).stop : -1;
+  };
+
+  const stillGoal = (index: number, t: number): number => {
+    const count = stopCounts[index] ?? 1;
+    return count > 1
+      ? (stopOf(index, t) + 1) / (count + finaleStops) - 1e-6
+      : stillEnd;
   };
 
   const retarget = (): void => {
-    const anchor = window.scrollY + (wide.matches ? 0 : stageHeight);
-    const at = stepAt(anchor, offsets);
-    goal = at.index + (still.matches ? stillEnd : at.t);
+    const at = stepAt(window.scrollY, offsets);
+    goal = at.index + (still.matches ? stillGoal(at.index, at.t) : at.t);
+    const stop = stopOf(at.index, at.t);
+    if (stop !== currentStop) {
+      currentStop = stop;
+      railHandle?.setStop(stop);
+    }
     if (at.index === current) {
       return;
     }
@@ -232,7 +258,7 @@ export const mountStory = (root: HTMLElement): (() => void) => {
   const placePins = (
     scene: Scene,
     view: Float32Array,
-    avoid: DimBox | undefined
+    avoid: readonly Box[]
   ): void => {
     const seen = new Set<string>();
     const stale: Pin[] = [];
@@ -264,20 +290,15 @@ export const mountStory = (root: HTMLElement): (() => void) => {
         pinHeight - pin.height - pinPad
       );
       pin.el.style.transform = `translate3d(${left.toFixed(1)}px,${top.toFixed(1)}px,0)`;
-      const alpha =
-        avoid &&
-        overlapsRect(
-          {
-            height: pin.height,
-            left: left - shiftX,
-            top: top - shiftY,
-            width: pin.width,
-          },
-          avoid,
-          textGap
-        )
-          ? 0
-          : label.alpha;
+      const spot = {
+        height: pin.height,
+        left: left - shiftX,
+        top: top - shiftY,
+        width: pin.width,
+      };
+      const alpha = avoid.some((box) => overlapsRect(spot, box, textGap))
+        ? 0
+        : label.alpha;
       if (pin.alpha === alpha) {
         continue;
       }
@@ -292,10 +313,9 @@ export const mountStory = (root: HTMLElement): (() => void) => {
     }
   };
 
-  const dimBox = (index: number): DimBox | undefined => {
+  const dimBox = (index: number, area: DOMRect): Box | undefined => {
     const body = bodies[index];
-    if (!body || !wide.matches) return undefined;
-    const area = canvas.getBoundingClientRect();
+    if (!body) return undefined;
     const rect = body.getBoundingClientRect();
     return {
       height: rect.height,
@@ -305,18 +325,31 @@ export const mountStory = (root: HTMLElement): (() => void) => {
     };
   };
 
+  const textBoxes = (index: number): Box[] => {
+    const area = canvas.getBoundingClientRect();
+    return [index, index - 1, index + 1]
+      .map((near) => dimBox(near, area))
+      .filter(
+        (box): box is Box =>
+          box !== undefined &&
+          box.top < canvasHeight &&
+          box.top + box.height > 0
+      );
+  };
+
   const paint = (dt: number): boolean => {
     shown = easeToward(shown, goal, dt);
     if (Math.abs(goal - shown) < settleAt) shown = goal;
     tilt.tick(dt);
     const { index, t } = splitProgress(shown, ids.length);
-    const dim = dimBox(index);
+    const texts = textBoxes(index);
     const scene = buildScene(
       ids[index] ?? "hero",
       t,
       explodeAt(t),
       counts,
-      wide.matches ? undefined : phoneLabelLimit
+      wide.matches ? undefined : phoneLabelLimit,
+      map
     );
     const aspect = canvasWidth / canvasHeight;
     const view = frameMatrix(aspect, scene, tilt.yaw, tilt.pitch);
@@ -326,8 +359,19 @@ export const mountStory = (root: HTMLElement): (() => void) => {
       tilt.yaw * gridShare,
       tilt.pitch * gridShare
     );
-    renderer.draw(scene, view, grid, dim);
-    placePins(scene, view, dim);
+    renderer.draw(scene, view, grid, texts);
+    placePins(scene, view, texts);
+    const anchor = scene.plate
+      ? project(view, scene.plate, canvasWidth, canvasHeight)
+      : undefined;
+    plates.place(
+      index,
+      anchor && [anchor[0] + shiftX, anchor[1] + shiftY],
+      texts,
+      { height: pinHeight, top: barHeight, width: pinWidth },
+      wide.matches,
+      Math.max(0, stopOf(index, t))
+    );
     const progress = Math.round((shown / ids.length) * 1000) / 1000;
     if (progress !== progressShown && !wide.matches) {
       progressShown = progress;
@@ -343,6 +387,7 @@ export const mountStory = (root: HTMLElement): (() => void) => {
 
   const invalidatePins = (): void => {
     for (const pin of pins.values()) pin.text = "";
+    plates.invalidate();
   };
 
   const frame = (now: number): void => {
@@ -369,13 +414,15 @@ export const mountStory = (root: HTMLElement): (() => void) => {
 
   const onScroll = (): void => {
     const before = current;
+    const stopBefore = currentStop;
     retarget();
     if (!still.matches) {
       schedule();
       return;
     }
 
-    if (current !== before && viewable()) showStill();
+    if ((current !== before || currentStop !== stopBefore) && viewable())
+      showStill();
   };
 
   const onResize = (): void => {
@@ -383,7 +430,8 @@ export const mountStory = (root: HTMLElement): (() => void) => {
     renderer.resize();
     invalidatePins();
     retarget();
-    if (still.matches && viewable()) {
+    if (!viewable()) return;
+    if (still.matches) {
       showStill();
       return;
     }
@@ -413,6 +461,7 @@ export const mountStory = (root: HTMLElement): (() => void) => {
   const onFonts = (): void => {
     if (disposed) return;
     invalidatePins();
+    if (!viewable()) return;
     paint(0);
     schedule();
   };
@@ -437,6 +486,7 @@ export const mountStory = (root: HTMLElement): (() => void) => {
     watchSize.disconnect();
     renderer.dispose();
     pins.clear();
+    plates.dispose();
     pinBox.replaceChildren();
     delete root.dataset["storyState"];
   };
