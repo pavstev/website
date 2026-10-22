@@ -2,7 +2,7 @@
   "basics": {
     "email": "pavlovicmstevan@gmail.com",
     "githubHandle": "pavstev",
-    "headline": "Software Engineer · Tech Lead",
+    "headline": "Senior Software Engineer (Backend, AI Systems, Tech Lead)",
     "linkedinHandle": "stevanpavlovic",
     "location": "Vienna, Austria",
     "name": "Stevan Pavlović",
@@ -18,7 +18,7 @@
         "degree": "Bachelor's Degree",
         "from": "Oct 2016",
         "location": "Belgrade, Serbia",
-        "overview": "Bachelor of Software Engineering. Curriculum focused on distributed systems, cloud computing, DevOps, and AI/ML with a hands-on, project-oriented capstone track.",
+        "overview": "",
         "school": "Singidunum University",
         "skills": [],
         "to": "Oct 2020",
@@ -30,7 +30,7 @@
         "degree": "High School Diploma",
         "from": "Sep 2011",
         "location": "Belgrade, Serbia",
-        "overview": "Graduated from a High National Distinction institution specializing in advanced mathematics, physics, and computer science. Completed a full-stack Electronic School Diary as a graduation project.",
+        "overview": "",
         "school": "Mathematical Grammar School",
         "skills": [],
         "to": "Jun 2015",
@@ -44,30 +44,26 @@
         "company": "Safety Real Time",
         "contributions": [
           {
-            "description": "Defined the full-stack cloud architecture for a fleet management SaaS, from mobile driver apps through backend ingestion services to live operations dashboards used by enterprise fleet managers.",
-            "title": "Fleet management platform architecture"
+            "description": "Since September 2025, lead a team of five that builds AI voice agents, workflow automation and fleet optimization for trucking companies, built mostly with Claude, using harness and context engineering.",
+            "title": ""
           },
           {
-            "description": "Engineered high-frequency data ingestion for live vehicle and driver events, with Redis pub/sub propagation maintaining sub-second freshness across operations dashboards.",
-            "title": "Real-time event pipeline"
+            "description": "Set the architecture of the fleet safety platform on Node.js, NestJS and Redis: pre-trip inspections, accident and damage reports, driver scorecards and live operational visibility.",
+            "title": ""
           },
           {
-            "description": "Designed time-sensitive routing for safety-critical incidents: pre-trip failures, accident reports, and driver threshold breaches, reaching frontline operators with minimal propagation delay.",
-            "title": "Safety event routing"
+            "description": "Built real-time ingestion of vehicle and driver events with Redis pub/sub, from the mobile driver apps to the live operations dashboards.",
+            "title": ""
           },
           {
-            "description": "Built scheduling, reminder, and document management modules enabling fleet managers to track regulatory renewals, inspection dates, driver scorecards, and maintenance compliance.",
-            "title": "Compliance and document workflows"
-          },
-          {
-            "description": "Led cross-functional delivery across backend, frontend, and infrastructure disciplines aligned to the product roadmap and SLA commitments with enterprise clients.",
-            "title": "Engineering team leadership"
+            "description": "Built scheduling, reminder and document modules that let fleet managers track regulatory renewals, inspections and maintenance compliance.",
+            "title": ""
           }
         ],
         "from": "Apr 2022",
         "location": "Remote",
-        "overview": "Directed technical strategy for a cloud-based fleet management platform serving enterprise trucking operators. Owned full-stack architecture: Node.js, NestJS, and Redis, covering pre-trip inspection workflows, accident and damage reporting, driver scorecards, live operational visibility, and compliance document management for logistics clients.",
-        "position": "Chief Technology Officer",
+        "overview": "",
+        "position": "Chief Technology Officer (part-time)",
         "skills": [
           "Node.js",
           "NestJS",
@@ -75,7 +71,7 @@
           "Redis",
           "React",
           "PostgreSQL",
-          "ElasticSearch",
+          "Elasticsearch",
           "Docker",
           "Kubernetes",
           "AWS",
@@ -88,30 +84,26 @@
         "company": "167Pluto",
         "contributions": [
           {
-            "description": "Designed NestJS and Kafka flows across bet lifecycle, odds distribution, and settlement contexts.",
-            "title": "Event-driven domain services"
+            "description": "Led the architecture of the FundedBettor betting project and a multi-tenant casino project. Built 167Pluto's first event-driven system: NestJS and Kafka services for the bet lifecycle, odds and settlement, with tuned Kafka topics and streaming.",
+            "title": ""
           },
           {
-            "description": "Introduced explicit idempotency keys enabling full replay safety across the settlement pipeline.",
-            "title": "Idempotent command handling"
+            "description": "Made the settlement pipeline replay-safe with explicit idempotency keys.",
+            "title": ""
           },
           {
-            "description": "Protected hot shards and preserved read performance consistently during peak traffic windows.",
-            "title": "Cache partitioning strategy"
+            "description": "Added staged rollouts and automated canary analysis for zero-downtime deployments through peak sporting events, plus tracing, structured logs and latency dashboards for faster incident diagnosis during live events.",
+            "title": ""
           },
           {
-            "description": "Added staged rollouts and automated canary analysis to enable zero-downtime production deployments.",
-            "title": "CI/CD hardening"
-          },
-          {
-            "description": "Instrumented tracing, structured logging, and latency dashboards to shorten incident diagnosis time during live events.",
-            "title": "Observability baseline"
+            "description": "Protected hot shards and kept reads fast at peak traffic.",
+            "title": ""
           }
         ],
         "from": "Feb 2024",
         "location": "Belgrade, Serbia",
-        "overview": "Led backend architecture for a high-concurrency online betting platform. Delivered fault-tolerant, event-driven microservices on Node.js and NestJS with zero-downtime deployments through peak sporting events.",
-        "position": "Senior Software Engineer",
+        "overview": "",
+        "position": "Senior Software Engineer (B2B contract)",
         "skills": [
           "Node.js",
           "NestJS",
@@ -119,7 +111,7 @@
           "Apache Kafka",
           "Redis",
           "PostgreSQL",
-          "ElasticSearch",
+          "Elasticsearch",
           "Docker",
           "Kubernetes",
           "GitHub Actions",
@@ -132,29 +124,21 @@
         "company": "Apoddo",
         "contributions": [
           {
-            "description": "Aggregated 3–5 upstream API calls into single, UI-optimized payloads, removing redundant round-trips and decoupling frontend rendering from backend schemas.",
-            "title": "BFF layer design"
+            "description": "Contributed to the backend-for-frontend layer of Humanity.com, a workforce management platform with hundreds of thousands of users, in Node.js and NestJS: one endpoint replaced 3 to 5 upstream API calls.",
+            "title": ""
           },
           {
-            "description": "Added TTL-based invalidation for high-frequency schedule endpoints, cutting backend load and improving response consistency across the enterprise user base.",
-            "title": "Redis cache-aside pattern"
+            "description": "Owned the caching: Redis cache-aside with TTL invalidation and Redis tuning, plus circuit breakers that serve cached or partial data when upstreams slow down.",
+            "title": ""
           },
           {
-            "description": "Decoupled frontend and backend release cycles through stable, versioned API contracts, enabling independent delivery velocity across teams.",
-            "title": "OpenAPI-documented contracts"
-          },
-          {
-            "description": "Implemented circuit breaker patterns to serve cached or partial responses when upstream Humanity.com services were slow or unavailable, preserving frontend availability under backend instability.",
-            "title": "Graceful degradation design"
-          },
-          {
-            "description": "Optimized response serialization paths on data-heavy workforce management screens, reducing latency under real production traffic.",
-            "title": "Serialization profiling"
+            "description": "Decoupled frontend and backend releases through stable, versioned OpenAPI contracts.",
+            "title": ""
           }
         ],
-        "from": "Jan 2021",
+        "from": "Aug 2021",
         "location": "Remote",
-        "overview": "Designed and delivered the BFF layer for Humanity.com, an enterprise workforce management platform with hundreds of thousands of users. Aggregated multi-service calls into lean, UI-optimized payloads via Node.js and NestJS, with Redis caching and OpenAPI contracts decoupling frontend and backend release cycles.",
+        "overview": "",
         "position": "Software Engineer",
         "skills": [
           "Node.js",
@@ -167,36 +151,24 @@
           "Docker",
           "AWS"
         ],
-        "to": "Mar 2022",
+        "to": "Sep 2022",
         "websiteUrl": "https://apoddo.com/"
       },
       {
         "company": "Evermed",
         "contributions": [
           {
-            "description": "Decomposed a PHP/Symfony codebase into independently deployable AWS services with zero delivery gaps.",
-            "title": "Monolith migration"
+            "description": "Built automated video transcoding pipelines on AWS for a healthcare education platform, with idempotent retries, traceable state transitions and audit logging.",
+            "title": ""
           },
           {
-            "description": "Built end-to-end pipelines with idempotent retries and traceable state transitions at every stage.",
-            "title": "Transcoding automation"
-          },
-          {
-            "description": "Isolated orchestration logic from compute-heavy media workers for independent, targeted scaling.",
-            "title": "Control-plane separation"
-          },
-          {
-            "description": "Added lifecycle logging across the media asset flow for full compliance traceability end to end.",
-            "title": "Audit logging"
-          },
-          {
-            "description": "Codified AWS environment provisioning so rollouts, rollbacks, and recovery remained predictable and reviewable.",
-            "title": "Infrastructure as code"
+            "description": "Split orchestration from media workers, and wrote AWS infrastructure as code.",
+            "title": ""
           }
         ],
         "from": "Jan 2021",
         "location": "Remote",
-        "overview": "Led end-to-end migration of legacy PHP/Symfony monoliths to AWS microservices. Designed automated media processing pipelines for a healthcare education platform with secure, traceable video transcoding.",
+        "overview": "",
         "position": "Software Engineer",
         "skills": [
           "PHP",
@@ -214,30 +186,22 @@
         "company": "Pannovate",
         "contributions": [
           {
-            "description": "Modelled and built Syllo's NestJS service layer from scratch, defining bounded contexts, typed gRPC and Protocol Buffer contracts, and event-driven flows via Kafka and Redis.",
-            "title": "Syllo microservice architecture"
+            "description": "Maintained the Symfony 4 core-banking monolith and architected Syllo, its NestJS microservice rewrite: bounded contexts, typed gRPC and Protobuf contracts, event-driven flows over Kafka and Redis, deployed on Kubernetes.",
+            "title": ""
           },
           {
-            "description": "Enforced OAuth2 least-privilege boundaries and secure-by-default communication across every internal service boundary.",
-            "title": "Secure-by-default patterns"
+            "description": "Added double-entry style balance checks and idempotent handlers on money-moving service boundaries.",
+            "title": ""
           },
           {
-            "description": "Built Kubernetes deployment flows for Syllo services, tuned for resilience, rolling updates, and fast pod-level recovery at production scale.",
-            "title": "Kubernetes deployment topology"
-          },
-          {
-            "description": "Tutored backend engineers on Node.js, NestJS, TypeORM, and event-driven paradigms during the transition away from the Symfony monolith.",
-            "title": "Backend team mentorship"
-          },
-          {
-            "description": "Added double-entry style balance checks and idempotent handlers across money-moving service boundaries to prevent inconsistency under concurrent load.",
-            "title": "Transactional correctness safeguards"
+            "description": "Led a team of two engineers across backend and frontend, maintained the whole architecture, advised the DevOps engineer, and mentored the team in NestJS and event-driven design.",
+            "title": ""
           }
         ],
         "from": "Jan 2020",
         "location": "Remote",
-        "overview": "Led backend across two generations of LaunchPad, maintaining the Symfony 4 core-banking monolith while architecting Syllo, a full NestJS microservice rewrite. Mentored the team through the migration and established engineering standards as the platform scaled.",
-        "position": "Lead Back-end Developer",
+        "overview": "",
+        "position": "Lead Backend Developer",
         "skills": [
           "Node.js",
           "NestJS",
@@ -259,37 +223,24 @@
         "company": "Quantox Technology",
         "contributions": [
           {
-            "description": "Decomposed multiple legacy Symfony modules into cleaner service boundaries, achieving up to 90% resource usage reductions on high-load paths and resolving issues that had gone unaddressed for months or longer.",
-            "title": "Legacy refactoring"
+            "description": "Worked for Catena Media on AskGamblers.com (150,000+ registered users): split legacy Symfony modules into cleaner service boundaries and cut resource use by up to 90% on high-load paths.",
+            "title": ""
           },
           {
-            "description": "Hardened response times and cache strategies on SEO-sensitive public endpoints, sustaining performance under hundreds of thousands of monthly visits.",
-            "title": "SEO-critical delivery paths"
-          },
-          {
-            "description": "Profiled and resolved PostgreSQL and Redis bottlenecks in data-intensive review and bonus workflows running under sustained production traffic.",
-            "title": "Database and cache tuning"
-          },
-          {
-            "description": "Wired server-to-server tracking and commission reporting integrations with upstream operator APIs under strict regulatory constraints.",
-            "title": "Affiliate tracking integrations"
-          },
-          {
-            "description": "Maintained and extended backend services powering user-submitted casino reviews, moderation queues, and reputation scoring for 150,000+ registered users.",
-            "title": "Review aggregation services"
+            "description": "Removed PostgreSQL and Redis bottlenecks and tuned caching on SEO-critical public endpoints under hundreds of thousands of monthly visits.",
+            "title": ""
           }
         ],
         "from": "Nov 2018",
         "location": "Belgrade, Serbia",
-        "overview": "Backend engineer outsourced through Quantox to Catena Media on AskGamblers.com, an iGaming affiliate platform with 150,000+ registered users. Refactored legacy Symfony modules achieving resource usage reductions of up to 90%, and hardened performance of SEO-critical content delivery pipelines under sustained traffic load.",
-        "position": "Back-end Developer",
+        "overview": "",
+        "position": "Backend Developer",
         "skills": [
           "PHP",
           "Symfony",
-          "MongoDB",
+          "PostgreSQL",
           "Redis",
-          "MySQL",
-          "ElasticSearch",
+          "Elasticsearch",
           "JavaScript",
           "HTML",
           "CSS"
@@ -301,31 +252,15 @@
         "company": "Spark451",
         "contributions": [
           {
-            "description": "Modelled and implemented the Intelligent Admissions module inside Decision451, auto-evaluating admissions by processing hundreds of per-application properties, generating scores, and applying configured enrollment workflows automatically.",
-            "title": "Intelligent Admissions engine"
-          },
-          {
-            "description": "Built configurable, rule-based scoring pipelines in PHP/Laravel handling hundreds of thousands of student admissions across 20+ partner institutions.",
-            "title": "Admissions scoring pipelines"
-          },
-          {
-            "description": "Refactored and optimized reporting queries against large institutional datasets to sustain throughput during peak enrollment windows.",
-            "title": "Reporting query optimization"
-          },
-          {
-            "description": "Delivered reliable daily analytics exports to institutional decision-makers across concurrent enrollment cycles without missed runs.",
-            "title": "Scheduled batch jobs"
-          },
-          {
-            "description": "Refactored legacy PHP code and contributed to planning and development of new CRM modules, improving maintainability across the platform.",
-            "title": "Legacy refactoring"
+            "description": "Architected Intelligent Admissions, the Decision451 module of the Element451 higher-education CRM: rule-based scoring in PHP and Laravel over hundreds of properties per application, triggering enrollment workflows for 20+ partner institutions and hundreds of thousands of admissions.",
+            "title": ""
           }
         ],
         "from": "Sep 2017",
         "location": "Remote",
-        "overview": "Built modules and features on Element451, a higher-education CRM handling hundreds of thousands of student admissions. Most notable contribution: architecting Intelligent Admissions inside Decision451, which auto-evaluated each application by processing hundreds of candidate properties to generate scores and trigger the appropriate enrollment workflows.",
-        "position": "Back-end Developer",
-        "skills": ["PHP", "Laravel", "MongoDB", "JavaScript", "AWS", "Docker"],
+        "overview": "",
+        "position": "Backend Developer",
+        "skills": ["PHP", "Laravel", "JavaScript", "AWS", "Docker"],
         "to": "Jun 2018",
         "websiteUrl": "https://www.spark451.com/"
       },
@@ -333,30 +268,14 @@
         "company": "CreITive",
         "contributions": [
           {
-            "description": "Shipped backend implementations in PHP (Laravel and Symfony) and Node.js across multiple concurrent client engagements, adapting to varied project requirements without quality drop.",
-            "title": "Multi-stack backend delivery"
-          },
-          {
-            "description": "Built shared libraries covering recurring agency patterns: form handling, CMS scaffolding, API clients, eliminating duplicate effort across projects.",
-            "title": "Reusable backend modules"
-          },
-          {
-            "description": "Contributed to the agency's in-house custom deployment workflow and tooling, removing manual steps from release flows and reducing human-introduced errors.",
-            "title": "Build and deploy automation"
-          },
-          {
-            "description": "Standardized repeatable development environments and project templates across the agency's active portfolio for faster project kickoff.",
-            "title": "Project scaffolding"
-          },
-          {
-            "description": "Helped and mentored junior engineers on PHP patterns, deployment practices, and code quality to improve overall team output and delivery consistency.",
-            "title": "Colleague mentorship"
+            "description": "Built PHP (Laravel, Symfony) and Node.js backends for agency clients, shared libraries for recurring patterns, and parts of the in-house deployment tooling.",
+            "title": ""
           }
         ],
         "from": "Apr 2016",
         "location": "Belgrade, Serbia",
-        "overview": "Developed and maintained multiple backends for websites, web applications, APIs, and e-commerce systems across concurrent agency client projects. Contributed to an in-house deployment workflow and helped mentor colleagues, while delivering PHP (Laravel and Symfony), Node.js, and JavaScript implementations across a range of client engagements.",
-        "position": "Back-end Developer",
+        "overview": "",
+        "position": "Backend Developer",
         "skills": [
           "PHP",
           "Laravel",
@@ -374,30 +293,14 @@
         "company": "Freelance",
         "contributions": [
           {
-            "description": "Modelled and built a custom CMS in raw object-oriented PHP with AJAX and JavaScript, giving clients a centralized, maintainable admin interface tailored to their specific content workflows.",
-            "title": "Bespoke CMS from scratch"
-          },
-          {
-            "description": "Handled database design through frontend UI across every engagement, with no handoffs or external dependencies at any layer.",
-            "title": "Full-stack delivery"
-          },
-          {
-            "description": "Scoped backend designs to the actual problem: purposeful, maintainable, and built with room to grow without pre-emptive complexity.",
-            "title": "Lean architecture decisions"
-          },
-          {
-            "description": "Improved page load and API responsiveness through targeted server-side caching, query optimization, and asset delivery improvements.",
-            "title": "Performance tuning"
-          },
-          {
-            "description": "Managed requirements gathering, iterative delivery, and post-launch support directly with each client from first brief through production.",
-            "title": "End-to-end client engagement"
+            "description": "Built a custom CMS in object-oriented PHP and JavaScript, and full-stack websites for clients in Serbia.",
+            "title": ""
           }
         ],
         "from": "Feb 2015",
         "location": "Belgrade, Serbia",
-        "overview": "Delivered full-stack web solutions for clients in Serbia, including a bespoke CMS built from scratch in raw object-oriented PHP with AJAX-driven JavaScript, designed to give multiple clients a centralized content management surface without off-the-shelf overhead.",
-        "position": "Full Stack Web Developer",
+        "overview": "",
+        "position": "Full Stack Web Developer (freelance)",
         "skills": ["PHP", "Laravel", "JavaScript", "MySQL", "HTML", "CSS"],
         "to": "Apr 2016",
         "websiteUrl": ""
@@ -417,43 +320,148 @@
     ]
   },
   "projects": {
-    "items": []
+    "items": [
+      {
+        "contributions": [
+          {
+            "description": "AI voice agents, workflow automation and fleet optimization for trucking fleets, built mostly with Claude.",
+            "title": ""
+          }
+        ],
+        "from": "Sep 2025",
+        "name": "Safety Real Time AI agents",
+        "overview": "",
+        "skills": [],
+        "to": "",
+        "websiteUrl": ""
+      },
+      {
+        "contributions": [
+          {
+            "description": "NestJS services with gRPC, Protobuf, Kafka, Redis and Kubernetes.",
+            "title": ""
+          }
+        ],
+        "from": "Jan 2020",
+        "name": "Syllo",
+        "overview": "",
+        "skills": [],
+        "to": "Dec 2020",
+        "websiteUrl": ""
+      },
+      {
+        "contributions": [
+          {
+            "description": "One endpoint replaced 3 to 5 upstream calls, with Redis cache-aside and circuit breakers.",
+            "title": ""
+          }
+        ],
+        "from": "Aug 2021",
+        "name": "Humanity.com backend-for-frontend",
+        "overview": "",
+        "skills": [],
+        "to": "Sep 2022",
+        "websiteUrl": ""
+      },
+      {
+        "contributions": [
+          {
+            "description": "One public setup for three AI coding agents (Claude Code, Cursor, Opencode): 19 skills, 8 agents, and a Rust guard that enforces written rules on agent tool calls.",
+            "title": ""
+          }
+        ],
+        "from": "Oct 2026",
+        "name": "dotfiles",
+        "overview": "",
+        "skills": [],
+        "to": "Oct 2026",
+        "websiteUrl": "https://github.com/pavstev/dotfiles"
+      },
+      {
+        "contributions": [
+          {
+            "description": "Personal site on Astro, React and three.js, with an MCP server on a Cloudflare Worker that gives AI agents 8 tools to read my profile, experience, skills and projects.",
+            "title": ""
+          }
+        ],
+        "from": "Oct 2026",
+        "name": "stevanpavlovic.com",
+        "overview": "",
+        "skills": [],
+        "to": "Oct 2026",
+        "websiteUrl": "https://stevanpavlovic.com"
+      }
+    ]
   },
   "skills": {
     "items": [
       {
-        "keywords": ["Laravel", "NestJS", "Node.js", "Symfony"],
+        "keywords": [
+          "Claude Code",
+          "Agent harness engineering",
+          "Context engineering",
+          "Model Context Protocol (MCP)",
+          "Local LLM inference",
+          "LoRA fine-tuning",
+          "Model evaluation",
+          "MLX",
+          "transformers.js",
+          "AI voice agents",
+          "Workflow automation"
+        ],
+        "name": "AI engineering"
+      },
+      {
+        "keywords": ["TypeScript", "JavaScript", "Python", "PHP", "Rust"],
+        "name": "Languages"
+      },
+      {
+        "keywords": [
+          "Node.js",
+          "NestJS",
+          "Microservices",
+          "Event-driven architecture",
+          "GraphQL",
+          "gRPC",
+          "OpenAPI",
+          "Laravel",
+          "Symfony"
+        ],
         "name": "Backend"
       },
       {
         "keywords": [
-          "Apache Kafka",
-          "ElasticSearch",
-          "MongoDB",
-          "MySQL",
           "PostgreSQL",
-          "Redis"
+          "Redis",
+          "Apache Kafka",
+          "Elasticsearch",
+          "MySQL"
         ],
         "name": "Data"
       },
       {
-        "keywords": ["AWS", "Docker", "GitHub Actions", "Kubernetes"],
-        "name": "Infrastructure"
+        "keywords": [
+          "AWS",
+          "Docker",
+          "Kubernetes",
+          "GitHub Actions",
+          "Cloudflare Workers",
+          "Infrastructure as code",
+          "Observability",
+          "CI/CD"
+        ],
+        "name": "Cloud and DevOps"
       },
       {
-        "keywords": ["GraphQL", "gRPC", "OpenAPI"],
-        "name": "API"
-      },
-      {
-        "keywords": ["JavaScript", "PHP", "Swift", "TypeScript"],
-        "name": "Language"
-      },
-      {
-        "keywords": ["CSS", "HTML", "React", "Tailwind CSS"],
+        "keywords": ["React", "Next.js", "Astro", "Tailwind CSS"],
         "name": "Frontend"
+      },
+      {
+        "keywords": ["Technical leadership", "Mentoring"],
+        "name": "Leadership"
       }
     ]
   },
-  "summary": "Software engineer in Vienna. Eleven years of building event-driven services on Node.js, NestJS, Kafka, PostgreSQL and Redis across fintech, betting, healthtech and fleet logistics. I lead small teams from the first commit to zero-downtime production, and I care about correctness, clear interfaces and tools that stay out of the way.",
-  "updatedAt": "2026-10-15T16:30:00.000+02:00"
+  "summary": "Software engineer with 11 years in backend systems: Node.js, NestJS, TypeScript, Kafka, PostgreSQL and Redis, across fintech, betting, healthtech and fleet logistics. Part-time CTO of Safety Real Time, where since September 2025 I lead a team of five that builds AI voice agents and workflow automation for trucking fleets. I work with AI coding agents every day, and I care about evals, correctness and clear interfaces.",
+  "updatedAt": "2026-10-22T23:38:00.000+02:00"
 }
