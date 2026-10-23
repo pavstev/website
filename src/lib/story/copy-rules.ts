@@ -1,5 +1,4 @@
 import { type SkillCopy } from "../../data/dotfiles-story.ts";
-import { type StoryStep } from "./steps.ts";
 
 const numberWords: readonly string[] = [
   "zero",
@@ -39,7 +38,7 @@ const spelled: ReadonlyMap<string, number> = new Map([
 ]);
 
 const emDash = String.fromCodePoint(0x20_14);
-const titleSteps: ReadonlySet<StoryStep["id"]> = new Set(["harness", "hero"]);
+const titleSteps: ReadonlySet<string> = new Set(["harness", "hero"]);
 const lineWords = { max: 7, min: 3 };
 const noteSentences = { max: 4, min: 2 };
 const noteWordsMax = 55;
@@ -71,7 +70,21 @@ const numbersIn = (text: string): string[] => {
   return [...typed, ...spoken];
 };
 
-const textMessages = (field: string, text: string): string[] => {
+export interface CopyOptions {
+  numbers?: boolean;
+}
+
+export interface CopyStep {
+  id: string;
+  line: string;
+  note: string;
+}
+
+const textMessages = (
+  field: string,
+  text: string,
+  numbers = false
+): string[] => {
   const messages: string[] = [];
   if (text.includes(emDash)) {
     messages.push(`${field} has an em dash`);
@@ -88,8 +101,10 @@ const textMessages = (field: string, text: string): string[] => {
   if (cityPattern.test(text)) {
     messages.push(`${field} has a city name`);
   }
-  for (const token of numbersIn(text)) {
-    messages.push(`${field} has the number ${token}`);
+  if (!numbers) {
+    for (const token of numbersIn(text)) {
+      messages.push(`${field} has the number ${token}`);
+    }
   }
   return messages;
 };
@@ -113,10 +128,14 @@ export const lintSkill = (copy: SkillCopy): string[] => {
 
 export const lintFact = (line: string): string[] => textMessages("fact", line);
 
-export const lintCopy = (step: StoryStep): string[] => {
+export const lintCopy = (
+  step: CopyStep,
+  options: CopyOptions = {}
+): string[] => {
+  const numbers = options.numbers ?? false;
   const messages = [
-    ...textMessages("line", step.line),
-    ...textMessages("note", step.note),
+    ...textMessages("line", step.line, numbers),
+    ...textMessages("note", step.note, numbers),
   ];
   const words = countWords(step.line);
   if (

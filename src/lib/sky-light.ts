@@ -574,3 +574,40 @@ export const safeSkyTable = (input: TableInput): SkyTable | undefined => {
     return undefined;
   }
 };
+
+const mixColor = (
+  from: SkyTable["top"],
+  to: SkyTable["top"],
+  share: number
+): [number, number, number] => [
+  from[0] + (to[0] - from[0]) * share,
+  from[1] + (to[1] - from[1]) * share,
+  from[2] + (to[2] - from[2]) * share,
+];
+
+export const mixSkyTable = (
+  from: SkyTable,
+  to: SkyTable,
+  share: number,
+  into?: SkyTable
+): SkyTable => {
+  const t = clamp01(share);
+  const pixels =
+    into?.pixels.length === from.pixels.length
+      ? into.pixels
+      : new Uint8Array(from.pixels.length);
+  for (let i = 0; i < pixels.length; i++) {
+    const a = from.pixels[i] ?? 0;
+    const b = to.pixels[i] ?? 0;
+    pixels[i] = Math.round(a + (b - a) * t);
+  }
+  return {
+    lit: mixColor(from.lit, to.lit, t),
+    low: mixColor(from.low, to.low, t),
+    mid: mixColor(from.mid, to.mid, t),
+    pixels,
+    shade: mixColor(from.shade, to.shade, t),
+    sunColor: mixColor(from.sunColor, to.sunColor, t),
+    top: mixColor(from.top, to.top, t),
+  };
+};

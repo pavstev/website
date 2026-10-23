@@ -21,9 +21,11 @@ import {
   postInkTargets,
   sharedScores,
   skyRange,
+  storyInkTargets,
   tintLuminance,
   wantedInk,
 } from "./sky-ink.ts";
+import { skyStorySteps } from "./sky-story.ts";
 import { inkPalette } from "./theme.ts";
 
 const scored = (
@@ -185,6 +187,49 @@ describe("blog header targets", () => {
         ["[data-sky-header] .blog-header-meta", 4.5],
       ]
     );
+  });
+});
+
+describe("story targets", () => {
+  it("holds an eyebrow, a title and a note for each of the nine steps", () => {
+    assert.equal(storyInkTargets.length, 27);
+    assert.equal(storyInkTargets.length, skyStorySteps.length * 3);
+  });
+
+  it("lifts each title to 3 and each eyebrow and note to 4.5", () => {
+    for (const [slot, target] of storyInkTargets.entries())
+      assert.equal(target.need, slot % 3 === 1 ? 3 : 4.5);
+  });
+
+  it("reads the step eyebrow, line and note from the page markup", () => {
+    assert.equal(
+      storyInkTargets[0]?.paint,
+      '[data-sky-story] [data-step="hero"] .sky-step-eyebrow'
+    );
+    assert.equal(
+      storyInkTargets[1]?.paint,
+      '[data-sky-story] [data-step="hero"] .sky-step-line'
+    );
+    assert.equal(
+      storyInkTargets[2]?.paint,
+      '[data-sky-story] [data-step="hero"] .sky-step-note'
+    );
+    assert.equal(
+      storyInkTargets[26]?.probe,
+      '[data-sky-story] [data-step="outro"] .sky-step-note'
+    );
+  });
+
+  it("shares one ink group per step and never across steps", () => {
+    for (const [slot, target] of storyInkTargets.entries())
+      assert.equal(target.group, `step-${String(Math.floor(slot / 3))}`);
+    assert.equal(new Set(storyInkTargets.map((t) => t.group)).size, 9);
+  });
+
+  it("uses the soft ink for the eyebrow and note, the strong ink for the line", () => {
+    assert.equal(storyInkTargets[0]?.base, inkPalette.soft);
+    assert.equal(storyInkTargets[1]?.base, inkPalette.foreground);
+    assert.equal(storyInkTargets[2]?.base, inkPalette.soft);
   });
 });
 

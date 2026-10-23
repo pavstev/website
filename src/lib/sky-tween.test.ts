@@ -9,6 +9,7 @@ import {
   holdAt,
   linkMode,
   offScreen,
+  paintsSky,
   routeMode,
   tweenMs,
   tweenPose,
@@ -53,6 +54,36 @@ describe("linkMode", () => {
   it("gives the story page no sky, so no glide starts", () => {
     assert.equal(linkMode("/work/dotfiles"), undefined);
     assert.equal(linkMode("/work"), "blog");
+  });
+  it("names the website story its own sky", () => {
+    assert.equal(linkMode("/work/website"), "story");
+    assert.equal(linkMode("/work/website/"), "story");
+    assert.equal(linkMode("/work/website.html"), "story");
+    assert.equal(linkMode("/work/websites"), undefined);
+  });
+});
+
+describe("routeMode for the website story", () => {
+  it("gives the story path the story sky", () => {
+    assert.equal(routeMode("/work/website", false), "story");
+    assert.equal(routeMode("/work/website/", false), "story");
+    assert.equal(routeMode("/work/website.html", false), "story");
+  });
+  it("checks the story path before the blog marker", () => {
+    assert.equal(routeMode("/work/website", true), "story");
+  });
+  it("leaves the other pages as they were", () => {
+    assert.equal(routeMode("/work/dotfiles", false), "home");
+    assert.equal(routeMode("/work", false), "blog");
+    assert.equal(routeMode("/work/websites", false), "home");
+  });
+});
+
+describe("paintsSky", () => {
+  it("is true for the home and the story, false for the blog", () => {
+    assert.equal(paintsSky("home"), true);
+    assert.equal(paintsSky("story"), true);
+    assert.equal(paintsSky("blog"), false);
   });
 });
 

@@ -8,7 +8,7 @@ import { getContact, getRepos } from "@/lib/github";
 import { en } from "@/lib/i18n";
 import { personalData, plainName } from "@/lib/personal";
 import { productLlmsLines, products } from "@/lib/products";
-import { storyUrl } from "@/lib/story/metadata";
+import { skyStoryUrl, storyUrl } from "@/lib/story/metadata";
 
 export const GET: APIRoute = async () => {
   const [repos, contact, cv] = await Promise.all([
@@ -58,6 +58,7 @@ export const GET: APIRoute = async () => {
     `- [${en.llms.website}](${personalData.website})`,
     `- [${en.llms.aboutPage}](${personalData.website}/about)`,
     `- [${en.llms.workPage}](${personalData.website}/work)`,
+    `- [${en.llms.skyStoryPage}](${skyStoryUrl})`,
     `- [${en.llms.storyPage}](${storyUrl})`,
     `- [${en.llms.resume}](${personalData.website}/resume.pdf)`,
     `- [${en.llms.cvJson}](${personalData.website}/cv.json)`,

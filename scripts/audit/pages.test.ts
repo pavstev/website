@@ -12,4 +12,5 @@ it("classify maps paths to page kinds, first match wins", () => {
   assert.equal(classify("/about"), "other");
   assert.equal(classify("/work"), "other");
   assert.equal(classify("/work/dotfiles"), "story");
+  assert.equal(classify("/work/website"), "sky-story");
 });

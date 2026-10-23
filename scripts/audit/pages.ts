@@ -7,6 +7,7 @@ export const profileHosts = ["github.com", "linkedin.com"];
 
 const kinds: Array<[string, RegExp]> = [
   ["story", /^\/work\/dotfiles$/u],
+  ["sky-story", /^\/work\/website$/u],
   ["home", /^\/$/u],
   ["blog", /^\/blog$/u],
   ["listing", /^\/blog\/(?:tag|page)\//u],
@@ -17,6 +18,7 @@ export const expectedLd: Record<string, string[][]> = {
   blog: [["Blog", "CollectionPage"]],
   home: [["WebSite"], ["ProfilePage"], ["Person"]],
   post: [["BlogPosting", "Article"]],
+  "sky-story": [["WebPage"]],
   story: [["WebPage"]],
 };
 

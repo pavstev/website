@@ -1,0 +1,37 @@
+---
+import { type SkyStorySlide } from "@/data/website-story";
+import { posterStyle, type StoryPoster } from "@/lib/sky-story-poster";
+
+interface Props {
+  poster: StoryPoster;
+  slide: SkyStorySlide;
+}
+
+const { poster, slide } = Astro.props;
+const Heading = slide.id === "hero" ? "h1" : "h2";
+---
+
+<li
+  class="sky-step"
+  data-bright={poster.bright ? "" : undefined}
+  data-step={slide.id}
+  id={slide.id === "outro" ? "sky-story-end" : undefined}
+  style={`--sky-screens: ${String(slide.screens)}; ${posterStyle(poster)}`}
+>
+  <div class="sky-step-body">
+    <p class="sky-step-eyebrow type-chip text-sky">
+      <span
+        aria-hidden="true"
+        class="sky-step-lamp"
+        data-lamp={slide.lamp}
+      ></span>
+      {slide.clock !== undefined && (
+        <span class="sky-step-clock">{slide.clock}</span>
+      )}
+      <span class="sky-step-chapter">{slide.chapter}</span>
+    </p>
+    <Heading class="sky-step-line text-sky">{slide.line}</Heading>
+    <p class="sky-step-note text-sky">{slide.note}</p>
+    <slot />
+  </div>
+</li>

@@ -16,13 +16,29 @@ const maxProducts = 3;
 
 export const dotfilesStory = "/work/dotfiles";
 
+export const websiteStory = "/work/website";
+
+export interface StoryEntry {
+  key: StoryKey;
+  path: string;
+}
+
+export type StoryKey = "dotfiles" | "website";
+
+export const storyEntries: readonly StoryEntry[] = [
+  { key: "website", path: websiteStory },
+  { key: "dotfiles", path: dotfilesStory },
+];
+
 export const workConfig: WorkConfig = {
   productKeys: ["safety-real-time"],
   repos: {
     hidden: [],
     max: 12,
     pinned: ["website"],
-    stories: { dotfiles: dotfilesStory },
+    stories: Object.fromEntries(
+      storyEntries.map(({ key, path }) => [key, path])
+    ),
   },
 };
 

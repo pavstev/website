@@ -1,13 +1,14 @@
 import type { APIRoute } from "astro";
 
 import { storyMeta } from "@/data/dotfiles-stats";
+import { skyStoryMeta } from "@/data/website-story";
 import { showDrafts } from "@/lib/blog/build-env";
 import { absoluteUrl, shareImagePath } from "@/lib/blog/images";
 import { listPosts } from "@/lib/blog/posts";
 import { getCv } from "@/lib/cv";
 import { personalData } from "@/lib/personal";
 import { sitemapEntries, sitemapXml } from "@/lib/sitemap";
-import { dotfilesStory } from "@/lib/work";
+import { dotfilesStory, websiteStory } from "@/lib/work";
 
 export const GET: APIRoute = async () => {
   const { portrait, website } = personalData;
@@ -18,7 +19,10 @@ export const GET: APIRoute = async () => {
     imageFor: (slug) => absoluteUrl(shareImagePath(slug), website),
     posts: listPosts({ drafts: showDrafts() }),
     site: website,
-    stories: [{ path: dotfilesStory, updatedAt: storyMeta.updatedAt }],
+    stories: [
+      { path: websiteStory, updatedAt: skyStoryMeta.updatedAt },
+      { path: dotfilesStory, updatedAt: storyMeta.updatedAt },
+    ],
   });
   return new Response(sitemapXml(entries), {
     headers: { "Content-Type": "application/xml; charset=utf-8" },

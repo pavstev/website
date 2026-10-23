@@ -1,7 +1,9 @@
 import { isSitePage } from "./blog/slug.ts";
 import { clamp01, smoothstep } from "./math.ts";
+import { clean } from "./page-slide.ts";
 import { type SkyMode } from "./sky-preset.ts";
 import { type Spot } from "./sky-sun.ts";
+import { websiteStory } from "./work.ts";
 
 export interface Screen {
   height: number;
@@ -27,13 +29,21 @@ export const easeInOut = (value: number): number => {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 };
 
-export const routeMode = (pathname: string, marked: boolean): SkyMode =>
-  marked || isSitePage(pathname) ? "blog" : "home";
+const isStoryPage = (pathname: string): boolean =>
+  clean(pathname) === websiteStory;
+
+export const routeMode = (pathname: string, marked: boolean): SkyMode => {
+  if (isStoryPage(pathname)) return "story";
+  return marked || isSitePage(pathname) ? "blog" : "home";
+};
 
 export const linkMode = (pathname: string): SkyMode | undefined => {
   if (pathname === "/") return "home";
+  if (isStoryPage(pathname)) return "story";
   return isSitePage(pathname) ? "blog" : undefined;
 };
+
+export const paintsSky = (mode: SkyMode): boolean => mode !== "blog";
 
 export const tweenProgress = (elapsed: number, forward: boolean): number => {
   const share = clamp01(elapsed / tweenMs);

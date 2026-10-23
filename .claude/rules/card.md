@@ -150,11 +150,11 @@ Siblings: `motion.md`, `sky.md`. Colors and tokens are in `src/styles/tokens.css
 
 ## Work page
 
-- `work.astro` uses `BlogLayout`, `BlogHeader` and the blog column. Products come first (`#products`), then Open source projects (`#projects`).
+- `work.astro` uses `BlogLayout`, `BlogHeader` and the blog column. Products come first (`#products`), then Stories (`#stories`, `StoryStrip`, see `sky-story.md`), then Open source projects (`#projects`).
 - `src/lib/work.ts` is the one place to configure the page: `productKeys`, `repos.pinned`, `repos.hidden`, `repos.max`.
 - Cards and rows are glass cards (`.mat-panel`, `--glass-card`). Hover or focus turns the edge to the accent.
 - Product rows are one stretched link that opens in a new tab. Repo cards are not: only the name and the action keys are links, and the card body has no pointer. The CSS lives in `blog.css` (`.work-*`, `.repo-*`, `.logo-planet`).
-- A repo card ends with `.work-card-actions`: quiet accent text links `.work-card-action`, no keycap (owner pick 2026-10-22, the same family as the product domain link and "+N more"). Every card has "View on GitHub" with `lucide:arrow-up-right` (new tab, `aria-label` "View on GitHub: name"). A repo in `workConfig.repos.stories` (only dotfiles) adds "See the story" with `lucide:arrow-right` (same tab, `data-story-link`). Both use `--ui-accent`, turn ink with a 1px underline on hover or focus, carry a 44 px `::after` hit band like `.tech-more`, and are `LinkText` in forced colors. They wrap when the card is narrow.
+- A repo card ends with `.work-card-actions`: quiet accent text links `.work-card-action`, no keycap (owner pick 2026-10-22, the same family as the product domain link and "+N more"). Every card has "View on GitHub" with `lucide:arrow-up-right` (new tab, `aria-label` "View on GitHub: name"). A repo in `workConfig.repos.stories` (dotfiles and website, from `storyEntries`) adds "See the story" with `lucide:arrow-right` (same tab, `data-story-link`). Both use `--ui-accent`, turn ink with a 1px underline on hover or focus, carry a 44 px `::after` hit band like `.tech-more`, and are `LinkText` in forced colors. They wrap when the card is narrow.
 - The card box and name morph into the story sheet and title under `html[data-story-morph]` (`story-morph.ts`, set only for `/work` to a story path and back). Keep `data-story-path` on the card.
 - The edge lights up on `:focus-within` or while a link inside is hovered.
 - No featured card. All repo cards have the same width and weight. The column count comes from `@container work` ranges (1 column, then 2 from 30.75rem, 3 from 46.5rem, 4 from 62.25rem), the same widths a 15rem `auto-fill` grid would use. Rows size to their content; cards in one row share its height.

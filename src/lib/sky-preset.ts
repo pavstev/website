@@ -1,1 +1,1 @@
-export type SkyMode = "blog" | "home";
+export type SkyMode = "blog" | "home" | "story";

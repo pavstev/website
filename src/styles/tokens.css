@@ -160,6 +160,21 @@
     --work-all-mark: var(--muted-foreground);
     --work-all-ink-lit: var(--ui-accent);
     --work-all-glow: color-mix(in srgb, var(--ui-accent) 40%, transparent);
+    --work-mark-day-hi: var(--sky-blue);
+    --work-mark-day-lo: var(--sky-gold);
+    --work-mark-night-hi: var(--night-950);
+    --work-mark-night-lo: color-mix(
+      in srgb,
+      var(--sky-violet) 45%,
+      var(--night-900)
+    );
+    --work-mark-sun: var(--sky-gold);
+    --work-mark-moon: var(--night-100);
+    --work-mark-ground: var(--night-950);
+    --work-mark-star: var(--white);
+    --work-mark-paper: var(--night-900);
+    --work-mark-line: var(--story-line);
+    --work-mark-accent: var(--story-accent);
     --glass-lift: 0 14px 34px -16px rgb(0 0 0 / 0.55);
     --pill-shine: rgb(255 255 255 / 0.4);
     --pill-shine-day: rgb(255 255 255 / 0.85);

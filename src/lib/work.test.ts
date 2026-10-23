@@ -70,9 +70,10 @@ describe("pickRepos", () => {
 });
 
 describe("storyPath", () => {
-  it("gives the dotfiles story path and nothing for other repos", () => {
+  it("gives each story path and nothing for other repos", () => {
     assert.equal(storyPath("dotfiles"), "/work/dotfiles");
-    assert.equal(storyPath("website"), undefined);
+    assert.equal(storyPath("website"), "/work/website");
+    assert.equal(storyPath("hirista"), undefined);
   });
   it("reads the picks it is given", () => {
     const picks = {

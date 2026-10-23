@@ -16,7 +16,8 @@ import { blogUrl } from "./blog/metadata.ts";
 import { modifiedOf } from "./blog/modified.ts";
 import { en } from "./i18n.ts";
 import { personalData, plainName } from "./personal.ts";
-import { storyUrl } from "./story/metadata.ts";
+import { skyStoryUrl, storyUrl } from "./story/metadata.ts";
+import { type StoryKey } from "./work.ts";
 
 const home = personalData.website;
 const site = `${home}/`;
@@ -216,30 +217,59 @@ export const postGraph = (
   ],
 });
 
-export const storyPageNode = (updatedAt: string): WebPage => ({
-  "@id": `${storyUrl}#webpage`,
-  "@type": "WebPage",
-  dateModified: updatedAt,
-  description: en.story.metaDescription,
-  inLanguage: "en",
-  isPartOf: { "@id": websiteId },
-  mainEntity: { "@id": `${site}#repo-dotfiles` },
-  name: en.story.metaTitle,
-  url: storyUrl,
-});
+const storyPages = {
+  dotfiles: {
+    crumb: en.story.crumb,
+    description: en.story.metaDescription,
+    name: en.story.metaTitle,
+    repo: "dotfiles",
+    url: storyUrl,
+  },
+  website: {
+    crumb: en.skyStory.crumb,
+    description: en.skyStory.metaDescription,
+    name: en.skyStory.metaTitle,
+    repo: "website",
+    url: skyStoryUrl,
+  },
+} as const;
 
-export const storyGraph = (updatedAt: string): Graph => ({
-  "@context": "https://schema.org",
-  "@graph": [
-    websiteNode,
-    storyPageNode(updatedAt),
-    breadcrumbs(`${storyUrl}#breadcrumb`, [
-      homeCrumb,
-      { name: en.work.heading, url: `${home}/work` },
-      { name: en.story.crumb, url: storyUrl },
-    ]),
-  ],
-});
+export const storyPageNode = (
+  updatedAt: string,
+  story: StoryKey = "dotfiles"
+): WebPage => {
+  const page = storyPages[story];
+  return {
+    "@id": `${page.url}#webpage`,
+    "@type": "WebPage",
+    dateModified: updatedAt,
+    description: page.description,
+    inLanguage: "en",
+    isPartOf: { "@id": websiteId },
+    mainEntity: { "@id": `${site}#repo-${page.repo}` },
+    name: page.name,
+    url: page.url,
+  };
+};
+
+export const storyGraph = (
+  updatedAt: string,
+  story: StoryKey = "dotfiles"
+): Graph => {
+  const page = storyPages[story];
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      websiteNode,
+      storyPageNode(updatedAt, story),
+      breadcrumbs(`${page.url}#breadcrumb`, [
+        homeCrumb,
+        { name: en.work.heading, url: `${home}/work` },
+        { name: page.crumb, url: page.url },
+      ]),
+    ],
+  };
+};
 
 export const serializeJsonLd = (data: Graph): string =>
   JSON.stringify(data).replaceAll("<", String.raw`\u003c`);

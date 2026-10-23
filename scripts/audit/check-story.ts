@@ -366,7 +366,9 @@ const runEntry = async (base: string): Promise<Result> => {
     async ({ errors, page }) => {
       const sky = page.locator("canvas[data-space]");
       if ((await sky.count()) === 0) say.fail("/work has no sky canvas");
-      await page.locator("a[data-story-link]").first().click();
+      await page
+        .locator('[data-story-path="/work/dotfiles"] a[data-story-link]')
+        .click();
       try {
         await page.waitForURL("**/work/dotfiles", { timeout: 15_000 });
       } catch {

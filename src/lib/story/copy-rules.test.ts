@@ -90,6 +90,20 @@ describe("lintCopy", () => {
     );
     assert.match(lint({ line: "Tested on 3 systems." })[0] ?? "", /number 3/u);
   });
+  it("allows typed and spelled numbers when asked", () => {
+    const note = "It fills 40 by 24 colors. It is about ten kilometers.";
+    assert.deepEqual(lintCopy({ ...base, note }, { numbers: true }), []);
+    assert.equal(lint({ note }).length, 3);
+  });
+  it("still checks every other rule when numbers are allowed", () => {
+    const messages = lintCopy(
+      { ...base, note: "Why 40 colors? It is in Vienna." },
+      { numbers: true }
+    );
+    assert.equal(messages.length, 2);
+    assert.match(messages.join(" "), /question/u);
+    assert.match(messages.join(" "), /city name/u);
+  });
   it("lets one stand as a word", () => {
     assert.deepEqual(lint({ note: "One line installs it. It is plain." }), []);
   });

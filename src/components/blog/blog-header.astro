@@ -11,12 +11,13 @@ import { personalData } from "@/lib/personal";
 
 interface Props {
   crumbs: Crumb[];
+  header?: boolean;
   slug?: string;
   title: string;
   toc?: boolean;
 }
 
-const { crumbs, slug, title, toc = false } = Astro.props;
+const { crumbs, header = true, slug, title, toc = false } = Astro.props;
 const others = navOthers(Astro.url.pathname, blogLive());
 ---
 
@@ -106,12 +107,14 @@ const others = navOthers(Astro.url.pathname, blogLive());
   </div>
 </div>
 <BarSpy client:load />
-<header class="blog-header" data-sky-header="">
-  <p class="blog-header-meta type-chip text-sky">
-    <slot name="meta" />
-  </p>
-  <h1 class="blog-title text-sky" id="blog-title">
-    {title}
-  </h1>
-  <slot />
-</header>
+{header && (
+  <header class="blog-header" data-sky-header="">
+    <p class="blog-header-meta type-chip text-sky">
+      <slot name="meta" />
+    </p>
+    <h1 class="blog-title text-sky" id="blog-title">
+      {title}
+    </h1>
+    <slot />
+  </header>
+)}

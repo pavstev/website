@@ -159,6 +159,7 @@ export const en = {
     projects: "Open-source projects",
     resume: "Résumé (PDF): full work history",
     skills: "Skills",
+    skyStoryPage: "A real sky, painted: a scroll story of the website repo",
     storyPage: "How my dotfiles work: a scroll story of the dotfiles repo",
     topics: "Topics",
     website: "Website: contact card",
@@ -341,6 +342,17 @@ export const en = {
     whereFailed:
       "Your place is not known yet. Drag the globe or use your location.",
   },
+  skyStory: {
+    backToWork: "Back to work",
+    crumb: "website",
+    metaDescription:
+      "How this site paints a real sky: the sun, the light, the clouds, a rain front and the moon, played over one day as you scroll.",
+    metaTitle: "A real sky, painted",
+    onGithub: "View on GitHub",
+    openSky: "Open the live sky",
+    skipToEnd: "Skip to the end of the story",
+    stepsLabel: "One day of sky, hour by hour",
+  },
   story: {
     backToWork: "Back to work",
     chapters: {
@@ -387,5 +399,18 @@ export const en = {
     metaTitle: "Work · Stevan Pavlović",
     productsHeading: "Products",
     projectsHeading: "Open source projects",
+    stories: {
+      dotfiles: {
+        line: "One repo sets up a machine and keeps my AI coding agents on one set of rules.",
+        title: "How my dotfiles work",
+      },
+      eyebrow: "Scroll story · {repo}",
+      read: "Read the story",
+      website: {
+        line: "Scroll through one day of the sky behind this site: the sun, the light, the clouds, a rain front and the moon.",
+        title: "A real sky, painted",
+      },
+    },
+    storiesHeading: "Stories",
   },
 } as const;

@@ -1,4 +1,5 @@
 import { clamp01 } from "./math.ts";
+import { skyStorySteps } from "./sky-story.ts";
 import { hexBytes, inkPalette } from "./theme.ts";
 
 export interface InkTarget {
@@ -69,6 +70,30 @@ const headerTargets = (): readonly InkTarget[] => [
 ];
 
 export const postInkTargets: readonly InkTarget[] = headerTargets();
+
+const stepTarget = (
+  id: string,
+  index: number,
+  part: "eyebrow" | "line" | "note"
+): InkTarget => {
+  const selector = `[data-sky-story] [data-step="${id}"] .sky-step-${part}`;
+  return {
+    base: part === "line" ? inkPalette.foreground : inkPalette.soft,
+    group: `step-${String(index)}`,
+    index: 0,
+    need: part === "line" ? 3 : 4.5,
+    paint: selector,
+    probe: selector,
+  };
+};
+
+export const storyInkTargets: readonly InkTarget[] = skyStorySteps.flatMap(
+  (id, index) => [
+    stepTarget(id, index, "eyebrow"),
+    stepTarget(id, index, "line"),
+    stepTarget(id, index, "note"),
+  ]
+);
 
 const linear = (byte: number): number => {
   const value = byte / 255;

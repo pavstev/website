@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-A contact card over a painted WebGL sky, a `/work` page, an `/about` page, a blog of MDX posts and a 404.
+A contact card over a painted WebGL sky, a `/work` page with two scroll stories, an `/about` page, a blog of MDX posts and a 404.
 The sky shows the real sun and moon and the live weather. Vienna is the default place.
 A visitor can pick their own place by location or on a night globe.
 A Cloudflare Worker serves `/mcp` and `/where`.
@@ -8,7 +8,7 @@ A Cloudflare Worker serves `/mcp` and `/where`.
 This repo inherits the harness (commits, secrets, workflow, writing) from `~/dotfiles`.
 This file holds project facts only. Long notes are in `docs/architecture.md`.
 Path rules in `.claude/rules/` load when you touch matching files:
-`card.md` (card, footer, /work), `motion.md` (motion switch, dock, privacy), `sky.md` (sky, shaders, globe), `blog.md` (posts, blog code), `story.md` (the `/work/dotfiles` story).
+`card.md` (card, footer, /work), `motion.md` (motion switch, dock, privacy), `sky.md` (sky, shaders, globe), `blog.md` (posts, blog code), `story.md` (the `/work/dotfiles` story), `sky-story.md` (the `/work/website` sky story).
 
 ## Stack
 
@@ -102,7 +102,7 @@ pnpm profile:build  # build the GitHub profile files into ./.profile-out
 ## Layout
 
 ```text
-src/pages/         index, work, work/dotfiles, about, 404, blog/, build.json, cv.json, llms.txt, resume.pdf, sitemap.xml
+src/pages/         index, work, work/dotfiles, work/website, about, 404, blog/, build.json, cv.json, llms.txt, resume.pdf, sitemap.xml
 src/layouts/       Base.astro (card), BlogLayout.astro (night pages)
 src/components/    card parts, site-footer.astro, sky-controls, sky-globe, space-background.astro, ui/
 src/components/blog/  bar, header, TOC, mdx-components.tsx, charts, diagrams

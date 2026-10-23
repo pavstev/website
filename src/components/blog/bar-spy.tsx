@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { type CondenseRange, useCondense } from "@/components/ui/sticky-header";
 
 const barSelector = "[data-blog-bar]";
-const titleSelector = "[data-sky-header] .blog-title";
+const titleSelector = "[data-sky-header] .blog-title, [data-sky-story] h1";
 const travel = 96;
 const props = ["--glass", "--condense"] as const;
 

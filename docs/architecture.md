@@ -132,6 +132,7 @@ Project facts by area. Read the bullet for the area you change. Rules for design
 - Work lists products and repos from `work.ts`, `products.ts` and the build-time `getRepos`. See `card.md`.
 - About is `content/about/index.mdx` (the `about` collection: `title` and `description` only). It renders through the same MDX pipeline as a post. Figures and charts are not supported there.
 - `/work/dotfiles` is a scroll story about the dotfiles repo, entered from its `/work` card. It uses `BlogLayout` with `sky={false}`: no sky, the night footer and the dock stay. The facts come from GitHub at build (`dotfiles-facts.ts`), the copy from `src/data/dotfiles-story.ts`. A pure geometry draws an exploded isometric blueprint, once as build-time SVG posters and once live in one WebGL2 context that follows the scroll. Rules are in `.claude/rules/story.md`.
+- `/work/website` is a scroll story about this site's sky. It keeps the painted sky on (`BlogLayout` default) and the sky runs in `story` mode: scroll picks the instant of one real day and a scripted weather path, the sun and moon stay real. Copy is in `src/data/website-story.ts`. Rules are in `.claude/rules/sky-story.md`.
 
 ## Prefetch
 

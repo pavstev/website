@@ -124,7 +124,7 @@ Siblings: `sky.md`, `card.md`, `motion.md`. The full design is in the Blog bulle
 - Scroll bars never show at rest (`scroll-fade.ts`).
 - Page slides: About, Work, Blog slide left or right by menu order (`page-slide.ts`). Home and the 404 do not slide.
 - On a fine pointer `html` has `overscroll-behavior-y: none`.
-- Every night page gets its header from `BlogHeader`. A new page adds no header rule of its own.
+- Every night page gets its header from `BlogHeader`. A new page adds no header rule of its own. Only the sky story passes `header={false}`: its hero h1 is the page title.
 
 ## Checks
 

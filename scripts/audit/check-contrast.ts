@@ -10,7 +10,9 @@ import {
   inkTargets,
   luminance,
   postInkTargets,
+  storyInkTargets,
 } from "../../src/lib/sky-ink.ts";
+import { skyStorySteps } from "../../src/lib/sky-story.ts";
 import {
   newResult,
   note,
@@ -81,7 +83,7 @@ interface Row {
 
 type SizeName = keyof typeof sizes;
 
-type Spot = "end" | "mid" | "top";
+type Spot = "end" | "mid" | "top" | `step-${string}`;
 
 type Time = keyof typeof skyTimes;
 
@@ -118,9 +120,26 @@ const glyphCss = (paints: readonly string[]): string => {
 
 const scrollSpot = (spot: Spot): void => {
   const max = document.documentElement.scrollHeight - innerHeight;
-  const half = max / 2;
-  const tops = { end: max, mid: half, top: 0 };
-  scrollTo({ behavior: "instant", top: tops[spot] });
+  if (spot.startsWith("step-")) {
+    const body = document.querySelector(
+      `.sky-step[data-step="${CSS.escape(spot.slice(5))}"] .sky-step-body`
+    );
+    if (!body) return;
+    const bar = document.querySelector("[data-blog-bar]");
+    const box = body.getBoundingClientRect();
+    const barBottom = bar?.getBoundingClientRect().bottom ?? 0;
+    const shift = Math.min(
+      box.bottom - 0.88 * innerHeight,
+      box.top - barBottom
+    );
+    scrollTo({ behavior: "instant", top: Math.min(max, scrollY + shift) });
+    return;
+  }
+  const tops = { end: max, mid: max / 2, top: 0 };
+  scrollTo({
+    behavior: "instant",
+    top: spot === "end" || spot === "mid" ? tops[spot] : tops.top,
+  });
 };
 
 const findTargets = (
@@ -243,7 +262,19 @@ const analyse = async ({
 const plansFor = (audit: Context): Plan[] => {
   const home = pageOf(audit.pages, "home");
   const post = pageOf(audit.pages, "post");
+  const story = pageOf(audit.pages, "sky-story");
   const plans: Plan[] = [];
+  if (story)
+    plans.push({
+      page: story,
+      sizes: [
+        ["phone", skyStorySteps.map((step): Spot => `step-${step}`)],
+        ["laptop", skyStorySteps.map((step): Spot => `step-${step}`)],
+      ],
+      states: ["partly"],
+      targets: storyInkTargets,
+      times: ["day"],
+    });
   if (home)
     plans.push(
       audit.fast

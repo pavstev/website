@@ -5,6 +5,7 @@ import { luminance } from "./sky-ink.ts";
 import {
   lutCols,
   lutRows,
+  mixSkyTable,
   safeSkyTable,
   type ScatterOutput,
   scatterSky,
@@ -191,6 +192,42 @@ describe("warmSkyTable", () => {
     const before = skyTable(tableInput);
     warmSkyTable();
     assert.deepEqual(skyTable(tableInput).pixels, before.pixels);
+  });
+});
+
+describe("mixSkyTable", () => {
+  const dawn = skyTable(tableInput);
+  const noon = skyTable({
+    ...tableInput,
+    sun: { altitude: 40, azimuth: 180 },
+  });
+
+  it("returns the first table at 0 and the second at 1", () => {
+    assert.deepEqual(mixSkyTable(dawn, noon, 0), dawn);
+    assert.deepEqual(mixSkyTable(dawn, noon, 1), noon);
+  });
+
+  it("clamps the share to 0..1", () => {
+    assert.deepEqual(mixSkyTable(dawn, noon, -3), dawn);
+    assert.deepEqual(mixSkyTable(dawn, noon, 7), noon);
+  });
+
+  it("lands between the tables at one half", () => {
+    const half = mixSkyTable(dawn, noon, 0.5);
+    for (let i = 0; i < half.pixels.length; i++) {
+      const a = dawn.pixels[i] ?? 0;
+      const b = noon.pixels[i] ?? 0;
+      assert.ok(Math.abs((half.pixels[i] ?? 0) - (a + b) / 2) <= 0.5);
+    }
+    assert.ok(Math.abs(half.top[0] - (dawn.top[0] + noon.top[0]) / 2) < 1e-12);
+  });
+
+  it("writes into the given table without allocating a new buffer", () => {
+    const into = skyTable(tableInput);
+    const { pixels } = into;
+    const out = mixSkyTable(dawn, noon, 1, into);
+    assert.equal(out.pixels, pixels);
+    assert.deepEqual(out.pixels, noon.pixels);
   });
 });
 

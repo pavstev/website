@@ -840,12 +840,14 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   }
 }
 
-:root[data-story-morph] .work-card[data-story-path] {
+:root[data-story-morph] .work-card[data-story-path="/work/dotfiles"] {
   view-transition-name: story-dotfiles;
   view-transition-class: morph;
 }
 
-:root[data-story-morph] .work-card[data-story-path] .story-morph-name,
+:root[data-story-morph]
+  .work-card[data-story-path="/work/dotfiles"]
+  .story-morph-name,
 :root[data-story-morph] .story-step[data-step="hero"] .story-morph-name {
   view-transition-name: story-dotfiles-name;
   view-transition-class: morph;
@@ -888,6 +890,193 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
 :root[data-story-morph="in"]::view-transition-new(story-dotfiles),
 :root[data-story-morph="out"]::view-transition-old(story-dotfiles) {
   object-fit: cover;
+}
+
+.work-stories {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+  width: 100%;
+  text-align: start;
+}
+
+@container work (min-width: 46.5rem) {
+  .work-stories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.work-story {
+  --mark: 3.5rem;
+  display: grid;
+  grid-template-columns: var(--mark) minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  column-gap: var(--sp-4);
+  row-gap: var(--sp-3);
+  align-items: start;
+}
+
+.work-story-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.work-story-eyebrow {
+  color: var(--ui-ink-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.06em;
+  line-height: 1.25;
+}
+
+.work-story-go {
+  display: inline-flex;
+  grid-column: 2;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--ui-accent);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.work-mark {
+  display: block;
+  inline-size: var(--mark);
+  block-size: var(--mark);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--glass-card-edge);
+}
+
+.work-mark svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+}
+
+.work-mark-day-hi {
+  stop-color: var(--work-mark-day-hi);
+}
+
+.work-mark-day-lo {
+  stop-color: var(--work-mark-day-lo);
+}
+
+.work-mark-night-hi {
+  stop-color: var(--work-mark-night-hi);
+}
+
+.work-mark-night-lo {
+  stop-color: var(--work-mark-night-lo);
+}
+
+.work-mark-night {
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+
+.work-mark-star {
+  fill: var(--work-mark-star);
+}
+
+.work-mark-sun {
+  fill: var(--work-mark-sun);
+}
+
+.work-mark-moon {
+  fill: var(--work-mark-moon);
+}
+
+.work-mark-moon-shade {
+  fill: var(--work-mark-night-lo);
+}
+
+.work-mark-ground {
+  fill: var(--work-mark-ground);
+}
+
+.work-mark-wheel {
+  transform-origin: 24px 32px;
+  transition: rotate 900ms cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+.work-mark-paper {
+  fill: var(--work-mark-paper);
+}
+
+.work-mark-slab {
+  fill: none;
+  stroke: var(--work-mark-line);
+  stroke-dasharray: 0.5 2;
+  stroke-linecap: round;
+  stroke-width: 1.2;
+  transition: translate 500ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.work-mark-slab-top {
+  stroke: var(--work-mark-accent);
+  stroke-dasharray: none;
+}
+
+.work-mark-lead {
+  stroke: var(--work-mark-line);
+  stroke-dasharray: 0.5 2;
+  stroke-linecap: round;
+}
+
+.work-story:has(.post-row-link:is(:hover, :focus-visible)) .work-mark-wheel {
+  rotate: 180deg;
+}
+
+.work-story:has(.post-row-link:is(:hover, :focus-visible)) .work-mark-night {
+  opacity: 1;
+}
+
+.work-story:has(.post-row-link:is(:hover, :focus-visible))
+  .work-mark-slab:nth-child(2) {
+  translate: 0 -2px;
+}
+
+.work-story:has(.post-row-link:is(:hover, :focus-visible))
+  .work-mark-slab:nth-child(3) {
+  translate: 0 -4px;
+}
+
+.work-story:has(.post-row-link:is(:hover, :focus-visible)) .work-story-go {
+  color: var(--ui-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-mark-wheel,
+  .work-mark-night,
+  .work-mark-slab {
+    transition: none;
+  }
+}
+
+:root[data-motion-paused]
+  :is(.work-mark-wheel, .work-mark-night, .work-mark-slab) {
+  transition: none;
+}
+
+@media (forced-colors: active) {
+  .work-story-go {
+    color: LinkText;
+  }
+}
+
+@container work (max-width: 16em) {
+  .work-story {
+    --mark: 2.5rem;
+    column-gap: var(--sp-3);
+  }
 }
 
 .work-product {

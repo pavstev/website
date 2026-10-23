@@ -85,7 +85,7 @@ Siblings: `card.md`, `motion.md`. Weather and place facts are in `docs/architect
 
 ## Modes
 
-- The mode comes from the route (`routeMode`). `home` is the live sky of the chosen place.
+- The mode comes from the route (`routeMode`). `home` is the live sky of the chosen place. `story` is `/work/website`: the painted sky of one fixed day, driven by scroll (`sky-story.md`).
 - `blog` covers the blog, `/work`, `/about` and the 404. A page with `[data-blog]` is `blog`.
 - `blog` is a fixed painted night: night palette, stars, grain, the fixed calm clouds (`nightWeather`) and corona rays from the top-left corner (`coronaSpot`).
 - `blog` has no sun, moon, rain, snow or fog. It never reads the live weather, the place, `?weather=` or the preview.

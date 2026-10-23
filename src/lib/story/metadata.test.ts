@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { listMetadata } from "../blog/metadata.ts";
 import { storyGraph, storyPageNode } from "../structured-data.ts";
-import { storyMetadata, storyUrl } from "./metadata.ts";
+import {
+  skyStoryMetadata,
+  skyStoryUrl,
+  storyMetadata,
+  storyUrl,
+} from "./metadata.ts";
 
 describe("storyMetadata", () => {
   const metadata = storyMetadata();
@@ -54,6 +60,59 @@ describe("storyPageNode", () => {
       "@id": "https://stevanpavlovic.com/#website",
     });
     assert.equal(node.url, storyUrl);
+  });
+});
+
+describe("skyStoryMetadata", () => {
+  const metadata = skyStoryMetadata();
+
+  it("points the canonical and the og url at the sky story", () => {
+    assert.equal(
+      metadata.alternates.canonical,
+      "https://stevanpavlovic.com/work/website"
+    );
+    assert.equal(metadata.openGraph.url, skyStoryUrl);
+  });
+
+  it("has the plain title, a short description and no city name", () => {
+    assert.equal(metadata.title, "A real sky, painted");
+    assert.ok(metadata.description.length >= 70);
+    assert.ok(metadata.description.length <= 160);
+    assert.doesNotMatch(JSON.stringify(metadata), /vienna|wien/i);
+  });
+
+  it("keeps the default share image", () => {
+    assert.notEqual(metadata.openGraph.images[0]?.url, "/og-dotfiles.jpg");
+    assert.equal(
+      metadata.openGraph.images[0]?.url,
+      listMetadata({ description: "x", title: "x", url: skyStoryUrl }).openGraph
+        .images[0]?.url
+    );
+  });
+});
+
+describe("the sky story graph", () => {
+  it("is a WebPage about the website repo node", () => {
+    const node = storyPageNode("2026-10-24", "website");
+    assert.equal(node.url, skyStoryUrl);
+    assert.equal(node.name, "A real sky, painted");
+    assert.equal(node.dateModified, "2026-10-24");
+    const entity = node.mainEntity;
+    assert.ok(
+      typeof entity === "object" &&
+        entity !== null &&
+        "@id" in entity &&
+        typeof entity["@id"] === "string" &&
+        entity["@id"].endsWith("#repo-website")
+    );
+  });
+
+  it("ends the breadcrumb on the website crumb", () => {
+    const graph = storyGraph("2026-10-24", "website")["@graph"];
+    const text = JSON.stringify(graph);
+    assert.match(text, /"name":"website"/u);
+    assert.match(text, /\/work\/website/u);
+    assert.doesNotMatch(text, /vienna|wien/iu);
   });
 });
 

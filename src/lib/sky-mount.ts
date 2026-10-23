@@ -37,6 +37,7 @@ import {
   postInkTargets,
   sharedScores,
   skyRange,
+  storyInkTargets,
 } from "@/lib/sky-ink";
 import {
   lutCols,
@@ -59,6 +60,7 @@ import {
   placeEvent,
   type SkyPlace,
   startPlace,
+  viennaPlace,
 } from "@/lib/sky-place";
 import { type SkyMode } from "@/lib/sky-preset";
 import {
@@ -72,6 +74,18 @@ import {
 import { createSkyProbe, type ProbeBox, type SkyProbe } from "@/lib/sky-probe";
 import { meteorStart, rayView } from "@/lib/sky-rays";
 import { skyVertexShader } from "@/lib/sky-shader";
+import { storyInstant, storyWeather } from "@/lib/sky-story";
+import {
+  createTableGrid,
+  gridChapter,
+  gridKeeps,
+  type GridView,
+} from "@/lib/sky-story-grid";
+import {
+  setStoryChapter,
+  storyChapter,
+  storyEvent,
+} from "@/lib/sky-story-store";
 import {
   crawlerInstant,
   instantOverride,
@@ -86,12 +100,14 @@ import {
   holdAt,
   leaveMs,
   linkMode,
+  paintsSky,
   routeMode,
   tweenMs,
   tweenPose,
   tweenProgress,
 } from "@/lib/sky-tween";
 import { type CardRect, type ViewSize } from "@/lib/sky-view";
+import { storyMorph } from "@/lib/story-morph";
 import { createUniformSink, type UniformSink } from "@/lib/uniform-sink";
 import {
   skyWeather,
@@ -147,14 +163,18 @@ type Ready = Record<ProgramName, boolean>;
 
 type SpaceState = "fallback" | "paused" | "running" | "static";
 
+type TableKind = "home" | "story";
+
 interface Tween {
   clickAt: number;
   fade: number;
   forward: boolean;
+  morph: boolean;
   shift: number;
   startAt: number | undefined;
   sun: Spot | undefined;
   swapped: boolean;
+  to: SkyMode;
 }
 
 const softwareLevel: QualityLevel = { clouds: false, scale: 0.2 };
@@ -177,6 +197,7 @@ const fadeHeadPx: [number, number] = [224, 352];
 const timeWrapHighSeconds = 86_400;
 const timeWrapLowSeconds = 1024;
 const probeEveryMs = 1000;
+const storyProbeMs = 250;
 const scrollQuietMs = 180;
 const probeReadMs = 34;
 const probeSlackMs = 5;
@@ -203,6 +224,7 @@ const positionSlot = 0;
 const modeTargets: Readonly<Record<SkyMode, readonly InkTarget[]>> = {
   blog: postInkTargets,
   home: inkTargets,
+  story: [...postInkTargets, ...storyInkTargets],
 };
 
 const viewCss = (): number => rayView(window.innerHeight);
@@ -338,8 +360,18 @@ const startSky = (
     });
   let place: SkyPlace = startPlace(search, crawler);
   let weatherReported: SkyWeather | undefined;
+  let tween: Tween | undefined;
+  const skyKind = (): TableKind => {
+    if (tween && !tween.swapped && tween.to !== "blog")
+      return tween.to === "story" ? "story" : "home";
+    return mode === "story" ? "story" : "home";
+  };
+  const skyPlace = (): SkyPlace =>
+    skyKind() === "story" ? viennaPlace : place;
   const goalWeather = (): SkyWeather =>
-    weatherGoal(mode === "home", weatherFixed(), weatherReported);
+    skyKind() === "story"
+      ? storyWeather(storyChapter())
+      : weatherGoal(mode === "home", weatherFixed(), weatherReported);
   let weatherTarget: SkyWeather = goalWeather();
   const weatherShown: SkyWeather = { ...weatherTarget };
   let weatherEasing = false;
@@ -360,6 +392,16 @@ const startSky = (
   let tableTried = false;
   let tableWarm = false;
   let afterTable: (() => void) | undefined;
+  let tableKind: TableKind | undefined =
+    mode === "blog" ? undefined : skyKind();
+  let homeTable: SkyTable | undefined;
+  const grid = createTableGrid();
+  let gridView: GridView | undefined;
+  let cancelGrid: (() => void) | undefined;
+  let storyStale = false;
+  let stillStep = -1;
+  let firmInk = false;
+  let restTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
   const lutTexture = gl.createTexture();
   let moonMapState: MoonMapState = "idle";
   let moonTexture: null | WebGLTexture = null;
@@ -390,8 +432,9 @@ const startSky = (
     usable: false,
     width: 0,
   };
-  const goalInstant = (): number =>
-    crawler
+  const goalInstant = (): number => {
+    if (skyKind() === "story") return storyInstant(storyChapter());
+    return crawler
       ? crawlerInstant
       : resolveInstant(
           previewState().time,
@@ -399,8 +442,8 @@ const startSky = (
           Date.now(),
           placeZone(place)
         );
+  };
   const instant = (): number => goalInstant() + timeLag;
-  let tween: Tween | undefined;
   let holding = false;
   let driftFrame = 0;
   let previewFrame = 0;
@@ -481,7 +524,8 @@ const startSky = (
   };
 
   const paintReady = (): boolean => ready.paint && ready.cloud;
-  const paintsHome = (): boolean => mode === "home" && paintReady();
+  const paintsNow = (): boolean => paintsSky(mode) && paintReady();
+  const storyNow = (): boolean => skyKind() === "story";
 
   const sceneView = (): ViewSize => ({
     ...screenView(),
@@ -491,18 +535,32 @@ const startSky = (
   const uploadTable = (data?: SkyTable): void => {
     gl.activeTexture(gl.TEXTURE0 + lutUnit);
     gl.bindTexture(gl.TEXTURE_2D, lutTexture);
-    clampedTexture(gl, gl.LINEAR);
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      lutCols,
-      lutRows,
-      0,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      data?.pixels ?? null
-    );
+    if (data) {
+      gl.texSubImage2D(
+        gl.TEXTURE_2D,
+        0,
+        0,
+        0,
+        lutCols,
+        lutRows,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        data.pixels
+      );
+    } else {
+      clampedTexture(gl, gl.LINEAR);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        lutCols,
+        lutRows,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        null
+      );
+    }
     gl.activeTexture(gl.TEXTURE0);
   };
 
@@ -517,15 +575,14 @@ const startSky = (
     moonMapState = "ready";
   };
 
+  const wantsMoonMap = (): boolean =>
+    moonMapState === "idle" &&
+    scene !== undefined &&
+    (scene.moon[3] > 0 || storyNow());
+
   const loadMoonMap = async (): Promise<void> => {
     cancelMoonMap = undefined;
-    if (
-      moonMapState !== "idle" ||
-      mode !== "home" ||
-      !scene ||
-      scene.moon[3] <= 0
-    )
-      return;
+    if (!paintsSky(mode) || !wantsMoonMap()) return;
     moonMapState = "loading";
     const image = new Image();
     image.src = moonMapUrl;
@@ -537,18 +594,11 @@ const startSky = (
     }
     if (disposed) return;
     uploadMoonMap(image);
-    if (mode === "home" && !rafId) drawStill();
+    if (!rafId && paintsSky(mode)) drawStill();
   };
 
   const queueMoonMap = (): void => {
-    if (
-      !firstFramed ||
-      cancelMoonMap ||
-      moonMapState !== "idle" ||
-      !scene ||
-      scene.moon[3] <= 0
-    )
-      return;
+    if (!firstFramed || cancelMoonMap || !wantsMoonMap()) return;
     cancelMoonMap = scheduleIdle(() => loadMoonMap(), {
       fallbackMs: 200,
       timeout: 2000,
@@ -557,8 +607,8 @@ const startSky = (
 
   const refreshHome = (): void => {
     shownAt = instant();
-    scene = paintScene(shownAt, sceneView(), weatherShown, place, table);
-    if (!crawler) {
+    scene = paintScene(shownAt, sceneView(), weatherShown, skyPlace(), table);
+    if (!crawler && !storyNow()) {
       publishSpot(
         skySpot(scene.moon, scene.sun, window.innerHeight, window.innerWidth)
       );
@@ -567,44 +617,91 @@ const startSky = (
 
   const refreshScene = (): void => {
     night = nightScene(sceneView(), weatherShown);
-    if (mode === "home") refreshHome();
+    if (paintsSky(mode)) refreshHome();
     sceneAt = performance.now();
     sceneVersion += 1;
     cloudsDirty = true;
     queueMoonMap();
   };
 
+  const gridSize = (): GridView => {
+    const view = sceneView();
+    return { height: view.height, width: view.width };
+  };
+
+  const buildGrid = (): void => {
+    cancelGrid = undefined;
+    if (mode !== "story" || !table || !paintReady()) return;
+    gridView ??= gridSize();
+    const index = grid.next(storyChapter());
+    if (index === undefined) return;
+    const at = gridChapter(index);
+    const weather = storyWeather(at);
+    const instantAt = storyInstant(at);
+    const built = safeSkyTable(
+      tableInput(instantAt, gridView, weather, viennaPlace)
+    );
+    if (built) grid.put(index, built);
+    else grid.skip(index);
+    cancelGrid = scheduleIdle(buildGrid, { fallbackMs: 30, timeout: 400 });
+  };
+
+  const queueGrid = (): void => {
+    if (
+      still ||
+      calm ||
+      cancelGrid ||
+      mode !== "story" ||
+      !table ||
+      !paintReady()
+    )
+      return;
+    cancelGrid = scheduleIdle(buildGrid, { fallbackMs: 30, timeout: 400 });
+  };
+
+  const keepGrid = (): void => {
+    const now = gridSize();
+    if (gridView && !gridKeeps(gridView, now)) grid.reset();
+    if (!gridView || grid.filled() === 0) gridView = now;
+    queueGrid();
+  };
+
   const buildTable = (): void => {
     cancelTable = undefined;
-    if (!tableWarm && mode === "home" && paintReady()) {
+    if (!tableWarm && paintsNow()) {
       tableWarm = true;
       warmSkyTable();
       cancelTable = scheduleIdle(buildTable, { fallbackMs: 0, timeout: 200 });
       return;
     }
     try {
-      if (mode === "home" && paintReady()) {
+      if (paintsNow()) {
         tableTried = true;
         const built = safeSkyTable(
-          tableInput(instant(), sceneView(), weatherShown, place)
+          tableInput(instant(), sceneView(), weatherShown, skyPlace())
         );
         if (built) {
           table = built;
           uploadTable(built);
         }
         refreshScene();
+        if (mode === "story") {
+          firmInk = true;
+          probedAt = -Infinity;
+          keepGrid();
+        }
       }
     } finally {
       tableWait = false;
       const first = afterTable;
       afterTable = undefined;
       if (first) first();
-      else if (mode === "home" && !rafId) drawStill();
+      else if (!rafId && paintsSky(mode)) drawStill();
     }
   };
 
   const queueTable = (): void => {
-    if (cancelTable || mode !== "home" || !paintReady()) return;
+    if (cancelTable || !paintsNow()) return;
     if (!table && !tableTried) tableWait = true;
     cancelTable = scheduleIdle(
       buildTable,
@@ -617,8 +714,33 @@ const startSky = (
   const markHome = (): void => {
     drift?.toggleAttribute(
       "data-sky-home",
-      paintReady() && (mode === "home" || tween !== undefined)
+      paintReady() && (paintsSky(mode) || tween !== undefined)
     );
+  };
+
+  const switchTableTo = (kind: TableKind): void => {
+    if (tableKind === kind) return;
+    if (tableKind === "home") homeTable = table;
+    tableKind = kind;
+    cancelGrid?.();
+    cancelGrid = undefined;
+    grid.reset();
+    gridView = undefined;
+    table = kind === "home" ? homeTable : undefined;
+    tableTried = table !== undefined;
+    if (table) uploadTable(table);
+  };
+
+  const buildStoryTable = (): void => {
+    switchTableTo("story");
+    const at = storyInstant(storyChapter());
+    const built = safeSkyTable(
+      tableInput(at, sceneView(), weatherShown, viennaPlace)
+    );
+    if (!built) return;
+    table = built;
+    tableTried = true;
+    uploadTable(built);
   };
 
   const easeWeather = (dt: number): boolean => {
@@ -669,7 +791,7 @@ const startSky = (
   };
 
   const liveDrift = (): [number, number] => {
-    if (!drift || paintsHome()) return [0, 0];
+    if (!drift || paintsNow()) return [0, 0];
     const flagged = Object.hasOwn(drift.dataset, "skyHome");
     delete drift.dataset["skyHome"];
     delete drift.dataset["skyTween"];
@@ -725,7 +847,7 @@ const startSky = (
 
   const frameScene = (now: number): PaintScene | undefined => {
     if (tween) return shot(now, tween);
-    return mode === "home" ? scene : night;
+    return paintsSky(mode) ? scene : night;
   };
 
   const retarget = (): void => {
@@ -857,12 +979,13 @@ const startSky = (
   const drawInk = (now: number, goal = false): void => {
     if (!probe || probing || tween) return;
     if (!goal && now < quietUntil) return;
+    const story = mode === "story";
     if (
       !goal &&
-      (now - scrolledAt < scrollQuietMs ||
-        (rafId && now - probedAt < probeEveryMs))
+      ((!story && now - scrolledAt < scrollQuietMs) ||
+        (rafId && now - probedAt < (story ? storyProbeMs : probeEveryMs)))
     ) {
-      if (!rafId)
+      if (!rafId && !story)
         wakeProbe(
           Math.max(
             scrollQuietMs - (now - scrolledAt),
@@ -1268,10 +1391,32 @@ const startSky = (
     paintUniforms.set("u_mapOn", moonMapState === "ready" ? 1 : 0);
     paintUniforms.set("u_moonFace", moonLayer ? 0 : 1);
     fly(skyMs);
-    drawInk(now);
+    drawInk(now, firmInk || (mode === "story" && !rafId));
+    firmInk = false;
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (data.moon[3] > 0) drawMoonLayer(data, cloudFrame, cloudsOn);
     else hideMoonLayer();
+  };
+
+  const atRest = (): void => {
+    restTimer = undefined;
+    if (mode === "story") queueTable();
+  };
+
+  const applyStory = (chapter = storyChapter()): void => {
+    storyStale = false;
+    weatherTarget = storyWeather(chapter);
+    snapWeather();
+    const blended = grid.at(chapter);
+    if (blended) {
+      table = blended;
+      uploadTable(blended);
+    }
+    refreshHome();
+    drawn = scene;
+    sceneVersion += 1;
+    if (restTimer !== undefined) globalThis.clearTimeout(restTimer);
+    restTimer = globalThis.setTimeout(atRest, scrollQuietMs);
   };
 
   const frame = (now: number, dt = frameDt): void => {
@@ -1291,6 +1436,7 @@ const startSky = (
       refreshScene();
       queueTable();
     }
+    if (storyStale && mode === "story") applyStory();
     const data = frameScene(now);
     if (rafId) {
       const step = Math.min(dt, 100);
@@ -1367,7 +1513,7 @@ const startSky = (
       setState("static");
       return;
     }
-    if (holding) {
+    if (holding && mode !== "story") {
       calmClouds();
       setState("paused");
       return;
@@ -1401,22 +1547,35 @@ const startSky = (
   ): void => {
     finish();
     const next = linkMode(event.to.pathname);
-    if (next === undefined || next === mode || !canGlide()) return;
+    if (next === "story" && mode !== "story") setStoryChapter(0);
+    if (
+      next === undefined ||
+      next === mode ||
+      (paintsSky(next) && paintsSky(mode)) ||
+      !canGlide()
+    )
+      return;
+    const morph =
+      storyMorph(globalThis.location.pathname, event.to.pathname) !== undefined;
     const [shift, fade] = liveDrift();
     clearArrive();
     const started: Tween = {
       clickAt: performance.now(),
       fade,
       forward: next === "blog",
+      morph,
       shift,
       startAt: undefined,
-      sun: sunSpot(instant(), screenView(), place),
+      sun: undefined,
       swapped: false,
+      to: next,
     };
     tween = started;
+    if (next === "story") enterStory();
+    started.sun = sunSpot(instant(), screenView(), skyPlace());
     if (!started.forward) refreshHome();
     markHome();
-    root.dataset["skyLeave"] = "";
+    if (!morph) root.dataset["skyLeave"] = "";
     sync();
     event.signal.addEventListener(
       "abort",
@@ -1425,6 +1584,7 @@ const startSky = (
       },
       { once: true }
     );
+    if (morph) return;
     const load = event.loader;
     event.loader = async (): Promise<void> => {
       await Promise.all([
@@ -1434,32 +1594,57 @@ const startSky = (
     };
   };
 
+  const snapStoryWeather = (): void => {
+    weatherTarget = storyWeather(storyChapter());
+    snapWeather();
+  };
+
+  const enterStory = (): void => {
+    stillStep = -1;
+    snapStoryWeather();
+    timeLag = 0;
+    buildStoryTable();
+  };
+
   const onRouteSwap = (): void => {
     const next = pageMode();
+    const left = mode;
     if (next !== mode) {
       mode = next;
       retarget();
     }
     const active = tween;
-    const goal = goalWeather();
-    if (goal !== weatherTarget) {
-      weatherTarget = goal;
-      weatherEasing = true;
+    if (mode === "story") {
+      if (tableKind === "story") snapStoryWeather();
+      else enterStory();
+      firmInk = true;
+      refreshScene();
+      keepGrid();
+    } else {
+      if (mode === "home") switchTableTo("home");
+      const goal = goalWeather();
+      if (goal !== weatherTarget) {
+        weatherTarget = goal;
+        weatherEasing = true;
+      }
+      if (!rafId) snapWeather();
+      if (mode === "home") {
+        if (!active?.forward) refreshScene();
+        queueTable();
+        if (!weatherReported && Date.now() - weatherAt >= weatherStaleMs)
+          void refreshWeather();
+      } else refreshScene();
     }
-    if (!rafId) snapWeather();
-    if (mode === "home") {
-      if (!active?.forward) refreshScene();
-      queueTable();
-      if (!weatherReported && Date.now() - weatherAt >= weatherStaleMs)
-        void refreshWeather();
-    } else refreshScene();
     if (!active) {
       if (scriptDrift) placeDrift();
+      if ((left === "story") !== (mode === "story")) sync();
       if (!rafId) drawStill();
       return;
     }
     active.swapped = true;
-    if (!active.forward) active.sun = sunSpot(instant(), screenView(), place);
+    if (!active.forward)
+      active.sun = sunSpot(instant(), screenView(), skyPlace());
+    if (active.morph) return;
     delete root.dataset["skyLeave"];
     const delay = arriveDelay(performance.now() - active.clickAt);
     root.style.setProperty("--sky-arrive-delay", `${String(delay)}ms`);
@@ -1476,7 +1661,12 @@ const startSky = (
     clientY: number,
     share: number
   ): void => {
-    if (!rafId || !currentLevel()?.clouds || (!tween && paintsHome())) return;
+    if (
+      !rafId ||
+      !currentLevel()?.clouds ||
+      (!tween && mode === "home" && paintReady())
+    )
+      return;
     const view = viewCss();
     const x = clientX / view;
     const y = (window.innerHeight - clientY) / view;
@@ -1530,7 +1720,7 @@ const startSky = (
   const placeDrift = (): void => {
     driftFrame = 0;
     if (!drift) return;
-    const home = paintsHome();
+    const home = paintsNow();
     const moving =
       !calm &&
       !home &&
@@ -1553,7 +1743,7 @@ const startSky = (
     scrolledAt = performance.now();
     if (scriptDrift && !driftFrame)
       driftFrame = globalThis.requestAnimationFrame(placeDrift);
-    if (!rafId && !holding) wakeProbe(scrollQuietMs);
+    if (!rafId && (!holding || mode === "story")) wakeProbe(scrollQuietMs);
   };
   const onShift = (event: TransitionEvent): void => {
     if (
@@ -1569,7 +1759,7 @@ const startSky = (
     const deep = !entry.isIntersecting;
     if (deep === holding) return;
     holding = deep;
-    sync();
+    if (mode !== "story") sync();
   };
   const onBlur = (): void => {
     if (tween) return;
@@ -1592,6 +1782,7 @@ const startSky = (
     weatherAt = -Infinity;
     weatherReported = undefined;
     setLiveWeather(undefined);
+    if (skyKind() === "story") return;
     weatherTarget = goalWeather();
     weatherEaseMs = weatherEaseSeconds * 1000;
     weatherEasing = true;
@@ -1633,6 +1824,18 @@ const startSky = (
       previewFrame = globalThis.requestAnimationFrame(applyPreview);
   };
 
+  const onStory = (): void => {
+    if (mode !== "story") return;
+    const step = still || calm ? Math.round(storyChapter()) : undefined;
+    if (step !== undefined && step === stillStep) return;
+    stillStep = step ?? -1;
+    markActive();
+    storyStale = true;
+    if (rafId) return;
+    applyStory(step);
+    if (!tween) drawStill();
+  };
+
   const begin = (): void => {
     frame(performance.now());
     firstFramed = true;
@@ -1653,6 +1856,7 @@ const startSky = (
   document.addEventListener("visibilitychange", onVisible);
   globalThis.addEventListener(placeEvent, onPlace);
   globalThis.addEventListener(previewEvent, onPreview);
+  document.addEventListener(storyEvent, onStory);
 
   const sizeWatch = new ResizeObserver(onResize);
   sizeWatch.observe(canvas);
@@ -1695,6 +1899,9 @@ const startSky = (
     document.removeEventListener("visibilitychange", onVisible);
     globalThis.removeEventListener(placeEvent, onPlace);
     globalThis.removeEventListener(previewEvent, onPreview);
+    document.removeEventListener(storyEvent, onStory);
+    cancelGrid?.();
+    if (restTimer !== undefined) globalThis.clearTimeout(restTimer);
     if (previewFrame) globalThis.cancelAnimationFrame(previewFrame);
     if (drift) delete drift.dataset["skyHome"];
     gl.deleteFramebuffer(cloudTarget.buffer);
