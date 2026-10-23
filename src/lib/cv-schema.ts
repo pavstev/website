@@ -34,6 +34,7 @@ const basicsSchema = z
     phone: text(),
     pictureUrl: text(),
     websiteUrl: text(),
+    workRights: text(),
   })
   .prefault({});
 

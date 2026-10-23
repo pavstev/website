@@ -20,6 +20,7 @@ export const servedCv = {
     phone: "",
     pictureUrl: "",
     websiteUrl: "",
+    workRights: "",
   },
   education: { items: [] },
   experience: {

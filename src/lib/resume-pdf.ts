@@ -190,6 +190,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.05,
     lineHeight: 1.2,
   },
+  workRights: { color: subtle, marginTop: 2 * unit },
 });
 
 const monthNames = [
@@ -362,7 +363,17 @@ const identity = (basics: Cv["basics"]): ReactElement => {
     { style: { marginTop: 3 } },
     ...contactRows(basics)
   );
-  return createElement(View, { style: { flex: 1 } }, name, headline, contacts);
+  const workRights = basics.workRights
+    ? createElement(Text, { style: styles.workRights }, basics.workRights)
+    : null;
+  return createElement(
+    View,
+    { style: { flex: 1 } },
+    name,
+    headline,
+    contacts,
+    workRights
+  );
 };
 
 const header = (cv: Cv, photo: null | Uint8Array): ReactElement =>

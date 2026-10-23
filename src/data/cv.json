@@ -8,7 +8,8 @@
     "name": "Stevan Pavlović",
     "phone": "",
     "pictureUrl": "https://stevanpavlovic.com/stevan-pavlovic.jpeg",
-    "websiteUrl": "https://stevanpavlovic.com"
+    "websiteUrl": "https://stevanpavlovic.com",
+    "workRights": "Serbian citizen, currently in Vienna. Open to B2B contracts or EU visa sponsorship."
   },
   "education": {
     "items": [
@@ -463,5 +464,5 @@
     ]
   },
   "summary": "Software engineer with 11 years in backend systems: Node.js, NestJS, TypeScript, Kafka, PostgreSQL and Redis, across fintech, betting, healthtech and fleet logistics. Part-time CTO of Safety Real Time, where since September 2025 I lead a team of five that builds AI voice agents and workflow automation for trucking fleets. I work with AI coding agents every day, and I care about evals, correctness and clear interfaces.",
-  "updatedAt": "2026-10-22T23:38:00.000+02:00"
+  "updatedAt": "2026-10-23T06:05:00.000+02:00"
 }

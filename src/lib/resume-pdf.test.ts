@@ -141,6 +141,24 @@ describe("renderResumePdf", () => {
     assert.ok(textOf(pdf).includes("ć"));
   });
 
+  it("prints the work-rights line under the contacts", async () => {
+    const text = textOf(
+      await renderResumePdf(
+        withCv({
+          basics: {
+            githubHandle: "ada",
+            name: "Ada Example",
+            workRights: "Open to B2B contracts.",
+          },
+        }),
+        null
+      )
+    );
+    const contacts = text.indexOf(`${en.resumePdf.githubPrefix}ada`);
+    assert.ok(contacts !== -1);
+    assert.ok(text.indexOf("Open to B2B contracts.") > contacts);
+  });
+
   it("renders with no photo", async () => {
     const pdf = await renderResumePdf(sample, null);
     assert.equal(latin1(pdf).slice(0, 5), "%PDF-");
