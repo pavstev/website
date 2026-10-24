@@ -1,20 +1,30 @@
-import { reducedMotionQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
+import { createNameTear } from "@/lib/name-tear";
 
 const introEndMs = 5600;
 const firstGapMs = 2400;
 const everyMs = 8000;
 const restAfterMs = 30_000;
-const burstMs = 720;
+const burstMs = 600;
 const wakeEvents = ["pointermove", "pointerdown", "keydown", "wheel", "scroll"];
 
 export const initNameGlitch = (name: HTMLElement): (() => void) => {
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
+  const tear = createNameTear(name);
   let lastInput = performance.now();
+  let viewportWidth = globalThis.innerWidth;
   let tick: ReturnType<typeof setTimeout> | undefined;
   let settle: ReturnType<typeof setTimeout> | undefined;
 
   const wake = (): void => {
     lastInput = performance.now();
+  };
+
+  const onResize = (): void => {
+    if (globalThis.innerWidth === viewportWidth) return;
+    viewportWidth = globalThis.innerWidth;
+    globalThis.clearTimeout(settle);
+    delete name.dataset["glitch"];
   };
 
   const fire = (): void => {
@@ -25,17 +35,19 @@ export const initNameGlitch = (name: HTMLElement): (() => void) => {
       performance.now() - lastInput > restAfterMs
     )
       return;
-    name.dataset.tuned = "";
-    name.dataset.glitch = "";
+    name.dataset["tuned"] = "";
+    name.dataset["glitch"] = "";
+    tear.play();
     globalThis.clearTimeout(settle);
     settle = globalThis.setTimeout(() => {
-      delete name.dataset.glitch;
+      delete name.dataset["glitch"];
     }, burstMs);
   };
 
   for (const type of wakeEvents) {
     globalThis.addEventListener(type, wake, { passive: true });
   }
+  globalThis.addEventListener("resize", onResize, { passive: true });
   tick = globalThis.setTimeout(
     fire,
     Math.max(firstGapMs, introEndMs + firstGapMs - performance.now())
@@ -45,8 +57,10 @@ export const initNameGlitch = (name: HTMLElement): (() => void) => {
     for (const type of wakeEvents) {
       globalThis.removeEventListener(type, wake);
     }
+    globalThis.removeEventListener("resize", onResize);
     globalThis.clearTimeout(tick);
     globalThis.clearTimeout(settle);
-    delete name.dataset.glitch;
+    tear.dispose();
+    delete name.dataset["glitch"];
   };
 };

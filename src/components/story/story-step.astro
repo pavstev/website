@@ -1,0 +1,55 @@
+---
+import { en } from "@/lib/i18n";
+import { type StoryStep } from "@/lib/story/steps";
+import { fillText } from "@/lib/template";
+
+interface Props {
+  names?: ReadonlyArray<{ label: string; value: string }>;
+  step: StoryStep;
+  stops?: number | undefined;
+}
+
+const { names = [], step, stops } = Astro.props;
+const { strip } = step;
+const isCommand = strip !== undefined && "command" in strip;
+const stripHead =
+  strip === undefined ? "" : "command" in strip ? strip.command : strip.title;
+const stripLabel = isCommand
+  ? fillText(en.story.stripLabel, { command: stripHead })
+  : stripHead;
+const stripHeadClass = isCommand ? "story-strip-command" : "story-strip-title";
+---
+
+<li
+  class="story-step"
+  data-screens={String(step.screens)}
+  data-step={step.id}
+  data-stops={stops === undefined ? undefined : String(stops)}
+  style={stops === undefined ? undefined : `--story-stops: ${String(stops)}`}
+  id={step.id === "outro" ? "story-end" : undefined}
+>
+  <div class="story-body scroll-text">
+    <p class="story-eyebrow">{step.eyebrow}</p>
+    <h2 class="story-line">
+      <span class="story-morph-name">{step.line}</span>
+    </h2>
+    <p class="story-note">{step.note}</p>
+    {names.length > 0 && (
+      <ul class="story-names">
+        {names.map((item) => (
+          <li class="story-name">
+            <span class="story-name-value">{item.value}</span>
+            <span class="story-name-label">{item.label}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+    {strip !== undefined && <pre
+      aria-label={stripLabel}
+      class="story-strip"
+      role="region"
+      tabindex="0"
+    ><span class={stripHeadClass}>{stripHead}</span>{strip.output.map((row) => <span class="story-strip-row">{row}</span>)}</pre>}
+    <slot />
+  </div>
+</li>

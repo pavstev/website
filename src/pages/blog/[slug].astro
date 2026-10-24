@@ -1,0 +1,84 @@
+---
+import { getImage } from "astro:assets";
+import { getEntry, render } from "astro:content";
+
+import { mdxComponents } from "@/components/blog/mdx-components";
+import PostBody from "@/components/blog/post-body.astro";
+import PostFigure from "@/components/blog/post-figure.astro";
+import { findCover } from "@/components/blog/post-images";
+import PostHeader from "@/components/blog/post-header.astro";
+import PostNav from "@/components/blog/post-nav.astro";
+import BlogLayout from "@/layouts/BlogLayout.astro";
+import { showDrafts } from "@/lib/blog/build-env";
+import { cropSpecs } from "@/lib/blog/images";
+import { postMetadata, postShareImage } from "@/lib/blog/metadata";
+import { findPost, listPosts } from "@/lib/blog/posts";
+import { tocOf } from "@/lib/blog/toc";
+import { personalData } from "@/lib/personal";
+import { postGraph, serializeJsonLd } from "@/lib/structured-data";
+
+export const getStaticPaths = (): Array<{ params: { slug: string } }> =>
+  listPosts({ drafts: showDrafts() }).map((post) => ({
+    params: { slug: post.slug },
+  }));
+
+const { slug = "" } = Astro.params;
+const drafts = { drafts: showDrafts() };
+const source = findPost(slug, drafts);
+const entry = await getEntry("blog", slug);
+if (source === undefined || entry === undefined) {
+  throw new Error(`blog: no post ${slug}`);
+}
+const { Content, headings } = await render(entry);
+const toc = tocOf(headings);
+const posts = listPosts(drafts);
+const index = posts.findIndex((post) => post.slug === slug);
+const image = postShareImage(source.meta);
+const cover = await findCover(slug);
+const crops =
+  cover === undefined
+    ? []
+    : await Promise.all(
+        cropSpecs.map(async ({ height, width }) => {
+          const crop = await getImage({
+            fit: "cover",
+            format: "webp",
+            height,
+            src: cover.image,
+            width,
+          });
+          return {
+            height,
+            url: `${personalData.website}${crop.src}`,
+            width,
+          };
+        })
+      );
+const jsonLd = serializeJsonLd(
+  postGraph(source.meta, [
+    {
+      height: image.height,
+      url: `${personalData.website}${image.url}`,
+      width: image.width,
+    },
+    ...crops,
+  ])
+);
+const components = {
+  ...mdxComponents({ dir: source.dir, slug }),
+  Figure: PostFigure,
+};
+---
+
+<BlogLayout metadata={postMetadata(source.meta)}>
+  <script type="application/ld+json" is:inline set:html={jsonLd} />
+  <main class="blog-main post-main" id="main-content">
+    <PostHeader post={source.meta} toc={toc.length > 0} />
+    <div class="post-page">
+      <PostBody toc={toc}>
+        <Content components={components} />
+      </PostBody>
+      <PostNav newer={posts[index - 1]} older={posts[index + 1]} />
+    </div>
+  </main>
+</BlogLayout>

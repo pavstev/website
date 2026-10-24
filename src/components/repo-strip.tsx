@@ -1,157 +1,184 @@
 import type { CSSProperties, ReactElement } from "react";
 
-import type { Repo } from "@/lib/github";
+import type { Repo, RepoLanguage } from "@/lib/github";
 
+import { CompoundText } from "@/components/compound-text";
 import { Icon } from "@/components/icon";
+import { RepoTags } from "@/components/repo-tags";
+import { StoryMark } from "@/components/story-mark";
 import { en } from "@/lib/i18n";
-import { personalData } from "@/lib/personal";
-import { languageColor } from "@/lib/theme";
+import { fillText } from "@/lib/template";
+import { type StoryEntry, storyEntry } from "@/lib/work";
 
-const plural = new Intl.PluralRules("en");
+const mainLanguage = (repo: Repo): RepoLanguage | undefined =>
+  repo.languages.find(({ name }) => name === repo.language) ??
+  repo.languages[0] ??
+  (repo.language ? { name: repo.language } : undefined);
 
-const newTabId = "repos-new-tab";
-const firstRow = 2;
-
-const planetKinds = ["ring", "bands", "moon", "craters"] as const;
-const countLabel = (count: number): string =>
-  (plural.select(count) === "one"
-    ? en.repos.countOne
-    : en.repos.countOther
-  ).replace("{count}", () => String(count));
-
-const tone = (language?: string): CSSProperties | undefined => {
-  const color = languageColor(language);
+const tone = (repo: Repo): CSSProperties | undefined => {
+  const color = mainLanguage(repo)?.color;
   return color ? ({ "--lang": color } as CSSProperties) : undefined;
 };
 
-const seedOf = (text: string): number => {
-  let seed = 2_166_136_261;
-  for (const char of text) {
-    seed = Math.imul(seed ^ (char.codePointAt(0) ?? 0), 16_777_619);
-  }
-  return seed >>> 0;
+interface RepoProps {
+  newTabId: string;
+  repo: Repo;
+}
+
+const RepoFacts = ({ repo }: { repo: Repo }): null | ReactElement =>
+  repo.stars > 0 || repo.forks > 0 ? (
+    <span className="repo-meta">
+      {repo.stars > 0 ? (
+        <span className="repo-fact">
+          <Icon aria-hidden name="lucide:star" size="0.875rem" />
+          <span className="tabular">{repo.stars}</span>
+          <span className="sr-only">{en.repos.starsLabel}</span>
+        </span>
+      ) : null}
+      {repo.forks > 0 ? (
+        <span className="repo-fact">
+          <Icon aria-hidden name="lucide:git-fork" size="0.875rem" />
+          <span className="tabular">{repo.forks}</span>
+          <span className="sr-only">{en.repos.forksLabel}</span>
+        </span>
+      ) : null}
+    </span>
+  ) : null;
+
+const GithubKey = ({
+  name,
+  newTabId,
+  url,
+}: {
+  name: string;
+  newTabId: string;
+  url: string;
+}): ReactElement => (
+  <span className="repo-key" data-repo-key="">
+    <a
+      aria-describedby={newTabId}
+      aria-label={fillText(en.repos.viewOnGithubLabel, { name })}
+      className="repo-key-link focus-ring"
+      href={url}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      <Icon
+        aria-hidden
+        className="repo-key-mark"
+        name="simple-icons:github"
+        size="1.3em"
+      />
+    </a>
+    <span className="repo-tip tip" role="tooltip">
+      <span aria-hidden className="tip-surface" />
+      <span className="tip-body">{en.repos.viewOnGithub}</span>
+    </span>
+  </span>
+);
+
+const StoryKey = ({
+  name,
+  story,
+}: {
+  name: string;
+  story: StoryEntry;
+}): ReactElement => (
+  <a
+    aria-label={fillText(en.repos.seeStoryLabel, { name })}
+    className="work-story-link keycap-host focus-ring"
+    data-story-link=""
+    href={story.path}
+  >
+    <span className="keycap">
+      <span className="work-story-link-lead">
+        <StoryMark kind={story.key} />
+        <span className="work-story-link-label">{en.repos.seeStory}</span>
+      </span>
+      <Icon
+        aria-hidden
+        className="work-story-link-arrow"
+        name="lucide:arrow-right"
+        size="0.875rem"
+      />
+    </span>
+  </a>
+);
+
+const RepoCard = ({ newTabId, repo }: RepoProps): ReactElement => {
+  const story = storyEntry(repo.name);
+  return (
+    <li
+      className="post-row work-card mat-panel"
+      data-story-path={story?.path}
+      style={tone(repo)}
+    >
+      <div className="work-card-head">
+        <h3 className="post-row-title work-card-name">
+          <a
+            aria-describedby={newTabId}
+            className="work-card-link focus-ring"
+            href={repo.url}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span className="story-morph-name">{repo.name}</span>
+          </a>
+        </h3>
+        <div className="work-card-tools">
+          <RepoFacts repo={repo} />
+          <GithubKey name={repo.name} newTabId={newTabId} url={repo.url} />
+        </div>
+      </div>
+      <div className="work-card-body">
+        <p className="post-row-text">
+          <CompoundText text={repo.description} />
+        </p>
+        <RepoTags languages={repo.languages} topics={repo.topics} />
+      </div>
+      {story ? <StoryKey name={repo.name} story={story} /> : null}
+    </li>
+  );
 };
 
-const planetStyle = (name: string): CSSProperties => {
-  const seed = seedOf(name);
-  const tilt = (seed % 81) - 40;
-  const size = 10 + ((seed >>> 8) % 5);
-  return {
-    "--p-size": `${String(size)}rem`,
-    "--p-tilt": `${String(tilt)}deg`,
-  } as CSSProperties;
-};
+const AllRepos = ({ href }: { href: string }): ReactElement => (
+  <li className="work-all-cell">
+    <a
+      className="work-all focus-ring"
+      href={href}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      <Icon
+        aria-hidden
+        className="work-all-mark"
+        name="simple-icons:github"
+        size="1.25rem"
+      />
+      <span className="work-all-text">
+        {en.repos.all}
+        <Icon aria-hidden name="lucide:arrow-up-right" size="0.875rem" />
+      </span>
+      <span className="sr-only"> {en.card.newTab}</span>
+    </a>
+  </li>
+);
 
 interface RepoStripProps {
+  allHref: string;
+  newTabId: string;
   repos: Repo[];
 }
 
-export const RepoStrip = ({ repos }: RepoStripProps): null | ReactElement => {
-  if (repos.length === 0) return null;
-  const overflow = repos.length > firstRow;
-  return (
-    <section
-      aria-labelledby="repos-heading"
-      className="fade-up mt-(--card-gap-repos) flex w-full min-w-0 flex-col gap-(--card-gap-strip) text-left delay-3"
-      data-repo-overflow={overflow ? "" : undefined}
-      data-repos=""
-    >
-      <span hidden id={newTabId}>
-        {en.repos.newTab}
-      </span>
-      <div className="repo-head text-halo">
-        <h2 className="repo-heading" id="repos-heading">
-          <span className="type-eyebrow">{en.repos.heading}</span>
-          <span aria-hidden="true" className="repo-count">
-            <span className="repo-count-all">{repos.length}</span>
-            {overflow ? (
-              <span className="repo-count-row">{firstRow}</span>
-            ) : null}
-          </span>
-          <span className="sr-only">
-            <span className="repo-count-all">{countLabel(repos.length)}</span>
-            {overflow ? (
-              <span className="repo-count-row">{countLabel(firstRow)}</span>
-            ) : null}
-          </span>
-        </h2>
-        <span aria-hidden="true" className="repo-rule" />
-        <a
-          aria-describedby={newTabId}
-          className="repo-all focus-ring"
-          href={personalData.github}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          {en.repos.viewAll}
-          <Icon
-            aria-hidden
-            className="repo-all-arrow"
-            name="lucide:arrow-up-right"
-            size="0.95em"
-          />
-        </a>
-      </div>
-      <ul className="repo-grid">
-        {repos.map((repo, index) => (
-          <li className="min-w-0" key={repo.url}>
-            <a
-              aria-describedby={newTabId}
-              className="repo-tile"
-              data-pointer-light=""
-              href={repo.url}
-              rel="noopener noreferrer"
-              style={tone(repo.language)}
-              target="_blank"
-            >
-              <span
-                aria-hidden="true"
-                className="repo-planet"
-                data-kind={planetKinds[index % planetKinds.length]}
-                style={planetStyle(repo.name)}
-              />
-              <span className="repo-top">
-                <span className="repo-name">{repo.name}</span>
-                <span aria-hidden="true" className="repo-arrow">
-                  <Icon name="lucide:arrow-up-right" size="1rem" />
-                </span>
-              </span>
-              <span className="repo-desc">{repo.description}</span>
-              {repo.topics.length > 0 ? (
-                <span className="repo-topics">
-                  {repo.topics.map((topic) => (
-                    <span className="repo-topic" key={topic}>
-                      {topic}
-                    </span>
-                  ))}
-                </span>
-              ) : null}
-              <span className="repo-meta">
-                {repo.language ? (
-                  <span className="repo-fact repo-language">
-                    <span aria-hidden="true" className="repo-dot" />
-                    <span className="repo-language-name">{repo.language}</span>
-                  </span>
-                ) : null}
-                {repo.stars > 0 ? (
-                  <span className="repo-fact">
-                    <Icon aria-hidden name="lucide:star" size="0.875rem" />
-                    <span className="tabular">{repo.stars}</span>
-                    <span className="sr-only">{en.repos.starsLabel}</span>
-                  </span>
-                ) : null}
-                {repo.forks > 0 ? (
-                  <span className="repo-fact">
-                    <Icon aria-hidden name="lucide:git-fork" size="0.875rem" />
-                    <span className="tabular">{repo.forks}</span>
-                    <span className="sr-only">{en.repos.forksLabel}</span>
-                  </span>
-                ) : null}
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-};
+export const RepoStrip = ({
+  allHref,
+  newTabId,
+  repos,
+}: RepoStripProps): ReactElement => (
+  <ol className="work-repos" data-repos="">
+    {repos.map((repo) => (
+      <RepoCard key={repo.url} newTabId={newTabId} repo={repo} />
+    ))}
+    <AllRepos href={allHref} />
+  </ol>
+);

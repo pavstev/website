@@ -1,0 +1,129 @@
+---
+import "@/styles/blog.css";
+
+import PageRouter from "@/components/page-router.astro";
+import SiteFooter from "@/components/site-footer.astro";
+import SkipLink from "@/components/skip-link.astro";
+import { PageDock } from "@/components/page-dock";
+import SpaceBackground from "@/components/space-background.astro";
+import {
+  resolveUrl,
+  googleBotContent,
+  type FeedLink,
+  type PageMetadata,
+  robotsContent,
+} from "@/lib/blog/page-metadata";
+import { getContact } from "@/lib/github";
+import { headScript } from "@/lib/motion-pause";
+import { personalData } from "@/lib/personal";
+import { designTokens } from "@/lib/theme";
+
+interface Props {
+  metadata: PageMetadata;
+  sky?: boolean;
+}
+
+const { metadata, sky = true } = Astro.props;
+const { alternates, openGraph, robots, twitter } = metadata;
+const origin = personalData.website;
+const contact = await getContact(personalData.githubHandle);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content={designTokens.background} />
+    <title>{metadata.title}</title>
+    <meta name="description" content={metadata.description} />
+    <link rel="author" href={origin} />
+    <meta name="author" content={personalData.name} />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    {metadata.keywords !== undefined && (
+      <meta name="keywords" content={metadata.keywords.join(",")} />
+    )}
+    <meta name="robots" content={robotsContent(robots)} />
+    <meta name="googlebot" content={googleBotContent(robots)} />
+    {alternates.canonical !== undefined && (
+      <link rel="canonical" href={alternates.canonical} />
+    )}
+    {Object.entries(alternates.types).flatMap(([type, links]) =>
+      links.map((link: FeedLink) => (
+        <link
+          rel="alternate"
+          type={type}
+          href={resolveUrl(origin, link.url)}
+          title={link.title}
+        />
+      ))
+    )}
+    <meta property="og:title" content={openGraph.title} />
+    <meta property="og:description" content={openGraph.description} />
+    {openGraph.url !== undefined && (
+      <meta property="og:url" content={openGraph.url} />
+    )}
+    <meta property="og:site_name" content={openGraph.siteName} />
+    <meta property="og:locale" content={openGraph.locale} />
+    {openGraph.images.flatMap((image) => [
+      <meta property="og:image" content={resolveUrl(origin, image.url)} />,
+      <meta property="og:image:type" content={image.type} />,
+      <meta property="og:image:width" content={String(image.width)} />,
+      <meta property="og:image:height" content={String(image.height)} />,
+      <meta property="og:image:alt" content={image.alt} />,
+    ])}
+    <meta property="og:type" content={openGraph.type} />
+    {openGraph.publishedTime !== undefined && (
+      <meta
+        property="article:published_time"
+        content={openGraph.publishedTime}
+      />
+    )}
+    {openGraph.modifiedTime !== undefined && (
+      <meta property="article:modified_time" content={openGraph.modifiedTime} />
+    )}
+    {openGraph.authors?.map((author) => (
+      <meta property="article:author" content={author} />
+    ))}
+    {openGraph.tags?.map((tag) => (
+      <meta property="article:tag" content={tag} />
+    ))}
+    <meta name="twitter:card" content={twitter.card} />
+    <meta name="twitter:title" content={twitter.title} />
+    <meta name="twitter:description" content={twitter.description} />
+    {twitter.images.flatMap((image) => [
+      <meta name="twitter:image" content={resolveUrl(origin, image.url)} />,
+      <meta name="twitter:image:alt" content={image.alt} />,
+    ])}
+    <link rel="icon" href="/favicon-32x32.png" sizes="32x32" />
+    <link
+      rel="icon"
+      href="/android-chrome-192x192.png"
+      sizes="192x192"
+      type="image/png"
+    />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link href="/sitemap.xml" rel="sitemap" />
+    <script is:inline set:html={headScript}></script>
+    <PageRouter />
+  </head>
+  <body>
+    <SkipLink />
+    <div data-blog="" data-story={sky ? undefined : ""}>
+      {sky && <SpaceBackground />}
+      <slot />
+      <SiteFooter className="blog-footer" links />
+    </div>
+    <div class="blog-dock">
+      <PageDock
+        client:load
+        email={contact.email}
+        transition:persist="blog-dock"
+      />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+import { type DotfilesFacts } from "../dotfiles-facts.ts";
+
+export const sampleFacts: DotfilesFacts = {
+  agents: 8,
+  guardChecks: 19,
+  homeFiles: 23,
+  hookEvents: 6,
+  outputStyles: 2,
+  presets: 7,
+  rustPrograms: 19,
+  skillNames: [
+    "ps:askme",
+    "ps:autopilot",
+    "ps:bag-mode",
+    "ps:captain-research",
+    "ps:design-artifact",
+    "ps:design-brainstorm",
+    "ps:draft-reply",
+    "ps:handoff",
+    "ps:harness-optimize",
+    "ps:iamrich",
+    "ps:mic-drop",
+    "ps:pick",
+    "ps:review-panel",
+    "ps:sessions",
+    "ps:standup",
+    "ps:whatsleft",
+    "ps:yt-learn",
+  ],
+  skills: 17,
+};

@@ -22,8 +22,6 @@ interface PacerOptions {
 
 type PacerStep = { dt: number; kind: "draw" } | { kind: "freeze" | "skip" };
 
-export const pacerIdleMs = idleAfterMs;
-
 export const createFramePacer = ({
   activeFrameMs,
   canDowngrade,

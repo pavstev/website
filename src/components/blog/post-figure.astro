@@ -1,0 +1,30 @@
+---
+import PostImage from "@/components/blog/post-image.astro";
+import { findImage } from "@/components/blog/post-images";
+import { localFile } from "@/lib/blog/images";
+import { firstImage } from "@/lib/blog/first-image";
+
+interface Props {
+  alt: string;
+  caption?: string;
+  src: string;
+}
+
+const { alt, caption, src } = Astro.props;
+const file = localFile(src);
+const found =
+  file === undefined ? undefined : await findImage(Astro.url.pathname, file);
+if (found === undefined) {
+  throw new Error(`${Astro.url.pathname}: image "${src}" not found`);
+}
+const priority = firstImage(Astro.request);
+---
+
+<figure class="blog-figure">
+  <div class="image-zoom focus-ring">
+    <PostImage alt={alt} found={found} priority={priority} />
+  </div>
+  {caption !== undefined && caption !== "" && (
+    <figcaption>{caption}</figcaption>
+  )}
+</figure>

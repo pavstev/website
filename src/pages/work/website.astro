@@ -1,0 +1,81 @@
+---
+import "@/styles/sky-story.css";
+
+import BlogHeader from "@/components/blog/blog-header.astro";
+import ScrollProgress from "@/components/scroll-progress.astro";
+import ScrollRail from "@/components/scroll-rail.astro";
+import SkyDial from "@/components/sky-story/sky-dial.astro";
+import SkyOutro from "@/components/sky-story/sky-outro.astro";
+import SkyStep from "@/components/sky-story/sky-step.astro";
+import { skyStoryMeta, skyStorySlides } from "@/data/website-story";
+import BlogLayout from "@/layouts/BlogLayout.astro";
+import { type Crumb } from "@/lib/blog/crumbs";
+import { en } from "@/lib/i18n";
+import { posterAt } from "@/lib/sky-story-poster";
+import { fillText } from "@/lib/template";
+import { skyStoryMetadata } from "@/lib/story/metadata";
+import { serializeJsonLd, storyGraph } from "@/lib/structured-data";
+import { websiteStory } from "@/lib/work";
+
+const slides = skyStorySlides();
+const railTicks = slides.map((slide) => ({
+  id: slide.id,
+  name: fillText(en.skyStory.railTick, {
+    chapter: slide.chapter,
+    line: slide.line,
+  }),
+}));
+const crumbs: Crumb[] = [
+  { current: false, label: en.blog.crumbHome, path: "/" },
+  { current: false, label: en.work.heading, path: "/work" },
+  { current: true, label: en.skyStory.crumb, path: websiteStory },
+];
+const jsonLd = serializeJsonLd(storyGraph(skyStoryMeta.updatedAt, "website"));
+---
+
+<BlogLayout metadata={skyStoryMetadata()}>
+  <script type="application/ld+json" is:inline set:html={jsonLd}></script>
+  <main class="blog-main" id="main-content">
+    <BlogHeader crumbs={crumbs} header={false} title={en.skyStory.metaTitle} />
+    <a class="skip-link mat-pop type-chip focus-ring" href="#sky-story-end">
+      {en.skyStory.skipToEnd}
+    </a>
+    <section class="sky-story scroll-story" data-sky-story="">
+      <ScrollProgress />
+      <ScrollRail label={en.skyStory.railLabel} ticks={railTicks} />
+      <SkyDial slides={slides} />
+      <ol aria-label={en.skyStory.stepsLabel} class="sky-steps scroll-steps">
+        {slides.map((slide, index) => (
+          <SkyStep poster={posterAt(index)} slide={slide}>
+            {slide.id === "outro" && <SkyOutro />}
+          </SkyStep>
+        ))}
+      </ol>
+    </section>
+  </main>
+</BlogLayout>
+<script>
+  import { mountSkyStory } from "@/lib/sky-story-scroll";
+
+  let mounted: HTMLElement | null = null;
+  let stop: (() => void) | undefined;
+
+  const release = (): void => {
+    stop?.();
+    stop = undefined;
+    mounted = null;
+  };
+
+  const sync = (): void => {
+    const root = document.querySelector<HTMLElement>("[data-sky-story]");
+    if (root === mounted) return;
+    release();
+    if (!root) return;
+    mounted = root;
+    stop = mountSkyStory(root);
+  };
+
+  sync();
+  document.addEventListener("astro:page-load", sync);
+  document.addEventListener("astro:before-swap", release);
+</script>

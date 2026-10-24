@@ -1,12 +1,46 @@
+# build output
+dist/
+# site audit reports
+.audit/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
 *.tsbuildinfo
 .DS_Store
 .claude/skills/
+.agents/
+/.opencode/
+blog-fixtures/
+.blog/
+public/blog/
+public/blog-media/
+public/build.json
+.dev.vars
 .env*
 .eslintcache
-.next/
+.profile-out/
 .superpowers/
 .wrangler/
+worker-configuration.d.ts
 dist/
-lefthook-local.yml
-next-env.d.ts
 node_modules/
+.astro/

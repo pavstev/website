@@ -1,0 +1,132 @@
+name: Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/images.yml
+      - public/fonts/geist-extra-*
+      - public/fonts/geist-latin-*
+      - public/fonts/geist-mono-latin-400-*
+      - public/portraits/portrait-800.webp
+      - scripts/generate-images.ts
+      - src/data/dotfiles-stats.ts
+      - src/data/dotfiles-story.ts
+      - src/lib/dotfiles-facts.ts
+      - src/lib/geo.ts
+      - src/lib/github.ts
+      - src/lib/i18n.ts
+      - src/lib/icon-data.ts
+      - src/lib/math.ts
+      - src/lib/personal.ts
+      - src/lib/sky-ephemeris.ts
+      - src/lib/sky-light.ts
+      - src/lib/sky-moon-shader.ts
+      - src/lib/sky-moon.ts
+      - src/lib/sky-paint-shader.ts
+      - src/lib/sky-paint.ts
+      - src/lib/sky-palette.ts
+      - src/lib/sky-place.ts
+      - src/lib/sky-rays.ts
+      - src/lib/sky-shader.ts
+      - src/lib/sky-story.ts
+      - src/lib/sky-sun.ts
+      - src/lib/sky-view.ts
+      - src/lib/story/blueprint-geometry.ts
+      - src/lib/story/blueprint-svg.ts
+      - src/lib/story/number-words.ts
+      - src/lib/story/step-ids.ts
+      - src/lib/story/steps.ts
+      - src/lib/theme.ts
+      - src/lib/weather.ts
+      - src/lib/work.ts
+      - src/styles/globals.css
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  cancel-in-progress: false
+  group: images-sync
+
+jobs:
+  generate:
+    permissions:
+      actions: write
+      contents: write
+      issues: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      HUSKY: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          cache: pnpm
+          node-version-file: .nvmrc
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/generate-images.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and push
+        id: push
+        if: github.ref == 'refs/heads/main'
+        run: |
+          if [ -z "$(git status --porcelain public/og-image.jpg public/linkedin-cover.png public/og-dotfiles.jpg public/og-sky-story.jpg)" ]; then
+            echo "Nothing changed. The images are already up to date." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/og-image.jpg public/linkedin-cover.png public/og-dotfiles.jpg public/og-sky-story.jpg
+          git commit -m "chore(images): refresh the social images"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+          echo "Pushed the new images." >> "$GITHUB_STEP_SUMMARY"
+      - name: Rebuild the site
+        if: github.event_name != 'push' && github.ref == 'refs/heads/main' && steps.push.outputs.pushed != 'true'
+        env:
+          CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$CLOUDFLARE_DEPLOY_HOOK" ]; then
+            echo "CLOUDFLARE_DEPLOY_HOOK is not set." >&2
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 30 --request POST --output /dev/null "$CLOUDFLARE_DEPLOY_HOOK"
+          echo "Asked Cloudflare for a fresh build, so the live dotfiles facts refresh." >> "$GITHUB_STEP_SUMMARY"
+      - name: Keep the schedule alive
+        if: always() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/images.yml/enable"
+      - name: Report the failure
+        if: failure() && github.ref == 'refs/heads/main'
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create images-sync --color B60205 --description "The images workflow failed" --force
+          body="The social images failed ($GITHUB_EVENT_NAME): $RUN_URL"
+          issue="$(gh issue list --label images-sync --state open --limit 1 --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "Social images failed" --label images-sync --body "$body"
+          fi
+      - name: Close the failure report
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue list --label images-sync --state open --json number --jq '.[].number' | while read -r issue; do
+            gh issue close "$issue" --comment "The social images work again: $RUN_URL"
+          done

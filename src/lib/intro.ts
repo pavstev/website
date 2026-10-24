@@ -1,12 +1,12 @@
-import { reducedMotionQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 
 const blurMs = 800;
 const blurEasing = "cubic-bezier(0.16, 1, 0.3, 1)";
 const lateStartMs = 1000;
 
 export const initIntro = (card: HTMLElement): (() => void) => {
-  if (globalThis.matchMedia(reducedMotionQuery).matches) {
-    return () => {};
+  if (stillQuery().matches) {
+    return () => undefined;
   }
 
   const blurTargets =

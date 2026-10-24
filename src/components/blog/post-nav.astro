@@ -1,0 +1,47 @@
+---
+import { Icon } from "@/components/icon";
+import { type PostMeta } from "@/lib/blog/schema";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  newer?: PostMeta | undefined;
+  older?: PostMeta | undefined;
+}
+
+const { newer, older } = Astro.props;
+---
+
+<nav aria-label={en.blog.postNav} class="post-nav">
+  {older === undefined ? (
+    <span class="post-nav-gap" />
+  ) : (
+    <a
+      class="post-nav-link post-nav-prev focus-ring"
+      href={`/blog/${older.slug}`}
+      rel="prev"
+    >
+      <Icon name="lucide:arrow-left" size="0.875rem" />
+      <span class="sr-only">{en.blog.previous}: </span>
+      <span class="post-nav-title">{older.title}</span>
+    </a>
+  )}
+  <a class="post-nav-all keycap-host focus-ring" href="/blog">
+    <span class="keycap">
+      <Icon name="lucide:layout-grid" size="0.9375rem" />
+      {en.blog.back}
+    </span>
+  </a>
+  {newer === undefined ? (
+    <span class="post-nav-gap" />
+  ) : (
+    <a
+      class="post-nav-link post-nav-next focus-ring"
+      href={`/blog/${newer.slug}`}
+      rel="next"
+    >
+      <span class="sr-only">{en.blog.next}: </span>
+      <span class="post-nav-title">{newer.title}</span>
+      <Icon name="lucide:arrow-right" size="0.875rem" />
+    </a>
+  )}
+</nav>

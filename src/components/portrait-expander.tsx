@@ -1,5 +1,3 @@
-"use client";
-
 import {
   type MouseEvent,
   type ReactElement,
@@ -9,7 +7,9 @@ import {
   useState,
 } from "react";
 
+import { CloseGlyph } from "@/components/ui/close-glyph";
 import {
+  blankPixel,
   createPortraitExpander,
   type PortraitExpanderControls,
 } from "@/lib/portrait-expand";
@@ -17,7 +17,6 @@ import {
 interface PortraitExpanderProps {
   alt: string;
   children: ReactNode;
-  closeIcon: ReactNode;
   closeLabel: string;
   dialogLabel: string;
   expandLabel: string;
@@ -27,7 +26,6 @@ interface PortraitExpanderProps {
 export const PortraitExpander = ({
   alt,
   children,
-  closeIcon,
   closeLabel,
   dialogLabel,
   expandLabel,
@@ -93,7 +91,10 @@ export const PortraitExpander = ({
   };
 
   const onHighLoad = (): void => {
-    highRef.current?.setAttribute("data-loaded", "");
+    const high = highRef.current;
+    if (high && high.getAttribute("src") !== blankPixel) {
+      high.dataset["loaded"] = "";
+    }
   };
 
   return (
@@ -102,7 +103,7 @@ export const PortraitExpander = ({
         aria-expanded={expanded}
         aria-haspopup="dialog"
         aria-label={expandLabel}
-        className="focus-ring relative block size-28 shrink-0 rounded-full md:size-32"
+        className="focus-ring relative block size-33.5 shrink-0 rounded-full md:size-38.5"
         data-portrait=""
         onClick={onOpen}
         ref={buttonRef}
@@ -113,6 +114,7 @@ export const PortraitExpander = ({
       <dialog
         aria-label={dialogLabel}
         className="portrait-dialog"
+        data-expander-dialog=""
         onCancel={onCancel}
         onClick={onDialogClick}
         onClose={onClosed}
@@ -123,14 +125,19 @@ export const PortraitExpander = ({
           className="portrait-scrim"
           data-expander-scrim=""
         />
-        <div className="portrait-stage" ref={frameRef}>
-          <span className="portrait-lens" data-expander-lens="">
+        <div className="portrait-stage" data-expander-stage="" ref={frameRef}>
+          <span
+            className="portrait-lens"
+            data-expander-lens=""
+            data-lens-src={largeUrl}
+          >
             <img
               alt=""
               aria-hidden="true"
               className="absolute inset-0 size-full object-cover object-top"
               decoding="async"
               ref={lowRef}
+              src={blankPixel}
             />
             <img
               alt={alt}
@@ -138,6 +145,7 @@ export const PortraitExpander = ({
               decoding="async"
               onLoad={onHighLoad}
               ref={highRef}
+              src={blankPixel}
             />
           </span>
           <span className="portrait-halo" data-expander-halo="">
@@ -148,7 +156,7 @@ export const PortraitExpander = ({
               ref={closeRef}
               type="button"
             >
-              {closeIcon}
+              <CloseGlyph size={15} />
             </button>
           </span>
         </div>

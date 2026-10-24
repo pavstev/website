@@ -1,0 +1,37 @@
+---
+import { type TagEntry, tagHref } from "@/lib/blog/tags";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  current?: string | undefined;
+  tags: readonly TagEntry[];
+}
+
+const { current, tags } = Astro.props;
+
+const countLabel = (tag: TagEntry): string =>
+  (tag.count === 1 ? en.blog.tagCountOne : en.blog.tagCount).replace(
+    "{n}",
+    () => String(tag.count)
+  );
+---
+
+{tags.length > 0 && (
+  <ul aria-label={en.blog.tags} class="blog-tags">
+    {tags.map((tag) => (
+      <li class="post-tag">
+        <a
+          aria-current={tag.slug === current ? "page" : undefined}
+          class="post-tag-link blog-tag-link focus-ring"
+          href={tagHref(tag.name)}
+        >
+          {tag.name}
+          <span class="sr-only">{countLabel(tag)}</span>
+          <span aria-hidden="true" class="blog-tag-count tabular">
+            {tag.count}
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+)}

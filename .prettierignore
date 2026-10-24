@@ -1,3 +1,11 @@
-.next
+.astro
+.audit
+_notes
+_ref
+.profile-out
 dist
 pnpm-lock.yaml
+worker-configuration.d.ts
+blog-fixtures
+.claude/worktrees
+.opencode/

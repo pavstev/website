@@ -1,92 +1,131 @@
 # CLAUDE.md
 
-One static page: a contact card over a WebGL sky, plus a plain 404.
+A contact card over a painted WebGL sky, a `/work` page with two scroll stories, an `/about` page, a blog of MDX posts and a 404.
+The sky shows the real sun and moon and the live weather. Vienna is the default place.
+A visitor can pick their own place by location or on a night globe.
+A Cloudflare Worker serves `/mcp` and `/where`.
 
-## Tech Stack
+This repo inherits the harness (commits, secrets, workflow, writing) from `~/dotfiles`.
+This file holds project facts only. Long notes are in `docs/architecture.md`.
+Path rules in `.claude/rules/` load when you touch matching files:
+`card.md` (card, footer, /work), `motion.md` (motion switch, dock, privacy), `sky.md` (sky, shaders, globe), `blog.md` (posts, blog code), `story.md` (the `/work/dotfiles` story), `sky-story.md` (the `/work/website` sky story).
 
-- **Framework:** Next.js 16 App Router, `output: "export"`, prerendered to `dist/`. Routes: `/` (`src/app/page.tsx`), 404 (`src/app/not-found.tsx` → `dist/404.html`, `noindex`), `/sitemap.xml` (with image entries), `/robots.txt`, `/manifest.webmanifest` (`src/app/manifest.ts`), `/llms.txt` (`src/app/llms.txt/route.ts`). All of them are built from `personal.ts`, `i18n.ts` and the build-time repo list; never add a second page.
-- **UI:** Tailwind v4 (`@theme inline` + `@utility`, via `@tailwindcss/postcss`). Server components by default; `"use client"` only for the sky (`space-background.tsx`), the clouds (`clouds-canvas.tsx` → `src/lib/clouds.ts`, one three.js full-screen shader, imported after `load`, skipped on Save-Data), cursor glow, the PDF button, the portrait dialog and `effects-init.tsx`.
-- **Fonts:** self-hosted woff2 in `public/fonts/` with versioned names (Inter Variable latin, Geist Mono 400/500 latin, plus small `*-extra-*` files for ć č đ š ž, cut with fonttools' `pyftsubset` and woff2 output). `@font-face` sits at the top of `globals.css`. Do not preload them: it pushed LCP from 0.9 s to 1.5 s on slow 4G. To change a font, ship a new file name (the `/fonts/*` cache rule is immutable).
-- **Icons:** `<Icon>` (`src/components/icon.tsx`) renders inline SVG from `src/lib/icon-data.ts`. Sets in use: `circle-flags`, `lucide`, `simple-icons`. A new `set:name` needs `pnpm icons` (run `pnpm add -D @iconify-json/<set>` for each set first, then remove them again).
-- **Repo strip:** `src/lib/github.ts` fetches public repos at build time. Set the optional `GITHUB_TOKEN` build variable to lift the 60 requests per hour limit. Any non-200 answer fails the build on purpose, so a broken strip never ships.
-- **Static files:** `public/resume.pdf` is committed and replaced by hand when the CV changes (the button downloads it as `Stevan_Pavlovic_Resume.pdf`). Portraits (`public/portraits/`), favicons and `og-image.jpg` (1200x630: the sky, the portrait, name, title, Vienna) are committed too. Nothing is generated at build time.
-- **Content:** `src/lib/personal.ts` (name, title, summary, links); all UI strings in `src/lib/i18n.ts`.
-- **Pkg mgr:** pnpm 12 (`packageManager`), Node 24 (`.nvmrc`), both enforced by `engines` with `engineStrict`. All pnpm settings live in `pnpm-workspace.yaml`: the build-script allowlist (`allowBuilds`, `strictDepBuilds`), a one-day `minimumReleaseAge`, `trustPolicy: no-downgrade` with one exact `trustPolicyExclude` entry (`semver@6.3.1`, a 2023 security backport without provenance; evidence in the commit that added it), `blockExoticSubdeps` and `verifyDepsBeforeRun: install` (scripts install first when the lockfile changed). Keep `package.json` scripts to the six that exist. Add a trust exception only as an exact `name@version` with checked evidence, never by turning the policy off.
-- **CI:** `.github/workflows/ci.yml` runs `pnpm verify` on pushes and pull requests and fails when it would change files. Dependabot opens grouped weekly updates.
-- **Deploy:** every push to `main` makes Cloudflare build the repo and publish `dist` as Workers static assets (`wrangler.jsonc`, `404.html` for unknown paths). Nobody deploys by hand: do not run `wrangler deploy` or `pnpm deploy`. Push to `main` only when asked and after `pnpm verify` passes. `public/_headers`: immutable for `/_next/static/*` and `/fonts/*`, one day plus stale-while-revalidate for `/portraits/*`, the favicons, the manifest icons and `og-image.jpg`; HTML and `resume.pdf` revalidate every time. `/*` carries the security headers and a CSP (`'self'` only; scripts and styles need `'unsafe-inline'` for Next's inline payload and style attributes); every non-HTML rule detaches the CSP and `X-Frame-Options` with `! Header-Name`, so they reach pages only. Keep the rules disjoint (Cloudflare joins duplicate headers with a comma).
+## Stack
+
+- Astro 7 static (`build.format: "file"`), React 19 islands, Tailwind v4, MDX, pnpm 12, Node 24.
+- One Cloudflare Worker for `/mcp` and `/where`. three.js loads only in the lazy globe chunk.
+- Posts are an Astro content collection (`src/content.config.ts`). Frontmatter dates must be quoted.
+- The sky starts from `src/lib/sky-mount.ts` through `src/components/space-background.astro`.
+- The blog has no posts yet. The code, the 30 dev-only test posts and `pnpm dev:many` stay.
+
+## Owner rules
+
+- `GITHUB_TOKEN` is required for the build. It is a Cloudflare build variable. Locally `github.ts` asks `gh auth token`. A non-200 answer fails the build on purpose.
+- The résumé is the committed `src/data/cv.json`. Keep `basics.phone` empty. Move `updatedAt` on every edit: it is the sitemap `lastmod` and the `ProfilePage` `dateModified`.
+- The dotfiles story copy is `src/data/dotfiles-story.ts`. The skill catalog lives in `src/data/dotfiles-stats.ts`. Move `storyMeta.updatedAt` there on every copy or catalog edit. The page shows names, never counts or the owner's own usage: `.claude/rules/story.md`.
+- The owner has no iPhone. Never suggest a real-iPhone check. Emulate WebKit.
+- Every push to `main` deploys on Cloudflare. Never run `wrangler deploy` or `pnpm deploy`. Never deploy by hand.
+- Push only when asked. After a push, watch CI and the Cloudflare build. Wait until `https://stevanpavlovic.com/build.json` shows the new `sha` before you call it live.
+- `blog-publish.yml` runs every 15 minutes and calls the deploy hook (`CLOUDFLARE_DEPLOY_HOOK`) when a scheduled post is due. Schedule a post with a future `date`. The Monday `images.yml` run calls it too when it pushes nothing, so the GitHub facts refresh weekly.
+- LinkedIn stays manual. No API edits a personal profile. Never offer to fill it through the browser. The cover image from `images.yml` is uploaded by hand.
+- `pavstev/pavstev` is a generated mirror (`profile.yml`, `src/profile/`). Change the source here, never the mirror.
+- Open-Meteo is CC BY 4.0. The "Weather: Open-Meteo" credit stays visible in the home footer. Only the home reads live weather.
+- The site lists one product (Safety Real Time, `src/lib/products.ts`).
+- No page text, meta tag, OG tag, JSON-LD node or `llms.txt` names a city. Only the résumé does. Code names such as `vienna` and `Europe/Vienna` stay.
+- Never touch the Cloudflare account "Alpha.therapybg": no dashboard, no wrangler, no API, no MCP. Ask which account to use.
 
 ## Commands
 
 ```bash
-pnpm dev       # next dev → http://localhost:4321
-pnpm build     # next build → ./dist
-pnpm preview   # serve ./dist on port 4321
-pnpm verify    # prettier + eslint --fix + tsc + build + knip  ← REQUIRED before done (also the pre-commit hook)
-pnpm icons     # re-extract src/lib/icon-data.ts
+pnpm dev          # astro dev on http://localhost:4321 (drafts show)
+pnpm dev:many     # the same plus 30 generated test posts (BLOG_FIXTURES=1)
+pnpm build        # astro build, preload, meta and timeline guards -> ./dist
+pnpm preview      # serve ./dist on port 4321
+pnpm check:fast   # prettier, eslint and related tests on changed files (--staged: staged files)
+pnpm check        # types, prettier, eslint, astro check, worker tsc, tests, knip (2 passes), build, profile
+pnpm types        # wrangler types and astro sync (the gitignored worker-configuration.d.ts and .astro types)
+pnpm fix          # prettier --write and eslint --fix
+pnpm icons        # re-extract src/lib/icon-data.ts
+pnpm land         # rasterize Natural Earth land into src/assets/land-map.webp
+pnpm moon         # redraw src/assets/moon-map.webp
+pnpm places       # re-read GeoNames cities15000 into src/assets/places.txt
+pnpm profile:build  # build the GitHub profile files into ./.profile-out
 ```
+
+- The commit hook runs `pnpm check:fast --staged`. The push hook runs the full `pnpm check`. CI runs it too.
+- During work, run `pnpm check:fast` once after the last edit. Run `pnpm fix` early: the lint rules are strict.
+- Run the full check by hand only for proof before done. Never re-run a passing check with no edit since.
+- `pnpm types` runs in `prepare` and at the start of `check`, so a fresh checkout has both generated files.
 
 ## Non-negotiables
 
-- **No comments, JSDoc, TODO/FIXME/XXX/HACK** in source.
-- **Run `pnpm verify` before declaring done.**
-- **No `eslint-disable`**: zero-warning policy.
-- **No `any`** → use `unknown` or generics. **No `!`** non-null assertions.
-- **No hardcoded hex/hsl** outside `globals.css` or `src/lib/theme.ts`.
-- **No inline UI strings** → `src/lib/i18n.ts`.
-- **Tailwind v4 paren syntax** (`bg-(--surface)`) over bracket syntax.
-- **Never edit generated files** in `dist/`. **Never commit `.env`.** **Never deploy by hand.**
+- No comments, JSDoc, TODO, FIXME, XXX or HACK in source.
+- No `eslint-disable`. Zero warnings.
+- No `any` (use `unknown` or generics). No `!` non-null assertions.
+- Reuse existing components. Remove duplicates in every change.
+- Colors live once: CSS in `src/styles/tokens.css`, JS in `src/lib/theme.ts` and `src/lib/sky-palette.ts`. `theme.test.ts` fails on a literal elsewhere (`docs/theming.md`).
+- No inline UI strings: use `src/lib/i18n.ts`. Diagram copy lives in `src/lib/blog/diagrams.ts`.
+- Tailwind v4 paren syntax (`bg-(--surface)`), not brackets.
+- TypeScript strict, explicit return types on exports, `import { type Foo }`, kebab-case files, PascalCase components, one component per file in `src/components/`.
+- Never edit `dist/`. Never commit `.env`. Never edit the `pavstev/pavstev` mirror.
+- Astro components render at build time. A React component is an island only with a `client:` directive. Browser code reads `import.meta.env`.
 
-## Code Style
+## Design
 
-TypeScript strict, explicit return types on exports, `import { type Foo }`, kebab-case files, PascalCase components, one component per file in `src/components/`.
+- interior.dev is the reference (Geist fonts). No serif.
+- The sky is physically real. Do not fake it. The footer sky panel previews other hours and weather per visit, never stored.
+- No boxes, shadows or rays behind text. A subtle glow is fine. Scroll bars fade at rest.
+- Blog posts are in the owner's own voice.
+- Every font size and gap reads the S1 tokens in `globals.css` (`--fs-*`, `--sp-*`). Exceptions: the home name, control heights, hit areas.
+- Visual work: show a pick page (`ps:pick`) and ask every design question in one box, then build. A quick tweak builds at once.
+- A UI change gets one `ui-verifier` sweep at the end, not one per fix round.
+- Every UI change passes the mobile and a11y gate: all sizes and 200% zoom.
+
+## Accessibility
+
+- WCAG 2.1 AA. The Motion switch covers 2.2.2. Focus rings use `.focus-ring`.
+- Do not lower `--primary` or `--muted-foreground` contrast (8.0:1 and 6.4:1 on `--background`).
+- Icon-only links carry `aria-label`. Tooltips are `role="tooltip"` and dismiss on Escape.
+- Axe cannot see the WebGL sky. Run axe at night for the 0-violation gate and measure day contrast by pixels.
+
+## SEO
+
+- `src/lib/structured-data.ts` builds the JSON-LD graphs. `structuredData` (home): `WebSite`, `ProfilePage`, `Person`, a `SoftwareSourceCode` per repo. `workGraph` (/work): `WebPage`, `BreadcrumbList` and a `WebApplication` node per product with `operatingSystem`. `aboutGraph` (/about): `ProfilePage`, `Person`, `BreadcrumbList`.
+- Mark up only facts the page, the résumé or the linked profiles show. Never add `worksFor`. Product nodes carry no dates, offers or ratings.
+- `serializeJsonLd` escapes `<` as `<`. Check the raw bytes after editing it: edit tools can turn the escape into a literal `<`.
+- The sitemap `lastmod` and `ProfilePage` `dateModified` are the CV's `updatedAt`, never the build time. Blog entries use `updated ?? date`.
+- The canonical root is `https://stevanpavlovic.com` with no slash, in `canonical`, `og:url`, the sitemap, JSON-LD `url` and `llms.txt`. Only `@id` values keep `/#fragment`.
+- GitHub and LinkedIn links carry `rel="me"`.
+- IndexNow: the key file is `public/ee32ef309c036fb4c6b716d08e9bf922.txt`. After a non-blog content change, POST the URL list to `https://api.indexnow.org/IndexNow` with that key.
+- Cloudflare lets AI crawlers in. Only `Bytespider` is blocked. That is a dashboard setting.
 
 ## Layout
 
 ```text
-src/app/          layout.tsx (metadata, Open Graph `profile`), page.tsx (JSON-LD, sky, clouds, cursor glow, the card), not-found.tsx, robots.ts, sitemap.ts, manifest.ts, llms.txt/route.ts
-src/components/   profile + portrait + portrait-expander, download-button, contact-links, repo-strip, card-footer,
-                  privacy-note, clouds-canvas, space-background, cursor-glow, effects-init, icon
-src/lib/          personal, i18n, theme (hex for theme-color, sky palette, repo language colors), github,
-                  clouds, scroll-motion, intro, portrait-effects, portrait-expand, contact-links, download-ring,
-                  pill-aurora, cursor, webgl, icon-data
-src/styles/       globals.css (tokens, one dark palette + print, type utilities, card styles)
-public/           resume.pdf, portraits/, fonts/, favicons, og-image.jpg, manifest.webmanifest, _headers
-scripts/          generate-icon-data.ts (pnpm icons, run by Node's type stripping)
+src/pages/         index, work, work/dotfiles, work/website, about, 404, blog/, build.json, cv.json, llms.txt, resume.pdf, sitemap.xml
+src/layouts/       Base.astro (card), BlogLayout.astro (night pages)
+src/components/    card parts, site-footer.astro, sky-controls, sky-globe, space-background.astro, ui/
+src/components/blog/  bar, header, TOC, mdx-components.tsx, charts, diagrams
+src/components/story/ the dotfiles story stage, steps and rail
+src/lib/           sky-*, weather*, place*, motion-pause, home-effects, github, cv, i18n, theme, products, work
+src/lib/blog/      schema, posts, schedule, dates, reading, plain, feeds, share, crumbs, slug
+src/lib/story/     blueprint geometry, svg and gl, story mount, scroll, pointer, rail, copy rules, metadata
+src/content.config.ts   blog and about collections
+src/data/cv.json   the résumé (hand-edited)
+src/data/dotfiles-story.ts   the dotfiles story copy (hand-edited)
+src/styles/        tokens.css, globals.css, card.css, blog.css, story.css
+src/profile/       builds the pavstev/pavstev README
+content/           blog/<slug>/index.mdx, about/index.mdx
+worker/            index, router, mcp, where, facts, http
+scripts/           blog-fixtures, blog-publish, indexnow, guards, check-fast, generate-*
+public/            _headers, fonts/, portraits/, favicons, generated og-image.jpg and linkedin-cover.png
+.github/workflows/ ci, images, profile, indexnow, blog-publish
 ```
 
-## The card
+## Tools
 
-- Order: portrait (relight, holographic foil on hover, orbit; click opens a dialog with the 800 px image), name, summary (Light 300, faint halo, a round `circle-flags:at` after the city; blur-in, skipped when hydration starts after 1 s so painted text never vanishes), PDF button (gradient hover, light sweep, click ring sequence) with round contact links (metal rings whose highlight faces the cursor, tooltips), repo strip (each tile gets its own planet: `ring`, `bands`, `moon`, `craters` by position, size and tilt from the repo name), `© year name`.
-- Name: a pure-CSS 5.6 s "signal tuning" intro (blur, scan lines, rose and teal slices, neon flicker) starts at first paint and stays readable after about 1 s. `src/lib/name-glitch.ts` then sets `data-glitch` for a 0.72 s burst (scan sweep, shredded slices, two neon blinks) every 8 s, rests after 30 s without input and resumes on input. It sets `data-tuned` first so the intro never replays. The copies are pseudo-elements with `content: attr(data-text) / ""`, so screen readers read the name once. Keep every flicker under three flashes per second.
-- On screens at least 768 px wide and 720 px tall the page does not scroll: `html` is `overflow: hidden` and `max-height` queries compact the card. Narrow screens scroll normally.
-- Privacy note (`privacy-note.tsx`, a server component with no JS): a round glass chip, "No cookies, no tracking", at the bottom center, never opened by itself and never dismissed for good (no storage). It is a `<button popovertarget>`; the panel is `popover="auto"` (light dismiss, Escape, focus back to the chip) with three lines from `en.privacy`. The panel sits above the chip with anchor positioning (`position-area: top`, fixed fallback) and scrolls when space is short. On the no-scroll layout the chip is `fixed` and `#main-content` reserves `--privacy-zone`; elsewhere it is `sticky` after `main`, so a wrapped chip (zoom, large text) never covers the last line. `html` has `scroll-padding-bottom` so focus is never hidden (SC 2.4.11). The fade-in sits on `.privacy-chip-face`, not on a parent: an animated parent becomes a backdrop root and the blur stops working. The note must stay true: no cookies, storage, analytics or third-party requests. If any arrive, build a real consent flow first (reject as easy as accept on the first layer).
-- Sky (`data-space-state`: `running`, `paused`, `static`, `fallback`) caps at about 90 fps, with sparkle spikes on bright stars and a shooting star every 15 to 30 s while the loop runs. Clouds (`data-clouds-state`: `running`, `paused`, `static`, `frozen`, `fallback`) sit on top with `mix-blend-mode: screen`: two drifting domain-warped fBm decks lit from below by a three-step light march, with silver edges, slow billowing cover and a fast thin cirrus layer on top; they part around the cursor on fine pointers; rendered at 0.4x and upscaled, dimmed behind the card (`[data-card]` rect, deeper on wide screens); cap at about 60 fps. Both drop to 30 fps after 800 ms without input, pause when hidden or blurred, degrade on slow frames (resolution, then light steps, then one frozen frame) and draw one still frame under reduced motion. Eight frames in a row over 100 ms freeze either loop, idle or not. On a software renderer (`src/lib/webgl.ts`: SwiftShader, llvmpipe, Microsoft Basic Render) the sky draws one still frame and the clouds never create a context. `sky:pulse` (PDF click, portrait open) sends a soft gust through the clouds.
-- `prefers-reduced-motion`: the intro exits early; sky, clouds, scroll motion, portrait effects and cursor scripts also follow the setting when it changes at runtime; CSS animations collapse to `0.01ms`. Pointer-following effects (glow, relight, sky and cloud parallax) run only for `(hover: hover) and (pointer: fine)`.
-
-## SEO
-
-- `src/lib/structured-data.ts` builds one JSON-LD `@graph` (typed with `schema-dts`): `WebSite`, `ProfilePage`, `Person` (name without diacritics and the GitHub handle as `alternateName`, Vienna, `knowsAbout`, languages, `sameAs`, résumé as `subjectOf`) and one `SoftwareSourceCode` per repo in the strip. Mark up only facts the page, the résumé or the linked profiles show. Never add `worksFor`.
-- GitHub and LinkedIn links carry `rel="me"`. The meta description names Vienna; the title does not, by the user's choice.
-- IndexNow: `public/ee32ef309c036fb4c6b716d08e9bf922.txt` holds the key (public by design, with a header rule that detaches the CSP). After a content change, tell Bing and other engines with `curl -X POST https://api.indexnow.org/IndexNow -H 'Content-Type: application/json' -d '{"host":"stevanpavlovic.com","key":"ee32ef309c036fb4c6b716d08e9bf922","keyLocation":"https://stevanpavlovic.com/ee32ef309c036fb4c6b716d08e9bf922.txt","urlList":["https://stevanpavlovic.com/"]}'`. Google does not use IndexNow; it needs Search Console.
-- Cloudflare lets AI crawlers in, training crawlers (`GPTBot`, `ClaudeBot`, `CCBot`) included: Security, Settings, "Configure AI bot policies" has Training on Allow, and AI Crawl Control blocks only `Bytespider`. So Cloudflare prepends no `Disallow` rules to `robots.txt`. That is a dashboard setting, not code.
-
-## Accessibility
-
-WCAG 2.1 AA. Focus rings via `.focus-ring`. Axe finds 0 violations at three sizes; contrast over the sky is measured by hand. Don't lower `--primary` / `--muted-foreground` contrast (8.0:1 and 6.4:1 on `--background`). Icon-only links carry `aria-label`; tooltips are `role="tooltip"` and dismiss on Escape.
-
-## Skills
-
-- Visual work: `frontend-design`. three.js clouds: `threejs-skill-router` (`threejs-volumetric-clouds`, `threejs-procedural-fields`), check with `threejs-visual-validation`.
-- Performance: `cloudflare:web-perf`. SEO and metadata: `seo`. Accessibility: `design:accessibility-review`.
-- Hosting config: `cloudflare:wrangler`. Runtime check: `next-dev-loop` against `pnpm dev`; screenshots: `playwright-cli`.
-- Measure with Lighthouse, axe-core and Playwright from outside the repo; keep test scripts, reports and screenshots tooling out of it (only the README hero image lives in `.github/assets/`). Commits: `ps-commit-message`. Before done: `superpowers:verification-before-completion`.
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- Audit: `pnpm audit:site` (code in `scripts/audit/`; sizes, SEO, HTML, links, Worker, runtime, a11y, layout, contrast, shots, WebKit, Lighthouse). It builds, serves `dist` with `wrangler dev` on port 8790 and writes `.audit/audit-<label>/report.md` (gitignored). `--fast`, `--only a,b`, `--skip a,b`, `--no-build`, `--url`, `--baseline` are the options. Browsers install once with `pnpm exec playwright-core install chromium webkit`. The WebKit pass strips `upgrade-insecure-requests` from the CSP, because Playwright WebKit hangs on `http://localhost` otherwise. The links check needs `lychee`. Probes stay in `~/powertools/benches/web-perf/scripts/`.
+- Run heavy audits once at the end, in the background. Measure speed on a throttled phone profile.
+- Worktrees: do not symlink `node_modules`. For your own browser runs open `http://localhost:4321`, not `127.0.0.1`.
+- The Claude in Chrome tab is hidden. Run pointer flows in headless Playwright.
+- The audit code is in the repo. Reports, screenshots and one-off test scripts stay out of git (`.audit/` is ignored).

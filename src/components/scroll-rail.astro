@@ -1,0 +1,43 @@
+---
+import "@/styles/scroll-rail.css";
+
+import { type RailSubs, type RailTick } from "@/lib/scroll-rail";
+
+interface Props {
+  label: string;
+  subs?: RailSubs;
+  ticks: readonly RailTick[];
+}
+
+const { label, subs, ticks } = Astro.props;
+---
+
+<nav aria-label={label} class="scroll-rail" data-scroll-rail="">
+  <ol class="scroll-rail-list">
+    {ticks.map((tick) => (
+      <li class="scroll-rail-item">
+        <button
+          aria-label={tick.name}
+          class="scroll-tick focus-ring"
+          data-tick={tick.id}
+          type="button"
+        />
+        {subs?.step === tick.id && (
+          <ol class="scroll-rail-subs">
+            {subs.names.map((name, index) => (
+              <li>
+                <button
+                  aria-label={name}
+                  class="scroll-sub focus-ring"
+                  data-sub={String(index)}
+                  data-sub-step={tick.id}
+                  type="button"
+                />
+              </li>
+            ))}
+          </ol>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>

@@ -1,0 +1,56 @@
+---
+import BlogHeader from "@/components/blog/blog-header.astro";
+import Pagination from "@/components/blog/pagination.astro";
+import PostList from "@/components/blog/post-list.astro";
+import TagRow from "@/components/blog/tag-row.astro";
+import { Icon } from "@/components/icon";
+import { listingCrumbs } from "@/lib/blog/crumbs";
+import { type Listing } from "@/lib/blog/listing";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  heading: string;
+  jsonLd?: string | undefined;
+  listing: Listing;
+}
+
+const { heading, jsonLd, listing } = Astro.props;
+
+const countLabel = (total: number): string =>
+  (total === 1 ? en.blog.postCountOne : en.blog.postCountOther).replace(
+    "{n}",
+    () => String(total)
+  );
+---
+
+{jsonLd !== undefined && (
+  <script type="application/ld+json" is:inline set:html={jsonLd} />
+)}
+<main class="blog-main" id="main-content">
+  <BlogHeader crumbs={listingCrumbs(heading, listing.url)} title={heading}>
+    <Fragment slot="meta">
+      <span>{countLabel(listing.total)}</span>
+      <span aria-hidden="true"> · </span>
+      <a
+        class="blog-rss focus-ring"
+        data-astro-reload
+        href="/blog/feed.xml"
+        type="application/rss+xml"
+      >
+        <Icon name="lucide:rss" size="0.75rem" />
+        {en.blog.rss}
+      </a>
+    </Fragment>
+  </BlogHeader>
+  <div class="post-layout">
+    <section aria-labelledby="blog-title" class="blog-index page-wide">
+      <TagRow current={listing.tag?.slug} tags={listing.tags} />
+      <PostList feature={listing.page === 1} posts={listing.posts} />
+      <Pagination
+        base={listing.base}
+        count={listing.count}
+        page={listing.page}
+      />
+    </section>
+  </div>
+</main>

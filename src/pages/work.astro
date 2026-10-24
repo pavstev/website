@@ -1,0 +1,77 @@
+---
+import BlogHeader from "@/components/blog/blog-header.astro";
+import { ProductStrip } from "@/components/product-strip";
+import { RepoStrip } from "@/components/repo-strip";
+import BlogLayout from "@/layouts/BlogLayout.astro";
+import { pageCrumbs } from "@/lib/blog/crumbs";
+import { listMetadata } from "@/lib/blog/metadata";
+import { getRepos } from "@/lib/github";
+import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
+import { products as allProducts } from "@/lib/products";
+import { serializeJsonLd, workGraph } from "@/lib/structured-data";
+import { countHeading } from "@/lib/template";
+import { pickProducts } from "@/lib/work";
+import { withFixtureProducts, withFixtureRepos } from "@/lib/work-fixtures";
+
+const repos = withFixtureRepos(await getRepos(personalData.githubHandle));
+const products = withFixtureProducts(pickProducts(allProducts));
+const jsonLd = serializeJsonLd(workGraph(products));
+const metadata = listMetadata({
+  description: en.work.metaDescription,
+  title: en.work.metaTitle,
+  url: `${personalData.website}/work`,
+});
+---
+
+<BlogLayout metadata={metadata}>
+  <script type="application/ld+json" is:inline set:html={jsonLd}></script>
+  <main class="blog-main" id="main-content">
+    <BlogHeader
+      crumbs={pageCrumbs(en.work.heading, "/work")}
+      title={en.work.heading}
+    >
+      <Fragment slot="meta">
+        <span>{countHeading(products.length, en.products)}</span>
+        <span aria-hidden="true"> · </span>
+        <span>{countHeading(repos.length, en.repos)}</span>
+      </Fragment>
+    </BlogHeader>
+    <div class="post-layout">
+      <div class="blog-index page-wide work-page">
+        <span hidden id="work-new-tab">
+          {en.repos.newTab}
+        </span>
+        {products.length > 0 && (
+          <section aria-labelledby="products" class="work-section">
+            <div class="work-heading-row">
+              <h2 class="work-heading" id="products">
+                {en.work.productsHeading}
+              </h2>
+            </div>
+            <ProductStrip newTabId="work-new-tab" products={products} />
+          </section>
+        )}
+        {repos.length > 0 && (
+          <section aria-labelledby="projects" class="work-section">
+            <div class="work-heading-row">
+              <h2 class="work-heading" id="projects">
+                {en.work.projectsHeading}
+              </h2>
+            </div>
+            <RepoStrip
+              allHref={`${personalData.github}?tab=repositories`}
+              newTabId="work-new-tab"
+              repos={repos}
+            />
+          </section>
+        )}
+      </div>
+    </div>
+  </main>
+</BlogLayout>
+<script>
+  import { watchRepoTips } from "@/lib/repo-tips";
+
+  watchRepoTips();
+</script>

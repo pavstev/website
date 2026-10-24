@@ -1,4 +1,4 @@
-import { reducedMotionQuery } from "@/lib/media";
+import { stillQuery } from "@/lib/motion-pause";
 
 const openMs = 560;
 const closeMs = 300;
@@ -8,6 +8,9 @@ const extraInMs = 520;
 const extraDelayMs = 200;
 const extraOutMs = 120;
 const fadeMs = 140;
+export const blankPixel =
+  "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+
 const openEasing = "cubic-bezier(0.16, 1, 0.3, 1)";
 const closeEasing = "cubic-bezier(0.3, 0, 0.2, 1)";
 
@@ -37,7 +40,7 @@ export const createPortraitExpander = (
   parts: ExpanderParts
 ): PortraitExpanderControls => {
   const { button, dialog, frame, high, largeUrl, low } = parts;
-  const reduce = globalThis.matchMedia(reducedMotionQuery);
+  const reduce = stillQuery();
   const photo =
     button.querySelector<HTMLElement>("[data-portrait-photo]") ?? button;
   const scrim = dialog.querySelector<HTMLElement>("[data-expander-scrim]");
@@ -51,12 +54,12 @@ export const createPortraitExpander = (
   };
 
   const load = (): void => {
-    if (!low.getAttribute("src")) {
+    if (low.getAttribute("src") === blankPixel) {
       const small = photo.querySelector<HTMLImageElement>("img");
       const placeholder = small?.currentSrc ?? "";
       low.src = placeholder === "" ? (small?.src ?? largeUrl) : placeholder;
     }
-    if (!high.getAttribute("src")) high.src = largeUrl;
+    if (high.getAttribute("src") === blankPixel) high.src = largeUrl;
   };
 
   const root = document.documentElement;
@@ -64,7 +67,7 @@ export const createPortraitExpander = (
   const settle = (): void => {
     stopAll();
     closing = false;
-    delete button.dataset.expanded;
+    delete button.dataset["expanded"];
     root.style.removeProperty("--scroll-gap");
   };
 
@@ -74,11 +77,10 @@ export const createPortraitExpander = (
     stopAll();
     closing = false;
     const gap = globalThis.innerWidth - root.clientWidth;
-    if (gap > 0) root.style.setProperty("--scroll-gap", `${gap}px`);
+    if (gap > 0) root.style.setProperty("--scroll-gap", `${String(gap)}px`);
     dialog.showModal();
-    button.dataset.expanded = "";
+    button.dataset["expanded"] = "";
     button.dispatchEvent(new CustomEvent("portrait:open"));
-    globalThis.dispatchEvent(new Event("sky:pulse"));
     if (reduce.matches) {
       running = [
         dialog.animate([{ opacity: 0 }, { opacity: 1 }], {
@@ -110,8 +112,8 @@ export const createPortraitExpander = (
       running.push(
         halo.animate(
           [
-            { opacity: 0, rotate: "-70deg" },
-            { opacity: 1, rotate: "0deg" },
+            { opacity: 0, scale: "0.96" },
+            { opacity: 1, scale: "1" },
           ],
           {
             delay: extraDelayMs,
@@ -127,13 +129,14 @@ export const createPortraitExpander = (
   const close = (): void => {
     if (closing || !dialog.open) return;
     closing = true;
+    button.dispatchEvent(new CustomEvent("portrait:close"));
     const finish = async (animation: Animation): Promise<void> => {
       try {
         await animation.finished;
       } catch {
         return;
       }
-      delete button.dataset.expanded;
+      delete button.dataset["expanded"];
       dialog.close();
     };
     if (reduce.matches) {

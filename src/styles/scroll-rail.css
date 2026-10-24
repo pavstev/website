@@ -1,0 +1,238 @@
+.scroll-progress {
+  position: sticky;
+  inset-block-start: var(--bar-h);
+  z-index: 2;
+  block-size: 2px;
+  margin-block-end: -2px;
+  background: var(--story-accent);
+  transform: scaleX(var(--story-progress, 0));
+  transform-origin: left;
+  pointer-events: none;
+}
+
+@supports (animation-timeline: view()) {
+  .scroll-story {
+    timeline-scope: --scroll-run;
+  }
+
+  .scroll-steps {
+    view-timeline: --scroll-run block;
+  }
+
+  .scroll-progress {
+    animation: scroll-progress linear both;
+    animation-timeline: --scroll-run;
+    animation-range: contain 0% contain 100%;
+  }
+}
+
+@keyframes scroll-progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.scroll-rail {
+  display: none;
+}
+
+@media (min-width: 48em) {
+  .scroll-progress {
+    display: none;
+  }
+
+  .scroll-rail {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 4;
+    block-size: 100svh;
+    pointer-events: none;
+  }
+
+  [data-story-state="live"] .scroll-rail {
+    display: block;
+  }
+
+  .scroll-rail-list {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: var(--sp-2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    block-size: 100svh;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    pointer-events: auto;
+  }
+
+  .scroll-tick {
+    position: relative;
+    display: block;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  @media (max-height: 32em) {
+    .scroll-tick {
+      block-size: 1.75rem;
+    }
+  }
+
+  .scroll-tick::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 0.25rem;
+    inline-size: 0.75rem;
+    block-size: 2px;
+    background: var(--rail-rest, var(--story-muted));
+    box-shadow: var(--rail-glow, none);
+    translate: 0 -50%;
+  }
+
+  .scroll-tick[aria-current="step"]::before {
+    inline-size: 1.25rem;
+    background: var(--rail-now, var(--story-accent));
+  }
+
+  .scroll-rail-subs {
+    display: none;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .scroll-sub {
+    position: relative;
+    display: block;
+    inline-size: 2.75rem;
+    block-size: 1rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  .scroll-sub::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 0.25rem;
+    inline-size: 0.375rem;
+    block-size: 2px;
+    background: var(--rail-rest, var(--story-muted));
+    box-shadow: var(--rail-glow, none);
+    translate: 0 -50%;
+  }
+
+  .scroll-sub[aria-current="step"]::before {
+    inline-size: 0.75rem;
+    background: var(--rail-now, var(--story-accent));
+  }
+
+  @media (max-height: 44em) {
+    .scroll-sub {
+      block-size: 0.625rem;
+    }
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .scroll-text {
+    --scroll-dwell: 50vh;
+    view-timeline: --scroll-text block;
+    view-timeline-inset: calc(var(--bar-h) + var(--sp-2))
+      var(--scroll-read-end, var(--sp-6));
+    animation: scroll-dwell linear both;
+    animation-timeline: --scroll-text;
+    animation-range: entry calc(100% - var(--scroll-dwell)) entry
+      calc(100% + var(--scroll-dwell));
+  }
+}
+
+@keyframes scroll-dwell {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  6.25% {
+    translate: 0 calc(var(--scroll-dwell) * -0.0216);
+  }
+
+  12.5% {
+    translate: 0 calc(var(--scroll-dwell) * -0.0646);
+  }
+
+  18.75% {
+    translate: 0 calc(var(--scroll-dwell) * -0.1044);
+  }
+
+  25% {
+    translate: 0 calc(var(--scroll-dwell) * -0.1266);
+  }
+
+  31.25% {
+    translate: 0 calc(var(--scroll-dwell) * -0.1246);
+  }
+
+  37.5% {
+    translate: 0 calc(var(--scroll-dwell) * -0.0989);
+  }
+
+  43.75% {
+    translate: 0 calc(var(--scroll-dwell) * -0.0545);
+  }
+
+  50% {
+    translate: 0 0;
+  }
+
+  56.25% {
+    translate: 0 calc(var(--scroll-dwell) * 0.0545);
+  }
+
+  62.5% {
+    translate: 0 calc(var(--scroll-dwell) * 0.0989);
+  }
+
+  68.75% {
+    translate: 0 calc(var(--scroll-dwell) * 0.1246);
+  }
+
+  75% {
+    translate: 0 calc(var(--scroll-dwell) * 0.1266);
+  }
+
+  81.25% {
+    translate: 0 calc(var(--scroll-dwell) * 0.1044);
+  }
+
+  87.5% {
+    translate: 0 calc(var(--scroll-dwell) * 0.0646);
+  }
+
+  93.75% {
+    translate: 0 calc(var(--scroll-dwell) * 0.0216);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-text {
+    animation: none;
+  }
+}
+
+:root[data-motion-paused] .scroll-text {
+  animation: none;
+}

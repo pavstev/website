@@ -1,0 +1,53 @@
+---
+import { TocDrawer } from "@/components/blog/toc-drawer";
+import { TocSpy } from "@/components/blog/toc-spy";
+import { branchOf, type TocItem } from "@/lib/blog/toc";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  items: readonly TocItem[];
+}
+
+const { items } = Astro.props;
+---
+
+{items.length > 0 && (
+  <nav aria-label={en.blog.toc} class="post-toc">
+    <details class="toc-details mat-panel">
+      <summary class="toc-summary focus-ring">{en.blog.toc}</summary>
+      <ol class="toc-list">
+        {items.map((item, index) => (
+          <li
+            class="toc-item"
+            data-branch={branchOf(items, index)}
+            data-depth={item.depth}
+          >
+            <a class="toc-link focus-ring" href={`#${item.id}`}>
+              {item.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </details>
+    <div class="toc-aside">
+      <p aria-hidden="true" class="toc-title">
+        {en.blog.toc}
+      </p>
+      <TocSpy client:idle={{ timeout: 1000 }} />
+      <ol class="toc-list">
+        {items.map((item, index) => (
+          <li
+            class="toc-item"
+            data-branch={branchOf(items, index)}
+            data-depth={item.depth}
+          >
+            <a class="toc-link focus-ring" href={`#${item.id}`}>
+              {item.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+    <TocDrawer client:idle={{ timeout: 1000 }} items={items} />
+  </nav>
+)}

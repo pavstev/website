@@ -1,0 +1,28 @@
+---
+import { Icon } from "@/components/icon";
+import { en } from "@/lib/i18n";
+import { personalData } from "@/lib/personal";
+
+const repoUrl = `${personalData.github}/website`;
+---
+
+<div class="sky-outro">
+  <a class="sky-outro-main focus-ring" href="/">
+    <Icon aria-hidden name="lucide:sun-moon" size="1rem" />
+    {en.skyStory.openSky}
+  </a>
+  <a
+    class="sky-outro-link focus-ring"
+    href={repoUrl}
+    rel="noopener noreferrer"
+    target="_blank"
+  >
+    <Icon aria-hidden name="simple-icons:github" size="0.9375rem" />
+    {en.skyStory.onGithub}
+    <span class="sr-only"> {en.card.newTab}</span>
+  </a>
+  <a class="sky-outro-link focus-ring" href="/work">
+    <Icon aria-hidden name="lucide:arrow-left" size="0.9375rem" />
+    {en.skyStory.backToWork}
+  </a>
+</div>

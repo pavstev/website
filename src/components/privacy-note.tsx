@@ -1,30 +1,53 @@
 import type { ReactElement } from "react";
 
+import { PrivacyAck } from "@/components/privacy-ack";
 import { en } from "@/lib/i18n";
-import { personalData } from "@/lib/personal";
 
 const panelId = "privacy-panel";
 
-export const PrivacyNote = (): ReactElement => (
-  <footer className="privacy-note">
-    <button className="privacy-chip" popoverTarget={panelId} type="button">
-      <span className="privacy-chip-face fade-up type-chip delay-4">
+interface PrivacyNoteProps {
+  email: string;
+}
+
+export const PrivacyNote = ({ email }: PrivacyNoteProps): ReactElement => (
+  <div className="privacy-note">
+    <button
+      aria-expanded="false"
+      aria-haspopup="dialog"
+      className="privacy-chip"
+      popoverTarget={panelId}
+      type="button"
+    >
+      <span className="privacy-chip-face fade-up delay-4">
         <span aria-hidden="true" className="privacy-dot" />
         {en.privacy.chip}
       </span>
     </button>
-    <div className="privacy-panel" id={panelId} popover="auto">
+    <div
+      aria-label={en.privacy.label}
+      className="privacy-panel mat-pop"
+      data-anchored="always"
+      data-nosnippet=""
+      data-placement="top"
+      id={panelId}
+      popover="auto"
+      role="dialog"
+    >
       <p className="privacy-lead">{en.privacy.local}</p>
+      <p>{en.privacy.stats}</p>
       <p>{en.privacy.host}</p>
+      <p>{en.privacy.weather}</p>
+      <p>{en.privacy.location}</p>
       <p className="privacy-contact">
         {en.privacy.contact}{" "}
-        <a
-          className="privacy-mail focus-ring"
-          href={`mailto:${personalData.email}`}
-        >
-          {personalData.email}
+        <a className="privacy-mail focus-ring" href={`mailto:${email}`}>
+          {email}
         </a>
       </p>
+      <div className="privacy-actions">
+        <p className="privacy-stored">{en.privacy.stored}</p>
+        <PrivacyAck panelId={panelId} />
+      </div>
     </div>
-  </footer>
+  </div>
 );

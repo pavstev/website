@@ -1,0 +1,53 @@
+---
+import PaginationArrow from "@/components/blog/pagination-arrow.astro";
+import { pageHref, pageWindow } from "@/lib/blog/pagination";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  base: string;
+  count: number;
+  page: number;
+}
+
+const { base, count, page } = Astro.props;
+
+const pageLabel = (value: number): string =>
+  en.blog.page.replace("{n}", () => String(value));
+const items = pageWindow(page, count);
+---
+
+{count > 1 && (
+  <nav aria-label={en.blog.pagination} class="blog-pagination">
+    <PaginationArrow
+      flip
+      href={page > 1 ? pageHref(base, page - 1) : undefined}
+      label={en.blog.previousPage}
+      rel="prev"
+    />
+    {items.map((item) =>
+      typeof item !== "number" ? (
+        <span aria-hidden="true" class="blog-pagination-gap">
+          &hellip;
+        </span>
+      ) : item === page ? (
+        <span aria-current="page" class="blog-pagination-page">
+          <span class="sr-only">{pageLabel(item)}</span>
+          <span aria-hidden="true">{item}</span>
+        </span>
+      ) : (
+        <a
+          aria-label={pageLabel(item)}
+          class="blog-pagination-page focus-ring"
+          href={pageHref(base, item)}
+        >
+          {item}
+        </a>
+      )
+    )}
+    <PaginationArrow
+      href={page < count ? pageHref(base, page + 1) : undefined}
+      label={en.blog.nextPage}
+      rel="next"
+    />
+  </nav>
+)}
