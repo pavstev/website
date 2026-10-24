@@ -78,6 +78,7 @@ const RepoActions = ({
     </a>
     {story ? (
       <a
+        aria-label={fillText(en.repos.seeStoryLabel, { name })}
         className="work-story-link focus-ring"
         data-story-link=""
         href={story.path}

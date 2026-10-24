@@ -28,6 +28,10 @@ describe("stepAt", () => {
     assert.deepEqual(stepAt(800, offsets), { index: 1, t: 0 });
   });
 
+  it("starts the next step when a smooth scroll stops just short of its top", () => {
+    assert.deepEqual(stepAt(798.5, offsets), { index: 1, t: 0 });
+  });
+
   it("clamps past the end to the last step at t 1", () => {
     assert.deepEqual(stepAt(5000, offsets), { index: 1, t: 1 });
   });

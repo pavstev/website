@@ -7,6 +7,7 @@ export interface RailHandle {
 export interface RailOptions {
   bodySelector: string;
   finaleStops?: number;
+  notBeforeTop?: boolean;
 }
 
 export interface RailSubs {
@@ -18,6 +19,20 @@ export interface RailTick {
   id: string;
   name: string;
 }
+
+const px = (value: string): number => Number(value.replace(/px$/u, "")) || 0;
+
+const endLanding = (step: HTMLElement): number => {
+  const rect = step.getBoundingClientRect();
+  const top = rect.top + globalThis.scrollY;
+  const end =
+    top +
+    rect.height -
+    globalThis.innerHeight +
+    px(getComputedStyle(document.documentElement).scrollPaddingBlockEnd) +
+    px(getComputedStyle(step).scrollMarginBlockEnd);
+  return Math.max(top, end);
+};
 
 export const bindRail = (
   rail: HTMLElement,
@@ -40,10 +55,12 @@ export const bindRail = (
       body !== null &&
       body !== undefined &&
       body.offsetHeight < globalThis.innerHeight * 0.75;
-    step?.scrollIntoView({
-      behavior: still() ? "auto" : "smooth",
-      block: fits ? "end" : "start",
-    });
+    const behavior = still() ? "auto" : "smooth";
+    if (step && fits && options.notBeforeTop === true) {
+      globalThis.scrollTo({ behavior, top: endLanding(step) });
+      return;
+    }
+    step?.scrollIntoView({ behavior, block: fits ? "end" : "start" });
   };
 
   const jumpStop = (sub: HTMLElement): void => {

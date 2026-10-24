@@ -254,6 +254,7 @@ export const en = {
     moreLabel: "Show {count} more",
     newTab: "Opens in a new tab",
     seeStory: "See the story",
+    seeStoryLabel: "See the story: {name}",
     starsLabel: "stars",
     viewOnGithub: "View on GitHub",
     viewOnGithubLabel: "View on GitHub: {name}",

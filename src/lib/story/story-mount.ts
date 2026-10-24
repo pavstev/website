@@ -127,6 +127,7 @@ export const mountStory = (root: HTMLElement): (() => void) => {
     ? bindRail(rail, items, () => still.matches, {
         bodySelector: ".story-body",
         finaleStops,
+        notBeforeTop: true,
       })
     : undefined;
   const writeProgress = progressWriter(root);

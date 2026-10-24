@@ -25,13 +25,15 @@ export const overlapsRect = (box: Box, text: Box, gap: number): boolean =>
 
 const smooth = (x: number): number => smoothstep(0, 1, x);
 
+const stepSlack = 2;
+
 export const stepAt = (
   scrollTop: number,
   offsets: readonly StepOffset[]
 ): StepPosition => {
   let index = 0;
   for (const [i, offset] of offsets.entries()) {
-    if ((offset?.top ?? 0) <= scrollTop) index = i;
+    if ((offset?.top ?? 0) <= scrollTop + stepSlack) index = i;
   }
   const step = offsets[index];
   if (!step) return { index: 0, t: 0 };

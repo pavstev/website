@@ -126,6 +126,40 @@ describe("bindRail", () => {
     assert.deepEqual(asked, [".sky-step-body"]);
   });
 
+  it("never stops above the step top when the step starts there", () => {
+    const tick = buildTick("c01");
+    const scrollTo = mock.fn();
+    Object.assign(globalThis, {
+      document: { documentElement: {} },
+      getComputedStyle: (element: object): Record<string, string> =>
+        "dataset" in element
+          ? { scrollMarginBlockEnd: "-68px" }
+          : { scrollPaddingBlockEnd: "16px" },
+      innerHeight: 800,
+      scrollTo,
+      scrollY: 0,
+    });
+    const step = {
+      dataset: { step: "c01" },
+      getBoundingClientRect: (): { height: number; top: number } => ({
+        height: 800,
+        top: 800,
+      }),
+      querySelector: (): { offsetHeight: number } => ({ offsetHeight: 160 }),
+      scrollIntoView: mock.fn(),
+    };
+    bindRail(
+      { querySelectorAll: (): FakeTick[] => [tick] } as unknown as HTMLElement,
+      [step] as unknown as HTMLElement[],
+      () => false,
+      { bodySelector: ".story-body", notBeforeTop: true }
+    );
+    tick.dispatchEvent(new Event("click"));
+    assert.deepEqual(scrollTo.mock.calls[0]?.arguments, [
+      { behavior: "smooth", top: 800 },
+    ]);
+  });
+
   it("stops listening after dispose", () => {
     const { handle, scrolls, ticks } = build(false);
     handle.dispose();
