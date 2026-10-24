@@ -5,9 +5,16 @@ import { vienna } from "./geo.ts";
 import { sunPosition } from "./sky-ephemeris.ts";
 import { moonView } from "./sky-moon.ts";
 import { paintScene, tableInput } from "./sky-paint.ts";
-import { skyStorySteps, storyInstant, storyWeather } from "./sky-story.ts";
+import {
+  skyStorySteps,
+  storyHorizon,
+  storyInstant,
+  storyTiltShare,
+  storyView,
+  storyWeather,
+} from "./sky-story.ts";
 import { sunSpot } from "./sky-sun.ts";
-import { turnDegrees, type ViewSize } from "./sky-view.ts";
+import { horizonShare, turnDegrees, type ViewSize } from "./sky-view.ts";
 import { weatherPresets } from "./weather.ts";
 
 const phone: ViewSize = { height: 844, width: 390 };
@@ -122,13 +129,36 @@ describe("the sun on screen", () => {
       }
   });
 
-  it("sits on the horizon at sunset", () => {
+  it("sits on the raised horizon at sunset", () => {
     const altitude = sunAltitude(stepIndex("sunset"));
     assert.ok(Math.abs(altitude) < 0.5, `sunset height ${altitude.toFixed(2)}`);
     for (const view of views) {
-      const spot = sunSpot(storyInstant(stepIndex("sunset")), view, vienna);
+      const spot = sunSpot(
+        storyInstant(stepIndex("sunset")),
+        storyView(view, stepIndex("sunset")),
+        vienna
+      );
       assert.ok(spot, `no sun at sunset ${String(view.width)}`);
-      assert.ok(spot.y > view.height - 0.05 * view.height);
+      const fromBottom = view.height - spot.y;
+      assert.ok(fromBottom > storyTiltShare * view.height - spot.radius);
+      assert.ok(fromBottom < storyTiltShare * view.height + spot.radius);
+    }
+  });
+
+  it("lifts the whole sun and its glow clear of the bottom edge at sunrise", () => {
+    for (const view of views) {
+      const chapter = stepIndex("sunrise");
+      const spot = sunSpot(
+        storyInstant(chapter),
+        storyView(view, chapter),
+        vienna
+      );
+      assert.ok(spot, `no sun at sunrise ${String(view.width)}`);
+      const fromBottom = view.height - spot.y;
+      assert.ok(fromBottom - spot.radius > 2.5 * spot.radius);
+      const plain = sunSpot(storyInstant(chapter), view, vienna);
+      assert.ok(plain);
+      assert.ok(view.height - plain.y - plain.radius < 0.5 * plain.radius);
     }
   });
 
@@ -145,11 +175,33 @@ describe("the moon on screen", () => {
         const instant = storyInstant(stepIndex(id));
         const moon = moonView(instant, vienna.lat, vienna.lon);
         assert.ok(moon.altitude > 40, `${id} moon is low`);
-        const scene = paintScene(instant, view, clear, vienna);
+        const scene = paintScene(
+          instant,
+          storyView(view, stepIndex(id)),
+          clear,
+          vienna
+        );
         const [x, y, radius, fade] = scene.moon;
         assert.equal(fade, 1, `${id} moon hidden at ${String(view.width)}`);
         assert.ok(x > radius && x < view.width - radius);
         assert.ok(y > view.height * 0.4 && y < view.height - radius);
+      }
+  });
+
+  it("keeps the whole moon above the note at the night steps", () => {
+    for (const view of views)
+      for (const id of ["night", "yours", "outro"] as const) {
+        const chapter = stepIndex(id);
+        const [, y, radius] = paintScene(
+          storyInstant(chapter),
+          storyView(view, chapter),
+          clear,
+          vienna
+        ).moon;
+        assert.ok(
+          y - radius > 0.45 * view.height,
+          `${id} moon bottom at ${String(Math.round(y - radius))} of ${String(view.height)}`
+        );
       }
   });
 
@@ -161,9 +213,19 @@ describe("the moon on screen", () => {
   it("shows from the dusk and is up but off screen at sunset", () => {
     const sunset = moonView(storyInstant(5), vienna.lat, vienna.lon);
     assert.ok(sunset.altitude > 5);
-    const shown = paintScene(storyInstant(5), phone, clear, vienna).moon[3];
+    const shown = paintScene(
+      storyInstant(5),
+      storyView(phone, 5),
+      clear,
+      vienna
+    ).moon[3];
     assert.equal(shown, 0);
-    const later = paintScene(storyInstant(5.7), phone, clear, vienna).moon[3];
+    const later = paintScene(
+      storyInstant(5.7),
+      storyView(phone, 5.7),
+      clear,
+      vienna
+    ).moon[3];
     assert.equal(later, 1);
   });
 });
@@ -206,6 +268,24 @@ describe("storyWeather", () => {
     assert.equal(storyWeather(8).overcast, 0);
   });
 
+  it("builds the deck early and holds the rain for most of the chapter", () => {
+    const { overcast, partly } = weatherPresets;
+    assert.equal(storyWeather(3).overcast, partly.overcast);
+    assert.equal(storyWeather(3.4).overcast, overcast.overcast);
+    assert.ok(storyWeather(3.2).overcast > partly.overcast);
+    assert.equal(storyWeather(3.2).rain, 0);
+    for (const c of [3.75, 4, 4.35]) assert.equal(storyWeather(c).rain, 1);
+    assert.ok(storyWeather(4.55).rain < 1);
+    assert.equal(storyWeather(4.75).rain, 0);
+    assert.ok(storyWeather(4.9).overcast < overcast.overcast);
+  });
+
+  it("holds full rain for about 0.6 of a chapter", () => {
+    let held = 0;
+    for (let c = 3; c < 5; c += 0.01) if (storyWeather(c).rain === 1) held += 1;
+    assert.ok(held >= 55, `rain held for ${String(held)} steps`);
+  });
+
   it("clears for the sunset and the night", () => {
     for (const c of [5, 6, 7, 8])
       assert.deepEqual(storyWeather(c), { ...weatherPresets.clear });
@@ -226,5 +306,35 @@ describe("storyWeather", () => {
     first.rain = 0;
     assert.equal(storyWeather(4).rain, 1);
     assert.equal(weatherPresets.rain.rain, 1);
+  });
+});
+
+describe("storyHorizon", () => {
+  it("starts at the home horizon and settles on the raised one", () => {
+    assert.equal(storyHorizon(0), horizonShare);
+    assert.equal(storyHorizon(1), storyTiltShare);
+    assert.equal(storyHorizon(8), storyTiltShare);
+    assert.equal(storyHorizon(-3), horizonShare);
+  });
+
+  it("rises smoothly and never falls", () => {
+    let prev = storyHorizon(0);
+    for (let c = 0.005; c <= 8; c += 0.005) {
+      const next = storyHorizon(c);
+      assert.ok(next >= prev);
+      assert.ok(
+        next - prev < 0.002,
+        `a horizon step of ${String(next - prev)}`
+      );
+      prev = next;
+    }
+  });
+
+  it("keeps the home view and tilts a copy for the story", () => {
+    const tilted = storyView(phone, 2);
+    assert.equal(tilted.horizon, storyTiltShare);
+    assert.equal(tilted.height, phone.height);
+    assert.equal(tilted.width, phone.width);
+    assert.equal(phone.horizon, undefined);
   });
 });

@@ -7,28 +7,22 @@ const repoUrl = `${personalData.github}/website`;
 ---
 
 <div class="sky-outro">
-  <a class="keycap-host focus-ring" href="/">
-    <span class="keycap">
-      <Icon aria-hidden name="lucide:sun-moon" size="0.9375rem" />
-      {en.skyStory.openSky}
-    </span>
+  <a class="sky-outro-main focus-ring" href="/">
+    <Icon aria-hidden name="lucide:sun-moon" size="1rem" />
+    {en.skyStory.openSky}
   </a>
   <a
-    class="keycap-host focus-ring"
+    class="sky-outro-link focus-ring"
     href={repoUrl}
     rel="noopener noreferrer"
     target="_blank"
   >
-    <span class="keycap">
-      <Icon aria-hidden name="simple-icons:github" size="0.9375rem" />
-      {en.skyStory.onGithub}
-      <span class="sr-only"> {en.card.newTab}</span>
-    </span>
+    <Icon aria-hidden name="simple-icons:github" size="0.9375rem" />
+    {en.skyStory.onGithub}
+    <span class="sr-only"> {en.card.newTab}</span>
   </a>
-  <a class="keycap-host focus-ring" href="/work">
-    <span class="keycap">
-      <Icon aria-hidden name="lucide:arrow-left" size="0.9375rem" />
-      {en.skyStory.backToWork}
-    </span>
+  <a class="sky-outro-link focus-ring" href="/work">
+    <Icon aria-hidden name="lucide:arrow-left" size="0.9375rem" />
+    {en.skyStory.backToWork}
   </a>
 </div>

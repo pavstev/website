@@ -1,4 +1,5 @@
 import { clamp01 } from "./math.ts";
+import { horizonShare, type ViewSize } from "./sky-view.ts";
 import {
   mixWeather,
   type SkyWeather,
@@ -44,13 +45,26 @@ const clockPoints: ReadonlyArray<readonly [number, string]> = [
 const weatherKeysAt: ReadonlyArray<readonly [number, WeatherName]> = [
   [0, "clear"],
   [3, "partly"],
-  [3.6, "overcast"],
-  [4, "rain"],
-  [4.6, "partly"],
+  [3.4, "overcast"],
+  [3.75, "rain"],
+  [4.35, "rain"],
+  [4.75, "partly"],
   [5, "clear"],
 ];
 
 const smoother = (t: number): number => t * t * t * (t * (t * 6 - 15) + 10);
+
+export const storyTiltShare = 0.11;
+const storyTiltRamp = 0.75;
+
+export const storyHorizon = (chapter: number): number =>
+  horizonShare +
+  (storyTiltShare - horizonShare) * smoother(clamp01(chapter / storyTiltRamp));
+
+export const storyView = (view: ViewSize, chapter: number): ViewSize => ({
+  ...view,
+  horizon: storyHorizon(chapter),
+});
 
 const chapters = clockPoints.map(([at]) => at);
 const instants = clockPoints.map(([, key]) => Date.parse(key));

@@ -74,7 +74,7 @@ import {
 import { createSkyProbe, type ProbeBox, type SkyProbe } from "@/lib/sky-probe";
 import { meteorStart, rayView } from "@/lib/sky-rays";
 import { skyVertexShader } from "@/lib/sky-shader";
-import { storyInstant, storyWeather } from "@/lib/sky-story";
+import { storyInstant, storyView, storyWeather } from "@/lib/sky-story";
 import {
   createTableGrid,
   gridChapter,
@@ -389,6 +389,7 @@ const startSky = (
   let table: SkyTable | undefined;
   let cancelTable: (() => void) | undefined;
   let tableWait = false;
+  let tableUrgent = false;
   let tableTried = false;
   let tableWarm = false;
   let afterTable: (() => void) | undefined;
@@ -527,10 +528,14 @@ const startSky = (
   const paintsNow = (): boolean => paintsSky(mode) && paintReady();
   const storyNow = (): boolean => skyKind() === "story";
 
-  const sceneView = (): ViewSize => ({
-    ...screenView(),
-    width: canvas.clientWidth,
-  });
+  const viewFor = (view: ViewSize): ViewSize =>
+    storyNow() ? storyView(view, storyChapter()) : view;
+
+  const sceneView = (): ViewSize =>
+    viewFor({
+      ...screenView(),
+      width: canvas.clientWidth,
+    });
 
   const uploadTable = (data?: SkyTable): void => {
     gl.activeTexture(gl.TEXTURE0 + lutUnit);
@@ -639,7 +644,7 @@ const startSky = (
     const weather = storyWeather(at);
     const instantAt = storyInstant(at);
     const built = safeSkyTable(
-      tableInput(instantAt, gridView, weather, viennaPlace)
+      tableInput(instantAt, storyView(gridView, at), weather, viennaPlace)
     );
     if (built) grid.put(index, built);
     else grid.skip(index);
@@ -668,6 +673,7 @@ const startSky = (
 
   const buildTable = (): void => {
     cancelTable = undefined;
+    tableUrgent = false;
     if (!tableWarm && paintsNow()) {
       tableWarm = true;
       warmSkyTable();
@@ -700,12 +706,18 @@ const startSky = (
     }
   };
 
-  const queueTable = (): void => {
-    if (cancelTable || !paintsNow()) return;
+  const queueTable = (urgent = false): void => {
+    if (!paintsNow()) return;
+    if (cancelTable) {
+      if (!urgent || tableUrgent) return;
+      cancelTable();
+      cancelTable = undefined;
+    }
+    tableUrgent = urgent;
     if (!table && !tableTried) tableWait = true;
     cancelTable = scheduleIdle(
       buildTable,
-      table
+      table && !urgent
         ? { fallbackMs: 50, timeout: 1000 }
         : { fallbackMs: 0, timeout: 200 }
     );
@@ -741,6 +753,8 @@ const startSky = (
     table = built;
     tableTried = true;
     uploadTable(built);
+    firmInk = true;
+    probedAt = -Infinity;
   };
 
   const easeWeather = (dt: number): boolean => {
@@ -1411,7 +1425,7 @@ const startSky = (
     if (blended) {
       table = blended;
       uploadTable(blended);
-    }
+    } else if (tableKind === "story") queueTable(true);
     refreshHome();
     drawn = scene;
     sceneVersion += 1;
@@ -1572,7 +1586,7 @@ const startSky = (
     };
     tween = started;
     if (next === "story") enterStory();
-    started.sun = sunSpot(instant(), screenView(), skyPlace());
+    started.sun = sunSpot(instant(), viewFor(screenView()), skyPlace());
     if (!started.forward) refreshHome();
     markHome();
     if (!morph) root.dataset["skyLeave"] = "";
@@ -1643,7 +1657,7 @@ const startSky = (
     }
     active.swapped = true;
     if (!active.forward)
-      active.sun = sunSpot(instant(), screenView(), skyPlace());
+      active.sun = sunSpot(instant(), viewFor(screenView()), skyPlace());
     if (active.morph) return;
     delete root.dataset["skyLeave"];
     const delay = arriveDelay(performance.now() - active.clickAt);

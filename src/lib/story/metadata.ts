@@ -8,20 +8,36 @@ export const storyUrl = `${personalData.website}${dotfilesStory}`;
 
 export const skyStoryUrl = `${personalData.website}${websiteStory}`;
 
-const image = {
-  alt: en.story.metaImageAlt,
+interface ShareImage {
+  alt: string;
+  height: number;
+  type: string;
+  url: string;
+  width: number;
+}
+
+interface StoryPage {
+  description: string;
+  image: ShareImage;
+  title: string;
+  url: string;
+}
+
+const shareImage = (alt: string, url: string): ShareImage => ({
+  alt,
   height: 630,
   type: "image/jpeg",
-  url: "/og-dotfiles.jpg",
+  url,
   width: 1200,
-};
+});
 
-export const storyMetadata = (): PageMetadata => {
-  const base = listMetadata({
-    description: en.story.metaDescription,
-    title: en.story.metaTitle,
-    url: storyUrl,
-  });
+const storyPageMetadata = ({
+  description,
+  image,
+  title,
+  url,
+}: StoryPage): PageMetadata => {
+  const base = listMetadata({ description, title, url });
   return {
     ...base,
     openGraph: { ...base.openGraph, images: [image] },
@@ -32,9 +48,18 @@ export const storyMetadata = (): PageMetadata => {
   };
 };
 
+export const storyMetadata = (): PageMetadata =>
+  storyPageMetadata({
+    description: en.story.metaDescription,
+    image: shareImage(en.story.metaImageAlt, "/og-dotfiles.jpg"),
+    title: en.story.metaTitle,
+    url: storyUrl,
+  });
+
 export const skyStoryMetadata = (): PageMetadata =>
-  listMetadata({
+  storyPageMetadata({
     description: en.skyStory.metaDescription,
+    image: shareImage(en.skyStory.metaImageAlt, "/og-sky-story.jpg"),
     title: en.skyStory.metaTitle,
     url: skyStoryUrl,
   });

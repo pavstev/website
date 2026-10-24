@@ -345,11 +345,14 @@ export const en = {
   skyStory: {
     backToWork: "Back to work",
     crumb: "website",
+    drawnBy: "Drawn by",
     metaDescription:
       "How this site paints a real sky: the sun, the light, the clouds, a rain front and the moon, played over one day as you scroll.",
+    metaImageAlt: "The painted night sky of the website, with the full moon",
     metaTitle: "A real sky, painted",
     onGithub: "View on GitHub",
     openSky: "Open the live sky",
+    scrollCue: "Scroll",
     skipToEnd: "Skip to the end of the story",
     stepsLabel: "One day of sky, hour by hour",
   },

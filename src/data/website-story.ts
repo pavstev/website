@@ -59,7 +59,7 @@ export const skyStoryCopy: readonly SkyStoryCopy[] = [
     id: "weather",
     line: "The weather is live",
     note: "On the home page your browser asks Open-Meteo for the weather where you are. Cloud, rain, snow and fog then ease in over a few seconds. Here a rain front rolls in and clears, so you can watch it happen.",
-    screens: 2,
+    screens: 3,
   },
   {
     chapter: "Sunset",

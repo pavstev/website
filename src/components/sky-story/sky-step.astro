@@ -1,5 +1,6 @@
 ---
 import { type SkyStorySlide } from "@/data/website-story";
+import { en } from "@/lib/i18n";
 import { posterStyle, type StoryPoster } from "@/lib/sky-story-poster";
 
 interface Props {
@@ -32,6 +33,14 @@ const Heading = slide.id === "hero" ? "h1" : "h2";
     </p>
     <Heading class="sky-step-line text-sky">{slide.line}</Heading>
     <p class="sky-step-note text-sky">{slide.note}</p>
+    {slide.id === "hero" && (
+      <p aria-hidden="true" class="sky-step-cue">
+        <span class="sky-step-cue-word type-chip">{en.skyStory.scrollCue}</span>
+        <span class="sky-step-cue-line">
+          <span class="sky-step-cue-drip" />
+        </span>
+      </p>
+    )}
     <slot />
   </div>
 </li>

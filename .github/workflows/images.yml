@@ -26,8 +26,10 @@ on:
       - src/lib/sky-paint-shader.ts
       - src/lib/sky-paint.ts
       - src/lib/sky-palette.ts
+      - src/lib/sky-place.ts
       - src/lib/sky-rays.ts
       - src/lib/sky-shader.ts
+      - src/lib/sky-story.ts
       - src/lib/sky-sun.ts
       - src/lib/sky-view.ts
       - src/lib/story/blueprint-geometry.ts
@@ -75,13 +77,13 @@ jobs:
         id: push
         if: github.ref == 'refs/heads/main'
         run: |
-          if [ -z "$(git status --porcelain public/og-image.jpg public/linkedin-cover.png public/og-dotfiles.jpg)" ]; then
+          if [ -z "$(git status --porcelain public/og-image.jpg public/linkedin-cover.png public/og-dotfiles.jpg public/og-sky-story.jpg)" ]; then
             echo "Nothing changed. The images are already up to date." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/og-image.jpg public/linkedin-cover.png public/og-dotfiles.jpg
+          git add public/og-image.jpg public/linkedin-cover.png public/og-dotfiles.jpg public/og-sky-story.jpg
           git commit -m "chore(images): refresh the social images"
           git pull --rebase origin main
           git push origin HEAD:main

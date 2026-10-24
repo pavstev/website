@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { listMetadata } from "../blog/metadata.ts";
 import { storyGraph, storyPageNode } from "../structured-data.ts";
 import {
   skyStoryMetadata,
@@ -81,12 +80,14 @@ describe("skyStoryMetadata", () => {
     assert.doesNotMatch(JSON.stringify(metadata), /vienna|wien/i);
   });
 
-  it("keeps the default share image", () => {
-    assert.notEqual(metadata.openGraph.images[0]?.url, "/og-dotfiles.jpg");
+  it("uses its own share image", () => {
+    assert.equal(metadata.openGraph.images[0]?.url, "/og-sky-story.jpg");
+    assert.equal(metadata.openGraph.images[0]?.width, 1200);
+    assert.equal(metadata.openGraph.images[0]?.height, 630);
+    assert.equal(metadata.twitter.images[0]?.url, "/og-sky-story.jpg");
     assert.equal(
-      metadata.openGraph.images[0]?.url,
-      listMetadata({ description: "x", title: "x", url: skyStoryUrl }).openGraph
-        .images[0]?.url
+      metadata.twitter.images[0]?.alt,
+      metadata.openGraph.images[0]?.alt
     );
   });
 });

@@ -31,7 +31,7 @@ const jsonLd = serializeJsonLd(storyGraph(skyStoryMeta.updatedAt, "website"));
       {en.skyStory.skipToEnd}
     </a>
     <section class="sky-story" data-sky-story="">
-      <SkyDial />
+      <SkyDial slides={slides} />
       <ol aria-label={en.skyStory.stepsLabel} class="sky-steps">
         {slides.map((slide, index) => (
           <SkyStep poster={posterAt(index)} slide={slide}>

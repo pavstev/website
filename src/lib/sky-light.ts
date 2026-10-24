@@ -532,8 +532,8 @@ export const skyTable = (input: TableInput): SkyTable => {
     view: {
       center,
       height,
-      horizon: horizonHeight(height),
-      ppd: pixelsPerDegree(height),
+      horizon: horizonHeight(height, view.horizon),
+      ppd: pixelsPerDegree(height, view.horizon),
       width,
     },
   });

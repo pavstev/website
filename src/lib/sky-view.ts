@@ -18,20 +18,25 @@ export interface Sight {
 export interface ViewSize {
   card?: CardRect;
   height: number;
+  horizon?: number;
   width: number;
 }
 
 const viewDegrees = 90;
-const viewShare = 0.98;
-const horizonShare = 0.02;
+export const horizonShare = 0.02;
 
 export const turnDegrees = (angle: number): number =>
   ((((angle + 180) % 360) + 360) % 360) - 180;
 
-export const pixelsPerDegree = (height: number): number =>
-  (viewShare * height) / viewDegrees;
+export const pixelsPerDegree = (
+  height: number,
+  horizon: number = horizonShare
+): number => ((1 - horizon) * height) / viewDegrees;
 
-export const horizonHeight = (height: number): number => horizonShare * height;
+export const horizonHeight = (
+  height: number,
+  horizon: number = horizonShare
+): number => horizon * height;
 
 const sideMargin = (width: number): number => Math.max(24, width * 0.05);
 
@@ -45,7 +50,7 @@ export const anchorX = (view: ViewSize): number => {
 
 export const aimAzimuth = (target: Sight, view: ViewSize): number =>
   target.azimuth -
-  (anchorX(view) - view.width / 2) / pixelsPerDegree(view.height);
+  (anchorX(view) - view.width / 2) / pixelsPerDegree(view.height, view.horizon);
 
 export const blendAim = (day: number, night: number, share: number): number =>
   day + turnDegrees(night - day) * share;
@@ -55,9 +60,9 @@ export const projectSight = (
   center: number,
   view: ViewSize
 ): ScreenPoint => {
-  const scale = pixelsPerDegree(view.height);
+  const scale = pixelsPerDegree(view.height, view.horizon);
   return {
     x: view.width / 2 + turnDegrees(sight.azimuth - center) * scale,
-    y: horizonHeight(view.height) + sight.altitude * scale,
+    y: horizonHeight(view.height, view.horizon) + sight.altitude * scale,
   };
 };

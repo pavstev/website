@@ -35,6 +35,43 @@ describe("painted view", () => {
     assert.equal(top.x, 720);
   });
 
+  it("keeps the home view exactly as it was without a horizon", () => {
+    for (let height = 320; height <= 2160; height += 7) {
+      assert.equal(pixelsPerDegree(height), (0.98 * height) / 90);
+      assert.equal(horizonHeight(height), 0.02 * height);
+      const view = { height, width: 1000 };
+      const point = projectSight({ altitude: 33, azimuth: 120 }, 100, view);
+      assert.equal(point.y, 0.02 * height + 33 * ((0.98 * height) / 90));
+    }
+  });
+
+  it("raises the horizon and keeps the zenith on the top edge", () => {
+    assert.equal(horizonHeight(800, 0.11), 88);
+    assert.equal(horizonHeight(800), horizonHeight(800, 0.02));
+    assert.equal(pixelsPerDegree(800), pixelsPerDegree(800, 0.02));
+    const view = { height: 800, horizon: 0.11, width: 1280 };
+    const flat = projectSight({ altitude: 0, azimuth: 90 }, 90, view);
+    assert.ok(Math.abs(flat.y - 88) < 1e-9);
+    const top = projectSight({ altitude: 90, azimuth: 90 }, 90, view);
+    assert.ok(Math.abs(top.y - 800) < 1e-9);
+    const home = projectSight({ altitude: 30, azimuth: 90 }, 90, {
+      height: 800,
+      width: 1280,
+    });
+    const raised = projectSight({ altitude: 30, azimuth: 90 }, 90, view);
+    assert.ok(raised.y > home.y);
+  });
+
+  it("aims by the raised view scale", () => {
+    const sight = { altitude: 20, azimuth: 150 };
+    const plain = { height: 900, width: 1000 };
+    const raised = { ...plain, horizon: 0.11 };
+    const aimed = aimAzimuth(sight, raised);
+    const at = projectSight(sight, aimed, raised);
+    assert.ok(Math.abs(at.x - anchorX(raised)) < 1e-9);
+    assert.notEqual(aimed, aimAzimuth(sight, plain));
+  });
+
   it("wraps azimuths across north", () => {
     assert.equal(turnDegrees(190), -170);
     assert.equal(turnDegrees(-190), 170);

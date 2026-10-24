@@ -99,8 +99,9 @@
       );
 }
 
-.sky-step .sky-step-eyebrow.text-sky {
-  --eyebrow-glow: max(var(--glow, 0), 0.85);
+.sky-step .sky-step-eyebrow.text-sky,
+.sky-step .sky-step-note.text-sky {
+  --eyebrow-glow: max(var(--glow, 0), 1);
 
   text-shadow:
     0 0 1px
@@ -115,16 +116,22 @@
         var(--glow-tone) calc(var(--eyebrow-glow) * 100%),
         transparent
       ),
-    0 0 10px
+    0 0 8px
+      color-mix(
+        in srgb,
+        var(--glow-tone) calc(var(--eyebrow-glow) * 90%),
+        transparent
+      ),
+    0 0 14px
       color-mix(
         in srgb,
         var(--glow-tone) calc(var(--eyebrow-glow) * 70%),
         transparent
       ),
-    0 0 18px
+    0 0 24px
       color-mix(
         in srgb,
-        var(--glow-tone) calc(var(--eyebrow-glow) * 45%),
+        var(--glow-tone) calc(var(--eyebrow-glow) * 50%),
         transparent
       );
 }
@@ -135,7 +142,8 @@
 
 @media (forced-colors: active) {
   .sky-step .text-sky,
-  .sky-step .sky-step-eyebrow.text-sky {
+  .sky-step .sky-step-eyebrow.text-sky,
+  .sky-step .sky-step-note.text-sky {
     text-shadow: none;
   }
 }
@@ -149,9 +157,18 @@
   --ink: var(--foreground-soft);
 
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-2);
   margin: 0 0 var(--sp-3);
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+
+.sky-step-clock,
+.sky-step-chapter {
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 
 .sky-step-lamp {
@@ -209,33 +226,142 @@
 .sky-outro {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-3);
+  gap: var(--sp-2) var(--sp-5);
+  align-items: center;
   margin-block-start: var(--sp-5);
 }
 
+.sky-outro-main,
+.sky-outro-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  line-height: 1.5;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.sky-outro-main {
+  box-sizing: border-box;
+  min-block-size: 2.75rem;
+  padding: var(--sp-2) var(--sp-5);
+  border-radius: 9999px;
+  background: var(--foreground);
+  color: var(--background);
+  transition:
+    background-color var(--duration-normal) var(--ease-smooth),
+    scale var(--duration-normal) var(--ease-entrance);
+}
+
+.sky-outro-main:active {
+  scale: 0.97;
+}
+
+.sky-outro-link {
+  position: relative;
+  min-block-size: 2.75rem;
+  border-radius: 0.25rem;
+  color: var(--foreground);
+  text-shadow:
+    0 0 4px color-mix(in srgb, var(--background) 85%, transparent),
+    0 0 10px color-mix(in srgb, var(--background) 60%, transparent);
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  transition: text-decoration-color var(--duration-normal) var(--ease-smooth);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sky-outro-main:hover {
+    background: var(--sky-lift);
+  }
+
+  .sky-outro-link:hover {
+    text-decoration-color: currentcolor;
+  }
+}
+
+.sky-outro-link:focus-visible {
+  text-decoration-color: currentcolor;
+}
+
+@media (forced-colors: active) {
+  .sky-outro-main {
+    border: 1px solid ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+
+  .sky-outro-link {
+    color: LinkText;
+    text-shadow: none;
+  }
+}
+
+.sky-step-cue {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: var(--sp-5) 0 0;
+}
+
+.sky-step-cue-word {
+  color: var(--foreground-soft);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--background) 70%, transparent);
+}
+
+.sky-step-cue-line {
+  position: relative;
+  overflow: hidden;
+  inline-size: 1px;
+  block-size: var(--sp-7);
+  background: color-mix(in srgb, var(--foreground) 32%, transparent);
+}
+
+.sky-step-cue-drip {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  block-size: 45%;
+  background: linear-gradient(to bottom, transparent, var(--foreground));
+  translate: 0 60%;
+}
+
 .sky-dial {
-  --dial-w: 5rem;
-  --dial-rise: 0.5rem;
-  --dial-dot: 0.625rem;
+  --dial-size: 40px;
+  --dial-dot: 8px;
 
   position: fixed;
   inset-block-start: calc(var(--bar-h) + var(--sp-4));
   inset-inline-end: var(--container-px);
-  z-index: 2;
-  inline-size: var(--dial-w);
-  block-size: var(--dial-rise);
+  z-index: 0;
+  inline-size: var(--dial-size);
+  block-size: var(--dial-size);
   pointer-events: none;
 }
 
 @media (min-width: 48em) {
   .sky-dial {
-    --dial-w: 12rem;
-    --dial-rise: 3rem;
-    --dial-dot: 0.75rem;
+    --dial-size: 56px;
+    --dial-dot: 10px;
   }
 }
 
-.sky-dial-arc {
+@media (max-width: 24em) {
+  .sky-dial {
+    display: none;
+  }
+}
+
+.sky-dial-ring {
   position: absolute;
   inset: 0;
   inline-size: 100%;
@@ -246,24 +372,27 @@
   stroke-width: 1px;
 }
 
-.sky-dial-run {
-  position: absolute;
-  inset-block-end: calc(var(--dial-dot) / -2);
-  inset-inline-start: calc(var(--dial-dot) / -2);
+.sky-dial-horizon {
+  stroke-dasharray: 3 3;
 }
 
-.sky-dial-rider {
-  display: block;
+.sky-dial-orbit {
+  position: absolute;
+  inset: 0;
+  color: var(--night-100);
+  rotate: -76deg;
 }
 
 .sky-dial-dot {
-  display: block;
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 50%;
   inline-size: var(--dial-dot);
   block-size: var(--dial-dot);
   border-radius: 50%;
   background: currentcolor;
-  color: var(--night-100);
   box-shadow: 0 0 0.75rem color-mix(in srgb, currentcolor 55%, transparent);
+  translate: -50% -50%;
 }
 
 @supports (animation-timeline: view()) {
@@ -277,27 +406,27 @@
       exit calc(100% - 28svh) exit 100%;
   }
 
-  .sky-dial-run {
-    animation: sky-dial-run linear both;
+  .sky-dial-orbit {
+    animation: sky-dial-orbit linear both;
     animation-timeline: scroll(root);
   }
 
-  .sky-dial-rider {
-    animation: sky-dial-rider linear both;
+  .sky-step-cue {
+    animation: sky-cue-out linear both;
     animation-timeline: scroll(root);
+    animation-range: 0 20svh;
   }
+}
 
-  .sky-dial-dot {
-    animation: sky-dial-tone linear both;
-    animation-timeline: scroll(root);
-  }
+.sky-step-cue-drip {
+  animation: sky-cue-drip 1.8s var(--ease-smooth) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sky-step-body,
-  .sky-dial-run,
-  .sky-dial-rider,
-  .sky-dial-dot {
+  .sky-dial-orbit,
+  .sky-step-cue,
+  .sky-step-cue-drip {
     animation: none;
   }
 
@@ -307,9 +436,9 @@
 }
 
 :root[data-motion-paused] .sky-step-body,
-:root[data-motion-paused] .sky-dial-run,
-:root[data-motion-paused] .sky-dial-rider,
-:root[data-motion-paused] .sky-dial-dot {
+:root[data-motion-paused] .sky-dial-orbit,
+:root[data-motion-paused] .sky-step-cue,
+:root[data-motion-paused] .sky-step-cue-drip {
   animation: none;
 }
 
@@ -343,54 +472,22 @@
   }
 }
 
-@keyframes sky-dial-run {
+@keyframes sky-cue-out {
   from {
-    translate: 0 0;
+    opacity: 1;
   }
 
   to {
-    translate: var(--dial-w) 0;
+    opacity: 0;
   }
 }
 
-@keyframes sky-dial-rider {
-  0%,
-  100% {
-    translate: 0 0;
+@keyframes sky-cue-drip {
+  from {
+    translate: 0 -100%;
   }
 
-  12.5%,
-  87.5% {
-    translate: 0 calc(var(--dial-rise) * -0.4375);
-  }
-
-  25%,
-  75% {
-    translate: 0 calc(var(--dial-rise) * -0.75);
-  }
-
-  37.5%,
-  62.5% {
-    translate: 0 calc(var(--dial-rise) * -0.9375);
-  }
-
-  50% {
-    translate: 0 calc(var(--dial-rise) * -1);
-  }
-}
-
-@keyframes sky-dial-tone {
-  0% {
-    color: var(--night-100);
-  }
-
-  5%,
-  62% {
-    color: var(--sky-gold);
-  }
-
-  72%,
-  100% {
-    color: var(--night-100);
+  to {
+    translate: 0 230%;
   }
 }

@@ -13,17 +13,26 @@ import {
   outlineAlpha,
   rimCells,
 } from "../src/lib/portrait-dither.ts";
+import { lutCols, lutRows, safeSkyTable } from "../src/lib/sky-light.ts";
 import {
   paintCloudShader,
   paintSkyShader,
 } from "../src/lib/sky-paint-shader.ts";
 import {
   nightScene,
+  paintScene,
   type PaintScene,
   spaceBand,
+  tableInput,
 } from "../src/lib/sky-paint.ts";
+import { viennaPlace } from "../src/lib/sky-place.ts";
 import { meteorStart, rayView } from "../src/lib/sky-rays.ts";
 import { skyVertexShader } from "../src/lib/sky-shader.ts";
+import {
+  skyStorySteps,
+  storyInstant,
+  storyWeather,
+} from "../src/lib/sky-story.ts";
 import {
   type SceneCounts,
   toneNames,
@@ -42,6 +51,7 @@ import { nightWeather } from "../src/lib/weather.ts";
 interface ImageSpec {
   background: string;
   body: string;
+  chapter?: number;
   file: string;
   height: number;
   meteor: number;
@@ -55,6 +65,7 @@ interface SkyInput {
   cloudCell: number;
   cloudSource: string;
   height: number;
+  lut: undefined | { cols: number; pixels: number[]; rows: number };
   meteor: number[];
   meteorScale: number;
   paintSource: string;
@@ -67,6 +78,7 @@ interface SkyInput {
 
 const publicDir = "public";
 const skyTime = 41;
+const skyStoryChapter = skyStorySteps.indexOf("night");
 const windSeconds = 90;
 const cloudCell = 2;
 const noMeteor = 2;
@@ -158,9 +170,9 @@ const badgeUrl = async (file: string): Promise<string> => {
   return `data:image/png;base64,${bytes.toString("base64")}`;
 };
 
-const drawnBy = (badge: string): string => `
+const drawnBy = (label: string, badge: string): string => `
   <div style="position:absolute;left:72px;top:64px;display:flex;flex-direction:column;gap:14px">
-    <div style="font-family:'Geist Mono';font-size:15px;letter-spacing:0.1em;text-transform:uppercase;color:${storyPalette.muted}">${escapeHtml(en.story.drawnBy)}</div>
+    <div style="font-family:'Geist Mono';font-size:15px;letter-spacing:0.1em;text-transform:uppercase;color:${storyPalette.muted}">${escapeHtml(label)}</div>
     <div style="display:flex;align-items:center;gap:18px">
       <img src="${badge}" style="display:block;width:${String(badgePx)}px;height:${String(badgePx)}px;border-radius:50%;border:1px solid ${storyPalette.line}">
       <div style="display:flex;flex-direction:column;gap:6px">
@@ -177,8 +189,17 @@ const storyBody = (counts: SceneCounts, badge: string): string => `
   .join("")}</style>
 <div style="position:absolute;inset:0;color:${storyPalette.ink}">
   ${posterSvg(storyWidth, storyHeight, counts, 'style="position:absolute;inset:0"')}
-  ${drawnBy(badge)}
+  ${drawnBy(en.story.drawnBy, badge)}
   <div style="position:absolute;left:72px;bottom:56px;font-family:Geist;font-size:132px;font-weight:600;letter-spacing:-0.03em;line-height:1;color:${storyPalette.ink}">${escapeHtml(en.story.crumb)}</div>
+</div>`;
+
+const skyStoryBody = (badge: string): string => `
+<div style="position:absolute;inset:0;color:${storyPalette.ink};text-shadow:0 0 28px ${textShade}">
+  ${drawnBy(en.skyStory.drawnBy, badge)}
+  <div style="position:absolute;left:72px;bottom:56px;display:flex;flex-direction:column;gap:20px">
+    <div style="font-family:Geist;font-size:36px;font-weight:400;letter-spacing:-0.01em;line-height:1;color:${storyPalette.ink}">${escapeHtml(en.skyStory.metaTitle)}</div>
+    <div style="font-family:Geist;font-size:132px;font-weight:600;letter-spacing:-0.03em;line-height:1;color:${storyPalette.ink}">${escapeHtml(en.skyStory.crumb)}</div>
+  </div>
 </div>`;
 
 const waitForAssets = async (): Promise<void> => {
@@ -220,6 +241,30 @@ const drawSky = (input: SkyInput): void => {
   };
   const cloud = link(input.cloudSource);
   const paint = link(input.paintSource);
+  if (input.lut) {
+    const lutUnit = 2;
+    gl.activeTexture(gl.TEXTURE0 + lutUnit);
+    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      input.lut.cols,
+      input.lut.rows,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array(input.lut.pixels)
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    for (const program of [cloud, paint]) {
+      gl.useProgram(program);
+      gl.uniform1i(gl.getUniformLocation(program, "u_lut"), lutUnit);
+    }
+  }
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(
     gl.ARRAY_BUFFER,
@@ -347,11 +392,27 @@ const drawSky = (input: SkyInput): void => {
   setPaint("u_clear", 0, 0, 0, 0);
   setPaint("u_cloudOn", 1);
   setPaint("u_mapOn", 0);
-  setPaint("u_moonFace", 0);
+  setPaint("u_moonFace", 1);
   setPaint("u_meteor", ...input.meteor);
   setPaint("u_meteorScale", input.meteorScale);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.finish();
+};
+
+const skyOf = (
+  spec: ImageSpec
+): { lut: SkyInput["lut"]; scene: PaintScene } => {
+  const view = { height: spec.height, width: spec.width };
+  if (spec.chapter === undefined)
+    return { lut: undefined, scene: nightScene(view, nightWeather) };
+  const instant = storyInstant(spec.chapter);
+  const weather = storyWeather(spec.chapter);
+  const table = safeSkyTable(tableInput(instant, view, weather, viennaPlace));
+  if (!table) throw new Error("The sky light table failed");
+  return {
+    lut: { cols: lutCols, pixels: [...table.pixels], rows: lutRows },
+    scene: paintScene(instant, view, weather, viennaPlace, table),
+  };
 };
 
 const render = async (
@@ -370,10 +431,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
 </style></head><body>${spec.sky ? `<canvas width="${String(spec.width)}" height="${String(spec.height)}"></canvas>` : ""}${spec.body}</body></html>`);
   await page.evaluate(waitForAssets);
   if (spec.sky) {
-    const scene = nightScene(
-      { height: spec.height, width: spec.width },
-      nightWeather
-    );
+    const { lut, scene } = skyOf(spec);
     const view = rayView(spec.height);
     const start = meteorStart(spec.width, spec.height, view);
     await page.evaluate(drawSky, {
@@ -381,6 +439,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
       cloudCell,
       cloudSource: paintCloudShader,
       height: spec.height,
+      lut,
       meteor: [start.x, start.y, start.angle, spec.meteor],
       meteorScale: view,
       paintSource: paintSkyShader,
@@ -431,6 +490,7 @@ const portrait = await dataUrl(
   path.join(publicDir, personalData.portrait.url),
   "image/webp"
 );
+const badge = await badgeUrl(path.join(publicDir, personalData.portrait.url));
 const specs: ImageSpec[] = [
   {
     background: designTokens.background,
@@ -453,11 +513,19 @@ const specs: ImageSpec[] = [
     width: 1584,
   },
   {
+    background: designTokens.background,
+    body: skyStoryBody(badge),
+    chapter: skyStoryChapter,
+    file: path.join(publicDir, "og-sky-story.jpg"),
+    height: 630,
+    meteor: noMeteor,
+    sky: true,
+    type: "jpeg",
+    width: 1200,
+  },
+  {
     background: storyPalette.paper,
-    body: storyBody(
-      sceneCounts(await getDotfilesFacts()),
-      await badgeUrl(path.join(publicDir, personalData.portrait.url))
-    ),
+    body: storyBody(sceneCounts(await getDotfilesFacts()), badge),
     file: path.join(publicDir, "og-dotfiles.jpg"),
     height: 630,
     meteor: 0,
