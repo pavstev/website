@@ -1,27 +1,41 @@
-import { finaleStops } from "./skill-map.ts";
-import { type StepId } from "./step-ids.ts";
-
 export interface RailHandle {
   dispose: () => void;
-  setCurrent: (id: StepId) => void;
+  setCurrent: (id: string) => void;
   setStop: (stop: number) => void;
+}
+
+export interface RailOptions {
+  bodySelector: string;
+  finaleStops?: number;
+}
+
+export interface RailSubs {
+  names: readonly string[];
+  step: string;
+}
+
+export interface RailTick {
+  id: string;
+  name: string;
 }
 
 export const bindRail = (
   rail: HTMLElement,
   steps: readonly HTMLElement[],
-  still: () => boolean
+  still: () => boolean,
+  options: RailOptions
 ): RailHandle => {
   const ticks = [...rail.querySelectorAll<HTMLElement>("[data-tick]")];
   const subs = [...rail.querySelectorAll<HTMLElement>("[data-sub]")];
   const listeners = new AbortController();
   const { signal } = listeners;
+  const finale = options.finaleStops ?? 0;
   let marked: HTMLElement | undefined;
   let markedSub: HTMLElement | undefined;
 
   const jump = (id: string | undefined): void => {
     const step = steps.find((item) => item.dataset["step"] === id);
-    const body = step?.querySelector<HTMLElement>(".story-body");
+    const body = step?.querySelector<HTMLElement>(options.bodySelector);
     const fits =
       body !== null &&
       body !== undefined &&
@@ -42,7 +56,7 @@ export const bindRail = (
     const top =
       rect.top +
       globalThis.scrollY +
-      ((stop + 0.5) / (subs.length + finaleStops)) * rect.height;
+      ((stop + 0.5) / (subs.length + finale)) * rect.height;
     globalThis.scrollTo({ behavior: still() ? "auto" : "smooth", top });
   };
 

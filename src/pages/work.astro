@@ -2,7 +2,6 @@
 import BlogHeader from "@/components/blog/blog-header.astro";
 import { ProductStrip } from "@/components/product-strip";
 import { RepoStrip } from "@/components/repo-strip";
-import { StoryStrip } from "@/components/story-strip";
 import BlogLayout from "@/layouts/BlogLayout.astro";
 import { pageCrumbs } from "@/lib/blog/crumbs";
 import { listMetadata } from "@/lib/blog/metadata";
@@ -11,7 +10,7 @@ import { en } from "@/lib/i18n";
 import { personalData } from "@/lib/personal";
 import { products as allProducts } from "@/lib/products";
 import { countHeading } from "@/lib/template";
-import { pickProducts, storyEntries } from "@/lib/work";
+import { pickProducts } from "@/lib/work";
 
 const repos = await getRepos(personalData.githubHandle);
 const products = pickProducts(allProducts);
@@ -49,14 +48,6 @@ const metadata = listMetadata({
             <ProductStrip newTabId="work-new-tab" products={products} />
           </section>
         )}
-        <section aria-labelledby="stories" class="work-section">
-          <div class="work-heading-row">
-            <h2 class="work-heading" id="stories">
-              {en.work.storiesHeading}
-            </h2>
-          </div>
-          <StoryStrip stories={storyEntries} />
-        </section>
         {repos.length > 0 && (
           <section aria-labelledby="projects" class="work-section">
             <div class="work-heading-row">

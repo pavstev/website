@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { products } from "./products.ts";
-import { pickProducts, pickRepos, storyPath, workConfig } from "./work.ts";
+import { pickProducts, pickRepos, storyEntry, workConfig } from "./work.ts";
 
 const repos = ["alpha", "beta", "gamma", "delta", "website"].map((name) => ({
   name,
@@ -69,29 +69,39 @@ describe("pickRepos", () => {
   });
 });
 
-describe("storyPath", () => {
-  it("gives each story path and nothing for other repos", () => {
-    assert.equal(storyPath("dotfiles"), "/work/dotfiles");
-    assert.equal(storyPath("website"), "/work/website");
-    assert.equal(storyPath("hirista"), undefined);
+describe("storyEntry", () => {
+  it("gives each story its key and path and nothing for other repos", () => {
+    assert.deepEqual(storyEntry("dotfiles"), {
+      key: "dotfiles",
+      path: "/work/dotfiles",
+    });
+    assert.deepEqual(storyEntry("website"), {
+      key: "website",
+      path: "/work/website",
+    });
+    assert.equal(storyEntry("hirista"), undefined);
   });
   it("reads the picks it is given", () => {
     const picks = {
       hidden: [],
       max: 12,
       pinned: [],
-      stories: { alpha: "/work/alpha" },
+      stories: { alpha: "/work/alpha", website: "/work/site" },
     };
-    assert.equal(storyPath("alpha", picks), "/work/alpha");
-    assert.equal(storyPath("dotfiles", picks), undefined);
+    assert.deepEqual(storyEntry("website", picks), {
+      key: "website",
+      path: "/work/site",
+    });
+    assert.equal(storyEntry("alpha", picks), undefined);
+    assert.equal(storyEntry("dotfiles", picks), undefined);
   });
   it("ignores names that only exist on the prototype chain", () => {
-    assert.equal(storyPath("constructor"), undefined);
-    assert.equal(storyPath("toString"), undefined);
+    assert.equal(storyEntry("constructor"), undefined);
+    assert.equal(storyEntry("toString"), undefined);
   });
   it("is undefined when the picks carry no stories", () => {
     assert.equal(
-      storyPath("dotfiles", { hidden: [], max: 12, pinned: [] }),
+      storyEntry("dotfiles", { hidden: [], max: 12, pinned: [] }),
       undefined
     );
   });

@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { sceneCounts } from "../src/data/dotfiles-story.ts";
 import { getDotfilesFacts } from "../src/lib/dotfiles-facts.ts";
 import { en } from "../src/lib/i18n.ts";
+import { moonBump } from "../src/lib/moon-layer.ts";
 import { personalData } from "../src/lib/personal.ts";
 import {
   haloLit,
@@ -31,6 +32,7 @@ import { skyVertexShader } from "../src/lib/sky-shader.ts";
 import {
   skyStorySteps,
   storyInstant,
+  storyView,
   storyWeather,
 } from "../src/lib/sky-story.ts";
 import {
@@ -68,6 +70,8 @@ interface SkyInput {
   lut: undefined | { cols: number; pixels: number[]; rows: number };
   meteor: number[];
   meteorScale: number;
+  moonBump: number;
+  moonMap: string;
   paintSource: string;
   scene: PaintScene;
   time: number;
@@ -208,7 +212,7 @@ const waitForAssets = async (): Promise<void> => {
   await Promise.all([...document.images].map(async (image) => image.decode()));
 };
 
-const drawSky = (input: SkyInput): void => {
+const drawSky = async (input: SkyInput): Promise<void> => {
   const canvas = document.querySelector("canvas");
   const gl = canvas?.getContext("webgl", {
     alpha: false,
@@ -265,6 +269,24 @@ const drawSky = (input: SkyInput): void => {
       gl.uniform1i(gl.getUniformLocation(program, "u_lut"), lutUnit);
     }
   }
+  const moonUnit = 3;
+  const moonImage = new Image();
+  moonImage.src = input.moonMap;
+  await moonImage.decode();
+  gl.activeTexture(gl.TEXTURE0 + moonUnit);
+  gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    moonImage
+  );
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(
     gl.ARRAY_BUFFER,
@@ -391,7 +413,9 @@ const drawSky = (input: SkyInput): void => {
   setPaint("u_still", 0);
   setPaint("u_clear", 0, 0, 0, 0);
   setPaint("u_cloudOn", 1);
-  setPaint("u_mapOn", 0);
+  setPaint("u_mapOn", 1);
+  setPaint("u_bump", input.moonBump);
+  gl.uniform1i(gl.getUniformLocation(paint, "u_moonMap"), moonUnit);
   setPaint("u_moonFace", 1);
   setPaint("u_meteor", ...input.meteor);
   setPaint("u_meteorScale", input.meteorScale);
@@ -402,9 +426,10 @@ const drawSky = (input: SkyInput): void => {
 const skyOf = (
   spec: ImageSpec
 ): { lut: SkyInput["lut"]; scene: PaintScene } => {
-  const view = { height: spec.height, width: spec.width };
+  const flat = { height: spec.height, width: spec.width };
   if (spec.chapter === undefined)
-    return { lut: undefined, scene: nightScene(view, nightWeather) };
+    return { lut: undefined, scene: nightScene(flat, nightWeather) };
+  const view = storyView(flat, spec.chapter);
   const instant = storyInstant(spec.chapter);
   const weather = storyWeather(spec.chapter);
   const table = safeSkyTable(tableInput(instant, view, weather, viennaPlace));
@@ -442,6 +467,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
       lut,
       meteor: [start.x, start.y, start.angle, spec.meteor],
       meteorScale: view,
+      moonBump,
+      moonMap,
       paintSource: paintSkyShader,
       scene,
       time: skyTime,
@@ -490,6 +517,7 @@ const portrait = await dataUrl(
   path.join(publicDir, personalData.portrait.url),
   "image/webp"
 );
+const moonMap = await dataUrl("src/assets/moon-map.webp", "image/webp");
 const badge = await badgeUrl(path.join(publicDir, personalData.portrait.url));
 const specs: ImageSpec[] = [
   {

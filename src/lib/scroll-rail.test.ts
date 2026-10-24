@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
 
-import { bindRail, type RailHandle } from "./story-rail.ts";
+import { bindRail, type RailHandle } from "./scroll-rail.ts";
 
 const ids = ["hero", "c01", "c03"] as const;
 
@@ -47,7 +47,8 @@ const build = (still: boolean, textHeight = 200): Fixture => {
   const handle = bindRail(
     rail as unknown as HTMLElement,
     steps as unknown as HTMLElement[],
-    () => still
+    () => still,
+    { bodySelector: ".story-body" }
   );
   return { handle, scrolls, ticks };
 };
@@ -101,6 +102,28 @@ describe("bindRail", () => {
     assert.deepEqual(scrolls[1]?.mock.calls[0]?.arguments, [
       { behavior: "smooth", block: "start" },
     ]);
+  });
+
+  it("measures the text box named by the body selector", () => {
+    const asked: string[] = [];
+    const tick = buildTick("hero");
+    const scroll = mock.fn();
+    const step = {
+      dataset: { step: "hero" },
+      querySelector: (selector: string): { offsetHeight: number } => {
+        asked.push(selector);
+        return { offsetHeight: 100 };
+      },
+      scrollIntoView: scroll,
+    };
+    bindRail(
+      { querySelectorAll: (): FakeTick[] => [tick] } as unknown as HTMLElement,
+      [step] as unknown as HTMLElement[],
+      () => false,
+      { bodySelector: ".sky-step-body" }
+    );
+    tick.dispatchEvent(new Event("click"));
+    assert.deepEqual(asked, [".sky-step-body"]);
   });
 
   it("stops listening after dispose", () => {

@@ -14,7 +14,9 @@ paths:
   - "src/lib/sky-story-poster.ts"
   - "src/lib/sky-story-poster.test.ts"
   - "src/styles/sky-story.css"
-  - "src/components/story-strip.tsx"
+  - "src/styles/scroll-rail.css"
+  - "src/components/scroll-*.astro"
+  - "src/lib/scroll-*.ts"
   - "src/components/story-mark.tsx"
 ---
 
@@ -26,15 +28,17 @@ Siblings: `sky.md` (the engine), `story.md` (the dotfiles story, a different pag
 
 - A scroll story of the `website` repo: how this site paints a real sky. Scrolling plays one real day (2026-10-24) at the default place: blue hour, sunrise, morning, midday, a rain front, sunset, the moon at night, late night, then the outro.
 - The drawing is the real painted home sky (`sky-mount.ts` in `story` mode), not a copy. Sun and moon are the real ones for the painted instant. Only the clock and a scripted weather path come from the scroll.
-- The look is not the dotfiles look: no grid floor, no frosted box, no plates, no command strips, no rail of ticks. Text sits on the sky with the `text-sky` ink and glow, like the home. An `aria-hidden` 24 hour ring dial (top right, `sky-dial.astro`) turns a sun or moon dot on a CSS scroll timeline: 06:00 left, 12:00 top, 18:00 right. Its keyframes are built at build time from each slide's clock and `screens`. The hero shows an `aria-hidden` scroll cue (a falling line) that fades over the first scroll. The outro has one round main button (Open the live sky) and two quiet links.
+- The look is not the dotfiles look: no grid floor, no frosted box (no `backdrop-filter`, no blur on or behind text), no plates, no command strips. Text sits on the sky with the `text-sky` ink and glow, like the home. It does share the dotfiles scroll parts (`story.md`, "Shared parts"): the 2px progress bar under the bar on phones (`scroll-progress.astro`) and the right rail of ticks from 48em (`scroll-rail.astro`), one tick per step. A click or Enter jumps to the step's read spot (`scrollIntoView` block `end`, the step's bottom padding is the read line), `aria-current="step"` marks the current step (`setCurrent` from `publish` in `sky-story-scroll.ts`, the nearest step of the chapter), names come from `en.skyStory.railTick` (`{chapter}: {line}`). The rail takes the step's ink: a `MutationObserver` on each `.sky-step-line` `data-ink` copies it to `data-ink="dark"` on the rail (attribute written only on change), and the ticks mix toward `--ink-dark` with a soft glow (`--rail-glow`, none in forced colors). The mount sets `data-story-state="live"` on the root, which shows the rail. An `aria-hidden` 24 hour ring dial (top right, `sky-dial.astro`) turns a sun or moon dot on a CSS scroll timeline: 06:00 left, 12:00 top, 18:00 right.
+- Layout of the dial, rail and text (decided 2026-10-24): under 48em there is no rail and the dial sits at the right edge. From 48em the dial moves left of the rail column (`inset-inline-end: rail room + --sp-3`), and `.sky-step` reserves only the rail room and a gap on its inline end (`max(--sky-pad, rail room + --sp-3)`), so the padding barely moves at 48em. The dial sits behind the text (`z-index: 0`, before the steps), so if a tall text ever reaches it at 200% zoom, the text stays on top. The dial is sized in px (`--sky-dial`), so a larger root font does not grow it. The dial hides under 24em. The only breakpoint is the one for the rail and the progress bar (48em, as on dotfiles).
+- Fluid: the note font is `clamp(--fs-base, 0.75rem + 1vw, --fs-lg)`, the eyebrow, title and outro gaps are `clamp` over `--sp-*`, the inline padding is `--sky-pad` (`clamp(--container-px, 7vw, 7rem)`) and the dial is `--sky-dial` (`clamp(40px, 28px + 2.5vw, 56px)`, the dot a fifth of it). No size jumps between 320 and 1920, except the small rail room step at 48em. Its keyframes are built at build time from each slide's clock and `screens`. The hero shows an `aria-hidden` scroll cue (a falling line) that fades over the first scroll. The outro has one round main button (Open the live sky) and two quiet links.
 - Numbers are fine in this copy (the "names, not counts" rule is for the dotfiles page only). No city in any text or meta. Copy rules: `lintCopy(step, { numbers: true })` in `website-story.test.ts`.
 
 ## Data and contract
 
 - Copy: `src/data/website-story.ts` (`skyStorySlides`, `skyStoryMeta.updatedAt`). Move `updatedAt` on every copy edit: it is the sitemap `lastmod` and the `WebPage` `dateModified`.
 - Steps: `skyStorySteps` in `sky-story.ts` (hero, sunrise, morning, midday, weather, sunset, night, yours, outro). The eyebrow is the clock of `storyInstant(i)` in `Europe/Vienna`; the outro shows "Now" only.
-- DOM: `section.sky-story[data-sky-story] > ol.sky-steps > li.sky-step[data-step]`, each with `.sky-step-eyebrow`, `.sky-step-line` (h1 on the hero, h2 after) and `.sky-step-note`, all `text-sky`. The outro li is `#sky-story-end` (skip link target).
-- The chapter `c` is a float from 0 to 8; step `i` sits at its read spot when `c === i`. `sky-story-scroll.ts` measures read spots with a ResizeObserver and writes `c` with `setStoryChapter` (`sky-story-store.ts`) from a passive scroll listener and one rAF. It writes no style or attribute per frame. Under `stillQuery()` `c` snaps to the nearest step.
+- DOM: `section.sky-story.scroll-story[data-sky-story]` holds `ScrollProgress`, `ScrollRail`, the dial and `ol.sky-steps.scroll-steps > li.sky-step[data-step]`, each with `.sky-step-eyebrow`, `.sky-step-line` (h1 on the hero, h2 after) and `.sky-step-note`, all `text-sky`. The outro li is `#sky-story-end` (skip link target).
+- The chapter `c` is a float from 0 to 8; step `i` sits at its read spot when `c === i`. `sky-story-scroll.ts` measures read spots with a ResizeObserver and writes `c` with `setStoryChapter` (`sky-story-store.ts`) from a passive scroll listener and one rAF. It writes no style or attribute per frame (the rail mark, the rail ink and the fallback progress bar write only when their value changes). Under `stillQuery()` `c` snaps to the nearest step.
 - `storyInstant(c)` and `storyWeather(c)` map the chapter to the instant and the weather (smootherstep between keys, Hermite dusk waypoints so the view pans from the sun to the moon without a jump).
 
 ## Engine (story mode)
@@ -54,7 +58,7 @@ Siblings: `sky.md` (the engine), `story.md` (the dotfiles story, a different pag
 
 - `:root:has([data-space-state="fallback"])` shows a build-time gradient per step (`sky-story-poster.ts`, from `paintScene` at `storyInstant(i)`), and bright steps switch to dark ink.
 
-## `/work` Stories section
+## `/work` story links
 
-- `storyEntries` in `work.ts` lists both stories (website first). `StoryStrip` renders one glass row per story with a round `StoryMark` (the sky mark turns a day wheel to night on hover; the blueprint mark lifts its slabs). The repo cards keep "See the story".
+- `/work` has no Stories section. The stories are reached from the "See the story" button on the `website` and `dotfiles` repo cards (a glass pill with the round `StoryMark`; see `card.md`, Work page). `storyEntry(name)` in `work.ts` gives the key and path.
 - Only the dotfiles card morphs into its story (`[data-story-path="/work/dotfiles"]`), so view-transition names stay unique.

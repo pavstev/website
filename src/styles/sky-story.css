@@ -1,4 +1,8 @@
 .sky-story {
+  --sky-pad: clamp(var(--container-px), 7vw, 7rem);
+  --sky-rail-room: calc(2.75rem + var(--sp-2));
+  --sky-dial: clamp(40px, 28px + 2.5vw, 56px);
+
   position: relative;
   align-self: stretch;
   inline-size: 100%;
@@ -20,12 +24,16 @@
   box-sizing: border-box;
   min-block-size: calc(var(--sky-screens) * 100svh);
   padding-block: calc(var(--bar-h) + var(--sp-4)) 12svh;
-  padding-inline: var(--container-px);
+  padding-inline: var(--sky-pad);
+  scroll-margin-block-end: calc(-1 * (var(--privacy-zone) + 1rem));
 }
 
 @media (min-width: 48em) {
   .sky-step {
-    padding-inline: clamp(var(--container-px), 7vw, 7rem);
+    padding-inline-end: max(
+      var(--sky-pad),
+      calc(var(--sky-rail-room) + var(--sp-3))
+    );
   }
 }
 
@@ -160,7 +168,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-2);
-  margin: 0 0 var(--sp-3);
+  margin: 0 0 clamp(var(--sp-2), 0.375rem + 0.6vw, var(--sp-3));
   font-size: var(--fs-md);
   font-weight: 500;
 }
@@ -192,7 +200,7 @@
   --ink: var(--foreground);
 
   max-inline-size: 12em;
-  margin: 0 0 var(--sp-4);
+  margin: 0 0 clamp(var(--sp-3), 0.5rem + 1vw, var(--sp-5));
   font-family: var(--font-sans);
   font-size: clamp(2rem, 8.5vw, 3.75rem);
   font-weight: 600;
@@ -211,16 +219,9 @@
 
   max-inline-size: 36ch;
   margin: 0;
-  font-size: var(--fs-base);
+  font-size: clamp(var(--fs-base), 0.75rem + 1vw, var(--fs-lg));
   font-weight: 400;
-  line-height: 1.6;
-}
-
-@media (min-width: 48em) {
-  .sky-step-note {
-    font-size: var(--fs-lg);
-    line-height: 1.5;
-  }
+  line-height: 1.55;
 }
 
 .sky-outro {
@@ -228,7 +229,7 @@
   flex-wrap: wrap;
   gap: var(--sp-2) var(--sp-5);
   align-items: center;
-  margin-block-start: var(--sp-5);
+  margin-block-start: clamp(var(--sp-4), 0.75rem + 1.5vw, var(--sp-6));
 }
 
 .sky-outro-main,
@@ -336,22 +337,55 @@
 }
 
 .sky-dial {
-  --dial-size: 40px;
-  --dial-dot: 8px;
+  --dial-dot: calc(var(--sky-dial) / 5);
 
   position: fixed;
   inset-block-start: calc(var(--bar-h) + var(--sp-4));
   inset-inline-end: var(--container-px);
   z-index: 0;
-  inline-size: var(--dial-size);
-  block-size: var(--dial-size);
+  inline-size: var(--sky-dial);
+  block-size: var(--sky-dial);
   pointer-events: none;
 }
 
 @media (min-width: 48em) {
   .sky-dial {
-    --dial-size: 56px;
-    --dial-dot: 10px;
+    inset-inline-end: calc(var(--sky-rail-room) + var(--sp-3));
+  }
+
+  [data-story-state="live"] .sky-steps {
+    margin-block-start: -100svh;
+  }
+}
+
+.sky-story .scroll-rail {
+  --rail-rest: color-mix(
+    in srgb,
+    var(--foreground-soft),
+    var(--ink-dark) calc(var(--dark, 0) * 100%)
+  );
+  --rail-now: color-mix(
+    in srgb,
+    var(--foreground),
+    var(--ink-dark) calc(var(--dark, 0) * 100%)
+  );
+  --rail-glow: 0 0 0.375rem
+    color-mix(in srgb, var(--glow-tone) 80%, transparent);
+  --glow-tone: var(--background);
+
+  transition: --dark var(--duration-ink) var(--ease-smooth);
+}
+
+.sky-story .scroll-rail[data-ink="dark"] {
+  --dark: 1;
+  --glow-tone: var(--foreground);
+}
+
+@media (forced-colors: active) {
+  .sky-story .scroll-rail {
+    --rail-glow: none;
+    --rail-rest: CanvasText;
+    --rail-now: Highlight;
   }
 }
 
@@ -423,6 +457,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .sky-story .scroll-rail {
+    transition: none;
+  }
+
   .sky-step-body,
   .sky-dial-orbit,
   .sky-step-cue,
@@ -433,6 +471,10 @@
   .sky-dial {
     display: none;
   }
+}
+
+:root[data-motion-paused] .sky-story .scroll-rail {
+  transition: none;
 }
 
 :root[data-motion-paused] .sky-step-body,

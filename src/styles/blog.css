@@ -892,55 +892,72 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   object-fit: cover;
 }
 
-.work-stories {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-3);
-  width: 100%;
-  text-align: start;
-}
-
-@container work (min-width: 46.5rem) {
-  .work-stories {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.work-story {
-  --mark: 3.5rem;
-  display: grid;
-  grid-template-columns: var(--mark) minmax(0, 1fr);
-  grid-template-rows: 1fr auto;
-  column-gap: var(--sp-4);
-  row-gap: var(--sp-3);
-  align-items: start;
-}
-
-.work-story-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-  min-width: 0;
-}
-
-.work-story-eyebrow {
-  color: var(--ui-ink-3);
-  font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
-  letter-spacing: 0.06em;
-  line-height: 1.25;
-}
-
-.work-story-go {
+.work-story-link {
+  --mark: 1.75rem;
+  position: relative;
   display: inline-flex;
-  grid-column: 2;
   align-items: center;
-  gap: var(--sp-1);
-  color: var(--ui-accent);
+  gap: var(--sp-2);
+  padding: 0.25rem var(--sp-3) 0.25rem 0.25rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: var(--glass-fill);
+  color: var(--ui-ink);
   font-family: var(--font-ui);
   font-size: var(--fs-sm);
   font-weight: 500;
   line-height: 1.5;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-normal) var(--ease-smooth),
+    border-color var(--duration-normal) var(--ease-smooth);
+}
+
+.work-story-link::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 2.75rem;
+  translate: 0 -50%;
+}
+
+.work-story-link-label {
+  transition: text-shadow var(--duration-normal) var(--ease-smooth);
+}
+
+.work-story-link-arrow {
+  color: var(--ui-accent);
+  transition: translate var(--duration-normal) var(--ease-smooth);
+}
+
+.work-story-link:focus-visible {
+  border-color: var(--glass-card-edge-hover);
+  background: var(--glass-fill-hover);
+}
+
+.work-story-link:focus-visible .work-story-link-label {
+  text-shadow: 0 0 12px var(--work-all-glow);
+}
+
+.work-story-link:focus-visible .work-story-link-arrow {
+  translate: 2px 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .work-story-link:hover {
+    border-color: var(--glass-card-edge-hover);
+    background: var(--glass-fill-hover);
+  }
+
+  .work-story-link:hover .work-story-link-label {
+    text-shadow: 0 0 12px var(--work-all-glow);
+  }
+
+  .work-story-link:hover .work-story-link-arrow {
+    translate: 2px 0;
+  }
 }
 
 .work-mark {
@@ -1028,54 +1045,69 @@ html:has(.post-main):not(:has(.blog-bar[data-sub])) {
   stroke-linecap: round;
 }
 
-.work-story:has(.post-row-link:is(:hover, :focus-visible)) .work-mark-wheel {
+.work-story-link:focus-visible .work-mark-wheel {
   rotate: 180deg;
 }
 
-.work-story:has(.post-row-link:is(:hover, :focus-visible)) .work-mark-night {
+.work-story-link:focus-visible .work-mark-night {
   opacity: 1;
 }
 
-.work-story:has(.post-row-link:is(:hover, :focus-visible))
-  .work-mark-slab:nth-child(2) {
+.work-story-link:focus-visible .work-mark-slab:nth-child(2) {
   translate: 0 -2px;
 }
 
-.work-story:has(.post-row-link:is(:hover, :focus-visible))
-  .work-mark-slab:nth-child(3) {
+.work-story-link:focus-visible .work-mark-slab:nth-child(3) {
   translate: 0 -4px;
 }
 
-.work-story:has(.post-row-link:is(:hover, :focus-visible)) .work-story-go {
-  color: var(--ui-ink);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.2em;
+@media (hover: hover) and (pointer: fine) {
+  .work-story-link:hover .work-mark-wheel {
+    rotate: 180deg;
+  }
+
+  .work-story-link:hover .work-mark-night {
+    opacity: 1;
+  }
+
+  .work-story-link:hover .work-mark-slab:nth-child(2) {
+    translate: 0 -2px;
+  }
+
+  .work-story-link:hover .work-mark-slab:nth-child(3) {
+    translate: 0 -4px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .work-mark-wheel,
   .work-mark-night,
-  .work-mark-slab {
+  .work-mark-slab,
+  .work-story-link-arrow,
+  .work-story-link-label {
     transition: none;
   }
 }
 
 :root[data-motion-paused]
-  :is(.work-mark-wheel, .work-mark-night, .work-mark-slab) {
+  :is(
+    .work-mark-wheel,
+    .work-mark-night,
+    .work-mark-slab,
+    .work-story-link-arrow,
+    .work-story-link-label
+  ) {
   transition: none;
 }
 
 @media (forced-colors: active) {
-  .work-story-go {
+  .work-story-link {
+    border-color: LinkText;
     color: LinkText;
   }
-}
 
-@container work (max-width: 16em) {
-  .work-story {
-    --mark: 2.5rem;
-    column-gap: var(--sp-3);
+  .work-story-link-arrow {
+    color: LinkText;
   }
 }
 

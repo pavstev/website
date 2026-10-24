@@ -3,7 +3,8 @@ import "@/styles/story.css";
 
 import BlogHeader from "@/components/blog/blog-header.astro";
 import { Icon } from "@/components/icon";
-import StoryRail from "@/components/story/story-rail.astro";
+import ScrollProgress from "@/components/scroll-progress.astro";
+import ScrollRail from "@/components/scroll-rail.astro";
 import StoryStage from "@/components/story/story-stage.astro";
 import StoryStep from "@/components/story/story-step.astro";
 import { storyMeta } from "@/data/dotfiles-stats";
@@ -24,6 +25,7 @@ import { personalData } from "@/lib/personal";
 import { buildScene } from "@/lib/story/blueprint-geometry";
 import { posterSvg, sceneSvg } from "@/lib/story/blueprint-svg";
 import { skillMap } from "@/lib/story/skill-map";
+import { fillText } from "@/lib/template";
 import { storyMetadata } from "@/lib/story/metadata";
 import { dotfilesStory } from "@/lib/work";
 import { buildSteps } from "@/lib/story/steps";
@@ -45,6 +47,26 @@ const tall = sceneSvg(
 const map = skillMap(skillEntries, facts.skillNames);
 const skills = skillCopy(facts.skillNames);
 const chartLines = skillFacts(facts.skillNames);
+const chapters: Record<string, string> = en.story.chapters;
+const railTicks = steps
+  .filter((step) => step.tick)
+  .map((step) => ({
+    id: step.id,
+    name: fillText(en.story.railTick, {
+      chapter: chapters[step.id] ?? step.eyebrow,
+      line: step.line,
+    }),
+  }));
+const railSubs = {
+  names: skills.map((item, index) =>
+    fillText(en.story.railSkill, {
+      index: String(index + 1),
+      skill: item.skill,
+      total: String(skills.length),
+    })
+  ),
+  step: "skills",
+};
 const skillPoster = sceneSvg(
   buildScene("skills", 1, 1, counts, Infinity, map),
   720,
@@ -68,14 +90,19 @@ const jsonLd = serializeJsonLd(storyGraph(storyMeta.updatedAt));
       {en.story.skipToEnd}
     </a>
     <section
-      class="story"
+      class="story scroll-story"
       data-story-counts={JSON.stringify(counts)}
       data-story-root=""
       data-story-skills={JSON.stringify(map)}
     >
-      <StoryRail skills={skills.map((item) => item.skill)} steps={steps} />
+      <ScrollProgress />
+      <ScrollRail
+        label={en.story.railLabel}
+        subs={railSubs}
+        ticks={railTicks}
+      />
       <StoryStage tall={tall} wide={wide} />
-      <ol class="story-steps">
+      <ol class="story-steps scroll-steps">
         {steps.map((step) => (
           <StoryStep
             names={namesFor[step.id] ?? []}

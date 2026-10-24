@@ -1,6 +1,8 @@
 import { finePointerQuery } from "@/lib/media";
 import { isMotionPaused, stillQuery } from "@/lib/motion-pause";
 import { fieldsOf, readJson } from "@/lib/record";
+import { progressWriter } from "@/lib/scroll-progress";
+import { bindRail } from "@/lib/scroll-rail";
 
 import {
   buildScene,
@@ -24,7 +26,6 @@ import {
   motionAllowed,
   type PointerTilt,
 } from "./story-pointer";
-import { bindRail } from "./story-rail";
 import {
   type Box,
   easeToward,
@@ -58,8 +59,6 @@ const gridShare = 0.6;
 const maxYaw = (3 * Math.PI) / 180;
 const maxPitch = (2 * Math.PI) / 180;
 const stillEnd = 1 - 1e-9;
-const cssProgress =
-  typeof CSS !== "undefined" && CSS.supports("animation-timeline: view()");
 const countKeys = [
   "agents",
   "guardChecks",
@@ -123,10 +122,14 @@ export const mountStory = (root: HTMLElement): (() => void) => {
   const pins = new Map<string, Pin>();
   const fine = globalThis.matchMedia(finePointerQuery);
   const still = stillQuery();
-  const rail = root.querySelector<HTMLElement>(".story-rail");
+  const rail = root.querySelector<HTMLElement>("[data-scroll-rail]");
   const railHandle = rail
-    ? bindRail(rail, items, () => still.matches)
+    ? bindRail(rail, items, () => still.matches, {
+        bodySelector: ".story-body",
+        finaleStops,
+      })
     : undefined;
+  const writeProgress = progressWriter(root);
   let pointer: PointerTilt | undefined;
   const tilt: Tilt = {
     get pitch(): number {
@@ -150,7 +153,6 @@ export const mountStory = (root: HTMLElement): (() => void) => {
   let shown = 0;
   let current = -1;
   let currentStop = -1;
-  let progressShown = -1;
   let inView = true;
   let handle = 0;
   let last = 0;
@@ -363,11 +365,7 @@ export const mountStory = (root: HTMLElement): (() => void) => {
       wide.matches,
       Math.max(0, stopOf(index, t))
     );
-    const progress = Math.round((shown / ids.length) * 1000) / 1000;
-    if (!cssProgress && progress !== progressShown && !wide.matches) {
-      progressShown = progress;
-      stage.style.setProperty("--story-progress", String(progress));
-    }
+    if (!wide.matches) writeProgress(shown / ids.length);
     return goal === shown && tilt.settled();
   };
 

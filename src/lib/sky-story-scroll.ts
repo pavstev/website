@@ -1,4 +1,6 @@
 import { stillQuery } from "./motion-pause.ts";
+import { progressWriter } from "./scroll-progress.ts";
+import { bindRail } from "./scroll-rail.ts";
 import { setStoryChapter } from "./sky-story-store.ts";
 
 export interface ReadBox {
@@ -60,14 +62,49 @@ export const mountSkyStory = (root: HTMLElement): (() => void) => {
   if (!list || bodies.length < 2) return () => undefined;
   const bar = document.querySelector<HTMLElement>("[data-blog-bar]");
   const still = stillQuery();
+  const wide = globalThis.matchMedia("(min-width: 48em)");
   const listeners = new AbortController();
+  const steps = [
+    ...root.querySelectorAll<HTMLElement>(":scope .sky-step[data-step]"),
+  ];
+  const rail = root.querySelector<HTMLElement>("[data-scroll-rail]");
+  const railHandle = rail
+    ? bindRail(rail, steps, () => still.matches, {
+        bodySelector: ".sky-step-body",
+      })
+    : undefined;
+  const writeProgress = progressWriter(root);
+  const lines = steps.map((step) =>
+    step.querySelector<HTMLElement>(".sky-step-line")
+  );
   let spots: number[] = [];
   let frame = 0;
   let disposed = false;
+  let current = 0;
+
+  const syncInk = (): void => {
+    if (!rail) return;
+    const fallback =
+      document.querySelector('[data-space-state="fallback"]') !== null;
+    const dark =
+      lines[current]?.dataset["ink"] === "dark" ||
+      (fallback && steps[current]?.hasAttribute("data-bright") === true);
+    if (dark === (rail.dataset["ink"] === "dark")) return;
+    if (dark) rail.dataset["ink"] = "dark";
+    else delete rail.dataset["ink"];
+  };
 
   const publish = (): void => {
     const chapter = chapterAt(window.scrollY, spots);
-    setStoryChapter(still.matches ? snapChapter(chapter) : chapter);
+    const shown = still.matches ? snapChapter(chapter) : chapter;
+    setStoryChapter(shown);
+    const index = snapChapter(shown);
+    if (index !== current) {
+      current = index;
+      syncInk();
+    }
+    railHandle?.setCurrent(steps[index]?.dataset["step"] ?? "");
+    if (!wide.matches) writeProgress(shown / Math.max(1, steps.length - 1));
   };
 
   const measure = (): void => {
@@ -101,6 +138,12 @@ export const mountSkyStory = (root: HTMLElement): (() => void) => {
   still.addEventListener("change", publish);
   watchSize.observe(list);
   for (const body of bodies) watchSize.observe(body);
+  const watchInk = new MutationObserver(syncInk);
+  for (const line of lines) {
+    if (line) watchInk.observe(line, { attributeFilter: ["data-ink"] });
+  }
+  if (rail) root.dataset["storyState"] = "live";
+  syncInk();
   void document.fonts.ready.then(() => {
     if (!disposed) measure();
   });
@@ -112,5 +155,8 @@ export const mountSkyStory = (root: HTMLElement): (() => void) => {
     listeners.abort();
     still.removeEventListener("change", publish);
     watchSize.disconnect();
+    watchInk.disconnect();
+    railHandle?.dispose();
+    delete root.dataset["storyState"];
   };
 };

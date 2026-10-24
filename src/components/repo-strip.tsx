@@ -5,9 +5,10 @@ import type { Repo, RepoLanguage } from "@/lib/github";
 import { CompoundText } from "@/components/compound-text";
 import { Icon } from "@/components/icon";
 import { RepoTags } from "@/components/repo-tags";
+import { StoryMark } from "@/components/story-mark";
 import { en } from "@/lib/i18n";
 import { fillText } from "@/lib/template";
-import { storyPath } from "@/lib/work";
+import { type StoryEntry, storyEntry } from "@/lib/work";
 
 const mainLanguage = (repo: Repo): RepoLanguage | undefined =>
   repo.languages.find(({ name }) => name === repo.language) ??
@@ -60,7 +61,7 @@ const RepoActions = ({
 }: {
   name: string;
   newTabId: string;
-  story: string | undefined;
+  story: StoryEntry | undefined;
   url: string;
 }): ReactElement => (
   <div className="work-card-actions">
@@ -77,23 +78,29 @@ const RepoActions = ({
     </a>
     {story ? (
       <a
-        className="work-card-action focus-ring"
+        className="work-story-link focus-ring"
         data-story-link=""
-        href={story}
+        href={story.path}
       >
-        <span className="work-card-action-label">{en.repos.seeStory}</span>
-        <Icon aria-hidden name="lucide:arrow-right" size="0.875rem" />
+        <StoryMark kind={story.key} />
+        <span className="work-story-link-label">{en.repos.seeStory}</span>
+        <Icon
+          aria-hidden
+          className="work-story-link-arrow"
+          name="lucide:arrow-right"
+          size="0.875rem"
+        />
       </a>
     ) : null}
   </div>
 );
 
 const RepoCard = ({ newTabId, repo }: RepoProps): ReactElement => {
-  const story = storyPath(repo.name);
+  const story = storyEntry(repo.name);
   return (
     <li
       className="post-row work-card mat-panel"
-      data-story-path={story}
+      data-story-path={story?.path}
       style={tone(repo)}
     >
       <div className="work-card-head">

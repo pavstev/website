@@ -2,6 +2,8 @@
 import "@/styles/sky-story.css";
 
 import BlogHeader from "@/components/blog/blog-header.astro";
+import ScrollProgress from "@/components/scroll-progress.astro";
+import ScrollRail from "@/components/scroll-rail.astro";
 import SkyDial from "@/components/sky-story/sky-dial.astro";
 import SkyOutro from "@/components/sky-story/sky-outro.astro";
 import SkyStep from "@/components/sky-story/sky-step.astro";
@@ -10,11 +12,19 @@ import BlogLayout from "@/layouts/BlogLayout.astro";
 import { type Crumb } from "@/lib/blog/crumbs";
 import { en } from "@/lib/i18n";
 import { posterAt } from "@/lib/sky-story-poster";
+import { fillText } from "@/lib/template";
 import { skyStoryMetadata } from "@/lib/story/metadata";
 import { serializeJsonLd, storyGraph } from "@/lib/structured-data";
 import { websiteStory } from "@/lib/work";
 
 const slides = skyStorySlides();
+const railTicks = slides.map((slide) => ({
+  id: slide.id,
+  name: fillText(en.skyStory.railTick, {
+    chapter: slide.chapter,
+    line: slide.line,
+  }),
+}));
 const crumbs: Crumb[] = [
   { current: false, label: en.blog.crumbHome, path: "/" },
   { current: false, label: en.work.heading, path: "/work" },
@@ -30,9 +40,11 @@ const jsonLd = serializeJsonLd(storyGraph(skyStoryMeta.updatedAt, "website"));
     <a class="skip-link mat-pop type-chip focus-ring" href="#sky-story-end">
       {en.skyStory.skipToEnd}
     </a>
-    <section class="sky-story" data-sky-story="">
+    <section class="sky-story scroll-story" data-sky-story="">
+      <ScrollProgress />
+      <ScrollRail label={en.skyStory.railLabel} ticks={railTicks} />
       <SkyDial slides={slides} />
-      <ol aria-label={en.skyStory.stepsLabel} class="sky-steps">
+      <ol aria-label={en.skyStory.stepsLabel} class="sky-steps scroll-steps">
         {slides.map((slide, index) => (
           <SkyStep poster={posterAt(index)} slide={slide}>
             {slide.id === "outro" && <SkyOutro />}

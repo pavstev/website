@@ -352,6 +352,8 @@ export const en = {
     metaTitle: "A real sky, painted",
     onGithub: "View on GitHub",
     openSky: "Open the live sky",
+    railLabel: "Parts of the day",
+    railTick: "{chapter}: {line}",
     scrollCue: "Scroll",
     skipToEnd: "Skip to the end of the story",
     stepsLabel: "One day of sky, hour by hour",
@@ -402,18 +404,5 @@ export const en = {
     metaTitle: "Work · Stevan Pavlović",
     productsHeading: "Products",
     projectsHeading: "Open source projects",
-    stories: {
-      dotfiles: {
-        line: "One repo sets up a machine and keeps my AI coding agents on one set of rules.",
-        title: "How my dotfiles work",
-      },
-      eyebrow: "Scroll story · {repo}",
-      read: "Read the story",
-      website: {
-        line: "Scroll through one day of the sky behind this site: the sun, the light, the clouds, a rain front and the moon.",
-        title: "A real sky, painted",
-      },
-    },
-    storiesHeading: "Stories",
   },
 } as const;

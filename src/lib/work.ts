@@ -25,7 +25,7 @@ export interface StoryEntry {
 
 export type StoryKey = "dotfiles" | "website";
 
-export const storyEntries: readonly StoryEntry[] = [
+const storyEntries: readonly StoryEntry[] = [
   { key: "website", path: websiteStory },
   { key: "dotfiles", path: dotfilesStory },
 ];
@@ -42,11 +42,16 @@ export const workConfig: WorkConfig = {
   },
 };
 
-export const storyPath = (
+export const storyEntry = (
   name: string,
   picks: RepoPicks = workConfig.repos
-): string | undefined =>
-  Object.hasOwn(picks.stories ?? {}, name) ? picks.stories?.[name] : undefined;
+): StoryEntry | undefined => {
+  const key = storyEntries.find((entry) => entry.key === name)?.key;
+  const path = Object.hasOwn(picks.stories ?? {}, name)
+    ? picks.stories?.[name]
+    : undefined;
+  return key && path ? { key, path } : undefined;
+};
 
 export const pickRepos = <T extends { name: string }>(
   repos: readonly T[],
