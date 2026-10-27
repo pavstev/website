@@ -12,7 +12,7 @@
     --cool-50: #f6f7fb;
     --cool-100: #f0f2f7;
     --cool-200: #e2e5ee;
-    --cool-300: #c3c7d6;
+    --cool-300: var(--night-300);
     --cool-350: #b6bbcc;
     --cool-375: #b9bdcd;
     --cool-400: #a3a8bb;

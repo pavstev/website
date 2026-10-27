@@ -236,3 +236,165 @@
 :root[data-motion-paused] .scroll-text {
   animation: none;
 }
+
+.scroll-story {
+  --scroll-rail-room: calc(2.75rem + var(--sp-2));
+}
+
+.scroll-steps {
+  --scroll-step-end: max(var(--sp-6), 12svh);
+}
+
+.scroll-step {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  min-block-size: calc(var(--scroll-screens, 1) * 100svh);
+  padding: calc(var(--bar-h) + var(--sp-4)) var(--container-px)
+    var(--scroll-step-end);
+  scroll-margin-block-end: calc(-1 * (var(--privacy-zone) + 1rem));
+}
+
+@media (min-width: 48em) {
+  .scroll-steps {
+    --scroll-step-end: max(var(--sp-7), 12svh);
+  }
+
+  .scroll-step {
+    padding-inline-end: max(
+      var(--container-px),
+      calc(var(--scroll-rail-room) + var(--sp-3))
+    );
+  }
+}
+
+.scroll-body {
+  --scroll-read-end: var(--scroll-step-end);
+
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 42rem;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+
+.scroll-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 clamp(var(--sp-2), 0.375rem + 0.6vw, var(--sp-3));
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+
+.scroll-lamp {
+  flex: none;
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  border-radius: 50%;
+  background: var(--lamp, currentcolor);
+}
+
+.scroll-line {
+  max-inline-size: 12em;
+  margin: 0 0 clamp(var(--sp-3), 0.5rem + 1vw, var(--sp-5));
+  font-family: var(--font-sans);
+  font-size: clamp(var(--fs-xl), 1.1rem + 2.6vw, var(--fs-3xl));
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.scroll-line-hero {
+  font-size: var(--text-display-size);
+  line-height: var(--text-display-leading);
+}
+
+.scroll-note {
+  max-inline-size: 38ch;
+  margin: 0;
+  font-size: clamp(var(--fs-base), 0.75rem + 1vw, var(--fs-lg));
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.scroll-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-block-start: var(--sp-4);
+}
+
+.scroll-cue {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: var(--sp-5) 0 0;
+}
+
+.scroll-cue-word {
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+
+.scroll-cue-line {
+  position: relative;
+  overflow: hidden;
+  inline-size: 1px;
+  block-size: var(--sp-7);
+  background: color-mix(in srgb, currentcolor 32%, transparent);
+}
+
+.scroll-cue-drip {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  block-size: 45%;
+  background: linear-gradient(to bottom, transparent, currentcolor);
+  translate: 0 60%;
+  animation: scroll-cue-drip 1.8s var(--ease-smooth) infinite;
+}
+
+@supports (animation-timeline: view()) {
+  .scroll-cue {
+    animation: scroll-cue-out linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 20svh;
+  }
+}
+
+@keyframes scroll-cue-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes scroll-cue-drip {
+  from {
+    translate: 0 -100%;
+  }
+
+  to {
+    translate: 0 230%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue,
+  .scroll-cue-drip {
+    animation: none;
+  }
+}
+
+:root[data-motion-paused] .scroll-cue,
+:root[data-motion-paused] .scroll-cue-drip {
+  animation: none;
+}

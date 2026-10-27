@@ -1,11 +1,16 @@
 ---
 import { getEntry, render } from "astro:content";
 
+import AboutFacts from "@/components/about/about-facts.astro";
+import AboutRoad from "@/components/about/about-road.astro";
 import BlogHeader from "@/components/blog/blog-header.astro";
 import { mdxComponents } from "@/components/blog/mdx-components";
 import PostBody from "@/components/blog/post-body.astro";
 import PostFigure from "@/components/blog/post-figure.astro";
 import BlogLayout from "@/layouts/BlogLayout.astro";
+import "@/styles/prose.css";
+import "@/styles/about.css";
+import { aboutFacts, aboutRoad } from "@/lib/about";
 import { pageCrumbs } from "@/lib/blog/crumbs";
 import { listMetadata } from "@/lib/blog/metadata";
 import { getCv } from "@/lib/cv";
@@ -25,6 +30,8 @@ const [contact, cv] = await Promise.all([
 const jsonLd = serializeJsonLd(
   aboutGraph(contact, data.description, cv.updatedAt)
 );
+const road = aboutRoad(cv);
+const facts = aboutFacts(cv);
 const metadata = listMetadata({
   description: data.description,
   title: en.about.metaTitle,
@@ -50,6 +57,8 @@ const components = {
       <p class="about-lead text-sky">{data.lead}</p>
     </BlogHeader>
     <div class="post-page page-wide about-page">
+      <AboutFacts facts={facts} />
+      <AboutRoad items={road} />
       <PostBody toc={[]}>
         <Content components={components} />
       </PostBody>

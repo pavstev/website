@@ -1,7 +1,13 @@
 export const en = {
   about: {
     crumb: "About",
+    facts: {
+      agents: "AI agents in daily work since 2024",
+      label: "In short",
+      years: "{n} years of code",
+    },
     metaTitle: "About me · Stevan Pavlović",
+    road: "The road",
   },
   blog: {
     anchor: "Link to the section {heading}",
@@ -274,6 +280,9 @@ export const en = {
     year: "year",
     years: "years",
   },
+  scroll: {
+    cue: "Scroll",
+  },
   sky: {
     askCity: "Want the sky over {city} instead?",
     askLead: "That's Stevan's real sky right now.",
@@ -354,26 +363,11 @@ export const en = {
     openSky: "Open the live sky",
     railLabel: "Parts of the day",
     railTick: "{chapter}: {line}",
-    scrollCue: "Scroll",
     skipToEnd: "Skip to the end of the story",
     stepsLabel: "One day of sky, hour by hour",
   },
   story: {
     backToWork: "Back to work",
-    chapters: {
-      c01: "Chapter 1",
-      c02: "Chapter 2",
-      c03: "Chapter 3",
-      c04: "Chapter 4",
-      c05: "Chapter 5",
-      c06: "Chapter 6",
-      h1: "Harness 1",
-      h2: "Harness 2",
-      h3: "Harness 3",
-      harness: "The harness",
-      hero: "Start",
-      skills: "Harness 4",
-    },
     copy: "Copy",
     copyFailed: "Failed",
     copyLine: "Copy the install line",

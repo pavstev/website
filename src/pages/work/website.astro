@@ -1,6 +1,4 @@
 ---
-import "@/styles/sky-story.css";
-
 import BlogHeader from "@/components/blog/blog-header.astro";
 import ScrollProgress from "@/components/scroll-progress.astro";
 import ScrollRail from "@/components/scroll-rail.astro";
@@ -9,8 +7,10 @@ import SkyOutro from "@/components/sky-story/sky-outro.astro";
 import SkyStep from "@/components/sky-story/sky-step.astro";
 import { skyStoryMeta, skyStorySlides } from "@/data/website-story";
 import BlogLayout from "@/layouts/BlogLayout.astro";
+import "@/styles/sky-story.css";
 import { type Crumb } from "@/lib/blog/crumbs";
 import { en } from "@/lib/i18n";
+import { skyDialKeyframes } from "@/lib/sky-dial";
 import { posterAt } from "@/lib/sky-story-poster";
 import { fillText } from "@/lib/template";
 import { skyStoryMetadata } from "@/lib/story/metadata";
@@ -34,6 +34,9 @@ const jsonLd = serializeJsonLd(storyGraph(skyStoryMeta.updatedAt, "website"));
 ---
 
 <BlogLayout metadata={skyStoryMetadata()}>
+  <Fragment slot="head">
+    <style is:inline set:html={skyDialKeyframes(slides)}></style>
+  </Fragment>
   <script type="application/ld+json" is:inline set:html={jsonLd}></script>
   <main class="blog-main" id="main-content">
     <BlogHeader crumbs={crumbs} header={false} title={en.skyStory.metaTitle} />
@@ -43,7 +46,7 @@ const jsonLd = serializeJsonLd(storyGraph(skyStoryMeta.updatedAt, "website"));
     <section class="sky-story scroll-story" data-sky-story="">
       <ScrollProgress />
       <ScrollRail label={en.skyStory.railLabel} ticks={railTicks} />
-      <SkyDial slides={slides} />
+      <SkyDial />
       <ol aria-label={en.skyStory.stepsLabel} class="sky-steps scroll-steps">
         {slides.map((slide, index) => (
           <SkyStep poster={posterAt(index)} slide={slide}>

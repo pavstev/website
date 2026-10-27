@@ -1,6 +1,6 @@
 ---
+import ScrollCue from "@/components/scroll-cue.astro";
 import { type SkyStorySlide } from "@/data/website-story";
-import { en } from "@/lib/i18n";
 import { posterStyle, type StoryPoster } from "@/lib/sky-story-poster";
 
 interface Props {
@@ -9,21 +9,22 @@ interface Props {
 }
 
 const { poster, slide } = Astro.props;
-const Heading = slide.id === "hero" ? "h1" : "h2";
+const hero = slide.id === "hero";
+const Heading = hero ? "h1" : "h2";
 ---
 
 <li
-  class="sky-step"
+  class="sky-step scroll-step"
   data-bright={poster.bright ? "" : undefined}
   data-step={slide.id}
   id={slide.id === "outro" ? "sky-story-end" : undefined}
-  style={`--sky-screens: ${String(slide.screens)}; ${posterStyle(poster)}`}
+  style={`--scroll-screens: ${String(slide.screens)}; ${posterStyle(poster)}`}
 >
-  <div class="sky-step-body scroll-text">
-    <p class="sky-step-eyebrow type-chip text-sky">
+  <div class="sky-step-body scroll-body scroll-text">
+    <p class="sky-step-eyebrow scroll-eyebrow type-chip text-sky">
       <span
         aria-hidden="true"
-        class="sky-step-lamp"
+        class="sky-step-lamp scroll-lamp"
         data-lamp={slide.lamp}
       ></span>
       {slide.clock !== undefined && (
@@ -31,16 +32,18 @@ const Heading = slide.id === "hero" ? "h1" : "h2";
       )}
       <span class="sky-step-chapter">{slide.chapter}</span>
     </p>
-    <Heading class="sky-step-line text-sky">{slide.line}</Heading>
-    <p class="sky-step-note text-sky">{slide.note}</p>
-    {slide.id === "hero" && (
-      <p aria-hidden="true" class="sky-step-cue">
-        <span class="sky-step-cue-word type-chip">{en.skyStory.scrollCue}</span>
-        <span class="sky-step-cue-line">
-          <span class="sky-step-cue-drip" />
-        </span>
-      </p>
-    )}
+    <Heading
+      class:list={[
+        "sky-step-line",
+        "scroll-line",
+        { "scroll-line-hero": hero },
+        "text-sky",
+      ]}
+    >
+      {slide.line}
+    </Heading>
+    <p class="sky-step-note scroll-note text-sky">{slide.note}</p>
+    {hero && <ScrollCue class="sky-step-cue" />}
     <slot />
   </div>
 </li>

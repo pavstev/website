@@ -105,7 +105,7 @@ Siblings: `motion.md`, `sky.md`. Tokens are in `src/styles/tokens.css` (`docs/th
 ## Work page
 
 - `work.astro` uses `BlogLayout`, `BlogHeader` and a full-width `.page-wide` index (see `blog.md`). Products first, then Open source projects; from 64em they sit side by side. There is no Stories section: the stories are reached from the repo cards.
-- `src/lib/work.ts` configures the page. The `.work-*`, `.repo-*`, `.logo-planet` and `.work-mark*` CSS lives in `blog.css`.
+- `src/lib/work.ts` configures the page. The `.work-*`, `.repo-*`, `.logo-planet` and `.work-mark*` CSS lives in `work.css`, imported by `work.astro`.
 - Product rows are one stretched link that opens in a new tab. Repo cards are not: only the name and the action keys are links, and the card body has no pointer.
 - GitHub key (owner, 2026-10-24): a plain blue mark at the right end of the title row, no keycap, no frame, exactly one title line high (`1.3em` at `--fs-base`), with a 44 px hit area (`.repo-key-link::after`).
 - Its tooltip is static markup (`.repo-tip.tip`), because `RepoStrip` is not hydrated. `repo-tips.ts` hides it on Escape until the pointer or focus leaves.

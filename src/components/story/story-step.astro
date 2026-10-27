@@ -1,4 +1,5 @@
 ---
+import ScrollCue from "@/components/scroll-cue.astro";
 import { en } from "@/lib/i18n";
 import { type StoryStep } from "@/lib/story/steps";
 import { fillText } from "@/lib/template";
@@ -11,6 +12,7 @@ interface Props {
 
 const { names = [], step, stops } = Astro.props;
 const { strip } = step;
+const hero = step.id === "hero";
 const isCommand = strip !== undefined && "command" in strip;
 const stripHead =
   strip === undefined ? "" : "command" in strip ? strip.command : strip.title;
@@ -18,22 +20,32 @@ const stripLabel = isCommand
   ? fillText(en.story.stripLabel, { command: stripHead })
   : stripHead;
 const stripHeadClass = isCommand ? "story-strip-command" : "story-strip-title";
+const vars = [
+  `--scroll-screens: ${String(step.screens)}`,
+  ...(stops === undefined ? [] : [`--story-stops: ${String(stops)}`]),
+];
 ---
 
 <li
-  class="story-step"
+  class="story-step scroll-step"
   data-screens={String(step.screens)}
   data-step={step.id}
   data-stops={stops === undefined ? undefined : String(stops)}
-  style={stops === undefined ? undefined : `--story-stops: ${String(stops)}`}
+  style={vars.join("; ")}
   id={step.id === "outro" ? "story-end" : undefined}
 >
-  <div class="story-body scroll-text">
-    <p class="story-eyebrow">{step.eyebrow}</p>
-    <h2 class="story-line">
+  <div class="story-body scroll-body scroll-text">
+    <p class="story-eyebrow scroll-eyebrow type-chip">
+      <span aria-hidden="true" class="story-lamp scroll-lamp"></span>
+      {step.eyebrow}
+    </p>
+    <h2
+      class:list={["story-line", "scroll-line", { "scroll-line-hero": hero }]}
+    >
       <span class="story-morph-name">{step.line}</span>
     </h2>
-    <p class="story-note">{step.note}</p>
+    <p class="story-note scroll-note">{step.note}</p>
+    {hero && <ScrollCue class="story-cue" />}
     {names.length > 0 && (
       <ul class="story-names">
         {names.map((item) => (

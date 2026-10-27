@@ -19,5 +19,5 @@ const { toc } = Astro.props;
   <article class="prose-blog">
     <slot />
   </article>
-  <PostEffects client:load />
+  <PostEffects client:idle={{ timeout: 1000 }} />
 </div>

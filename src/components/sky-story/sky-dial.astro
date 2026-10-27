@@ -1,38 +1,3 @@
----
-import { type SkyStorySlide } from "@/data/website-story";
-
-interface Props {
-  slides: readonly SkyStorySlide[];
-}
-
-const { slides } = Astro.props;
-
-const hoursOf = (clock: string): number =>
-  Number(clock.slice(0, 2)) + Number(clock.slice(3, 5)) / 60;
-
-const total = slides.reduce((sum, slide) => sum + slide.screens, 0);
-const chrome = 0.27;
-const span = Math.max(total - 1 + chrome, 1);
-
-let reach = 0;
-let hours = 0;
-const stops = slides.map((slide) => {
-  reach += slide.screens;
-  if (slide.clock !== undefined) {
-    let next = hoursOf(slide.clock);
-    while (next < hours) next += 24;
-    hours = next;
-  }
-  const share = Math.min(Math.max((reach - 1) / span, 0), 1) * 100;
-  const tone = slide.lamp === "sun" ? "var(--sky-gold)" : "var(--night-100)";
-  const angle = (hours - 12) * 15;
-  return `${share.toFixed(2)}%{rotate:${angle.toFixed(2)}deg;color:${tone}}`;
-});
-const closing = stops.length > 0 ? stops[stops.length - 1] : undefined;
-const keyframes = `@keyframes sky-dial-orbit{${stops.join("")}${closing === undefined ? "" : closing.replace(/^[\d.]+%/, "100%")}}`;
----
-
-<style is:inline set:html={keyframes}></style>
 <div aria-hidden="true" class="sky-dial">
   <svg class="sky-dial-ring" viewBox="0 0 100 100">
     <circle cx="50" cy="50" r="50" vector-effect="non-scaling-stroke"></circle>

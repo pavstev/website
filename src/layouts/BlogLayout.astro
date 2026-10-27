@@ -110,6 +110,7 @@ const contact = await getContact(personalData.githubHandle);
     <link href="/sitemap.xml" rel="sitemap" />
     <script is:inline set:html={headScript}></script>
     <PageRouter />
+    <slot name="head" />
   </head>
   <body>
     <SkipLink />
@@ -120,7 +121,7 @@ const contact = await getContact(personalData.githubHandle);
     </div>
     <div class="blog-dock">
       <PageDock
-        client:load
+        client:idle={{ timeout: 1000 }}
         email={contact.email}
         transition:persist="blog-dock"
       />

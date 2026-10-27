@@ -1,7 +1,7 @@
 import { type CatalogSkill, type LoopPhase } from "../lib/story/skill-map.ts";
 
 export const storyMeta = {
-  updatedAt: "2026-10-24",
+  updatedAt: "2026-10-27",
 };
 
 export const skillCatalog = {

@@ -29,7 +29,7 @@ const others = navOthers(Astro.url.pathname, blogLive());
   <div aria-hidden="true" class="blog-bar-glass"></div>
   {slug !== undefined && (
     <ReadingProgress
-      client:load
+      client:idle={{ timeout: 1000 }}
       className="reading-progress"
       fillClassName="reading-progress-fill"
       label={en.blog.readingProgress}
@@ -106,7 +106,7 @@ const others = navOthers(Astro.url.pathname, blogLive());
     )}
   </div>
 </div>
-<BarSpy client:load />
+<BarSpy client:idle={{ timeout: 1000 }} />
 {header && (
   <header class="blog-header" data-sky-header="">
     <p class="blog-header-meta type-chip text-sky">

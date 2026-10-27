@@ -285,6 +285,7 @@ const eslintConfig = defineConfig([
       "scripts/**",
       "src/lib/blog/**",
       "src/lib/theme.test.ts",
+      "src/lib/page-sheets.test.ts",
       "src/profile/cli.ts",
     ],
     rules: { "security/detect-non-literal-fs-filename": "off" },

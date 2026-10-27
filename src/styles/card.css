@@ -422,9 +422,9 @@ html:has(.portrait-dialog[open]) {
   cursor: pointer;
   pointer-events: auto;
   transition:
-    border-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    color 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    border-color var(--duration-quick) var(--ease-standard),
+    color var(--duration-quick) var(--ease-standard),
+    box-shadow var(--duration-quick) var(--ease-standard);
 }
 
 .portrait-close::after {
@@ -1054,7 +1054,7 @@ a.topic-company:hover {
   border-radius: var(--ui-radius-pop);
   color: var(--ui-ink);
   font-family: var(--font-ui);
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   line-height: 1.5;
   text-align: left;
   text-wrap: pretty;
@@ -1088,7 +1088,7 @@ a.topic-company:hover {
 .sky-bubble-note {
   margin-top: 0.25rem;
   color: var(--ui-ink-3);
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   line-height: 1.45;
 }
 
@@ -1139,11 +1139,13 @@ a.topic-company:hover {
 }
 
 :root:has([data-card]) .contact-row .keycap {
-  animation: glass-in 500ms var(--ease-entrance) 110ms backwards;
+  animation: glass-in var(--duration-slower) var(--ease-entrance) 110ms
+    backwards;
 }
 
 :root:has([data-card]) .section-row .keycap {
-  animation: glass-in 500ms var(--ease-entrance) 190ms backwards;
+  animation: glass-in var(--duration-slower) var(--ease-entrance) 190ms
+    backwards;
 }
 
 :root:has([data-card]) :is(.card-footer, .privacy-chip-face).fade-up {

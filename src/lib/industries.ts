@@ -64,7 +64,7 @@ const yearOf = (value: string): number | undefined => {
   return year === undefined ? undefined : Number(year);
 };
 
-const isOngoing = (to: string): boolean =>
+export const isOngoing = (to: string): boolean =>
   ongoingPattern.test(to) || yearOf(to) === undefined;
 
 export const formatPeriod = (from: string, to: string): string => {

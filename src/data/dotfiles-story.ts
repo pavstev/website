@@ -89,18 +89,18 @@ export const skillFacts = (names?: readonly string[]): string[] => {
 
 export const stepCopy = (): Record<StepId, StoryCopy> => ({
   c01: {
-    eyebrow: "01",
-    line: "Plain git. No manager.",
-    note: "The repo is the single source of truth. Every file in home/ mirrors $HOME and is reached through a symlink back, so I edit either side and the change is live at once. No manager, no template engine, no apply step. Fewer parts, fewer ways to drift.",
+    eyebrow: "Repo",
+    line: "Plain git, no manager",
+    note: "The repo is the single source of truth. Every file in home/ mirrors $HOME through a symlink, so I edit either side and the change is live at once. No manager, no template engine, no apply step. Fewer parts, fewer ways to drift.",
     strip: {
       command: 'readlink ~/.zshrc | sed "s|$HOME|~|"',
       output: ["~/dotfiles/home/.zshrc"],
     },
   },
   c02: {
-    eyebrow: "02",
-    line: "One line, any machine.",
-    note: "I paste one line in a terminal and walk away. It asks a few questions, then runs its steps in order: prerequisites, the package manager, the tools, Rust, Node, the agents, the git hooks. A step that fails warns and steps aside. The run goes on.",
+    eyebrow: "Install",
+    line: "One line, any machine",
+    note: "I paste one line in a terminal and walk away. It asks a few questions, then runs its steps in order: prerequisites, package manager, tools, Rust, Node, agents, git hooks. A step that fails warns and steps aside. The run goes on.",
     strip: {
       command: bootstrapLine,
       output: [
@@ -111,8 +111,8 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
     },
   },
   c03: {
-    eyebrow: "03",
-    line: "Safe to run twice.",
+    eyebrow: "Doctor",
+    line: "Safe to run twice",
     note: "Every step skips what is already there. An older file moves to a .bak copy before its link goes in. When something feels off I run dots doctor, which prints one PASS or FAIL line per check. A check changes nothing.",
     strip: {
       command: "dots doctor",
@@ -125,9 +125,9 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
     },
   },
   c04: {
-    eyebrow: "04",
-    line: "Tested on macOS, Linux, Windows.",
-    note: "macOS, the main Linux distros and Windows in Git Bash are all first class. A change must keep each one working, so one command runs the check on all of them at once. macOS runs here, Linux in fresh containers, Windows in a throwaway VM. The Rust side runs its own tests too.",
+    eyebrow: "Platforms",
+    line: "Tested on macOS, Linux, Windows",
+    note: "macOS, the main Linux distros and Windows in Git Bash are all first class. One command runs the check on all of them at once: macOS here, Linux in fresh containers, Windows in a throwaway VM. The Rust side runs its own tests too.",
     strip: {
       command: "bash scripts/os-check.sh all",
       output: [
@@ -139,9 +139,9 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
     },
   },
   c05: {
-    eyebrow: "05",
-    line: "Public, but private.",
-    note: "The repo is public, so it holds nothing personal: no names, no emails, no home paths, no secrets. My own rules live in one private file outside the repo. Git hooks block private words before a commit and before a push. The guard will not read the file that holds my secrets.",
+    eyebrow: "Privacy",
+    line: "Public, but private",
+    note: "The repo is public, so it holds nothing personal: no names, no emails, no home paths, no secrets. My rules live in one private file outside the repo. Git hooks block private words before each commit and push. The guard never reads my secrets.",
     strip: {
       command: "sed -n 6,9p .gitignore",
       output: [
@@ -153,9 +153,9 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
     },
   },
   c06: {
-    eyebrow: "06",
-    line: "One source for every agent.",
-    note: "Claude Code, Cursor and Opencode read the same rules, skills and agents from one folder. Claude gets symlinks. Cursor and Opencode read the skills in place and get generated rules and agents with a marker that says they are ours. A file without the marker is yours and is never touched.",
+    eyebrow: "Agents",
+    line: "One source for every agent",
+    note: "Claude Code, Cursor and Opencode read the same rules, skills and agents from one folder. Claude gets symlinks. Cursor and Opencode get generated rules and agents with a marker that says they are ours. A file without the marker is yours and is never touched.",
     strip: {
       command: 'rg -o "generated-by: dotfiles" .cursor/rules',
       output: [
@@ -165,9 +165,9 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
     },
   },
   h1: {
-    eyebrow: "H1",
-    line: "One tool call.",
-    note: "A hook runs on every call, so it starts with sh and fails open. It hands the call to the guard, a Rust program of named checks. The router sets the model and the effort, and the pace meter says ok, ahead or critical. A denied call comes back with the rule and the fix.",
+    eyebrow: "The guard",
+    line: "One tool call",
+    note: "A hook runs on every call and fails open. It hands the call to the guard, a Rust program of named checks. The router picks the model and the effort. A denied call comes back with the rule and the fix.",
     strip: {
       command: "sh ~/.claude/hooks/rust-bin --hook guard pretool",
       output: [
@@ -177,8 +177,8 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
     },
   },
   h2: {
-    eyebrow: "H2",
-    line: "The token ledger.",
+    eyebrow: "The ledger",
+    line: "The token ledger",
     note: "My time is the cost that counts, and tokens are the second cost. So the guard says no before a helper spends anything. Each row is one rule and the reason it exists. Together they make the weekly budget last all the work days.",
     strip: {
       output: [
@@ -192,9 +192,9 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
     },
   },
   h3: {
-    eyebrow: "H3",
-    line: "The roster, pinned down.",
-    note: "Skills such as askme, agents such as worker, presets I switch on and off. Each agent is pinned to a model and an effort and gets only the tools it needs. Every hand-back starts with a status word and has a cap. A pre-commit check keeps the skill descriptions honest.",
+    eyebrow: "The roster",
+    line: "Every agent, pinned down",
+    note: "Skills such as askme, agents such as worker, presets I switch on and off. Each agent gets one model, one effort and only the tools it needs. Every hand-back starts with a status word and has a cap. A pre-commit check keeps the descriptions honest.",
     strip: {
       command:
         'rg "^(name|model|effort|tools|disallowedTools):" claude/agents/worker.md',
@@ -208,23 +208,23 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
     },
   },
   harness: {
-    eyebrow: "H0",
-    line: "The harness",
-    note: "Every tool call my AI agents make passes through a Rust guard: every check in Claude Code, a few in Cursor and Opencode. Time and tokens are the cost that counts, so the rules live in code, not in a prompt.",
+    eyebrow: "The harness",
+    line: "Rules in code, not prompts",
+    note: "Every tool call my AI agents make passes through a Rust guard: every check in Claude Code, a few in Cursor and Opencode. Time and tokens are the cost that counts. A prompt can be ignored. Code cannot.",
   },
   hero: {
-    eyebrow: "00",
+    eyebrow: "Start",
     line: "dotfiles",
-    note: `${en.story.metaDescription} Scroll to see how it fits together.`,
+    note: `${en.story.metaDescription} This is how it fits together.`,
   },
   outro: {
-    eyebrow: "end",
-    line: "Take it all back.",
+    eyebrow: "End",
+    line: "Take it all back",
     note: `One line installs it. One command takes it back: ${uninstallLine}. It removes the links and the generated files, and puts the old files back. Your own tools and settings stay.`,
   },
   skills: {
-    eyebrow: "H4",
-    line: "The work loop, walked.",
+    eyebrow: "The skills",
+    line: "The work loop, walked",
     note: "Every skill sits along the way I work, from the first question to the end of a session. Each bridge is a hand-off a skill is built for, and the hubs stand taller. A session can run from a plan to a proven finish.",
   },
 });

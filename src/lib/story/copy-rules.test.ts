@@ -9,9 +9,9 @@ const dash = String.fromCodePoint(0x20_14);
 const sentence = (count: number): string => `${"word ".repeat(count - 1)}end.`;
 
 const base: StoryStep = {
-  eyebrow: "01",
+  eyebrow: "Repo",
   id: "c01",
-  line: "Plain git. No manager.",
+  line: "Plain git, no manager",
   note: "The repo is the source of truth. Every file is a link back into it.",
   screens: 1,
   tick: true,
@@ -32,16 +32,25 @@ describe("lintCopy", () => {
   it("flags a line of two words", () => {
     assert.match(lint({ line: "Too short" })[0] ?? "", /line has 2 words/u);
   });
-  it("lets the title steps keep a short line", () => {
+  it("lets the hero title keep a short line", () => {
     assert.deepEqual(lint({ id: "hero", line: "dotfiles" }), []);
-    assert.deepEqual(lint({ id: "harness", line: "The harness" }), []);
-  });
-  it("flags a note of 56 words and accepts 55", () => {
     assert.match(
-      lint({ note: `${sentence(28)} ${sentence(28)}` })[0] ?? "",
-      /note has 56 words/u
+      lint({ id: "harness", line: "The harness" })[0] ?? "",
+      /line has 2 words/u
     );
-    assert.deepEqual(lint({ note: `${sentence(27)} ${sentence(28)}` }), []);
+  });
+  it("flags a line that ends with a period", () => {
+    assert.match(
+      lint({ line: "Plain git. No manager." })[0] ?? "",
+      /ends with a period/u
+    );
+  });
+  it("flags a note of 46 words and accepts 45", () => {
+    assert.match(
+      lint({ note: `${sentence(23)} ${sentence(23)}` })[0] ?? "",
+      /note has 46 words/u
+    );
+    assert.deepEqual(lint({ note: `${sentence(22)} ${sentence(23)}` }), []);
   });
   it("flags a note with one sentence or five", () => {
     assert.match(lint({ note: "Just one sentence." })[0] ?? "", /1 sentences/u);
@@ -88,7 +97,7 @@ describe("lintCopy", () => {
       lint({ note: "It runs on nine systems. It is plain." })[0] ?? "",
       /number nine/u
     );
-    assert.match(lint({ line: "Tested on 3 systems." })[0] ?? "", /number 3/u);
+    assert.match(lint({ line: "Tested on 3 systems" })[0] ?? "", /number 3/u);
   });
   it("allows typed and spelled numbers when asked", () => {
     const note = "It fills 40 by 24 colors. It is about ten kilometers.";

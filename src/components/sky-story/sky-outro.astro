@@ -6,23 +6,29 @@ import { personalData } from "@/lib/personal";
 const repoUrl = `${personalData.github}/website`;
 ---
 
-<div class="sky-outro">
-  <a class="sky-outro-main focus-ring" href="/">
-    <Icon aria-hidden name="lucide:sun-moon" size="1rem" />
-    {en.skyStory.openSky}
+<div class="sky-outro scroll-actions">
+  <a class="keycap-host focus-ring" href="/">
+    <span class="keycap">
+      <Icon aria-hidden name="lucide:sun-moon" size="0.9375rem" />
+      {en.skyStory.openSky}
+    </span>
   </a>
   <a
-    class="sky-outro-link focus-ring"
+    class="keycap-host focus-ring"
     href={repoUrl}
     rel="noopener noreferrer"
     target="_blank"
   >
-    <Icon aria-hidden name="simple-icons:github" size="0.9375rem" />
-    {en.skyStory.onGithub}
-    <span class="sr-only"> {en.card.newTab}</span>
+    <span class="keycap">
+      <Icon aria-hidden name="simple-icons:github" size="0.9375rem" />
+      {en.skyStory.onGithub}
+      <span class="sr-only"> {en.card.newTab}</span>
+    </span>
   </a>
-  <a class="sky-outro-link focus-ring" href="/work">
-    <Icon aria-hidden name="lucide:arrow-left" size="0.9375rem" />
-    {en.skyStory.backToWork}
+  <a class="keycap-host focus-ring" href="/work">
+    <span class="keycap">
+      <Icon aria-hidden name="lucide:arrow-left" size="0.9375rem" />
+      {en.skyStory.backToWork}
+    </span>
   </a>
 </div>

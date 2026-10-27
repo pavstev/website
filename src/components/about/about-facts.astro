@@ -1,0 +1,15 @@
+---
+import { en } from "@/lib/i18n";
+
+interface Props {
+  facts: readonly string[];
+}
+
+const { facts } = Astro.props;
+---
+
+<ul aria-label={en.about.facts.label} class="about-facts">
+  {facts.map((fact) => (
+    <li class="type-chip">{fact}</li>
+  ))}
+</ul>

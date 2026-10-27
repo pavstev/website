@@ -38,10 +38,10 @@ const spelled: ReadonlyMap<string, number> = new Map([
 ]);
 
 const emDash = String.fromCodePoint(0x20_14);
-const titleSteps: ReadonlySet<string> = new Set(["harness", "hero"]);
+const titleSteps: ReadonlySet<string> = new Set(["hero"]);
 const lineWords = { max: 7, min: 3 };
 const noteSentences = { max: 4, min: 2 };
-const noteWordsMax = 55;
+const noteWordsMax = 45;
 
 const bannedPattern =
   /\b(?:seamless|robust|leverage|empower|effortless|elevate|journey|delve|unlock|crafted|curated|meticulously|beautifully|cutting-edge|game-changer)\b/giu;
@@ -137,6 +137,9 @@ export const lintCopy = (
     ...textMessages("line", step.line, numbers),
     ...textMessages("note", step.note, numbers),
   ];
+  if (step.line.endsWith(".")) {
+    messages.push("line ends with a period");
+  }
   const words = countWords(step.line);
   if (
     !titleSteps.has(step.id) &&

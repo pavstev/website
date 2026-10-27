@@ -1,0 +1,163 @@
+.about-lead {
+  --ink: var(--foreground);
+  margin-top: var(--sp-2);
+  font-size: var(--fs-base);
+  line-height: 1.625;
+  text-wrap: pretty;
+}
+
+.about-page {
+  display: grid;
+  gap: var(--sp-7) var(--sp-6);
+}
+
+.about-page .prose-blog {
+  margin-inline: 0;
+}
+
+.about-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  margin: 0;
+  padding: 0;
+  color: var(--ui-ink-2);
+  list-style: none;
+}
+
+.about-facts > li {
+  display: inline-flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.about-facts > li::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--primary);
+  border-radius: 50%;
+}
+
+.about-road-title {
+  margin: 0 0 var(--sp-5);
+  color: var(--ui-ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.about-road {
+  position: relative;
+  display: grid;
+  gap: var(--sp-5);
+  margin: 0;
+  padding: 0 0 0 var(--sp-6);
+  list-style: none;
+}
+
+.about-road::before {
+  content: "";
+  position: absolute;
+  inset-block: var(--sp-2);
+  left: 0.4375rem;
+  width: 1px;
+  background: color-mix(in oklab, var(--ui-ink-3) 45%, transparent);
+}
+
+.about-road > li {
+  position: relative;
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.about-road > li::before {
+  content: "";
+  position: absolute;
+  top: 0.25rem;
+  left: calc(-1 * var(--sp-6));
+  box-sizing: border-box;
+  width: 0.9375rem;
+  height: 0.9375rem;
+  border: 1px solid var(--ui-ink-3);
+  border-radius: 50%;
+  background: var(--background);
+}
+
+.about-road > li[data-now]::before {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: 0 0 0.75rem color-mix(in oklab, var(--primary) 55%, transparent);
+}
+
+.about-road-years {
+  color: var(--ui-ink-3);
+}
+
+.about-road-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--sp-2);
+  color: var(--ui-ink);
+  font-weight: 500;
+}
+
+.about-road-role {
+  color: var(--ui-ink-2);
+  font-weight: 400;
+}
+
+.about-road-line {
+  color: var(--ui-ink-2);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+}
+
+@container page (min-width: 64em) {
+  .about-page {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: start;
+  }
+
+  .about-facts {
+    grid-column: 1 / -1;
+  }
+
+  .about-page .post-layout {
+    display: block;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .about-road > li {
+    animation: about-rise var(--ease-standard) both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 50%;
+  }
+}
+
+@keyframes about-rise {
+  from {
+    opacity: 0;
+    translate: 0 var(--sp-3);
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-road > li {
+    animation: none;
+  }
+}
+
+:root[data-motion-paused] .about-road > li {
+  animation: none;
+}

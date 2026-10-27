@@ -1,6 +1,6 @@
 # How theming works
 
-- Every CSS color lives in `src/styles/tokens.css`. `globals.css` imports it first, and `card.css` and `blog.css` get it through `globals.css`.
+- Every CSS color lives in `src/styles/tokens.css`. `globals.css` imports it first, and `card.css` and `blog.css` get it through `globals.css`. The page sheets (`post.css`, `prose.css`, `work.css`, `sky-panel.css`) only read tokens.
 - The file has three kinds of tokens. Primitives hold the raw values (`--night-950`, `--cool-400`, `--day-950`). Semantic tokens name a job (`--background`, `--primary`, `--focus`). UI tokens style the controls (`--ui-*`, `--glass-*`, `--bar-*`).
 - Other style sheets read tokens only. They never write a hex, `rgb()`, `oklch()`, `white` or `black`.
 - There is one focus color, `--focus`: white at night and `--day-950` by day, on every page.

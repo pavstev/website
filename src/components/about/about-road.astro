@@ -1,0 +1,28 @@
+---
+import { type RoadItem } from "@/lib/about";
+import { en } from "@/lib/i18n";
+
+interface Props {
+  items: readonly RoadItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<section aria-labelledby="about-road-title" class="about-road-wrap">
+  <h2 class="about-road-title" id="about-road-title">
+    {en.about.road}
+  </h2>
+  <ol class="about-road">
+    {items.map((item) => (
+      <li data-now={item.now ? "" : undefined}>
+        <span class="about-road-years type-chip">{item.years}</span>
+        <span class="about-road-head">
+          {item.company}
+          <span class="about-road-role">{item.position}</span>
+        </span>
+        <span class="about-road-line">{item.line}</span>
+      </li>
+    ))}
+  </ol>
+</section>

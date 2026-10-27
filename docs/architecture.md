@@ -22,9 +22,10 @@ Project facts by area. Read the bullet for the area you change. Rules for design
 
 - `globals.css` is the shared sheet. It imports `tokens.css` (every color, see `docs/theming.md`), then `@theme`, utilities, fonts, base, sky, materials, keycaps, tips, drawers, dock and privacy.
 - `card.css` and `blog.css` hold rules only the card or only the blog layout can match. Each starts with `@import "./globals.css"`.
-- Each page imports exactly one sheet: `index.astro` imports `card.css`, `BlogLayout.astro` imports `blog.css`, `404.astro` imports `globals.css`, `Base.astro` none.
-- Never import `globals.css` next to a page sheet. Astro orders CSS modules by import depth and the layer order breaks.
-- A rule moves to a page sheet only when every class in its selector is used by that route.
+- Each page imports one base sheet: `index.astro` imports `card.css`, `BlogLayout.astro` imports `blog.css`, `404.astro` uses `BlogLayout`, `Base.astro` none.
+- Page sheets carry no `@import`: `post.css` (posts, the blog index and tag pages), `prose.css` (posts and `/about`), `work.css` (`/work`), `about.css` (`/about`), `sky-panel.css` (the home footer sky panel). A page imports a page sheet right under its layout import. Dev and the build emit sheets in import order, so the page sheet lands after the layout sheet and wins ties. `src/lib/page-sheets.test.ts` checks the position.
+- Never import `globals.css` next to a page sheet: the Tailwind layer order breaks.
+- A rule moves to a page sheet only when every route that uses it imports that sheet. Proof: the Playwright CSS coverage probe in `.audit/css-coverage` (per family and route, 2026-10-27: about 67%, stories 66% and 404 69% unused before the split).
 - `globals.css` starts with `@import "tailwindcss" source(none)` and `@source "../"`, so Tailwind scans only `src/`.
 - `postcss.config.mjs` runs `scripts/postcss-color-mix.mjs`, which unwraps Tailwind's `color-mix()` fallback blocks.
 - Fonts are self-hosted woff2 in `public/fonts/` with versioned names: Inter Variable, Geist Mono, Geist 600 for the name, plus small `*-extra-*` files for ć č đ š ž.

@@ -1,6 +1,4 @@
 ---
-import "@/styles/story.css";
-
 import BlogHeader from "@/components/blog/blog-header.astro";
 import { Icon } from "@/components/icon";
 import ScrollProgress from "@/components/scroll-progress.astro";
@@ -18,6 +16,7 @@ import {
   uninstallLine,
 } from "@/data/dotfiles-story";
 import BlogLayout from "@/layouts/BlogLayout.astro";
+import "@/styles/story.css";
 import { type Crumb } from "@/lib/blog/crumbs";
 import { getDotfilesFacts } from "@/lib/dotfiles-facts";
 import { en } from "@/lib/i18n";
@@ -47,13 +46,12 @@ const tall = sceneSvg(
 const map = skillMap(skillEntries, facts.skillNames);
 const skills = skillCopy(facts.skillNames);
 const chartLines = skillFacts(facts.skillNames);
-const chapters: Record<string, string> = en.story.chapters;
 const railTicks = steps
   .filter((step) => step.tick)
   .map((step) => ({
     id: step.id,
     name: fillText(en.story.railTick, {
-      chapter: chapters[step.id] ?? step.eyebrow,
+      chapter: step.eyebrow,
       line: step.line,
     }),
   }));
@@ -132,7 +130,7 @@ const jsonLd = serializeJsonLd(storyGraph(storyMeta.updatedAt));
               <div class="story-outro">
                 <p class="story-label">{en.story.install}</p>
                 <code class="story-install">{bootstrapLine}</code>
-                <div class="story-actions">
+                <div class="scroll-actions">
                   <button
                     aria-label={en.story.copyLine}
                     class="keycap-host focus-ring"
