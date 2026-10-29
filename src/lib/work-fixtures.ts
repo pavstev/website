@@ -56,6 +56,7 @@ const fakeRepo = (
   language: languages[0]?.name,
   languages,
   name,
+  pushedAt: new Date(Date.UTC(2026, 0, 1 + name.length * 9)).toISOString(),
   stars,
   topics,
   url: `https://github.com/fixture/${name}`,

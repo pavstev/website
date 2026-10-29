@@ -1,7 +1,6 @@
 ---
 import BlogHeader from "@/components/blog/blog-header.astro";
-import { ProductStrip } from "@/components/product-strip";
-import { RepoStrip } from "@/components/repo-strip";
+import { WorkGrid } from "@/components/work-grid";
 import BlogLayout from "@/layouts/BlogLayout.astro";
 import "@/styles/work.css";
 import { pageCrumbs } from "@/lib/blog/crumbs";
@@ -43,36 +42,15 @@ const metadata = listMetadata({
         <span hidden id="work-new-tab">
           {en.repos.newTab}
         </span>
-        {products.length > 0 && (
-          <section aria-labelledby="products" class="work-section">
-            <div class="work-heading-row">
-              <h2 class="work-heading" id="products">
-                {en.work.productsHeading}
-              </h2>
-            </div>
-            <ProductStrip newTabId="work-new-tab" products={products} />
-          </section>
-        )}
-        {repos.length > 0 && (
-          <section aria-labelledby="projects" class="work-section">
-            <div class="work-heading-row">
-              <h2 class="work-heading" id="projects">
-                {en.work.projectsHeading}
-              </h2>
-            </div>
-            <RepoStrip
-              allHref={`${personalData.github}?tab=repositories`}
-              newTabId="work-new-tab"
-              repos={repos}
-            />
-          </section>
-        )}
+        <WorkGrid newTabId="work-new-tab" products={products} repos={repos} />
       </div>
     </div>
   </main>
 </BlogLayout>
 <script>
   import { watchRepoTips } from "@/lib/repo-tips";
+  import { watchWorkControls } from "@/lib/work-controls";
 
   watchRepoTips();
+  watchWorkControls();
 </script>

@@ -9,6 +9,12 @@
       "autoPort": true
     },
     {
+      "name": "dev-many",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev:many"],
+      "port": 4321
+    },
+    {
       "name": "preview",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["preview"],

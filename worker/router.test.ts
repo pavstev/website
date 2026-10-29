@@ -9,9 +9,10 @@ const env = {
 
 const withCf = (
   url: string,
-  cf: unknown
+  cf: unknown,
+  init: RequestInit = {}
 ): Request<unknown, IncomingRequestCfProperties> =>
-  Object.assign(new Request(url), { cf }) as Request<
+  Object.assign(new Request(url, init), { cf }) as Request<
     unknown,
     IncomingRequestCfProperties
   >;
@@ -51,5 +52,64 @@ describe("router", () => {
       env
     );
     assert.equal(await response.text(), "asset");
+  });
+});
+
+const brokenAssets = (errorPage: () => Promise<Response>): Env =>
+  ({
+    ASSETS: {
+      fetch: (request: Request) =>
+        new URL(request.url).pathname === "/500"
+          ? errorPage()
+          : Promise.reject(new Error("assets down")),
+    },
+  }) as unknown as Env;
+
+const page = (accept: string): Request<unknown, IncomingRequestCfProperties> =>
+  withCf("https://stevanpavlovic.com/about", undefined, {
+    headers: { accept },
+  });
+
+describe("router errors", () => {
+  it("serves the 500 page with status 500 to a browser", async () => {
+    const response = await router.fetch(
+      page("text/html,application/xhtml+xml"),
+      brokenAssets(() =>
+        Promise.resolve(
+          new Response("<h1>500</h1>", {
+            headers: { "Content-Type": "text/html" },
+          })
+        )
+      )
+    );
+    assert.equal(response.status, 500);
+    assert.equal(await response.text(), "<h1>500</h1>");
+    assert.equal(response.headers.get("Content-Type"), "text/html");
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+    assert.equal(response.headers.get("X-Content-Type-Options"), "nosniff");
+  });
+  it("answers JSON to a client that does not want a page", async () => {
+    const response = await router.fetch(
+      page("application/json"),
+      brokenAssets(() => Promise.resolve(new Response("page")))
+    );
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { error: "internal" });
+  });
+  it("falls back to JSON when the 500 page is missing", async () => {
+    const response = await router.fetch(
+      page("text/html"),
+      brokenAssets(() => Promise.resolve(new Response("gone", { status: 404 })))
+    );
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { error: "internal" });
+  });
+  it("falls back to JSON when the 500 page throws too", async () => {
+    const response = await router.fetch(
+      page("text/html"),
+      brokenAssets(() => Promise.reject(new Error("still down")))
+    );
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { error: "internal" });
   });
 });

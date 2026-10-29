@@ -1314,6 +1314,8 @@ a.topic-company::after {
   --bar-sub-h: 0.75rem;
   --bar-total: var(--bar-h);
   --head-h: clamp(14rem, 30svh, 22rem);
+  display: flex;
+  flex-direction: column;
   min-height: calc(100dvh - var(--privacy-zone));
   padding-bottom: var(--blog-end);
 }
@@ -1324,6 +1326,7 @@ a.topic-company::after {
 }
 
 [data-blog] > #main-content {
+  flex-grow: 1;
   min-height: 0;
   padding-bottom: 0;
 }

@@ -224,7 +224,6 @@ export const en = {
       "safety-real-time": {
         line: "Keeps trucking fleets inspected, compliant and visible in real time.",
         period: "since 2022",
-        platform: "Web app",
         role: "Co-founder & CTO",
       },
     },
@@ -253,7 +252,6 @@ export const en = {
     website: "Website",
   },
   repos: {
-    all: "All on GitHub",
     forksLabel: "forks",
     headingOne: "{count} open source project",
     headingOther: "{count} open source projects",
@@ -282,6 +280,17 @@ export const en = {
   },
   scroll: {
     cue: "Scroll",
+  },
+  serverError: {
+    crumb: "Server error",
+    description: "Something broke on the server.",
+    eyebrow: "Error 500",
+    fact: "Try again in a minute. The sky usually clears fast.",
+    fallbackPath: "this address",
+    heading: "The sky went dark",
+    lede: "Something broke while loading {path}. It is my fault, not yours.",
+    links: "Fly to",
+    title: "Something went wrong",
   },
   sky: {
     askCity: "Want the sky over {city} instead?",
@@ -392,11 +401,25 @@ export const en = {
     creditUrl: "https://open-meteo.com/",
   },
   work: {
+    empty: "Nothing to show yet. The work lands here soon.",
+    filterAll: "All",
+    filterLabel: "Show",
+    filterOpenSource: "Open source",
+    filterProducts: "Products",
     heading: "Work",
+    kindOpenSource: "Open source",
+    kindProduct: "Product",
     metaDescription:
       "Open source projects and products built by Stevan Pavlović, a software engineer.",
     metaTitle: "Work · Stevan Pavlović",
     productsHeading: "Products",
     projectsHeading: "Open source projects",
+    sortFeatured: "Featured",
+    sortLabel: "Sort",
+    sortName: "A to Z",
+    sortStars: "Stars",
+    sortUpdated: "Recently updated",
+    status: "Showing {shown} of {total}",
+    visitLabel: "Visit {name}",
   },
 } as const;

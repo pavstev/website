@@ -79,14 +79,14 @@ Siblings: `sky.md`, `card.md`, `motion.md`. The full design is in the Blog bulle
 - TOC drawer (owner, 2026-10-24, pixel pass): a solid `--ui-panel` panel, no glass. Title and list text sit 20 px inside the panel edge; the 36 px close key is centered on the title line; list rows are 44 px tall with `--ui-radius-key` corners.
 - The footer is rendered once by `BlogLayout.astro`, outside `main`.
 - Bar and footer (owner pick E1, 2026-10-24): on every night page the bar row has no max width and the footer is `100% - 2 * --container-px` wide, so both end at the same side gutter.
-- Wide pages (owner picks C3 and D2, 2026-10-24): a page whose content carries `.page-wide` (`/work`, `/about`, `/blog`) drops the header max width too, so the title, the content and the footer share one left edge. `/work`: from `@container page (min-width: 64em)` products sit in a left column beside the projects (1fr and 3fr). `/about`: facts chips, the road (`about-road.astro`, built from the CV) and the MDX sections, each in a plain `<section>`; from 64em the road sits left of the prose (2fr and 3fr). Styles live in `about.css`.
+- Wide pages (owner picks C3 and D2, 2026-10-24): a page whose content carries `.page-wide` (`/work`, `/about`, `/blog`) drops the header max width too, so the title, the content and the footer share one left edge. `/work`: one filtered grid of products and repos (see `card.md`). `/about`: facts chips, the road (`about-road.astro`, built from the CV) and the MDX sections, each in a plain `<section>`; from 64em the road sits left of the prose (2fr and 3fr). Styles live in `about.css`.
 
 ## Look
 
 - New chrome in the bar takes the `--ui-stone-*` and `--ui-ink*` tokens, never `--foreground`. Controls follow `card.md` (D2 soft tint).
 - Anything clickable inside a card needs `position: relative; z-index: 1` above the stretched title link. Never nest a link in the row link.
 - Scroll bars never show at rest (`scroll-fade.ts`).
-- Page slides: About, Work, Blog slide by menu order (`page-slide.ts`). Home and the 404 do not slide.
+- Page slides: About, Work, Blog slide by menu order (`page-slide.ts`). Home and the error pages do not slide.
 - Header gap (owner pick A2, 2026-10-24): `.blog-header` has no `min-height`. The sky fade still runs over `--head-h` (`globals.css`, `animation-range`). The dotfiles story hides its header (`story.css`).
 - About header (owner, 2026-10-24): the lead is the `lead` field of `content/about/index.mdx`. `about.astro` passes it into the `BlogHeader` slot as `p.about-lead`: `--fs-base`, `text-sky`, ink target 4.5 in `sky-ink.ts`. No portrait and no TOC on /about.
 - About road (owner brief, 2026-10-27): `src/lib/about.ts` builds the road from `cv.json` and `src/data/about-road.ts` (one line per company in the owner's voice: at most 60 characters, no period, no city). A company without a line, or a line without a company, fails the build. The facts chips come from the CV too (years of code, the four industries, AI agents since 2024). Keep the MDX sections short, about 20 to 80 words each. The road rows rise in on a view timeline; reduced motion and the pause switch turn it off.

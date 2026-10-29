@@ -291,7 +291,7 @@ const eslintConfig = defineConfig([
     rules: { "security/detect-non-literal-fs-filename": "off" },
   },
   {
-    files: ["**/*.test.ts"],
+    files: ["**/*.test.ts", "**/*.e2e.ts"],
     rules: { "@typescript-eslint/no-floating-promises": "off" },
   },
   ...markdown.configs.recommended,

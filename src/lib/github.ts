@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import * as z from "zod";
 
-import { pickRepos } from "./work.ts";
+import { pickRepos, updatedTime } from "./work.ts";
 
 export interface Contact {
   email: string;
@@ -15,6 +15,7 @@ export interface Repo {
   language?: string | undefined;
   languages: RepoLanguage[];
   name: string;
+  pushedAt?: string | undefined;
   stars: number;
   topics: string[];
   url: string;
@@ -84,10 +85,8 @@ const maxTopics = 6;
 const minLanguageShare = 0.03;
 const api = "https://api.github.com";
 
-const pushedTime = (repo: RawRepo): number => {
-  const time = Date.parse(repo.pushed_at ?? "");
-  return Number.isNaN(time) ? 0 : time;
-};
+const pushedTime = (repo: RawRepo): number =>
+  updatedTime(repo.pushed_at ?? undefined);
 
 const selectRepos = (raw: RawRepo[], login: string): Repo[] =>
   pickRepos(
@@ -110,6 +109,7 @@ const selectRepos = (raw: RawRepo[], login: string): Repo[] =>
     language: repo.language ?? undefined,
     languages: repo.language ? [{ name: repo.language }] : [],
     name: repo.name,
+    pushedAt: repo.pushed_at ?? undefined,
     stars: repo.stargazers_count,
     topics: repo.topics.slice(0, maxTopics),
     url: repo.html_url,

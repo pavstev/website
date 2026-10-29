@@ -2,6 +2,9 @@
 paths:
   - "src/pages/index.astro"
   - "src/pages/404.astro"
+  - "src/pages/500.astro"
+  - "src/components/error-page.astro"
+  - "worker/router.ts"
   - "src/layouts/Base.astro"
   - "src/styles/globals.css"
   - "src/styles/card.css"
@@ -15,9 +18,9 @@ paths:
   - "src/components/card-sections.astro"
   - "src/pages/work.astro"
   - "src/lib/work.ts"
-  - "src/components/repo-strip.tsx"
+  - "src/components/work-grid.tsx"
+  - "src/lib/work-controls.ts"
   - "src/components/repo-tags.tsx"
-  - "src/components/product-strip.tsx"
   - "src/components/site-footer.astro"
   - "src/components/footer-contacts.tsx"
   - "src/components/motion-switch.astro"
@@ -104,18 +107,29 @@ Siblings: `motion.md`, `sky.md`. Tokens are in `src/styles/tokens.css` (`docs/th
 
 ## Work page
 
-- `work.astro` uses `BlogLayout`, `BlogHeader` and a full-width `.page-wide` index (see `blog.md`). Products first, then Open source projects; from 64em they sit side by side. There is no Stories section: the stories are reached from the repo cards.
-- `src/lib/work.ts` configures the page. The `.work-*`, `.repo-*`, `.logo-planet` and `.work-mark*` CSS lives in `work.css`, imported by `work.astro`.
-- Product rows are one stretched link that opens in a new tab. Repo cards are not: only the name and the action keys are links, and the card body has no pointer.
+- `work.astro` uses `BlogLayout`, `BlogHeader` and a full-width `.page-wide` index (see `blog.md`). One grid (`work-grid.tsx`) holds products and open source repos in the same `.work-card` style (owner picks A1 B1 C2 D3, 2026-10-29). There is no Stories section: the stories are reached from the repo cards.
+- `src/lib/work.ts` configures the page and owns the view logic (`parseWorkView`, `workViewSearch`, `sortWork`). The `.work-*`, `.repo-*`, `.logo-planet` and `.work-mark*` CSS lives in `work.css`, imported by `work.astro`.
+- Products always come before open source, in every sort. The sort orders cards inside each group: Featured (config order), Stars, Recently updated (`pushed_at`), A to Z.
+- The pill switch (All, Products, Open source, with counts) is radio inputs. The filter is CSS only (`.work-view:has(...:checked)`), so it works without JavaScript. It shows only when both kinds exist.
+- `work-controls.ts` sorts by moving the DOM nodes (never CSS `order`, so the focus order matches), writes `?show=` and `?sort=` with `history.replaceState`, and announces "Showing N of M" in a polite status. A bad value falls back to the default and leaves the address. The sort menu stays hidden until the script sets `data-ready` on `[data-work]`.
+- Each card head: the name link (new tab) with the kind label ("Product" or "Open source") under it, centered against the right tools. A product shows its mark there; a repo shows its stars and the GitHub key. A product foot is the site key (`.work-site-link`, new tab, the host name). No platform text.
+- Only the name and the action keys are links. The card body has no pointer.
 - GitHub key (owner, 2026-10-24): a plain blue mark at the right end of the title row, no keycap, no frame, exactly one title line high (`1.3em` at `--fs-base`), with a 44 px hit area (`.repo-key-link::after`).
-- Its tooltip is static markup (`.repo-tip.tip`), because `RepoStrip` is not hydrated. `repo-tips.ts` hides it on Escape until the pointer or focus leaves.
+- Its tooltip is static markup (`.repo-tip.tip`), because the grid is not hydrated. `repo-tips.ts` hides it on Escape until the pointer or focus leaves.
 - A repo in `workConfig.repos.stories` adds the "See the story" key `.work-story-link` (same tab, `data-story-link`, owner pick B2, 2026-10-24).
 - The card box and name morph into the story sheet under `html[data-story-morph]` (`story-morph.ts`). Keep `data-story-path` on the card.
-- No featured card. Each card spans 4 rows of the `.work-repos` grid as a CSS subgrid (`--card-rows`), so a card without a story or tags keeps the same tag line and bottom as its neighbours.
+- No featured card and no "All on GitHub" card. Each card spans 3 rows of the `.work-grid` as a CSS subgrid (`--card-rows`), so a card without a story or tags keeps the same tag line and bottom as its neighbours. The grid has 1 to 4 columns by container width.
 - Tech tags wrap onto as many lines as needed. No "+N more", no clipping, no popover. A new technology needs a `topicTech` entry in `tech-logos.ts` and `pnpm icons`.
 - `pnpm dev:many` also fills /work with fake products and repos (`src/lib/work-fixtures.ts`). It reuses `fixturesEnabled()`, so a build or CI run with `BLOG_FIXTURES=1` fails.
-- The "All on GitHub" card (`.work-all`) alone in its row (`nth-child(Nn + 1)` for N columns, so every 1-column layout) spans the full row and stays short.
-- No WebGL and no island on the page. `404.astro` is `noindex` and never scrolls from 160x346 to 1920x1080; its console shows one "Failed to load resource" line: the page's own 404.
+- `pnpm test:e2e` (`scripts/site.e2e.ts`) starts its own fixture dev server (`astro dev --ignore-lock` on a free port) and runs headless Chromium over the filter, sort, address, no-JS and failed-script cases and the error pages. It is local only: CI blocks the fixtures.
+- No WebGL and no island on the page.
+
+## Error pages
+
+- `404.astro` and `500.astro` both render `error-page.astro` (night style, `noindex`, the path in the lede, links home and to the sections). Copy lives in `en.notFound` and `en.serverError`.
+- Neither page scrolls from 160x346 to 1920x1080. The 404 console shows one "Failed to load resource" line: the page's own 404.
+- Static assets: Cloudflare serves `404.html` (`not_found_handling`). The Worker routes (`/mcp`, `/where`) catch a thrown error: a browser request gets `/500` with status 500 and `no-store`, an API client gets the JSON `internal` error. Custom error pages for asset failures need a paid plan.
+- In `astro dev`, `/500` answers with status 500.
 
 ## Touch and screen readers
 

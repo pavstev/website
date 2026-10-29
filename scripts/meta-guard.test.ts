@@ -60,8 +60,8 @@ describe("metaProblems", () => {
         '<meta property="og:url" content="https://example.com"></head>'
       );
     assert.deepEqual(metaProblems(html, "notFound", site), [
-      "the 404 page is not noindex",
-      "the 404 page has an og:url",
+      "the error page is not noindex",
+      "the error page has an og:url",
     ]);
   });
 });

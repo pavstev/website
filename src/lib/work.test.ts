@@ -2,7 +2,20 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { products } from "./products.ts";
-import { pickProducts, pickRepos, storyEntry, workConfig } from "./work.ts";
+import {
+  defaultWorkView,
+  parseWorkView,
+  pickProducts,
+  pickRepos,
+  sortWork,
+  storyEntry,
+  updatedTime,
+  workConfig,
+  workSortKeys,
+  type WorkSortKeys,
+  workSorts,
+  workViewSearch,
+} from "./work.ts";
 
 const repos = ["alpha", "beta", "gamma", "delta", "website"].map((name) => ({
   name,
@@ -132,5 +145,122 @@ describe("pickProducts", () => {
       pickProducts(products).length,
       new Set(workConfig.productKeys).size
     );
+  });
+});
+
+describe("parseWorkView", () => {
+  it("falls back to the default view for missing or unknown values", () => {
+    assert.deepEqual(parseWorkView(""), defaultWorkView);
+    assert.deepEqual(
+      parseWorkView("?show=secret&sort=%3Cscript%3E"),
+      defaultWorkView
+    );
+  });
+  it("reads a valid filter and sort", () => {
+    assert.deepEqual(parseWorkView("?show=products&sort=stars"), {
+      filter: "products",
+      sort: "stars",
+    });
+  });
+  it("ignores a filter for a group the page does not show", () => {
+    assert.equal(
+      parseWorkView("?show=products", ["open-source"]).filter,
+      "all"
+    );
+  });
+});
+
+describe("workViewSearch", () => {
+  it("drops default values and keeps other params", () => {
+    assert.equal(
+      workViewSearch(defaultWorkView, "?show=products&utm=x"),
+      "?utm=x"
+    );
+  });
+  it("writes the changed values", () => {
+    assert.equal(
+      workViewSearch({ filter: "open-source", sort: "updated" }, ""),
+      "?show=open-source&sort=updated"
+    );
+  });
+});
+
+describe("sortWork", () => {
+  const items: WorkSortKeys[] = [
+    {
+      featured: 0,
+      group: "open-source",
+      name: "website",
+      stars: 3,
+      updated: 10,
+    },
+    {
+      featured: 1,
+      group: "open-source",
+      name: "Dotfiles",
+      stars: 9,
+      updated: 30,
+    },
+    {
+      featured: 0,
+      group: "products",
+      name: "Safety Real Time",
+      stars: 0,
+      updated: 0,
+    },
+    {
+      featured: 2,
+      group: "open-source",
+      name: "cronfluent",
+      stars: 3,
+      updated: 20,
+    },
+  ];
+  const order = (sort: Parameters<typeof sortWork>[1]): string[] =>
+    names(sortWork(items, sort));
+
+  it("keeps products first in every order", () => {
+    for (const sort of workSorts) {
+      assert.equal(order(sort)[0], "Safety Real Time");
+    }
+  });
+  it("sorts each group by the chosen key", () => {
+    assert.deepEqual(order("featured").slice(1), [
+      "website",
+      "Dotfiles",
+      "cronfluent",
+    ]);
+    assert.deepEqual(order("stars").slice(1), [
+      "Dotfiles",
+      "website",
+      "cronfluent",
+    ]);
+    assert.deepEqual(order("updated").slice(1), [
+      "Dotfiles",
+      "cronfluent",
+      "website",
+    ]);
+    assert.deepEqual(order("name").slice(1), [
+      "cronfluent",
+      "Dotfiles",
+      "website",
+    ]);
+  });
+});
+
+describe("workSortKeys", () => {
+  it("turns broken data attributes into safe keys", () => {
+    assert.deepEqual(
+      workSortKeys({ featured: "x", group: "evil", stars: "NaN" }),
+      { featured: 0, group: "open-source", name: "", stars: 0, updated: 0 }
+    );
+  });
+});
+
+describe("updatedTime", () => {
+  it("reads an ISO date and returns 0 for a missing or bad one", () => {
+    assert.equal(updatedTime("2026-01-02T00:00:00Z"), Date.UTC(2026, 0, 2));
+    assert.equal(updatedTime(undefined), 0);
+    assert.equal(updatedTime("not a date"), 0);
   });
 });

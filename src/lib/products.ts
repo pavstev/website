@@ -9,7 +9,6 @@ export interface Product {
   operatingSystem: string;
   palette: (typeof productPalette)[ProductKey];
   period: string;
-  platform: string;
   role: string;
   schemaType: "SoftwareApplication" | "WebApplication";
   url: string;

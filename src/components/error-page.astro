@@ -1,0 +1,82 @@
+---
+import BlogHeader from "@/components/blog/blog-header.astro";
+import { Icon } from "@/components/icon";
+import BlogLayout from "@/layouts/BlogLayout.astro";
+import { pageCrumbs } from "@/lib/blog/crumbs";
+import { brandTitle } from "@/lib/blog/format";
+import { blogLive } from "@/lib/blog/live";
+import { notFoundMetadata } from "@/lib/blog/metadata";
+import { en } from "@/lib/i18n";
+import { navFor } from "@/lib/nav";
+
+interface Props {
+  code: "404" | "500";
+}
+
+const copy = { "404": en.notFound, "500": en.serverError }[Astro.props.code];
+const metadata = notFoundMetadata({
+  description: copy.description,
+  title: brandTitle(copy.title),
+});
+const [before = "", after = ""] = copy.lede.split("{path}");
+const icons = {
+  "/about": "lucide:user-round",
+  "/blog": "lucide:notebook-pen",
+  "/work": "lucide:briefcase",
+};
+const links = [
+  { href: "/", icon: "lucide:star", label: en.blog.crumbHome },
+  ...navFor(blogLive()).map((item) => ({
+    href: item.path,
+    icon: icons[item.path as keyof typeof icons],
+    label: item.label,
+  })),
+];
+---
+
+<BlogLayout metadata={metadata}>
+  <main class="blog-main" id="main-content">
+    <BlogHeader
+      crumbs={pageCrumbs(copy.crumb, `/${Astro.props.code}`)}
+      title={copy.heading}
+    >
+      <Fragment slot="meta">
+        <span>{copy.eyebrow}</span>
+      </Fragment>
+    </BlogHeader>
+    <div class="post-layout">
+      <div class="not-found" data-error-page={Astro.props.code}>
+        <p class="not-found-lede">
+          {before}
+          <code class="not-found-path" data-lost-path="">
+            {copy.fallbackPath}
+          </code>
+          {after}
+        </p>
+        <p class="not-found-fact">{copy.fact}</p>
+        <nav aria-label={copy.links}>
+          <ul class="not-found-links">
+            {links.map((link) => (
+              <li>
+                <a class="keycap-host focus-ring" href={link.href}>
+                  <span class="keycap">
+                    <Icon name={link.icon} size="0.9375rem" />
+                    {link.label}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </main>
+</BlogLayout>
+
+<script>
+  const slot = document.querySelector("[data-lost-path]");
+  const path = window.location.pathname;
+  if (slot !== null && !/^\/(?:404|500)(?:\.html)?$/.test(path)) {
+    slot.textContent = path.length > 48 ? `${path.slice(0, 47)}…` : path;
+  }
+</script>

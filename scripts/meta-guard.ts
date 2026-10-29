@@ -39,8 +39,8 @@ export const metaProblems = (
     if (robots.includes("noindex")) problems.push("the home page is noindex");
   } else {
     if (!robots.includes("noindex"))
-      problems.push("the 404 page is not noindex");
-    if (url !== undefined) problems.push("the 404 page has an og:url");
+      problems.push("the error page is not noindex");
+    if (url !== undefined) problems.push("the error page has an og:url");
   }
   return problems;
 };
@@ -49,6 +49,7 @@ if (import.meta.main) {
   const pages: Array<[string, PageKind]> = [
     ["dist/index.html", "home"],
     ["dist/404.html", "notFound"],
+    ["dist/500.html", "notFound"],
   ];
   let failed = false;
   for (const [file, kind] of pages) {
@@ -61,5 +62,5 @@ if (import.meta.main) {
     failed ||= problems.length > 0;
   }
   if (failed) process.exitCode = 1;
-  else console.warn("Meta guard passed: home and 404.");
+  else console.warn("Meta guard passed: home, 404 and 500.");
 }

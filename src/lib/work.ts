@@ -72,3 +72,115 @@ export const pickProducts = <T extends { key: string }>(
   [...new Set(keys)]
     .flatMap((key) => products.filter((product) => product.key === key))
     .slice(0, maxProducts);
+
+export const workGroups = ["products", "open-source"] as const;
+
+export type WorkFilter = "all" | WorkGroup;
+
+export type WorkGroup = (typeof workGroups)[number];
+
+export const workSorts = ["featured", "stars", "updated", "name"] as const;
+
+export type WorkSort = (typeof workSorts)[number];
+
+export interface WorkView {
+  filter: WorkFilter;
+  sort: WorkSort;
+}
+
+export const defaultWorkView: WorkView = { filter: "all", sort: "featured" };
+
+const oneOf = <T extends string>(
+  list: readonly T[],
+  value: null | string,
+  fallback: T
+): T => list.find((item) => item === value) ?? fallback;
+
+export const toWorkView = (
+  filter: null | string,
+  sort: null | string,
+  groups: readonly WorkGroup[] = workGroups
+): WorkView => ({
+  filter: oneOf<WorkFilter>(
+    groups.length > 1 ? ["all", ...groups] : ["all"],
+    filter,
+    defaultWorkView.filter
+  ),
+  sort: oneOf(workSorts, sort, defaultWorkView.sort),
+});
+
+export const parseWorkView = (
+  search: string,
+  groups: readonly WorkGroup[] = workGroups
+): WorkView => {
+  const params = new URLSearchParams(search);
+  return toWorkView(params.get("show"), params.get("sort"), groups);
+};
+
+export const workViewSearch = (view: WorkView, search: string): string => {
+  const params = new URLSearchParams(search);
+  const pairs = [
+    ["show", view.filter, defaultWorkView.filter],
+    ["sort", view.sort, defaultWorkView.sort],
+  ] as const;
+  for (const [key, value, fallback] of pairs) {
+    if (value === fallback) params.delete(key);
+    else params.set(key, value);
+  }
+  const text = params.toString();
+  return text ? `?${text}` : "";
+};
+
+export interface WorkSortKeys {
+  featured: number;
+  group: WorkGroup;
+  name: string;
+  stars: number;
+  updated: number;
+}
+
+const groupRank: Record<WorkGroup, number> = {
+  "open-source": 1,
+  products: 0,
+};
+
+const byFeatured = (a: WorkSortKeys, b: WorkSortKeys): number =>
+  a.featured - b.featured;
+
+const compare: Record<WorkSort, (a: WorkSortKeys, b: WorkSortKeys) => number> =
+  {
+    featured: byFeatured,
+    name: (a, b) =>
+      a.name.localeCompare(b.name, "en", { sensitivity: "base" }) ||
+      byFeatured(a, b),
+    stars: (a, b) => b.stars - a.stars || byFeatured(a, b),
+    updated: (a, b) => b.updated - a.updated || byFeatured(a, b),
+  };
+
+export const sortWork = <T extends WorkSortKeys>(
+  items: readonly T[],
+  sort: WorkSort
+): T[] =>
+  items.toSorted(
+    (a, b) => groupRank[a.group] - groupRank[b.group] || compare[sort](a, b)
+  );
+
+const finite = (value: string | undefined): number => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+};
+
+export const workSortKeys = (
+  data: Readonly<Record<string, string | undefined>>
+): WorkSortKeys => ({
+  featured: finite(data["featured"]),
+  group: data["group"] === "products" ? "products" : "open-source",
+  name: data["name"] ?? "",
+  stars: finite(data["stars"]),
+  updated: finite(data["updated"]),
+});
+
+export const updatedTime = (iso = ""): number => {
+  const time = Date.parse(iso);
+  return Number.isNaN(time) ? 0 : time;
+};

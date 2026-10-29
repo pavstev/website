@@ -11,6 +11,7 @@ const config: KnipConfig = {
     "scripts/preload-guard.ts!",
     "scripts/meta-guard.ts!",
     "scripts/timeline-guard.ts!",
+    "scripts/site.e2e.ts!",
     "scripts/check-fast.ts!",
     "scripts/generate-*.ts!",
     "src/profile/cli.ts!",
