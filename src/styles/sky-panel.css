@@ -806,6 +806,10 @@
     content: "";
   }
 
+  .sky-trigger::after {
+    inset-block: calc((var(--ctl-hit) - var(--ctl-pill-h)) / -2 - 1px);
+  }
+
   .footer-credit {
     position: relative;
   }
