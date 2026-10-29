@@ -118,7 +118,6 @@ const SiteKey = ({
 }): ReactElement => (
   <a
     aria-describedby={newTabId}
-    aria-label={fillText(en.work.visitLabel, { name: product.name })}
     className="work-story-link work-site-link keycap-host focus-ring"
     href={product.url}
     rel="noopener noreferrer"
@@ -177,7 +176,7 @@ const CardShell = ({
   >
     <div className="work-card-head">
       <div className="work-card-title">
-        <h3 className="post-row-title work-card-name">
+        <h2 className="post-row-title work-card-name">
           <a
             aria-describedby={newTabId}
             className="work-card-link focus-ring"
@@ -187,7 +186,7 @@ const CardShell = ({
           >
             <span className="story-morph-name">{name}</span>
           </a>
-        </h3>
+        </h2>
         <p className="work-card-kind">
           {group === "products" ? en.work.kindProduct : en.work.kindOpenSource}
         </p>
@@ -296,7 +295,7 @@ const FilterOption = ({
       type="radio"
       value={value}
     />
-    <span>{label}</span>
+    <span className="work-filter-name">{label}</span>
     <span className="work-filter-count tabular">{count}</span>
   </label>
 );
@@ -331,26 +330,25 @@ const WorkControls = ({
       </fieldset>
     ) : null}
     <label className="work-sort">
-      <span className="work-sort-label">{en.work.sortLabel}</span>
-      <span className="work-sort-box">
-        <select
-          className="work-sort-select focus-ring"
-          defaultValue="featured"
-          id="work-sort"
-        >
-          {workSorts.map((sort) => (
-            <option key={sort} value={sort}>
-              {sortLabels[sort]}
-            </option>
-          ))}
-        </select>
-        <Icon
-          aria-hidden
-          className="work-sort-chevron"
-          name="lucide:chevron-down"
-          size="0.875rem"
-        />
-      </span>
+      <span className="sr-only">{en.work.sortLabel}</span>
+      <select
+        className="work-sort-select"
+        defaultValue="featured"
+        id="work-sort"
+      >
+        {workSorts.map((sort) => (
+          <option key={sort} value={sort}>
+            {sortLabels[sort]}
+          </option>
+        ))}
+      </select>
+      <Icon
+        aria-hidden
+        className="work-sort-icon"
+        name="lucide:arrow-up-down"
+        size="1rem"
+      />
+      <span aria-hidden className="work-sort-dot" />
     </label>
     <p
       aria-live="polite"

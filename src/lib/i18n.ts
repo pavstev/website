@@ -423,6 +423,5 @@ export const en = {
     sortStars: "Stars",
     sortUpdated: "Recently updated",
     status: "Showing {shown} of {total}",
-    visitLabel: "Visit {name}",
   },
 } as const;

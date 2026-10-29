@@ -276,6 +276,13 @@ describe("work grid", () => {
         await search(opened.page),
         sort === "featured" ? "" : `?sort=${sort}`
       );
+      assert.equal(
+        await opened.page.$eval(".work-sort-dot", (dot) =>
+          getComputedStyle(dot).getPropertyValue("opacity")
+        ),
+        sort === "featured" ? "0" : "1",
+        sort
+      );
     }
     assert.deepEqual(opened.errors, []);
     await closeAll(opened);
