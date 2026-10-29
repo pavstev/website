@@ -159,6 +159,12 @@ const ogBody = (portrait: string): string => `
   </div>
 </div>`;
 
+const coverBody = (): string => `
+<div style="position:absolute;top:0;bottom:0;right:112px;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:16px;text-align:right">
+  <div style="font-family:Geist;font-size:46px;font-weight:600;letter-spacing:0.01em;line-height:1;white-space:nowrap;color:${profilePalette.ring};text-shadow:0 0 28px ${textShade}">${escapeHtml(en.linkedinCover.line)}</div>
+  <div style="font-family:'Geist Mono';font-size:22px;letter-spacing:0.06em;line-height:1;color:${profilePalette.glyph};text-shadow:0 0 18px ${textShade}">${site}</div>
+</div>`;
+
 const storyWidth = 1200;
 const storyHeight = 630;
 
@@ -532,7 +538,7 @@ const specs: ImageSpec[] = [
   },
   {
     background: designTokens.background,
-    body: "",
+    body: coverBody(),
     file: path.join(publicDir, "linkedin-cover.png"),
     height: 396,
     meteor: 0.55,

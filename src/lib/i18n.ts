@@ -142,6 +142,9 @@ export const en = {
       },
     },
   },
+  linkedinCover: {
+    line: "Full stack · AI agents · Tech lead",
+  },
   llms: {
     about:
       "Software engineer and tech lead. More than eleven years across many stacks and teams, in fintech, betting, healthtech and fleet logistics.",
