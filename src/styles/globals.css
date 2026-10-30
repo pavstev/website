@@ -1210,7 +1210,7 @@ html:has(:is(.drawer, .lightbox)[open]) {
   overscroll-behavior: contain;
 }
 
-:is(.privacy-panel, .sky-panel, .topic-panel) {
+:is(.privacy-panel, .sky-panel, .topic-panel, .select-menu-panel) {
   --pop-y: var(--pop-dist);
   opacity: 0;
   transform: scale(var(--pop-scale-out));
@@ -1237,7 +1237,12 @@ html:has(:is(.drawer, .lightbox)[open]) {
 }
 
 @starting-style {
-  :is(.privacy-panel, .sky-panel, .topic-panel):popover-open {
+  :is(
+    .privacy-panel,
+    .sky-panel,
+    .topic-panel,
+    .select-menu-panel
+  ):popover-open {
     opacity: 0;
     transform: translateY(var(--pop-y)) scale(var(--pop-scale-in));
   }

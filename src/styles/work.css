@@ -77,94 +77,47 @@
 }
 
 .work-sort {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  width: var(--work-ctl);
-  height: var(--work-ctl);
   margin-inline-start: auto;
-  border: 1px solid var(--glass-edge);
-  border-radius: 9999px;
-  background: var(--glass-fill);
-  color: var(--ui-ink-2);
-  transition:
-    background-color var(--duration-quick) var(--ease-smooth),
-    color var(--duration-quick) var(--ease-smooth);
-}
-
-.work-sort:hover {
-  background: var(--glass-fill-hover);
-  color: var(--ui-ink);
-}
-
-.work-sort:has(:focus-visible) {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
 }
 
 .work-view:not([data-ready]) .work-sort {
   visibility: hidden;
 }
 
-.work-sort-select {
-  position: absolute;
-  inset: calc((var(--work-ctl) - var(--ctl-hit)) / 2 - 1px);
-  appearance: none;
-  border: 0;
-  border-radius: 9999px;
-  background: transparent;
-  color: transparent;
-  font: inherit;
-  font-size: 1rem;
-  opacity: 0;
-  cursor: pointer;
-}
+@container work (width < 40rem) {
+  .work-sort .select-menu-trigger {
+    width: var(--select-ctl);
+    padding: 0;
+  }
 
-.work-sort-select option {
-  background: var(--glass-solid);
-  color: var(--ui-ink);
-}
+  .work-sort :is(.select-menu-value, .select-menu-chevron) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 
-.work-sort-icon {
-  pointer-events: none;
-}
-
-.work-sort-dot {
-  position: absolute;
-  inset-block-start: 0.125rem;
-  inset-inline-end: 0.125rem;
-  width: 0.4375rem;
-  height: 0.4375rem;
-  border-radius: 9999px;
-  background: var(--primary);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.work-sort:has(option:checked:not([value="featured"])) .work-sort-dot {
-  opacity: 1;
+  .work-sort[data-changed] .select-menu-dot {
+    opacity: 1;
+    scale: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .work-filter-option,
-  .work-sort {
+  .work-filter-option {
     transition: none;
   }
 }
 
-:root[data-motion-paused] :is(.work-filter-option, .work-sort) {
+:root[data-motion-paused] .work-filter-option {
   transition: none;
 }
 
 @media (forced-colors: active) {
   .work-filter-option:has(:checked) .work-filter-name {
     text-decoration-color: Highlight;
-  }
-
-  .work-sort-dot {
-    background: Highlight;
-    forced-color-adjust: none;
   }
 }
 

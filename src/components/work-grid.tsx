@@ -7,10 +7,12 @@ import { Icon } from "@/components/icon";
 import { ProductMark } from "@/components/product-mark";
 import { RepoTags } from "@/components/repo-tags";
 import { StoryMark } from "@/components/story-mark";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { en } from "@/lib/i18n";
 import { type Product, productHost, productMeta } from "@/lib/products";
 import { fillText } from "@/lib/template";
 import {
+  defaultWorkView,
   type StoryEntry,
   storyEntry,
   updatedTime,
@@ -329,27 +331,17 @@ const WorkControls = ({
         />
       </fieldset>
     ) : null}
-    <label className="work-sort">
-      <span className="sr-only">{en.work.sortLabel}</span>
-      <select
-        className="work-sort-select"
-        defaultValue="featured"
-        id="work-sort"
-      >
-        {workSorts.map((sort) => (
-          <option key={sort} value={sort}>
-            {sortLabels[sort]}
-          </option>
-        ))}
-      </select>
-      <Icon
-        aria-hidden
-        className="work-sort-icon"
-        name="lucide:arrow-up-down"
-        size="1rem"
-      />
-      <span aria-hidden className="work-sort-dot" />
-    </label>
+    <SelectMenu
+      className="work-sort"
+      icon={<Icon name="lucide:arrow-up-down" size="1rem" />}
+      id="work-sort"
+      items={workSorts.map((sort) => ({
+        label: sortLabels[sort],
+        value: sort,
+      }))}
+      label={en.work.sortLabel}
+      value={defaultWorkView.sort}
+    />
     <p
       aria-live="polite"
       className="sr-only"

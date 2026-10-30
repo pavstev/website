@@ -13,7 +13,6 @@ import {
   workConfig,
   workSortKeys,
   type WorkSortKeys,
-  workSorts,
   workViewSearch,
 } from "./work.ts";
 
@@ -219,30 +218,31 @@ describe("sortWork", () => {
   const order = (sort: Parameters<typeof sortWork>[1]): string[] =>
     names(sortWork(items, sort));
 
-  it("keeps products first in every order", () => {
-    for (const sort of workSorts) {
-      assert.equal(order(sort)[0], "Safety Real Time");
-    }
+  it("puts products first only in the featured order", () => {
+    assert.deepEqual(order("featured"), [
+      "Safety Real Time",
+      "website",
+      "Dotfiles",
+      "cronfluent",
+    ]);
   });
-  it("sorts each group by the chosen key", () => {
-    assert.deepEqual(order("featured").slice(1), [
-      "website",
-      "Dotfiles",
-      "cronfluent",
-    ]);
-    assert.deepEqual(order("stars").slice(1), [
+  it("mixes products and open source in the other orders", () => {
+    assert.deepEqual(order("stars"), [
       "Dotfiles",
       "website",
       "cronfluent",
+      "Safety Real Time",
     ]);
-    assert.deepEqual(order("updated").slice(1), [
+    assert.deepEqual(order("updated"), [
       "Dotfiles",
       "cronfluent",
       "website",
+      "Safety Real Time",
     ]);
-    assert.deepEqual(order("name").slice(1), [
+    assert.deepEqual(order("name"), [
       "cronfluent",
       "Dotfiles",
+      "Safety Real Time",
       "website",
     ]);
   });

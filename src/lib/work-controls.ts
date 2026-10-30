@@ -1,4 +1,5 @@
 import { en } from "./i18n.ts";
+import { initSelectMenu, type SelectMenu } from "./select-menu.ts";
 import { fillText } from "./template.ts";
 import {
   parseWorkView,
@@ -17,11 +18,11 @@ const groupsOf = (inputs: readonly HTMLInputElement[]): WorkGroup[] =>
 
 const readView = (
   inputs: readonly HTMLInputElement[],
-  select: HTMLSelectElement | null
+  menu: SelectMenu | undefined
 ): WorkView =>
   toWorkView(
     inputs.find((input) => input.checked)?.value ?? null,
-    select?.value ?? null,
+    menu?.value() ?? null,
     groupsOf(inputs)
   );
 
@@ -36,7 +37,6 @@ const shownCount = (
 const mount = (root: HTMLElement): void => {
   const grid = root.querySelector<HTMLElement>("[data-work-grid]");
   if (!grid) return;
-  const select = root.querySelector<HTMLSelectElement>("#work-sort");
   const status = root.querySelector<HTMLElement>("[data-work-status]");
   const inputs = [
     ...root.querySelectorAll<HTMLInputElement>('input[name="work-show"]'),
@@ -51,7 +51,7 @@ const mount = (root: HTMLElement): void => {
 
   const apply = (view: WorkView, announce: boolean): void => {
     for (const input of inputs) input.checked = input.value === view.filter;
-    if (select) select.value = view.sort;
+    menu?.set(view.sort);
     grid.append(...sortWork(keyed, view.sort).map(({ card }) => card));
     const search = workViewSearch(view, location.search);
     if (search !== location.search) {
@@ -69,9 +69,15 @@ const mount = (root: HTMLElement): void => {
     }
   };
 
+  const sortRoot = root.querySelector<HTMLElement>("[data-select-menu]");
+  const menu = sortRoot
+    ? initSelectMenu(sortRoot, () => {
+        apply(readView(inputs, menu), true);
+      })
+    : undefined;
   apply(parseWorkView(location.search, groupsOf(inputs)), false);
   root.addEventListener("change", () => {
-    apply(readView(inputs, select), true);
+    apply(readView(inputs, menu), true);
   });
   root.dataset["ready"] = "";
 };

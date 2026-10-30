@@ -1,0 +1,206 @@
+.select-menu {
+  --select-ctl: 2rem;
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.select-menu-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ctl-gap);
+  min-width: var(--select-ctl);
+  height: var(--select-ctl);
+  padding-inline: var(--sp-3);
+  border: 1px solid var(--glass-edge);
+  border-radius: 9999px;
+  background: var(--glass-fill);
+  color: var(--ui-ink-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-quick) var(--ease-smooth),
+    border-color var(--duration-quick) var(--ease-smooth),
+    color var(--duration-quick) var(--ease-smooth),
+    scale var(--press-time) var(--press-ease);
+}
+
+.select-menu-trigger::after {
+  content: "";
+  position: absolute;
+  inset: calc((var(--select-ctl) - var(--ctl-hit)) / 2 - 1px);
+}
+
+.select-menu-trigger:is(:hover, [data-open]) {
+  border-color: var(--glass-float-edge);
+  background: var(--glass-fill-hover);
+  color: var(--ui-ink);
+}
+
+.select-menu-trigger:active {
+  scale: 0.96;
+}
+
+.select-menu-icon {
+  display: inline-flex;
+}
+
+.select-menu-chevron {
+  color: var(--ui-ink-3);
+  transition: rotate var(--duration-normal) var(--ease-out-quint);
+}
+
+.select-menu-trigger[data-open] .select-menu-chevron {
+  rotate: 180deg;
+}
+
+.select-menu-dot {
+  position: absolute;
+  inset-block-start: 0.125rem;
+  inset-inline-end: 0.125rem;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 9999px;
+  background: var(--primary);
+  opacity: 0;
+  scale: 0.5;
+  pointer-events: none;
+  transition:
+    opacity var(--duration-normal) var(--ease-smooth),
+    scale var(--duration-normal) var(--ease-spring);
+}
+
+.select-menu-panel {
+  position: fixed;
+  inset: auto;
+  min-width: 12rem;
+  margin: 0;
+  padding: var(--sp-1);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--ui-radius-pop);
+  color: var(--ui-ink-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  line-height: 1.2;
+}
+
+.select-menu-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  outline: none;
+}
+
+.select-menu-glow {
+  position: absolute;
+  inset-inline: var(--sp-1);
+  top: 0;
+  height: var(--select-h, 2rem);
+  border-radius: var(--ui-radius-key);
+  background: var(--glass-fill-hover);
+  opacity: 0;
+  translate: 0 var(--select-y, 0);
+  pointer-events: none;
+  transition:
+    translate var(--duration-normal) var(--ease-out-quint),
+    opacity var(--duration-fast) var(--ease-smooth);
+}
+
+.select-menu-panel:has([data-active]) .select-menu-glow {
+  opacity: 1;
+}
+
+.select-menu-panel:has(.select-menu-list:focus-visible) .select-menu-glow {
+  box-shadow: inset 0 0 0 1px var(--focus);
+}
+
+.select-menu-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  min-height: 2rem;
+  padding-inline: var(--sp-3) var(--sp-2);
+  border-radius: var(--ui-radius-key);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-smooth);
+}
+
+.select-menu-option[data-active],
+.select-menu-option[aria-selected="true"] {
+  color: var(--ui-ink);
+}
+
+.select-menu-check {
+  color: var(--primary);
+  opacity: 0;
+  scale: 0.7;
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth),
+    scale var(--duration-normal) var(--ease-spring);
+}
+
+.select-menu-option[aria-selected="true"] .select-menu-check {
+  opacity: 1;
+  scale: 1;
+}
+
+@media (pointer: coarse) {
+  .select-menu-option {
+    min-height: var(--ctl-hit);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .select-menu-trigger,
+  .select-menu-chevron,
+  .select-menu-dot,
+  .select-menu-glow,
+  .select-menu-option,
+  .select-menu-check {
+    transition: none;
+  }
+}
+
+:root[data-motion-paused]
+  :is(
+    .select-menu-trigger,
+    .select-menu-chevron,
+    .select-menu-dot,
+    .select-menu-glow,
+    .select-menu-option,
+    .select-menu-check
+  ) {
+  transition: none;
+}
+
+@media (forced-colors: active) {
+  .select-menu-glow {
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+
+  .select-menu-option[data-active] {
+    color: HighlightText;
+    forced-color-adjust: none;
+  }
+
+  .select-menu-dot {
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+
+  .select-menu-check {
+    color: Highlight;
+  }
+}

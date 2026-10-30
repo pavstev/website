@@ -64,10 +64,11 @@ type Track = typeof autoUpdate;
 const floats = (panel: HTMLElement, wide: MediaQueryList): boolean =>
   wide.matches || panel.dataset["anchored"] === "always";
 
-const placementOf = (panel: HTMLElement): Placement => {
-  const value = panel.dataset["placement"];
-  return value === "top" || value === "bottom-start" ? value : "bottom";
-};
+const placements: readonly Placement[] = ["top", "bottom-start", "bottom-end"];
+
+const placementOf = (panel: HTMLElement): Placement =>
+  placements.find((placement) => placement === panel.dataset["placement"]) ??
+  "bottom";
 
 const sideOf = (placement: Placement): string =>
   placement.split("-", 1)[0] ?? "bottom";

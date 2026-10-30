@@ -159,6 +159,12 @@ const checked = (page: Page): Promise<string> =>
 const search = (page: Page): Promise<string> =>
   page.evaluate(() => globalThis.location.search);
 
+const sortValue = (page: Page): Promise<string> =>
+  page.$eval(
+    ".work-sort",
+    (menu) => (menu as HTMLElement).dataset["value"] ?? ""
+  );
+
 const total = (page: Page): Promise<number> =>
   page.locator(".work-card").count();
 
@@ -209,7 +215,7 @@ describe("work grid", () => {
     const opened = await open("/work?show=bogus&sort=bogus&ref=x#top");
     await ready(opened.page);
     assert.equal(await checked(opened.page), "all");
-    assert.equal(await opened.page.inputValue("#work-sort"), "featured");
+    assert.equal(await sortValue(opened.page), "featured");
     assert.equal(await search(opened.page), "?ref=x");
     assert.equal(
       await opened.page.evaluate(() => globalThis.location.hash),
@@ -224,7 +230,7 @@ describe("work grid", () => {
     const opened = await open("/work?show=products&sort=name");
     await ready(opened.page);
     assert.equal(await checked(opened.page), "products");
-    assert.equal(await opened.page.inputValue("#work-sort"), "name");
+    assert.equal(await sortValue(opened.page), "name");
     const cards = await shown(opened.page);
     assert.ok(cards.length > 0);
     assert.ok(groupsOf(cards).every((group) => group === "products"));
@@ -254,15 +260,15 @@ describe("work grid", () => {
     await closeAll(opened);
   });
 
-  test("every sort keeps products first and orders each group", async () => {
+  test("featured keeps products first and every sort orders the cards", async () => {
     const opened = await open("/work");
     await ready(opened.page);
     const sorts: WorkSort[] = ["stars", "updated", "name", "featured"];
     for (const sort of sorts) {
-      await opened.page.selectOption("#work-sort", sort);
+      await opened.page.click("#work-sort");
+      await opened.page.click(`[role="option"][data-value="${sort}"]`);
       const cards = await shown(opened.page);
-      const groups = groupsOf(cards);
-      assert.ok(productsFirst(groups), sort);
+      if (sort === "featured") assert.ok(productsFirst(groupsOf(cards)));
       const expected = sortWork(
         cards.map((card) => workSortKeys(card.data)),
         sort
@@ -276,14 +282,36 @@ describe("work grid", () => {
         await search(opened.page),
         sort === "featured" ? "" : `?sort=${sort}`
       );
+      assert.equal(await sortValue(opened.page), sort);
       assert.equal(
-        await opened.page.$eval(".work-sort-dot", (dot) =>
-          getComputedStyle(dot).getPropertyValue("opacity")
+        await opened.page.$eval(".work-sort", (menu) =>
+          Object.hasOwn(menu.dataset, "changed")
         ),
-        sort === "featured" ? "0" : "1",
+        sort !== "featured",
         sort
       );
+      assert.equal(
+        await opened.page.isVisible(".select-menu-panel:popover-open"),
+        false
+      );
     }
+    assert.deepEqual(opened.errors, []);
+    await closeAll(opened);
+  });
+
+  test("the keyboard drives the sort menu", async () => {
+    const opened = await open("/work");
+    await ready(opened.page);
+    await opened.page.focus("#work-sort");
+    await opened.page.keyboard.press("Enter");
+    await opened.page.keyboard.press("End");
+    await opened.page.keyboard.press("Enter");
+    assert.equal(await sortValue(opened.page), "name");
+    assert.equal(await search(opened.page), "?sort=name");
+    assert.equal(
+      await opened.page.evaluate(() => globalThis.document.activeElement?.id),
+      "work-sort"
+    );
     assert.deepEqual(opened.errors, []);
     await closeAll(opened);
   });

@@ -162,7 +162,9 @@ export const sortWork = <T extends WorkSortKeys>(
   sort: WorkSort
 ): T[] =>
   items.toSorted(
-    (a, b) => groupRank[a.group] - groupRank[b.group] || compare[sort](a, b)
+    (a, b) =>
+      (sort === "featured" ? groupRank[a.group] - groupRank[b.group] : 0) ||
+      compare[sort](a, b)
   );
 
 const finite = (value: string | undefined): number => {
