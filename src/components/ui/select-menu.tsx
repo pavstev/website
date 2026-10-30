@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { Icon } from "@/components/icon";
 
-export interface SelectMenuItem {
+interface SelectMenuItem {
   label: string;
   value: string;
 }
