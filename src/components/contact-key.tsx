@@ -1,14 +1,12 @@
 import type { ReactElement, ReactNode } from "react";
 
 import type { ContactTone } from "@/lib/contact-links";
-import type { Blocker } from "@/lib/tip-place";
 
 import { Icon } from "@/components/icon";
 import { TipLabel } from "@/components/tip-label";
 import { Tooltip } from "@/components/ui/tooltip";
 
 interface ContactKeyProps {
-  avoid?: () => Blocker[];
   children?: ReactNode;
   describedBy?: string | undefined;
   detail?: string;
@@ -24,7 +22,6 @@ interface ContactKeyProps {
 }
 
 export const ContactKey = ({
-  avoid,
   children,
   describedBy,
   detail,
@@ -39,10 +36,7 @@ export const ContactKey = ({
   type,
 }: ContactKeyProps): ReactElement => (
   <li className="contact-item" data-tone={tone}>
-    <Tooltip
-      {...(avoid ? { avoid } : {})}
-      label={tip ?? <TipLabel detail={detail} name={label} />}
-    >
+    <Tooltip label={tip ?? <TipLabel detail={detail} name={label} />}>
       <a
         aria-describedby={describedBy}
         aria-label={label}

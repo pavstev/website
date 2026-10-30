@@ -528,6 +528,10 @@ html:has(.portrait-dialog[open]) {
   max-width: 100%;
 }
 
+.section-row:has(.tip) {
+  z-index: 3;
+}
+
 .section-item {
   display: flex;
   min-width: 0;

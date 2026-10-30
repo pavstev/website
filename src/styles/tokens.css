@@ -145,6 +145,7 @@
     --glass-float: rgb(22 24 36 / 0.3);
     --glass-float-edge: rgb(255 255 255 / 0.12);
     --glass-solid: rgb(30 32 46);
+    --press-well: rgb(7 8 15 / 0.4);
     --glass-card: rgb(255 255 255 / 0.06);
     --glass-card-edge: rgb(255 255 255 / 0.12);
     --glass-card-edge-hover: color-mix(
@@ -185,7 +186,6 @@
   .privacy-ack,
   .sky-trigger,
   .motion-switch-button,
-  .tip,
   .mat-pop
 ) {
   --ui-ink-3: var(--cool-350);
@@ -221,7 +221,6 @@
     .privacy-ack,
     .sky-trigger,
     .motion-switch-button,
-    .tip,
     .mat-pop
   ) {
   --ui-ink: var(--day-950);
@@ -241,6 +240,11 @@
   --ui-key-error: var(--red-700);
 }
 
+.tip {
+  --glass-float: rgb(22 24 36 / 0.78);
+  --glass-float-edge: rgb(255 255 255 / 0.12);
+}
+
 :root:has([data-card] .bio[data-lit]) {
   --glass-fill: color-mix(in srgb, var(--glass-solid) 66%, transparent);
   --glass-fill-hover: color-mix(in srgb, var(--glass-solid) 74%, transparent);
@@ -253,7 +257,7 @@
 }
 
 .sky-panel {
-  --sky-press: rgb(7 8 15 / 0.4);
+  --sky-press: var(--press-well);
   --sky-fill: var(
     --glass-fill,
     color-mix(in oklab, var(--ui-ink) 16%, transparent)

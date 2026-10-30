@@ -473,12 +473,17 @@ export const SkyControls = ({
         <p className="sky-panel-title" id={titleId}>
           {en.sky.panelTitle}
         </p>
-        <div aria-labelledby={titleId} className="sky-choice" role="tablist">
+        <div
+          aria-labelledby={titleId}
+          className="segmented sky-choice"
+          role="tablist"
+        >
+          <span aria-hidden className="segmented-thumb" />
           {tabs.map((item) => (
             <button
               aria-controls={`${baseId}-panel-${item.tab}`}
               aria-selected={tab === item.tab}
-              className="sky-option focus-ring"
+              className="segmented-item sky-option focus-ring"
               data-initial-focus={tab === item.tab ? "" : undefined}
               id={`${baseId}-tab-${item.tab}`}
               key={item.tab}

@@ -3,7 +3,6 @@ import type { ReactElement } from "react";
 import { Icon } from "@/components/icon";
 import { TipLabel } from "@/components/tip-label";
 import { Tooltip, TooltipGroup } from "@/components/ui/tooltip";
-import { contactAvoid } from "@/lib/contact-links";
 import { en } from "@/lib/i18n";
 
 export interface SectionLink {
@@ -29,9 +28,7 @@ export const SectionLinks = ({ sections }: SectionLinksProps): ReactElement => (
       {sections.map((section) => (
         <li className="section-item" key={section.href}>
           <Tooltip
-            avoid={contactAvoid}
             label={<TipLabel detail={section.detail} name={section.name} />}
-            side="bottom"
           >
             <a
               className="section-link keycap-host focus-ring"

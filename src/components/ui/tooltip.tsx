@@ -17,12 +17,7 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import {
-  type Blocker,
-  placeTip,
-  type TipAlign,
-  type TipSide,
-} from "@/lib/tip-place";
+import { placeTip, type TipAlign, type TipSide } from "@/lib/tip-place";
 import {
   createTooltipStore,
   type TooltipStore,
@@ -104,7 +99,6 @@ export const TooltipGroup = ({ children }: TooltipGroupProps): ReactElement => {
 
 interface TooltipProps {
   align?: TipAlign;
-  avoid?: () => Blocker[];
   children: ReactElement<TriggerProps>;
   className?: string;
   label: ReactNode;
@@ -132,7 +126,6 @@ const isKeyboardFocus = (element: HTMLElement): boolean => {
 
 export const Tooltip = ({
   align = "center",
-  avoid,
   children,
   className = "",
   label,
@@ -207,7 +200,7 @@ export const Tooltip = ({
       const placement = placeTip({
         align,
         anchor: root.getBoundingClientRect(),
-        avoid: avoid?.() ?? [],
+        avoid: [],
         height: tip.offsetHeight,
         side,
         viewport: { height: clientHeight, width: clientWidth },
@@ -223,7 +216,7 @@ export const Tooltip = ({
     return () => {
       globalThis.removeEventListener("resize", place);
     };
-  }, [align, avoid, shown, side]);
+  }, [align, shown, side]);
 
   const described = [children.props["aria-describedby"], shown ? tipId : null]
     .filter(Boolean)

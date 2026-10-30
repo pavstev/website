@@ -60,7 +60,7 @@ const GithubKey = ({
   newTabId: string;
   url: string;
 }): ReactElement => (
-  <span className="repo-key" data-repo-key="">
+  <span className="repo-key" data-repo-key="" data-tip-host="">
     <a
       aria-describedby={newTabId}
       aria-label={fillText(en.repos.viewOnGithubLabel, { name })}
@@ -76,9 +76,11 @@ const GithubKey = ({
         size="1.3em"
       />
     </a>
-    <span className="repo-tip tip" role="tooltip">
-      <span aria-hidden className="tip-surface" />
-      <span className="tip-body">{en.repos.viewOnGithub}</span>
+    <span className="tip-anchor" data-align="center" data-side="top">
+      <span className="tip tip-static" role="tooltip">
+        <span aria-hidden className="tip-surface" />
+        <span className="tip-body">{en.repos.viewOnGithub}</span>
+      </span>
     </span>
   </span>
 );
@@ -289,7 +291,7 @@ const FilterOption = ({
   label: string;
   value: string;
 }): ReactElement => (
-  <label className="tab-strip-item work-filter-option">
+  <label className="segmented-item work-filter-option">
     <input
       className="work-filter-input sr-only"
       defaultChecked={checked}
@@ -297,10 +299,8 @@ const FilterOption = ({
       type="radio"
       value={value}
     />
-    <span className="tab-strip-name" data-text={label}>
-      {label}
-    </span>
-    <span className="tab-strip-count tabular">{count}</span>
+    <span>{label}</span>
+    <span className="segmented-count tabular">{count}</span>
   </label>
 );
 
@@ -313,9 +313,9 @@ const WorkControls = ({
 }): ReactElement => (
   <div className="work-controls">
     {products > 0 && repos > 0 ? (
-      <fieldset className="tab-strip work-filter" data-tab-strip="">
+      <fieldset className="segmented work-filter">
         <legend className="sr-only">{en.work.filterLabel}</legend>
-        <span aria-hidden className="tab-strip-bar" />
+        <span aria-hidden className="segmented-thumb" />
         <FilterOption
           checked
           count={products + repos}

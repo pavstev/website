@@ -10,10 +10,9 @@
 .work-controls {
   display: flex;
   min-width: 0;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
-  border-bottom: 1px solid var(--glass-edge);
 }
 
 .work-filter {
@@ -21,7 +20,6 @@
 }
 
 .work-sort {
-  margin-block-end: calc((var(--tab-h) - var(--select-ctl)) / 2);
   margin-inline-start: auto;
 }
 
@@ -170,7 +168,7 @@
 .work-card-head {
   grid-row: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--sp-3);
 }
@@ -233,43 +231,14 @@
   scale: 0.94;
 }
 
-.repo-tip {
-  position: absolute;
-  z-index: var(--z-popover);
-  inset-block-start: calc(100% + 7px);
-  inset-inline-end: 0;
-  visibility: hidden;
-  opacity: 0;
-  transition:
-    opacity var(--duration-normal) var(--ease-smooth),
-    visibility var(--duration-normal) var(--ease-smooth);
-}
-
-.repo-tip::before {
-  bottom: 100%;
-}
-
-.repo-key:not([data-dismissed]):has(:focus-visible) > .repo-tip {
-  visibility: visible;
-  opacity: 1;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .repo-key:not([data-dismissed]):hover > .repo-tip {
-    visibility: visible;
-    opacity: 1;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .repo-tip,
   .repo-key-mark,
   .work-card-link {
     transition: none;
   }
 }
 
-:root[data-motion-paused] :is(.repo-tip, .repo-key-mark, .work-card-link) {
+:root[data-motion-paused] :is(.repo-key-mark, .work-card-link) {
   transition: none;
 }
 
@@ -381,7 +350,7 @@
 
 .work-mark-night {
   opacity: 0;
-  transition: opacity 600ms ease;
+  transition: opacity 600ms var(--ease-smooth);
 }
 
 .work-mark-star {

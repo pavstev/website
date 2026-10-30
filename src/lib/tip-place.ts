@@ -1,8 +1,3 @@
-export interface Blocker {
-  box: Box;
-  weight: number;
-}
-
 export interface Box {
   bottom: number;
   left: number;
@@ -29,6 +24,11 @@ export interface PlaceRequest {
 export type TipAlign = "center" | "end" | "start";
 
 export type TipSide = "bottom" | "top";
+
+interface Blocker {
+  box: Box;
+  weight: number;
+}
 
 const edgeGap = 8;
 const tipGap = 7;

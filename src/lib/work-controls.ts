@@ -1,7 +1,6 @@
 import { playFlip, type Snapshot, snapshot } from "./flip.ts";
 import { en } from "./i18n.ts";
 import { initSelectMenu, type SelectMenu } from "./select-menu.ts";
-import { initTabStrip } from "./tab-strip.ts";
 import { fillText } from "./template.ts";
 import {
   parseWorkView,
@@ -95,8 +94,6 @@ const mount = (root: HTMLElement): (() => void) => {
       })
     : undefined;
   apply(parseWorkView(location.search, groupsOf(inputs)), false);
-  const strip = root.querySelector<HTMLElement>("[data-tab-strip]");
-  const stopStrip = strip ? initTabStrip(strip) : undefined;
   const filter = root.querySelector<HTMLElement>(".work-filter");
   filter?.addEventListener("pointerdown", remember);
   filter?.addEventListener("keydown", remember);
@@ -104,7 +101,6 @@ const mount = (root: HTMLElement): (() => void) => {
   root.dataset["ready"] = "";
   return () => {
     menu?.dispose();
-    stopStrip?.();
   };
 };
 

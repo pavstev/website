@@ -21,4 +21,8 @@ describe("storyMorph", () => {
     assert.equal(storyMorph("/work/dotfiles", "/work/dotfiles"), undefined);
     assert.equal(storyMorph("/work", "/work/other"), undefined);
   });
+  it("skips a story with no stage to morph into", () => {
+    assert.equal(storyMorph("/work", "/work/website"), undefined);
+    assert.equal(storyMorph("/work/website", "/work"), undefined);
+  });
 });

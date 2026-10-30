@@ -3,7 +3,6 @@ import type { ReactElement, ReactNode } from "react";
 import { Icon } from "@/components/icon";
 import { LoadingFaces, useAsyncAction } from "@/components/ui/loading-button";
 import { Tooltip } from "@/components/ui/tooltip";
-import { contactAvoid } from "@/lib/contact-links";
 import { en } from "@/lib/i18n";
 
 interface DownloadButtonProps {
@@ -35,7 +34,7 @@ export const DownloadButton = ({ tip }: DownloadButtonProps): ReactElement => {
 
   return (
     <>
-      <Tooltip avoid={contactAvoid} className="download-item" label={tip}>
+      <Tooltip className="download-item" label={tip}>
         <a
           aria-label={en.card.downloadPdf}
           className="download-pill keycap-host focus-ring no-underline select-none"

@@ -222,65 +222,7 @@
 
 .sky-choice {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ctl-seg-pad);
-  min-height: var(--ctl-seg-h);
-  padding: var(--ctl-seg-pad);
   container-type: inline-size;
-  border-radius: var(--ui-radius-key);
-  box-shadow: inset 0 0 0 1px var(--sky-edge);
-}
-
-.sky-option {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ctl-gap);
-  min-width: 0;
-  padding: var(--ctl-pad-y) var(--sp-2);
-  border: 0;
-  border-radius: var(--ui-radius-inner);
-  color: var(--ui-ink-2);
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  line-height: 1.2;
-  text-align: center;
-  overflow-wrap: anywhere;
-  cursor: pointer;
-  transition:
-    background-color var(--duration-quick) var(--ease-smooth),
-    color var(--duration-quick) var(--ease-smooth);
-}
-
-.sky-option::after {
-  content: "";
-  position: absolute;
-  inset: calc((var(--ctl-hit) - var(--ctl-seg-h) + 2 * var(--ctl-seg-pad)) / -2)
-    0;
-}
-
-.sky-option > svg {
-  flex-shrink: 0;
-  width: var(--ctl-icon-sm);
-  height: var(--ctl-icon-sm);
-}
-
-@container (max-width: 19rem) {
-  .sky-option > svg {
-    display: none;
-  }
-}
-
-.sky-option[aria-selected="true"] {
-  background: var(--sky-press);
-  box-shadow: inset 0 0 0 1px var(--sky-edge);
-  color: var(--ui-ink);
-}
-
-.sky-option:hover {
-  background: var(--sky-fill-hover);
-  color: var(--ui-ink);
 }
 
 .sky-tabpanel {
@@ -837,10 +779,6 @@
   .sky-panel {
     border: 1px solid CanvasText;
     color: CanvasText;
-  }
-
-  .sky-option[aria-selected="true"] {
-    outline: 2px solid Highlight;
   }
 
   .sky-precise {

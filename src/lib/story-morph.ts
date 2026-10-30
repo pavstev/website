@@ -3,8 +3,12 @@ import { workConfig } from "./work.ts";
 
 const workPath = "/work";
 
+const stagedStories = new Set(["dotfiles"]);
+
 const storyPaths = (): string[] =>
-  Object.values(workConfig.repos.stories ?? {});
+  Object.entries(workConfig.repos.stories ?? {})
+    .filter(([key]) => stagedStories.has(key))
+    .map(([, path]) => path);
 
 export type StoryMorph = "in" | "out";
 

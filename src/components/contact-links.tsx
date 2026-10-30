@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import type { Contact } from "@/lib/github";
 
 import { ContactKey } from "@/components/contact-key";
-import { contactAvoid, contactEntries } from "@/lib/contact-links";
+import { contactEntries } from "@/lib/contact-links";
 import { en } from "@/lib/i18n";
 
 interface ContactLinksProps {
@@ -17,12 +17,7 @@ export const ContactLinks = ({ contact }: ContactLinksProps): ReactElement => (
     data-contacts=""
   >
     {contactEntries(contact).map(({ id, ...entry }) => (
-      <ContactKey
-        avoid={contactAvoid}
-        key={id}
-        linkClassName="size-9"
-        {...entry}
-      />
+      <ContactKey key={id} linkClassName="size-9" {...entry} />
     ))}
   </ul>
 );

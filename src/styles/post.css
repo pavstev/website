@@ -338,9 +338,9 @@
   font-variant-numeric: tabular-nums;
   text-decoration: none;
   transition:
-    color var(--duration-quick) ease,
-    background-color var(--duration-quick) ease,
-    border-color var(--duration-quick) ease;
+    color var(--duration-quick) var(--ease-smooth),
+    background-color var(--duration-quick) var(--ease-smooth),
+    border-color var(--duration-quick) var(--ease-smooth);
 }
 
 .blog-pagination .blog-pagination-arrow {
@@ -527,7 +527,7 @@
   line-height: 1.5;
   text-decoration: none;
   overflow-wrap: break-word;
-  transition: color var(--duration-quick) ease;
+  transition: color var(--duration-quick) var(--ease-smooth);
 }
 
 .toc-link:hover {
@@ -705,7 +705,7 @@
   cursor: pointer;
   transition:
     translate var(--duration-fast) var(--ease-out-quint),
-    background-color var(--duration-quick) ease;
+    background-color var(--duration-quick) var(--ease-smooth);
 }
 
 .copy-key::before {
@@ -716,7 +716,7 @@
 
 .copy-key > :not(.sr-only) {
   grid-area: 1 / 1;
-  transition: opacity 100ms ease;
+  transition: opacity var(--duration-ink) var(--ease-smooth);
 }
 
 .copy-key > [data-face="copied"],
@@ -993,8 +993,8 @@
   color: var(--ui-key-ink);
   cursor: pointer;
   transition:
-    background-color var(--duration-quick) ease,
-    color var(--duration-quick) ease;
+    background-color var(--duration-quick) var(--ease-smooth),
+    color var(--duration-quick) var(--ease-smooth);
 }
 
 .lightbox-button svg {
@@ -1044,7 +1044,7 @@
   list-style: none;
   cursor: pointer;
   transition:
-    color var(--duration-quick) ease,
+    color var(--duration-quick) var(--ease-smooth),
     translate var(--duration-fast) var(--ease-out-quint);
 }
 
@@ -1169,7 +1169,7 @@
   text-align: start;
   text-transform: inherit;
   cursor: pointer;
-  transition: color var(--duration-quick) ease;
+  transition: color var(--duration-quick) var(--ease-smooth);
 }
 
 .sortable-button:focus-visible {

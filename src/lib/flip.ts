@@ -9,7 +9,10 @@ export type Snapshot = ReadonlyMap<HTMLElement, Box | null>;
 
 const flipMs = 420;
 
-const flipEase = "cubic-bezier(0.22, 1, 0.36, 1)";
+const flipEase = (): string =>
+  getComputedStyle(document.documentElement)
+    .getPropertyValue("--spring-slide")
+    .trim() || "ease-out";
 
 const boxOf = (item: HTMLElement): Box | null => {
   if (item.getClientRects().length === 0) return null;
@@ -42,9 +45,10 @@ export const snapshot = (items: readonly HTMLElement[]): Snapshot =>
 
 export const playFlip = (before: Snapshot): void => {
   if (stillQuery().matches) return;
+  const easing = flipEase();
   for (const [item, box] of before) {
     for (const animation of item.getAnimations()) animation.cancel();
     const frames = flipFrames(box, boxOf(item));
-    if (frames) item.animate(frames, { duration: flipMs, easing: flipEase });
+    if (frames) item.animate(frames, { duration: flipMs, easing });
   }
 };
