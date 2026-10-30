@@ -70,7 +70,7 @@ Siblings: `motion.md`, `sky.md`. Tokens are in `src/styles/tokens.css` (`docs/th
 
 - The contact links are `.keycap-host` buttons. `cursor.ts` owns the host's `transform` (proximity zoom).
 - The PDF button faces crossfade in one grid cell, so the row never reflows. Ctrl or Cmd click stays native.
-- Tooltips share one Tooltip Group (`CardActions`, `tooltip-store.ts`). Touch never opens them. Every tip opens above its key, in dark glass by day too, like the night footer (owner, 2026-10-30). `placeTip` only flips or shifts a tip at the screen edge.
+- Tooltips share one Tooltip Group (`CardActions`, `tooltip-store.ts`). Touch never opens them. Every tip prefers to open above its key, in dark glass by day too, like the night footer (owner, 2026-10-30). It never covers another button: `tipBlockers` hands `placeTip` the other `.keycap-host` buttons (weight 2) and the bio (weight 1), so the section tips open below. It also flips or shifts at the screen edge.
 - The actions row is `z-2`, above the section row, so a tip draws over the section buttons.
 - Tip content is one shared `TipLabel` (`tip-label.tsx`): a tone dot, the name, then the detail, on one line. Contact keys, the section links (About, Work, Blog) and the night footer all use it (owner, 2026-10-30). Only the résumé keeps its page sheet (`ResumeTip`), in both places.
 - The section links (About, Work, Blog) have no `data-astro-reload`: each is a client navigation that plays the home to blog sky shot.

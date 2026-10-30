@@ -1,3 +1,8 @@
+export interface Blocker {
+  box: Box;
+  weight: number;
+}
+
 export interface Box {
   bottom: number;
   left: number;
@@ -25,16 +30,31 @@ export type TipAlign = "center" | "end" | "start";
 
 export type TipSide = "bottom" | "top";
 
-interface Blocker {
-  box: Box;
-  weight: number;
-}
-
 const edgeGap = 8;
 const tipGap = 7;
 const minGap = 3;
 const offscreenCost = 4;
 const shiftReach = 0.35;
+
+const blockerWeights: ReadonlyArray<[string, number]> = [
+  [".keycap-host", 2],
+  [".bio", 1],
+];
+
+export const tipBlockers = (own: Element): Blocker[] => {
+  const scope = own.closest("[data-card], footer") ?? document.body;
+  const anchor = own.getBoundingClientRect();
+  const blockers: Blocker[] = [];
+  for (const [selector, weight] of blockerWeights) {
+    for (const element of scope.querySelectorAll(selector)) {
+      if (element.contains(own) || own.contains(element)) continue;
+      const box = element.getBoundingClientRect();
+      if (box.bottom > anchor.top && box.top < anchor.bottom) continue;
+      blockers.push({ box, weight });
+    }
+  }
+  return blockers;
+};
 
 const overlaps = (span: Box, other: Box): boolean =>
   span.left < other.right &&

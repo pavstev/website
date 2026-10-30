@@ -17,7 +17,12 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import { placeTip, type TipAlign, type TipSide } from "@/lib/tip-place";
+import {
+  placeTip,
+  type TipAlign,
+  tipBlockers,
+  type TipSide,
+} from "@/lib/tip-place";
 import {
   createTooltipStore,
   type TooltipStore,
@@ -200,7 +205,7 @@ export const Tooltip = ({
       const placement = placeTip({
         align,
         anchor: root.getBoundingClientRect(),
-        avoid: [],
+        avoid: tipBlockers(root),
         height: tip.offsetHeight,
         side,
         viewport: { height: clientHeight, width: clientWidth },
