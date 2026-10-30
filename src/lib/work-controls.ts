@@ -1,3 +1,4 @@
+import { playFlip, type Snapshot, snapshot } from "./flip.ts";
 import { en } from "./i18n.ts";
 import { initSelectMenu, type SelectMenu } from "./select-menu.ts";
 import { initTabStrip } from "./tab-strip.ts";
@@ -13,6 +14,8 @@ import {
   type WorkView,
   workViewSearch,
 } from "./work.ts";
+
+const snapshotMs = 1000;
 
 const groupsOf = (inputs: readonly HTMLInputElement[]): WorkGroup[] =>
   workGroups.filter((group) => inputs.some(({ value }) => value === group));
@@ -70,18 +73,34 @@ const mount = (root: HTMLElement): void => {
     }
   };
 
+  let before: Snapshot | undefined;
+  let beforeAt = 0;
+  const remember = (): void => {
+    before = snapshot(cards);
+    beforeAt = performance.now();
+  };
+  const change = (): void => {
+    const fresh = before && performance.now() - beforeAt < snapshotMs;
+    const from = fresh && before ? before : snapshot(cards);
+    before = undefined;
+    apply(readView(inputs, menu), true);
+    playFlip(from);
+  };
+
   const sortRoot = root.querySelector<HTMLElement>("[data-select-menu]");
   const menu = sortRoot
     ? initSelectMenu(sortRoot, () => {
-        apply(readView(inputs, menu), true);
+        remember();
+        change();
       })
     : undefined;
   apply(parseWorkView(location.search, groupsOf(inputs)), false);
   const strip = root.querySelector<HTMLElement>("[data-tab-strip]");
   if (strip) initTabStrip(strip);
-  root.addEventListener("change", () => {
-    apply(readView(inputs, menu), true);
-  });
+  const filter = root.querySelector<HTMLElement>(".work-filter");
+  filter?.addEventListener("pointerdown", remember);
+  filter?.addEventListener("keydown", remember);
+  root.addEventListener("change", change);
   root.dataset["ready"] = "";
 };
 

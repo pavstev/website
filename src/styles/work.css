@@ -118,9 +118,10 @@
   display: inline-block;
   border-radius: 0.25rem;
   color: inherit;
-  text-decoration: none;
+  text-decoration: underline transparent;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
+  transition: text-decoration-color var(--duration-normal) var(--ease-smooth);
 }
 
 .work-card-link::after {
@@ -133,7 +134,13 @@
 }
 
 .work-card-link:is(:hover, :focus-visible) {
-  text-decoration-line: underline;
+  text-decoration-color: currentColor;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .work-card:hover {
+    box-shadow: inset 0 0 0 1px var(--glass-card-edge-hover);
+  }
 }
 
 .work-card-name {
@@ -214,6 +221,15 @@
 
 .repo-key-mark {
   color: var(--ui-accent);
+  transition: scale var(--duration-normal) var(--ease-spring);
+}
+
+.repo-key-link:hover .repo-key-mark {
+  scale: 1.12;
+}
+
+.repo-key-link:active .repo-key-mark {
+  scale: 0.94;
 }
 
 .repo-tip {
@@ -245,12 +261,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .repo-tip {
+  .repo-tip,
+  .repo-key-mark,
+  .work-card-link {
     transition: none;
   }
 }
 
-:root[data-motion-paused] .repo-tip {
+:root[data-motion-paused] :is(.repo-tip, .repo-key-mark, .work-card-link) {
   transition: none;
 }
 
