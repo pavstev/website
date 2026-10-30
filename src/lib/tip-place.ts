@@ -99,7 +99,7 @@ const gapFor = (
       room = Math.min(room, box.top - anchor.bottom - edgeGap - height);
     }
   }
-  return Math.round(Math.max(minGap, room));
+  return Math.floor(Math.max(minGap, room));
 };
 
 export const placeTip = ({

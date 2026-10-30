@@ -848,6 +848,12 @@ html {
   --card-gap-footer: 2rem;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  [data-card] {
+    --card-gap-sections: 3.25rem;
+  }
+}
+
 @media (min-width: 64em) {
   [data-card] {
     --container-page-max: 68rem;
