@@ -1,7 +1,7 @@
 .work-view {
-  --work-ctl: 2rem;
   container: work / inline-size;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-4);
   width: 100%;
   text-align: start;
@@ -9,6 +9,7 @@
 
 .work-controls {
   display: flex;
+  min-width: 0;
   align-items: end;
   justify-content: space-between;
   gap: var(--sp-3);

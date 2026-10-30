@@ -38,9 +38,9 @@ const shownCount = (
     ? cards.length
     : cards.filter((card) => card.dataset["group"] === filter).length;
 
-const mount = (root: HTMLElement): void => {
+const mount = (root: HTMLElement): (() => void) => {
   const grid = root.querySelector<HTMLElement>("[data-work-grid]");
-  if (!grid) return;
+  if (!grid) return () => undefined;
   const status = root.querySelector<HTMLElement>("[data-work-status]");
   const inputs = [
     ...root.querySelectorAll<HTMLInputElement>('input[name="work-show"]'),
@@ -96,24 +96,37 @@ const mount = (root: HTMLElement): void => {
     : undefined;
   apply(parseWorkView(location.search, groupsOf(inputs)), false);
   const strip = root.querySelector<HTMLElement>("[data-tab-strip]");
-  if (strip) initTabStrip(strip);
+  const stopStrip = strip ? initTabStrip(strip) : undefined;
   const filter = root.querySelector<HTMLElement>(".work-filter");
   filter?.addEventListener("pointerdown", remember);
   filter?.addEventListener("keydown", remember);
   root.addEventListener("change", change);
   root.dataset["ready"] = "";
+  return () => {
+    menu?.dispose();
+    stopStrip?.();
+  };
 };
 
 let mounted: HTMLElement | null = null;
+let unmount: (() => void) | undefined;
+
+const release = (): void => {
+  unmount?.();
+  unmount = undefined;
+  mounted = null;
+};
 
 const sync = (): void => {
   const root = document.querySelector<HTMLElement>("[data-work]");
   if (!root || root === mounted) return;
+  release();
   mounted = root;
-  mount(root);
+  unmount = mount(root);
 };
 
 export const watchWorkControls = (): void => {
   sync();
   document.addEventListener("astro:page-load", sync);
+  document.addEventListener("astro:before-swap", release);
 };

@@ -10,6 +10,12 @@ export const initTabStrip = (strip: HTMLElement): (() => void) => {
     if (!item) return;
     strip.style.setProperty("--tab-x", `${String(item.offsetLeft)}px`);
     strip.style.setProperty("--tab-w", `${String(item.offsetWidth)}px`);
+    const start = item.offsetLeft;
+    const end = start + item.offsetWidth;
+    if (start < strip.scrollLeft) strip.scrollLeft = start;
+    else if (end > strip.scrollLeft + strip.clientWidth) {
+      strip.scrollLeft = end - strip.clientWidth;
+    }
     if (!Object.hasOwn(strip.dataset, "measured")) {
       frame = requestAnimationFrame(() => {
         strip.dataset["measured"] = "";
