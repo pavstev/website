@@ -1,5 +1,6 @@
 import { en } from "./i18n.ts";
 import { initSelectMenu, type SelectMenu } from "./select-menu.ts";
+import { initTabStrip } from "./tab-strip.ts";
 import { fillText } from "./template.ts";
 import {
   parseWorkView,
@@ -76,6 +77,8 @@ const mount = (root: HTMLElement): void => {
       })
     : undefined;
   apply(parseWorkView(location.search, groupsOf(inputs)), false);
+  const strip = root.querySelector<HTMLElement>("[data-tab-strip]");
+  if (strip) initTabStrip(strip);
   root.addEventListener("change", () => {
     apply(readView(inputs, menu), true);
   });

@@ -9,74 +9,18 @@
 
 .work-controls {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: end;
   justify-content: space-between;
   gap: var(--sp-3);
+  border-bottom: 1px solid var(--glass-edge);
 }
 
 .work-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--sp-4);
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.work-filter-option {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ctl-gap);
-  min-height: var(--work-ctl);
-  color: var(--ui-ink-3);
-  font-family: var(--font-ui);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  line-height: 1.2;
-  cursor: pointer;
-  transition: color var(--duration-quick) var(--ease-smooth);
-}
-
-.work-filter-name {
-  text-decoration-color: var(--primary);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.5em;
-}
-
-.work-filter-option::after {
-  content: "";
-  position: absolute;
-  inset: calc((var(--ctl-hit) - var(--work-ctl)) / -2) calc(var(--sp-4) / -2);
-}
-
-.work-filter-option:hover {
-  color: var(--ui-ink);
-}
-
-.work-filter-option:has(:checked) {
-  color: var(--ui-ink);
-}
-
-.work-filter-option:has(:checked) .work-filter-name {
-  text-decoration-line: underline;
-}
-
-.work-filter-option:has(:focus-visible) {
-  border-radius: 0.25rem;
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
-}
-
-.work-filter-count {
-  color: var(--ui-ink-3);
-  font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
+  flex: 0 1 auto;
 }
 
 .work-sort {
+  margin-block-end: calc((var(--tab-h) - var(--select-ctl)) / 2);
   margin-inline-start: auto;
 }
 
@@ -102,22 +46,6 @@
   .work-sort[data-changed] .select-menu-dot {
     opacity: 1;
     scale: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .work-filter-option {
-    transition: none;
-  }
-}
-
-:root[data-motion-paused] .work-filter-option {
-  transition: none;
-}
-
-@media (forced-colors: active) {
-  .work-filter-option:has(:checked) .work-filter-name {
-    text-decoration-color: Highlight;
   }
 }
 

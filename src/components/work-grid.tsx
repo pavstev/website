@@ -289,7 +289,7 @@ const FilterOption = ({
   label: string;
   value: string;
 }): ReactElement => (
-  <label className="work-filter-option">
+  <label className="tab-strip-item work-filter-option">
     <input
       className="work-filter-input sr-only"
       defaultChecked={checked}
@@ -297,8 +297,10 @@ const FilterOption = ({
       type="radio"
       value={value}
     />
-    <span className="work-filter-name">{label}</span>
-    <span className="work-filter-count tabular">{count}</span>
+    <span className="tab-strip-name" data-text={label}>
+      {label}
+    </span>
+    <span className="tab-strip-count tabular">{count}</span>
   </label>
 );
 
@@ -311,8 +313,9 @@ const WorkControls = ({
 }): ReactElement => (
   <div className="work-controls">
     {products > 0 && repos > 0 ? (
-      <fieldset className="work-filter">
+      <fieldset className="tab-strip work-filter" data-tab-strip="">
         <legend className="sr-only">{en.work.filterLabel}</legend>
+        <span aria-hidden className="tab-strip-bar" />
         <FilterOption
           checked
           count={products + repos}
