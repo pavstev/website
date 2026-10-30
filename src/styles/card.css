@@ -568,69 +568,6 @@ html:has(.portrait-dialog[open]) {
   justify-content: center;
 }
 
-.tip-card {
-  align-items: flex-start;
-}
-
-.tip-card-face {
-  display: block;
-  flex: none;
-  width: 0.4375rem;
-  height: 0.4375rem;
-  margin-bottom: 1px;
-  border-radius: 50%;
-  background: var(--ui-accent);
-}
-
-.tip-card > .tip-line:nth-child(2) {
-  height: 2px;
-  margin-bottom: 0;
-  background: color-mix(in oklab, var(--background) 42%, transparent);
-}
-
-.tip-rows {
-  gap: 3.5px;
-  padding-top: 0.375rem;
-}
-
-.tip-row {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  animation: tip-line-draw var(--duration-slow) var(--ease-entrance)
-    calc(220ms + var(--i) * 90ms) backwards;
-  transform-origin: left center;
-}
-
-.tip-dot {
-  flex: none;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--dot, var(--ui-accent));
-}
-
-.tip-row-line {
-  flex: 1;
-  height: 2px;
-  border-radius: 1px;
-  background: color-mix(in oklab, var(--background) 42%, transparent);
-}
-
-.tip-row {
-  @variant still {
-    animation: none;
-  }
-}
-
-@media (forced-colors: active) {
-  .tip-card-face,
-  .tip-dot,
-  .tip-row-line {
-    background: CanvasText;
-  }
-}
-
 .download-icon g {
   stroke-width: 2.2;
 }

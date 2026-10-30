@@ -32,18 +32,14 @@ const workDetail = fillText(en.card.workTip, {
 
 const sections: SectionLink[] = [
   {
-    art: "card",
     detail: en.card.aboutTip,
-    dots: [],
     href: "/about",
     icon: "lucide:user-round",
     label: en.card.about,
     name: en.card.aboutTipName,
   },
   {
-    art: "rows",
     detail: workDetail,
-    dots: repos.slice(0, 3).map((repo) => repo.languages.at(0)?.color),
     href: "/work",
     icon: "lucide:briefcase",
     label: en.card.work,
@@ -52,9 +48,7 @@ const sections: SectionLink[] = [
   ...(latest
     ? [
         {
-          art: "page" as const,
           detail: fillText(en.card.blogTip, { title: latest.title }),
-          dots: [],
           href: "/blog",
           icon: "lucide:notebook-pen",
           label: en.card.blog,

@@ -1443,18 +1443,18 @@ html:has([data-blog]) {
   stroke-width: 2.4;
 }
 
-.contact-tip-name {
+.tip-label-name {
   display: inline-flex;
   align-items: center;
   gap: 0.4375rem;
 }
 
-.contact-tip-name::before {
+.tip-label-name::before {
   content: "";
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: var(--tone);
+  background: var(--tone, var(--primary));
 }
 
 .contact-item:has(.tip) {
@@ -1538,7 +1538,7 @@ html:has([data-blog]) {
   font-weight: 500;
 }
 
-.contact-tip-detail,
+.tip-label-detail,
 .tip-detail {
   color: var(--ui-ink-2);
   font-weight: 400;

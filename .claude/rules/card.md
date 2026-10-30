@@ -72,6 +72,7 @@ Siblings: `motion.md`, `sky.md`. Tokens are in `src/styles/tokens.css` (`docs/th
 - The PDF button faces crossfade in one grid cell, so the row never reflows. Ctrl or Cmd click stays native.
 - Tooltips share one Tooltip Group (`CardActions`, `tooltip-store.ts`). Touch never opens them. `placeTip` prefers covering a button over covering text and keeps 8 px clear of the bio.
 - The actions row is `z-2`, above the section row, so a tip draws over the section buttons.
+- Tip content is one shared `TipLabel` (`tip-label.tsx`): a tone dot, the name, then the detail, on one line. Contact keys, the section links (About, Work, Blog) and the night footer all use it (owner, 2026-10-30). Only the résumé keeps its page sheet (`ResumeTip`), in both places.
 - The section links (About, Work, Blog) have no `data-astro-reload`: each is a client navigation that plays the home to blog sky shot.
 
 ## Bio topics

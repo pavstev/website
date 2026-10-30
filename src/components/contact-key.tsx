@@ -4,6 +4,7 @@ import type { ContactTone } from "@/lib/contact-links";
 import type { Blocker } from "@/lib/tip-place";
 
 import { Icon } from "@/components/icon";
+import { TipLabel } from "@/components/tip-label";
 import { Tooltip } from "@/components/ui/tooltip";
 
 interface ContactKeyProps {
@@ -40,14 +41,7 @@ export const ContactKey = ({
   <li className="contact-item" data-tone={tone}>
     <Tooltip
       {...(avoid ? { avoid } : {})}
-      label={
-        tip ?? (
-          <>
-            <span className="contact-tip-name">{label}</span>{" "}
-            <span className="contact-tip-detail">{detail}</span>
-          </>
-        )
-      }
+      label={tip ?? <TipLabel detail={detail} name={label} />}
     >
       <a
         aria-describedby={describedBy}

@@ -1,72 +1,22 @@
-import type { CSSProperties, ReactElement } from "react";
+import type { ReactElement } from "react";
 
 import { Icon } from "@/components/icon";
+import { TipLabel } from "@/components/tip-label";
 import { Tooltip, TooltipGroup } from "@/components/ui/tooltip";
 import { contactAvoid } from "@/lib/contact-links";
 import { en } from "@/lib/i18n";
 
 export interface SectionLink {
-  art: SectionArt;
   detail: string;
-  dots: Array<string | undefined>;
   href: string;
   icon: string;
   label: string;
   name: string;
 }
 
-type SectionArt = "card" | "page" | "rows";
-
 interface SectionLinksProps {
   sections: SectionLink[];
 }
-
-const pageLines = [58, 92, 80, 88];
-
-const line = (index: number, width: number): ReactElement => (
-  <span
-    className="tip-line"
-    key={index}
-    style={{ "--i": index, "--w": `${String(width)}%` } as CSSProperties}
-  />
-);
-
-const SectionArtwork = ({
-  art,
-  dots,
-}: Pick<SectionLink, "art" | "dots">): ReactElement => {
-  if (art === "card") {
-    return (
-      <span aria-hidden="true" className="tip-page tip-card">
-        <span className="tip-card-face" />
-        {line(0, 70)}
-        {line(1, 92)}
-        {line(2, 54)}
-      </span>
-    );
-  }
-  if (art === "rows") {
-    return (
-      <span aria-hidden="true" className="tip-page tip-rows">
-        {dots.map((color, index) => (
-          <span
-            className="tip-row"
-            key={`${String(index)}-${color ?? ""}`}
-            style={{ "--dot": color, "--i": index } as CSSProperties}
-          >
-            <span className="tip-dot" />
-            <span className="tip-row-line" />
-          </span>
-        ))}
-      </span>
-    );
-  }
-  return (
-    <span aria-hidden="true" className="tip-page">
-      {pageLines.map((width, index) => line(index, width))}
-    </span>
-  );
-};
 
 export const SectionLinks = ({ sections }: SectionLinksProps): ReactElement => (
   <TooltipGroup>
@@ -80,15 +30,7 @@ export const SectionLinks = ({ sections }: SectionLinksProps): ReactElement => (
         <li className="section-item" key={section.href}>
           <Tooltip
             avoid={contactAvoid}
-            label={
-              <span className="tip-sheet">
-                <SectionArtwork art={section.art} dots={section.dots} />
-                <span className="tip-text">
-                  <span className="tip-name">{section.name}</span>
-                  <span className="tip-detail">{section.detail}</span>
-                </span>
-              </span>
-            }
+            label={<TipLabel detail={section.detail} name={section.name} />}
             side="bottom"
           >
             <a
