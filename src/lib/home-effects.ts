@@ -3,6 +3,7 @@ import { initCursorEffects } from "@/lib/cursor";
 import { initIntro } from "@/lib/intro";
 import { initNameGlitch } from "@/lib/name-glitch";
 import { initPortraitEffects } from "@/lib/portrait-effects";
+import { initTopicTaps } from "@/lib/topic-taps";
 
 export const watchHomeEffects = (): void => {
   let started: HTMLElement | null = null;
@@ -18,9 +19,11 @@ export const watchHomeEffects = (): void => {
     started = card;
     const portrait = document.querySelector<HTMLElement>("[data-portrait]");
     const name = document.querySelector<HTMLElement>("[data-name]");
+    const bio = card.querySelector<HTMLElement>(".bio");
     if (portrait) disposers.push(initPortraitEffects(portrait));
     disposers.push(initIntro(card));
     if (name) disposers.push(initNameGlitch(name));
+    if (bio) disposers.push(initTopicTaps(bio));
     disposers.push(initCursorEffects(), initAnchoredPopovers(document));
   };
   start();

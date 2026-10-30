@@ -650,6 +650,14 @@ html:has(.portrait-dialog[open]) {
     content: "";
   }
 
+  .topic-trigger[data-tap="up"]::after {
+    inset-block: min(0px, calc(100% - 2.75rem)) 0;
+  }
+
+  .topic-trigger[data-tap="down"]::after {
+    inset-block: 0 min(0px, calc(100% - 2.75rem));
+  }
+
   .topic-word {
     position: relative;
     z-index: 1;

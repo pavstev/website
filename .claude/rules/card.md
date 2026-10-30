@@ -137,5 +137,5 @@ Siblings: `motion.md`, `sky.md`. Tokens are in `src/styles/tokens.css` (`docs/th
 ## Touch and screen readers
 
 - `aria-expanded="false"` is in the static HTML of `button.topic-trigger`, `button.sky-trigger` and `button.privacy-chip`.
-- On `(pointer: coarse)` the footer pill and the credit link get a 44 px hit band. `.name-letters`, `.sky-controls` and the privacy panel carry `data-nosnippet`.
+- On `(pointer: coarse)` the footer pill and the credit link get a 44 px hit band. Each topic word gets a `2.75rem` tap band. When two topic words sit on lines right above each other, `topic-taps.ts` sets `data-tap`: the upper band grows up and the lower one grows down, so they never overlap (owner pick A1, 2026-10-30). A word on the last bio line stops at the résumé button (about 38 px at 320 wide). `.name-letters`, `.sky-controls` and the privacy panel carry `data-nosnippet`.
 - Axe by day reports false contrast fails on the card and the open panel. Run axe at night for the 0-violation gate and measure the day by pixels.
