@@ -16,8 +16,8 @@ interface Horizons {
 }
 
 const auKm = 149_597_870.7;
-const viennaLatitude = 48.2082;
-const viennaLongitude = 16.3738;
+const belgradeLatitude = 48.2082;
+const belgradeLongitude = 16.3738;
 
 const horizons: readonly Horizons[] = [
   {
@@ -85,13 +85,13 @@ const horizons: readonly Horizons[] = [
 const turnGap = (a: number, b: number): number =>
   ((((a - b) % 360) + 540) % 360) - 180;
 
-const vienna = (at: string): ReturnType<typeof moonView> =>
-  moonView(Date.parse(at), viennaLatitude, viennaLongitude);
+const belgrade = (at: string): ReturnType<typeof moonView> =>
+  moonView(Date.parse(at), belgradeLatitude, belgradeLongitude);
 
-describe("moonView against JPL Horizons (Vienna, airless)", () => {
+describe("moonView against JPL Horizons (Belgrade, airless)", () => {
   for (const row of horizons) {
     it(`matches ${row.at}`, () => {
-      const moon = vienna(row.at);
+      const moon = belgrade(row.at);
       const arc = Math.hypot(
         turnGap(moon.azimuth, row.azimuth) *
           Math.cos((row.elevation * Math.PI) / 180),
@@ -109,16 +109,16 @@ describe("moonView against JPL Horizons (Vienna, airless)", () => {
 
 describe("moon phase", () => {
   it("names the phase from new through full and back", () => {
-    assert.ok(vienna("2026-01-20T22:00:00Z").phase < 0.1);
-    assert.ok(Math.abs(vienna("2026-03-25T19:00:00Z").phase - 0.25) < 0.02);
-    assert.ok(Math.abs(vienna("2026-08-28T02:00:00Z").phase - 0.5) < 0.02);
-    assert.ok(vienna("2026-06-01T21:30:00Z").phase > 0.5);
+    assert.ok(belgrade("2026-01-20T22:00:00Z").phase < 0.1);
+    assert.ok(Math.abs(belgrade("2026-03-25T19:00:00Z").phase - 0.25) < 0.02);
+    assert.ok(Math.abs(belgrade("2026-08-28T02:00:00Z").phase - 0.5) < 0.02);
+    assert.ok(belgrade("2026-06-01T21:30:00Z").phase > 0.5);
   });
 
   it("lights a waxing evening crescent toward the set sun", () => {
     const at = Date.parse("2026-01-21T17:00:00+01:00");
-    const moon = moonView(at, viennaLatitude, viennaLongitude);
-    const sun = sunPosition(at, viennaLatitude, viennaLongitude);
+    const moon = moonView(at, belgradeLatitude, belgradeLongitude);
+    const sun = sunPosition(at, belgradeLatitude, belgradeLongitude);
     assert.ok(moon.trueAltitude > 0 && sun.trueAltitude < 0);
     assert.ok(moon.phase < 0.25 && moon.fraction < 0.2);
     const limb = screenAngle(moon.brightLimb, moon.parallactic);

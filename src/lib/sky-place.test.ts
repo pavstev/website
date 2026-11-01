@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { distanceKm, roundPlace, sameSpot, vienna } from "./geo.ts";
+import { belgrade, distanceKm, roundPlace, sameSpot } from "./geo.ts";
 import {
+  belgradePlace,
   choosePlace,
   chosenPlace,
   clearPlace,
@@ -20,7 +21,6 @@ import {
   savePlace,
   type SkyPlace,
   startPlace,
-  viennaPlace,
 } from "./sky-place.ts";
 import { memoryStore, throwingStore } from "./store-fixtures.ts";
 
@@ -65,9 +65,9 @@ describe("geo", () => {
     assert.ok(Object.is(rounded.lat, 0));
     assert.ok(Object.is(rounded.lon, 0));
   });
-  it("measures Vienna to Berlin", () => {
-    const km = distanceKm(vienna, { lat: 52.52, lon: 13.405 });
-    assert.ok(km > 520 && km < 530);
+  it("measures Belgrade to Berlin", () => {
+    const km = distanceKm(belgrade, { lat: 52.52, lon: 13.405 });
+    assert.ok(km > 995 && km < 1005);
   });
 });
 
@@ -170,17 +170,17 @@ describe("storage", () => {
 });
 
 describe("start place", () => {
-  it("gives crawlers Vienna", () =>
+  it("gives crawlers Belgrade", () =>
     assert.deepEqual(
       startPlace("?place=52.5,13.4", true, storeWithBerlin()),
-      viennaPlace
+      belgradePlace
     ));
-  it("prefers ?place=, then the saved place, then Vienna", () => {
+  it("prefers ?place=, then the saved place, then Belgrade", () => {
     const store = storeWithBerlin();
     assert.equal(startPlace("?place=-33.9,-70.7", false, store).lat, -33.9);
     assert.deepEqual(startPlace("", false, store), berlin);
     assert.deepEqual(startPlace("?place=abc", false, store), berlin);
-    assert.deepEqual(startPlace("", false, memoryStore()), viennaPlace);
+    assert.deepEqual(startPlace("", false, memoryStore()), belgradePlace);
   });
 });
 
@@ -198,7 +198,7 @@ describe("choose place", () => {
     assert.deepEqual(readPlace(store), berlin);
     choosePlace(undefined, store, target);
     assert.equal(seen.length, 2);
-    assert.deepEqual(seen[1], viennaPlace);
+    assert.deepEqual(seen[1], belgradePlace);
     assert.equal(readPlace(store), undefined);
   });
 });
@@ -209,15 +209,15 @@ describe("chosen place", () => {
     choosePlace(berlin, throwingStore, target);
     assert.deepEqual(chosenPlace(), berlin);
     choosePlace(undefined, throwingStore, target);
-    assert.deepEqual(chosenPlace(), viennaPlace);
+    assert.deepEqual(chosenPlace(), belgradePlace);
   });
 });
 
 describe("isPlace", () => {
-  it("accepts a place and the Vienna place", () => {
+  it("accepts a place and the Belgrade place", () => {
     assert.equal(isPlace(berlin), true);
     assert.equal(isPlace({ ...berlin, country: "DE" }), true);
-    assert.equal(isPlace(viennaPlace), true);
+    assert.equal(isPlace(belgradePlace), true);
   });
   it("rejects junk", () => {
     for (const value of [
@@ -286,7 +286,7 @@ describe("name place", () => {
     const store = memoryStore();
     choosePlace(undefined, store, new EventTarget());
     namePlace(graz, found, store, new EventTarget());
-    assert.equal(chosenPlace()?.kind, "vienna");
+    assert.equal(chosenPlace()?.kind, "belgrade");
     assert.equal(readPlace(store), undefined);
   });
 

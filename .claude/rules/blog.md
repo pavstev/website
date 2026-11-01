@@ -26,7 +26,7 @@ Siblings: `sky.md`, `card.md`, `motion.md`. The full design is in the Blog bulle
 1. Make `content/blog/<slug>/index.mdx`. The slug is lowercase letters and digits in groups joined by single dashes, at most 80 characters. It is the URL.
 2. Frontmatter is a strict object (`src/content.config.ts`). An unknown key fails the build. Keys: `title`, `description` (at most 160 characters), `date` (required), `updated` (optional, not before `date`), `draft`, `tags` (1 to 5).
 3. Quote the dates. Unquoted, Astro turns them into a `Date` and drops the offset.
-4. Write Vienna time with its offset: `+02:00` from the last Sunday of March to the last Sunday of October, else `+01:00`. A date alone fails.
+4. Write Belgrade time with its offset: `+02:00` from the last Sunday of March to the last Sunday of October, else `+01:00`. A date alone fails.
 5. Put images next to the post. Reference them by file name: `<Figure src="sky-storm.webp" alt="..." caption="..." />`. `alt` is required and describes the real picture. A missing file fails the build.
 6. `cover.webp|png|jpg` (about 2400x1260) is the share image background. Keep a lower-left area dark, as the title is drawn there.
 7. Charts: `<Chart type="bar|line|pair" src="data/<file>.json" title="..." caption="..." />`. Write `src` as `data/<file>.json`, never `./data/...`. Chart JSON is `{ "x": [...], "series": [{ "name": "...", "values": [...] }], "unit": "ms" }`: 1 to 4 series, one value per x label, non-negative, no repeated labels. `pair` needs exactly 2 labels.
@@ -46,7 +46,7 @@ Siblings: `sky.md`, `card.md`, `motion.md`. The full design is in the Blog bulle
 
 ## Dates and listings
 
-- Use `PostDate` for every post date shown on a page (formatting in `dates.ts`). Its tip shows "12:30, Stevan's time" outside Vienna. No city name.
+- Use `PostDate` for every post date shown on a page (formatting in `dates.ts`). Its tip shows "12:30, Stevan's time" outside Belgrade. No city name.
 - Two tag spellings with one slug (`tagSlug`) fail the build. `page` and `tag` are reserved slugs. There is no `/blog/page/1`.
 - Listings are indexable, self-canonical and in the sitemap.
 

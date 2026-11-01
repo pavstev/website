@@ -12,6 +12,7 @@ export const en = {
   blog: {
     anchor: "Link to the section {heading}",
     back: "All posts",
+    belgradeTime: "{time}, Stevan's time",
     blogName: "Stevan Pavlović’s blog",
     chartColumn: "Item",
     chartData: "Show the data as a table",
@@ -69,7 +70,6 @@ export const en = {
     toc: "On this page",
     tocClose: "Close the list of sections",
     updated: "Updated",
-    viennaTime: "{time}, Stevan's time",
     zoomImage: "Open full size: {alt}",
   },
   card: {
@@ -300,6 +300,7 @@ export const en = {
     askLead: "That's Stevan's real sky right now.",
     askPlain: "Want yours instead?",
     back: "Back to Stevan's sky",
+    belgrade: "Stevan's sky",
     coordinates: "{lat}° {ns}, {lon}° {ew}",
     custom: "Custom",
     customNote: "Pick any hour and any weather. Nothing is saved.",
@@ -337,7 +338,6 @@ export const en = {
     south: "S",
     time: "Time",
     timeNowText: "Now, {time}",
-    vienna: "Stevan's sky",
     weather: {
       clear: "clear",
       cloudy: "cloudy",

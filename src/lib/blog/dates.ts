@@ -1,6 +1,6 @@
 import { en } from "../i18n.ts";
 
-export const viennaZone = "Europe/Vienna";
+export const belgradeZone = "Europe/Belgrade";
 const relativeWindowMs = 7 * 86_400_000;
 
 const minuteMs = 60_000;
@@ -51,7 +51,8 @@ export const shortDate = (iso: string, timeZone: string): string => {
   return `${parts.get("day") ?? ""} ${parts.get("month") ?? ""} ${parts.get("year") ?? ""}`;
 };
 
-export const viennaDate = (iso: string): string => shortDate(iso, viennaZone);
+export const belgradeDate = (iso: string): string =>
+  shortDate(iso, belgradeZone);
 
 const clock = (instant: Date, timeZone: string): string => {
   const parts = partsOf(
@@ -110,8 +111,8 @@ export const fullDateTime = (iso: string, timeZone: string): string => {
   return `${parts.get("weekday") ?? ""}, ${parts.get("day") ?? ""} ${parts.get("month") ?? ""} ${parts.get("year") ?? ""}, ${clock(instant, timeZone)} ${zoneName(instant, timeZone)}`;
 };
 
-export const viennaClock = (iso: string): string =>
-  clock(new Date(iso), viennaZone);
+export const belgradeClock = (iso: string): string =>
+  clock(new Date(iso), belgradeZone);
 
 const calendarDay = (instant: Date, timeZone: string): number => {
   const parts = partsOf(

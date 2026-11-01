@@ -12,7 +12,7 @@ const full = cvSchema.parse({
         area: "Computer Science",
         degree: "BSc",
         from: "2010",
-        school: "TU Wien",
+        school: "Singidunum University",
         to: "2014",
       },
     ],
@@ -70,7 +70,7 @@ describe("cvLlmsSections", () => {
       "",
       "## Education",
       "",
-      "- BSc, Computer Science at TU Wien (2010 to 2014)",
+      "- BSc, Computer Science at Singidunum University (2010 to 2014)",
       "",
       "## Projects from the résumé",
       "",
@@ -133,7 +133,7 @@ describe("cvLlmsSections", () => {
           { from: "2010", to: "2014" },
           { area: "CS", from: "2010" },
           { degree: "BSc", from: "2010" },
-          { school: "TU Wien" },
+          { school: "Singidunum University" },
         ],
       },
       experience: {
@@ -161,7 +161,7 @@ describe("cvLlmsSections", () => {
       "",
       "- CS (2010)",
       "- BSc (2010)",
-      "- TU Wien",
+      "- Singidunum University",
       "",
     ]);
   });

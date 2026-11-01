@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { vienna } from "./geo.ts";
+import { belgrade } from "./geo.ts";
 import { sunPosition } from "./sky-ephemeris.ts";
 import { moonView } from "./sky-moon.ts";
 import { paintScene, tableInput } from "./sky-paint.ts";
@@ -23,11 +23,11 @@ const views: readonly ViewSize[] = [phone, desktop];
 const { clear } = weatherPresets;
 
 const keyAltitudes: readonly number[] = [
-  -5.9, 0.95, 17, 30, 21.25, -0.3, -51.3, -53.8, -52.3,
+  -5.9, 0.95, 17, 33.4, 21.25, -0.3, -54.3, -57.2, -55.4,
 ];
 
 const sunAltitude = (chapter: number): number =>
-  sunPosition(storyInstant(chapter), vienna.lat, vienna.lon).altitude;
+  sunPosition(storyInstant(chapter), belgrade.lat, belgrade.lon).altitude;
 
 const stepIndex = (id: (typeof skyStorySteps)[number]): number =>
   skyStorySteps.indexOf(id);
@@ -86,15 +86,15 @@ describe("storyInstant", () => {
 
   it("hits each key time exactly at its read spot", () => {
     const clocks = [
-      "04:56",
-      "05:36",
-      "07:30",
-      "10:38",
-      "13:10",
-      "15:50",
-      "21:33",
-      "22:40",
-      "23:30",
+      "04:36",
+      "05:13",
+      "06:58",
+      "10:22",
+      "13:15",
+      "15:39",
+      "21:17",
+      "22:24",
+      "23:14",
     ];
     for (const [index, clock] of clocks.entries())
       assert.equal(
@@ -117,11 +117,11 @@ describe("the sun on screen", () => {
     for (const view of views)
       for (const id of ["sunrise", "morning", "midday", "weather"] as const) {
         const instant = storyInstant(stepIndex(id));
-        const spot = sunSpot(instant, view, vienna);
+        const spot = sunSpot(instant, view, belgrade);
         assert.ok(spot, `${id} has no sun at ${String(view.width)}`);
         assert.ok(spot.x > spot.radius && spot.x < view.width - spot.radius);
         assert.ok(spot.y > spot.radius && spot.y < view.height - spot.radius);
-        const scene = paintScene(instant, view, clear, vienna);
+        const scene = paintScene(instant, view, clear, belgrade);
         assert.ok(
           scene.sunUp > 0.7,
           `${id} sun is dim at ${String(view.width)}`
@@ -136,7 +136,7 @@ describe("the sun on screen", () => {
       const spot = sunSpot(
         storyInstant(stepIndex("sunset")),
         storyView(view, stepIndex("sunset")),
-        vienna
+        belgrade
       );
       assert.ok(spot, `no sun at sunset ${String(view.width)}`);
       const fromBottom = view.height - spot.y;
@@ -151,12 +151,12 @@ describe("the sun on screen", () => {
       const spot = sunSpot(
         storyInstant(chapter),
         storyView(view, chapter),
-        vienna
+        belgrade
       );
       assert.ok(spot, `no sun at sunrise ${String(view.width)}`);
       const fromBottom = view.height - spot.y;
       assert.ok(fromBottom - spot.radius > 2.5 * spot.radius);
-      const plain = sunSpot(storyInstant(chapter), view, vienna);
+      const plain = sunSpot(storyInstant(chapter), view, belgrade);
       assert.ok(plain);
       assert.ok(view.height - plain.y - plain.radius < 0.5 * plain.radius);
     }
@@ -164,7 +164,7 @@ describe("the sun on screen", () => {
 
   it("is down in the blue hour of the hero", () => {
     assert.ok(sunAltitude(0) < -4);
-    assert.equal(sunSpot(storyInstant(0), phone, vienna), undefined);
+    assert.equal(sunSpot(storyInstant(0), phone, belgrade), undefined);
   });
 });
 
@@ -173,13 +173,13 @@ describe("the moon on screen", () => {
     for (const view of views)
       for (const id of ["night", "yours"] as const) {
         const instant = storyInstant(stepIndex(id));
-        const moon = moonView(instant, vienna.lat, vienna.lon);
+        const moon = moonView(instant, belgrade.lat, belgrade.lon);
         assert.ok(moon.altitude > 40, `${id} moon is low`);
         const scene = paintScene(
           instant,
           storyView(view, stepIndex(id)),
           clear,
-          vienna
+          belgrade
         );
         const [x, y, radius, fade] = scene.moon;
         assert.equal(fade, 1, `${id} moon hidden at ${String(view.width)}`);
@@ -196,7 +196,7 @@ describe("the moon on screen", () => {
           storyInstant(chapter),
           storyView(view, chapter),
           clear,
-          vienna
+          belgrade
         ).moon;
         assert.ok(
           y - radius > 0.45 * view.height,
@@ -206,25 +206,25 @@ describe("the moon on screen", () => {
   });
 
   it("is lit nearly full on the story day", () => {
-    const moon = moonView(storyInstant(6), vienna.lat, vienna.lon);
+    const moon = moonView(storyInstant(6), belgrade.lat, belgrade.lon);
     assert.ok(moon.fraction > 0.94);
   });
 
   it("shows from the dusk and is up but off screen at sunset", () => {
-    const sunset = moonView(storyInstant(5), vienna.lat, vienna.lon);
+    const sunset = moonView(storyInstant(5), belgrade.lat, belgrade.lon);
     assert.ok(sunset.altitude > 5);
     const shown = paintScene(
       storyInstant(5),
       storyView(phone, 5),
       clear,
-      vienna
+      belgrade
     ).moon[3];
     assert.equal(shown, 0);
     const later = paintScene(
       storyInstant(5.7),
       storyView(phone, 5.7),
       clear,
-      vienna
+      belgrade
     ).moon[3];
     assert.equal(later, 1);
   });
@@ -233,7 +233,7 @@ describe("the moon on screen", () => {
 const centers = (view: ViewSize): number[] => {
   const found: number[] = [];
   for (let c = 5; c <= 6.0001; c += 0.005)
-    found.push(tableInput(storyInstant(c), view, clear, vienna).center);
+    found.push(tableInput(storyInstant(c), view, clear, belgrade).center);
   return found;
 };
 

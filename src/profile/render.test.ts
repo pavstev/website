@@ -19,7 +19,7 @@ const head = `<!-- Generated. Do not edit here. -->
 
 **Backend & Systems Engineer**
 
-Hi! I build engines in Vienna. I like small teams & clear APIs.
+Hi! I build engines in Belgrade. I like small teams & clear APIs.
 
 [Website](https://example.com) · [LinkedIn](https://www.linkedin.com/in/ada/) · [Résumé (PDF)](https://example.com/resume.pdf)
 `;

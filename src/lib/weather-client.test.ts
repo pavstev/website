@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { vienna } from "./geo.ts";
+import { belgrade } from "./geo.ts";
 import {
   loadWeather,
   samePlace,
@@ -29,7 +29,7 @@ const sampleBody = {
 
 const now = 1_800_000_000_000;
 const minute = 60_000;
-const cacheKey = "sky-weather:48.2,16.4";
+const cacheKey = "sky-weather:44.8,20.5";
 
 interface Rig {
   calls: () => number;
@@ -74,14 +74,14 @@ const entry = (age: number): string =>
 describe("weather client", () => {
   it("builds the request", () =>
     assert.equal(
-      weatherUrl(vienna),
-      "https://api.open-meteo.com/v1/forecast?latitude=48.2&longitude=16.4&current=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,wind_speed_10m,wind_direction_10m,visibility,relative_humidity_2m,precipitation&timezone=auto"
+      weatherUrl(belgrade),
+      "https://api.open-meteo.com/v1/forecast?latitude=44.8&longitude=20.5&current=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,wind_speed_10m,wind_direction_10m,visibility,relative_humidity_2m,precipitation&timezone=auto"
     ));
 
   it("uses a cache entry younger than 15 minutes", async () => {
     const r = rig();
     r.items.set(cacheKey, entry(14 * minute));
-    const report = await loadWeather(vienna, r.deps);
+    const report = await loadWeather(belgrade, r.deps);
     assert.ok(report);
     assert.equal(r.calls(), 0);
   });
@@ -89,7 +89,7 @@ describe("weather client", () => {
   it("asks again after 15 minutes", async () => {
     const r = rig();
     r.items.set(cacheKey, entry(16 * minute));
-    const report = await loadWeather(vienna, r.deps);
+    const report = await loadWeather(belgrade, r.deps);
     assert.ok(report);
     assert.equal(r.calls(), 1);
     assert.equal(r.items.get(cacheKey), entry(0));
@@ -98,15 +98,15 @@ describe("weather client", () => {
   it("ignores a junk cache entry", async () => {
     const r = rig();
     r.items.set(cacheKey, "{not json");
-    assert.ok(await loadWeather(vienna, r.deps));
+    assert.ok(await loadWeather(belgrade, r.deps));
     r.items.set(cacheKey, JSON.stringify({ at: "x", body: 4 }));
-    assert.ok(await loadWeather(vienna, r.deps));
+    assert.ok(await loadWeather(belgrade, r.deps));
     assert.equal(r.calls(), 2);
   });
 
   it("survives a throwing store", async () => {
     const r = rig();
-    const report = await loadWeather(vienna, {
+    const report = await loadWeather(belgrade, {
       ...r.deps,
       store: { getItem: boom, setItem: boom },
     });
@@ -116,19 +116,19 @@ describe("weather client", () => {
 
   it("works without a store", async () => {
     const r = rig();
-    assert.ok(await loadWeather(vienna, { ...r.deps, store: undefined }));
+    assert.ok(await loadWeather(belgrade, { ...r.deps, store: undefined }));
   });
 
   it("shares one request per place", async () => {
     const r = rig();
     const [a, b] = await Promise.all([
-      loadWeather(vienna, r.deps),
-      loadWeather({ lat: 48.21, lon: 16.37 }, r.deps),
+      loadWeather(belgrade, r.deps),
+      loadWeather({ lat: 44.81, lon: 20.46 }, r.deps),
     ]);
     assert.equal(r.calls(), 1);
     assert.ok(a);
     assert.deepEqual(a, b);
-    await loadWeather(vienna, { ...r.deps, store: undefined });
+    await loadWeather(belgrade, { ...r.deps, store: undefined });
     assert.equal(r.calls(), 2);
   });
 
@@ -136,17 +136,17 @@ describe("weather client", () => {
     const limited = rig(() =>
       Promise.resolve(new Response("slow down", { status: 429 }))
     );
-    assert.equal(await loadWeather(vienna, limited.deps), undefined);
+    assert.equal(await loadWeather(belgrade, limited.deps), undefined);
     assert.equal(limited.items.size, 0);
 
     const page = rig(() =>
       Promise.resolve(new Response("<html>oops</html>", { status: 200 }))
     );
-    assert.equal(await loadWeather(vienna, page.deps), undefined);
+    assert.equal(await loadWeather(belgrade, page.deps), undefined);
     assert.equal(page.items.size, 0);
 
     const down = rig(() => Promise.reject(new Error("offline")));
-    assert.equal(await loadWeather(vienna, down.deps), undefined);
+    assert.equal(await loadWeather(belgrade, down.deps), undefined);
     assert.equal(down.items.size, 0);
 
     const slow: Rig = rig(undefined, 20);
@@ -159,13 +159,13 @@ describe("weather client", () => {
           });
         }),
     };
-    assert.equal(await loadWeather(vienna, waiting), undefined);
+    assert.equal(await loadWeather(belgrade, waiting), undefined);
     assert.equal(slow.items.size, 0);
   });
 
   it("knows the same place", () => {
-    assert.equal(samePlace(vienna, { lat: 48.21, lon: 16.37 }), true);
-    assert.equal(samePlace(vienna, { lat: 52.52, lon: 13.4 }), false);
+    assert.equal(samePlace(belgrade, { lat: 44.81, lon: 20.46 }), true);
+    assert.equal(samePlace(belgrade, { lat: 52.52, lon: 13.4 }), false);
   });
 
   it("lets only live visitors ask", () => {

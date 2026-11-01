@@ -31,6 +31,7 @@ import {
 } from "@/lib/sky-ask";
 import { placeZone } from "@/lib/sky-clock";
 import {
+  belgradePlace,
   choosePlace,
   chosenPlace,
   coordinateLabel,
@@ -41,7 +42,6 @@ import {
   placeNamedEvent,
   type SkyPlace,
   startPlace,
-  viennaPlace,
 } from "@/lib/sky-place";
 import {
   clockLabel,
@@ -149,11 +149,11 @@ const snapshot = (): string =>
     chosenPlace() ?? startPlace(location.search, isCrawler(navigator.userAgent))
   );
 
-const serverSnapshot = (): string => JSON.stringify(viennaPlace);
+const serverSnapshot = (): string => JSON.stringify(belgradePlace);
 
 const placeOf = (raw: string): SkyPlace => {
   const data: unknown = JSON.parse(raw);
-  return isPlace(data) ? data : viennaPlace;
+  return isPlace(data) ? data : belgradePlace;
 };
 
 let earlierMine: SkyPlace | undefined;

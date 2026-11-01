@@ -25,7 +25,7 @@ import { hourMarks, weatherStops } from "./sky-range.ts";
 import { instantOverride } from "./sky-sun.ts";
 import { mixWeather, weatherNameOverride, weatherPresets } from "./weather.ts";
 
-const vienna = "Europe/Vienna";
+const belgrade = "Europe/Belgrade";
 const noon = Date.parse("2026-10-20T12:00:00+02:00");
 
 describe("time steps", () => {
@@ -49,8 +49,8 @@ describe("time steps", () => {
 
 describe("resolveInstant", () => {
   it("uses the base when nothing is previewed", () => {
-    assert.equal(resolveInstant(undefined, undefined, noon, vienna), noon);
-    assert.equal(resolveInstant(undefined, 5, noon, vienna), 5);
+    assert.equal(resolveInstant(undefined, undefined, noon, belgrade), noon);
+    assert.equal(resolveInstant(undefined, 5, noon, belgrade), 5);
   });
 
   it("puts a previewed time on the day of the base, in the place zone", () => {
@@ -61,7 +61,7 @@ describe("resolveInstant", () => {
       [1440, "2026-10-21T00:00:00+02:00"],
     ] as const) {
       assert.equal(
-        resolveInstant(minutes, undefined, noon, vienna),
+        resolveInstant(minutes, undefined, noon, belgrade),
         Date.parse(expected),
         String(minutes)
       );
@@ -70,9 +70,9 @@ describe("resolveInstant", () => {
 
   it("starts from ?at= and moves the time on its day", () => {
     const pinned = Date.parse("2026-03-01T09:00:00+01:00");
-    assert.equal(resolveInstant(undefined, pinned, noon, vienna), pinned);
+    assert.equal(resolveInstant(undefined, pinned, noon, belgrade), pinned);
     assert.equal(
-      resolveInstant(840, pinned, noon, vienna),
+      resolveInstant(840, pinned, noon, belgrade),
       Date.parse("2026-03-01T14:00:00+01:00")
     );
   });
@@ -80,8 +80,8 @@ describe("resolveInstant", () => {
   it("follows the zone offset on the day the clocks change", () => {
     const base = Date.parse("2026-10-25T12:00:00+01:00");
     for (const [minutes, zone, expected] of [
-      [180, vienna, "2026-10-25T03:00:00+01:00"],
-      [60, vienna, "2026-10-25T01:00:00+02:00"],
+      [180, belgrade, "2026-10-25T03:00:00+01:00"],
+      [60, belgrade, "2026-10-25T01:00:00+02:00"],
       [780, "America/New_York", "2026-10-25T13:00:00-04:00"],
     ] as const) {
       assert.equal(
@@ -95,19 +95,19 @@ describe("resolveInstant", () => {
 
 describe("shownTime", () => {
   it("shows now for no preview", () => {
-    assert.deepEqual(shownTime(undefined, undefined, noon, vienna), {
+    assert.deepEqual(shownTime(undefined, undefined, noon, belgrade), {
       live: true,
       minutes: 720,
     });
   });
 
   it("shows the chosen time or the ?at= start", () => {
-    assert.deepEqual(shownTime(870, undefined, noon, vienna), {
+    assert.deepEqual(shownTime(870, undefined, noon, belgrade), {
       live: false,
       minutes: 870,
     });
     const pinned = Date.parse("2026-03-01T09:15:00+01:00");
-    assert.deepEqual(shownTime(undefined, pinned, noon, vienna), {
+    assert.deepEqual(shownTime(undefined, pinned, noon, belgrade), {
       live: false,
       minutes: 555,
     });
@@ -257,12 +257,15 @@ describe("knob changes", () => {
     const target = new EventTarget();
     resetPreview(target);
     const pinned = instantOverride("?at=2026-03-01T09:00:00%2B01:00");
-    assert.deepEqual(shownTime(previewState().time, undefined, noon, vienna), {
-      live: true,
-      minutes: 720,
-    });
+    assert.deepEqual(
+      shownTime(previewState().time, undefined, noon, belgrade),
+      {
+        live: true,
+        minutes: 720,
+      }
+    );
     setPreviewTime(840, target);
-    assert.deepEqual(shownTime(previewState().time, pinned, noon, vienna), {
+    assert.deepEqual(shownTime(previewState().time, pinned, noon, belgrade), {
       live: false,
       minutes: 840,
     });
@@ -270,7 +273,7 @@ describe("knob changes", () => {
 
   it("starts the time slider at ?at= in the place zone", () => {
     const pinned = instantOverride("?at=2026-03-01T09:15:00%2B01:00");
-    assert.deepEqual(shownTime(undefined, pinned, noon, vienna), {
+    assert.deepEqual(shownTime(undefined, pinned, noon, belgrade), {
       live: false,
       minutes: 555,
     });

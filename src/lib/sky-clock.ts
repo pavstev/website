@@ -1,4 +1,4 @@
-import { viennaZone } from "./blog/dates.ts";
+import { belgradeZone } from "./blog/dates.ts";
 import { type LatLon, roundPlace } from "./geo.ts";
 
 const minuteMs = 60_000;
@@ -102,7 +102,7 @@ export const zoneFor = (
   browser: string,
   instant: number
 ): string => {
-  if (place.kind === "vienna") return viennaZone;
+  if (place.kind === "belgrade") return belgradeZone;
   if (known) return known;
   const hours = Math.round(place.lon / 15);
   const near = Math.abs(hours - offsetMs(instant, browser) / hourMs) <= 1;

@@ -23,7 +23,7 @@ describe("storyMetadata", () => {
   it("has the branded title and no city name", () => {
     assert.equal(metadata.title, "How my dotfiles work · Stevan Pavlović");
     const text = JSON.stringify(metadata);
-    assert.doesNotMatch(text, /vienna|wien/i);
+    assert.doesNotMatch(text, /belgrade|beograd/i);
   });
 
   it("keeps the description short enough for a snippet", () => {
@@ -77,7 +77,7 @@ describe("skyStoryMetadata", () => {
     assert.equal(metadata.title, "A real sky, painted · Stevan Pavlović");
     assert.ok(metadata.description.length >= 70);
     assert.ok(metadata.description.length <= 160);
-    assert.doesNotMatch(JSON.stringify(metadata), /vienna|wien/i);
+    assert.doesNotMatch(JSON.stringify(metadata), /belgrade|beograd/i);
   });
 
   it("uses its own share image", () => {
@@ -113,7 +113,7 @@ describe("the sky story graph", () => {
     const text = JSON.stringify(graph);
     assert.match(text, /"name":"website"/u);
     assert.match(text, /\/work\/website/u);
-    assert.doesNotMatch(text, /vienna|wien/iu);
+    assert.doesNotMatch(text, /belgrade|beograd/iu);
   });
 });
 

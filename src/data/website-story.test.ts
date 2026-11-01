@@ -23,7 +23,7 @@ describe("skyStoryCopy", () => {
     }
   });
   it("names no city anywhere", () => {
-    assert.doesNotMatch(JSON.stringify(skyStoryCopy), /vienna|wien/iu);
+    assert.doesNotMatch(JSON.stringify(skyStoryCopy), /belgrade|beograd/iu);
   });
   it("says the place is rounded before anything sees it", () => {
     const yours = skyStoryCopy.find((item) => item.id === "yours");
@@ -43,7 +43,7 @@ describe("clockOf", () => {
     hour: "2-digit",
     hourCycle: "h23",
     minute: "2-digit",
-    timeZone: "Europe/Vienna",
+    timeZone: "Europe/Belgrade",
   });
 
   it("prints the wall clock of the painted instant", () => {

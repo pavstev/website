@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { aboutFacts, aboutRoad, yearsOfCode } from "./about.ts";
 import { getCv } from "./cv.ts";
 
-const cities = /vienna|belgrade|wien|beograd/iu;
+const cities = /belgrade|beograd/iu;
 
 const emDash = String.fromCodePoint(0x20_14);
 const enDash = String.fromCodePoint(0x20_13);

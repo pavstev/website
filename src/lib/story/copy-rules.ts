@@ -45,7 +45,7 @@ const noteWordsMax = 45;
 
 const bannedPattern =
   /\b(?:seamless|robust|leverage|empower|effortless|elevate|journey|delve|unlock|crafted|curated|meticulously|beautifully|cutting-edge|game-changer)\b/giu;
-const cityPattern = /\b(?:vienna|wien)\b/iu;
+const cityPattern = /\b(?:belgrade|beograd)\b/iu;
 const digitPattern = /\d[\d,.]*/gu;
 const trailingPunctuation = /[.,]+$/u;
 const wordPattern = /[A-Za-z]+/gu;

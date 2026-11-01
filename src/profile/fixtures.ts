@@ -4,7 +4,8 @@ export const fixture: ProfileInput = {
   personal: {
     linkedin: "https://www.linkedin.com/in/ada/",
     name: "Ada Example",
-    summary: "Hi! I build engines in Vienna. I like small teams & clear APIs.",
+    summary:
+      "Hi! I build engines in Belgrade. I like small teams & clear APIs.",
     title: "Backend & Systems Engineer",
     website: "https://example.com",
   },

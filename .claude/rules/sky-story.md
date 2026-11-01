@@ -37,13 +37,13 @@ Siblings: `sky.md` (the engine), `story.md` (the dotfiles story, a different loo
 ## Data and contract
 
 - Copy: `src/data/website-story.ts` (`skyStorySlides`, `skyStoryMeta.updatedAt`). Move `updatedAt` on every copy edit: it is the sitemap `lastmod` and the `WebPage` `dateModified`.
-- The eyebrow is the clock of `storyInstant(i)` in `Europe/Vienna`; the outro shows "Now" only. The outro li is `#sky-story-end` (skip link target).
+- The eyebrow is the clock of `storyInstant(i)` in `Europe/Belgrade`; the outro shows "Now" only. The outro li is `#sky-story-end` (skip link target).
 - The chapter `c` is a float from 0 to 8; step `i` sits at its read spot when `c === i`. `sky-story-scroll.ts` writes `c` with `setStoryChapter` from a passive scroll listener and one rAF. It writes no style or attribute per frame. Under `stillQuery()` `c` snaps to the nearest step.
 - `storyInstant(c)` and `storyWeather(c)` use smootherstep between keys and Hermite dusk waypoints, so the view pans from the sun to the moon without a jump.
 
 ## Engine (story mode)
 
-- `routeMode` and `linkMode` return `story` for `websiteStory`, before the `[data-blog]` marker. Place is always `viennaPlace`. No live weather, no place bubble, no sentinel hold.
+- `routeMode` and `linkMode` return `story` for `websiteStory`, before the `[data-blog]` marker. Place is always `belgradePlace`. No live weather, no place bubble, no sentinel hold.
 - Tables: `safeSkyTable` costs 2 to 3 ms (about 10 ms on a slow phone), too slow per frame. `sky-story-grid.ts` builds 97 tables on idle and `mixSkyTable` blends the two nearest; after 180 ms at rest the exact table is built. When the grid has no table near the chapter, the exact table is queued on idle at once. The grid resets on a width change or a height change over 15%.
 - Ink: `storyInkTargets` (eyebrow 4.5, line 3, note 4.5 per step, group `step-<i>`) plus `postInkTargets`. The page passes `header={false}`, so the header targets find nothing and are skipped; a 0 x 0 box is skipped too. `BarSpy` reads the hero h1 for the bar glass.
 - The sky shot runs only between blog pages and the story. Home and story swap at once.

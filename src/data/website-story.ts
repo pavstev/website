@@ -1,4 +1,4 @@
-import { viennaZone } from "../lib/blog/dates.ts";
+import { belgradeZone } from "../lib/blog/dates.ts";
 import { wallMinutes } from "../lib/sky-clock.ts";
 import { type SkyStoryStep, storyInstant } from "../lib/sky-story.ts";
 
@@ -92,7 +92,7 @@ export const skyStoryCopy: readonly SkyStoryCopy[] = [
 ];
 
 export const clockOf = (index: number): string => {
-  const minutes = wallMinutes(storyInstant(index), viennaZone);
+  const minutes = wallMinutes(storyInstant(index), belgradeZone);
   const hours = String(Math.floor(minutes / 60)).padStart(2, "0");
   return `${hours}:${String(minutes % 60).padStart(2, "0")}`;
 };

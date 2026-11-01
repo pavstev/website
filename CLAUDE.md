@@ -23,7 +23,7 @@ Path rules in `.claude/rules/` load when you touch matching files. Long notes: `
 - LinkedIn stays manual. No API edits a personal profile. Never offer to fill it through the browser. The cover image from `images.yml` is uploaded by hand.
 - `pavstev/pavstev` is a generated mirror (`profile.yml`, `src/profile/`). Change the source here, never the mirror.
 - Open-Meteo is CC BY 4.0. The "Weather: Open-Meteo" credit stays visible in the home footer. Only the home reads live weather.
-- Vienna is the default place, but no page text, meta tag, OG tag, JSON-LD node or `llms.txt` names a city. Only the résumé does. Code names such as `vienna` and `Europe/Vienna` stay.
+- Belgrade is the default place (owner ruling 2026-11-01: he lives in Belgrade), but no page text, meta tag, OG tag, JSON-LD node or `llms.txt` names a city. Only the résumé does. Vienna stays only as a city in the world places table and its tests.
 - Never touch the Cloudflare account "Alpha.therapybg": no dashboard, no wrangler, no API, no MCP. Ask which account to use.
 
 ## Commands

@@ -26,7 +26,7 @@ import {
   spaceBand,
   tableInput,
 } from "../src/lib/sky-paint.ts";
-import { viennaPlace } from "../src/lib/sky-place.ts";
+import { belgradePlace } from "../src/lib/sky-place.ts";
 import { meteorStart, rayView } from "../src/lib/sky-rays.ts";
 import { skyVertexShader } from "../src/lib/sky-shader.ts";
 import {
@@ -434,11 +434,11 @@ const skyOf = (
   const view = storyView(flat, spec.chapter);
   const instant = storyInstant(spec.chapter);
   const weather = storyWeather(spec.chapter);
-  const table = safeSkyTable(tableInput(instant, view, weather, viennaPlace));
+  const table = safeSkyTable(tableInput(instant, view, weather, belgradePlace));
   if (!table) throw new Error("The sky light table failed");
   return {
     lut: { cols: lutCols, pixels: [...table.pixels], rows: lutRows },
-    scene: paintScene(instant, view, weather, viennaPlace, table),
+    scene: paintScene(instant, view, weather, belgradePlace, table),
   };
 };
 

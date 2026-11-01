@@ -56,11 +56,11 @@ import {
 } from "@/lib/sky-paint";
 import { paintCloudShader, paintSkyShader } from "@/lib/sky-paint-shader";
 import {
+  belgradePlace,
   isPlace,
   placeEvent,
   type SkyPlace,
   startPlace,
-  viennaPlace,
 } from "@/lib/sky-place";
 import { type SkyMode } from "@/lib/sky-preset";
 import {
@@ -366,7 +366,7 @@ const startSky = (
     return mode === "story" ? "story" : "home";
   };
   const skyPlace = (): SkyPlace =>
-    skyKind() === "story" ? viennaPlace : place;
+    skyKind() === "story" ? belgradePlace : place;
   const goalWeather = (): SkyWeather =>
     skyKind() === "story"
       ? storyWeather(storyChapter())
@@ -643,7 +643,7 @@ const startSky = (
     const weather = storyWeather(at);
     const instantAt = storyInstant(at);
     const built = safeSkyTable(
-      tableInput(instantAt, storyView(gridView, at), weather, viennaPlace)
+      tableInput(instantAt, storyView(gridView, at), weather, belgradePlace)
     );
     if (built) grid.put(index, built);
     else grid.skip(index);
@@ -746,7 +746,7 @@ const startSky = (
     switchTableTo("story");
     const at = storyInstant(storyChapter());
     const built = safeSkyTable(
-      tableInput(at, sceneView(), weatherShown, viennaPlace)
+      tableInput(at, sceneView(), weatherShown, belgradePlace)
     );
     if (!built) return;
     table = built;

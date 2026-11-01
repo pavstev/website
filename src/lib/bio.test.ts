@@ -5,8 +5,8 @@ import { splitBio, splitCompounds } from "./bio.ts";
 
 describe("splitBio", () => {
   it("cuts the summary around each term in reading order", () => {
-    const parts = splitBio("I build fintech and fleet logistics in Vienna.", [
-      { word: "Vienna" },
+    const parts = splitBio("I build fintech and fleet logistics in Belgrade.", [
+      { word: "Belgrade" },
       { word: "fintech" },
       { word: "fleet logistics" },
     ]);
@@ -16,14 +16,14 @@ describe("splitBio", () => {
       { text: " and " },
       { tail: "", term: { word: "fleet logistics" } },
       { text: " in " },
-      { tail: ".", term: { word: "Vienna" } },
+      { tail: ".", term: { word: "Belgrade" } },
     ]);
   });
 
   it("marks only the first match of a term", () => {
-    assert.deepEqual(splitBio("Vienna, Vienna", [{ word: "Vienna" }]), [
-      { tail: ",", term: { word: "Vienna" } },
-      { text: " Vienna" },
+    assert.deepEqual(splitBio("Belgrade, Belgrade", [{ word: "Belgrade" }]), [
+      { tail: ",", term: { word: "Belgrade" } },
+      { text: " Belgrade" },
     ]);
   });
 

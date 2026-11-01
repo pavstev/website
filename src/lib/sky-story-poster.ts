@@ -1,7 +1,7 @@
 import { clamp01 } from "./math.ts";
 import { safeSkyTable } from "./sky-light.ts";
 import { paintScene, type Rgb, tableInput } from "./sky-paint.ts";
-import { viennaPlace } from "./sky-place.ts";
+import { belgradePlace } from "./sky-place.ts";
 import { storyInstant, storyWeather } from "./sky-story.ts";
 
 export interface StoryPoster {
@@ -34,9 +34,9 @@ export const posterAt = (index: number): StoryPoster => {
   const instant = storyInstant(index);
   const weather = storyWeather(index);
   const table = safeSkyTable(
-    tableInput(instant, posterView, weather, viennaPlace)
+    tableInput(instant, posterView, weather, belgradePlace)
   );
-  const scene = paintScene(instant, posterView, weather, viennaPlace, table);
+  const scene = paintScene(instant, posterView, weather, belgradePlace, table);
   return {
     bright: (lightness(scene.mid) + lightness(scene.low)) / 2 > darkInkFrom,
     low: hexOf(scene.low),

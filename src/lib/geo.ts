@@ -5,7 +5,7 @@ export interface LatLon {
   lon: number;
 }
 
-export const vienna: Readonly<LatLon> = { lat: 48.2082, lon: 16.3738 };
+export const belgrade: Readonly<LatLon> = { lat: 44.8125, lon: 20.4612 };
 
 const earthRadiusKm = 6371;
 

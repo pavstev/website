@@ -1,4 +1,9 @@
-import { distanceKm, type LatLon, roundPlace, vienna } from "../src/lib/geo.ts";
+import {
+  belgrade,
+  distanceKm,
+  type LatLon,
+  roundPlace,
+} from "../src/lib/geo.ts";
 import { failure, withSecurityHeaders } from "./http.ts";
 
 export const wherePath = "/where";
@@ -49,7 +54,7 @@ export const whereAnswer = (cf: undefined | WhereCf): WhereAnswer => {
 
   return {
     city,
-    far: distanceKm(spot, vienna) > farKm,
+    far: distanceKm(spot, belgrade) > farKm,
     lat: spot.lat,
     lon: spot.lon,
   };

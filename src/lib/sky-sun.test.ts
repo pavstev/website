@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { vienna } from "./geo.ts";
+import { belgrade } from "./geo.ts";
 import { crawlerInstant, instantOverride, sunSpot } from "./sky-sun.ts";
 
 const laptop = {
@@ -26,7 +26,7 @@ describe("sunSpot", () => {
     const spot = sunSpot(
       Date.parse("2026-10-14T13:00:00+02:00"),
       laptop,
-      vienna
+      belgrade
     );
     assert.ok(spot);
     assert.ok(spot.x > laptop.card.right && spot.x < laptop.width);
@@ -36,15 +36,15 @@ describe("sunSpot", () => {
 
   it("has no sun at night or for crawlers", () => {
     assert.equal(
-      sunSpot(Date.parse("2026-10-14T23:30:00+02:00"), laptop, vienna),
+      sunSpot(Date.parse("2026-10-14T23:30:00+02:00"), laptop, belgrade),
       undefined
     );
-    assert.equal(sunSpot(crawlerInstant, laptop, vienna), undefined);
+    assert.equal(sunSpot(crawlerInstant, laptop, belgrade), undefined);
   });
 
   it("puts the sun where the place sees it", () => {
     const noon = Date.parse("2026-10-19T12:00:00+02:00");
-    assert.ok(sunSpot(noon, laptop, vienna));
+    assert.ok(sunSpot(noon, laptop, belgrade));
     assert.equal(sunSpot(noon, laptop, { lat: -33.9, lon: 151.2 }), undefined);
   });
 });

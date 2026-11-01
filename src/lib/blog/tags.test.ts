@@ -10,7 +10,7 @@ describe("tagSlug", () => {
     assert.equal(tagSlug("Next.js"), "next-js");
     assert.equal(tagSlug("AI"), "ai");
     assert.equal(tagSlug("  Web  GL!! "), "web-gl");
-    assert.equal(tagSlug("Café Wien"), "cafe-wien");
+    assert.equal(tagSlug("Café Beograd"), "cafe-beograd");
   });
 
   it("builds the tag page path", () => {

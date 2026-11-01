@@ -14,39 +14,39 @@ const visitor = (
 } => ({ kind: "visitor", lat, lon });
 
 describe("zoneFor", () => {
-  it("keeps the Vienna zone for Stevan's sky", () => {
+  it("keeps the Belgrade zone for Stevan's sky", () => {
     assert.equal(
       zoneFor(
-        { kind: "vienna", lat: 48.2, lon: 16.4 },
+        { kind: "belgrade", lat: 48.2, lon: 16.4 },
         "Asia/Tokyo",
         "UTC",
         at
       ),
-      "Europe/Vienna"
+      "Europe/Belgrade"
     );
   });
 
   it("uses the zone the weather answer reported", () => {
     assert.equal(
-      zoneFor(visitor(36.9, 80.8), "Asia/Urumqi", "Europe/Vienna", at),
+      zoneFor(visitor(36.9, 80.8), "Asia/Urumqi", "Europe/Belgrade", at),
       "Asia/Urumqi"
     );
   });
 
   it("keeps the browser zone for a place near the visitor", () => {
     assert.equal(
-      zoneFor(visitor(52.5, 13.4), undefined, "Europe/Vienna", at),
-      "Europe/Vienna"
+      zoneFor(visitor(52.5, 13.4), undefined, "Europe/Belgrade", at),
+      "Europe/Belgrade"
     );
   });
 
   it("falls back to the longitude hour for a far place", () => {
     assert.equal(
-      zoneFor(visitor(36.9, 80.8), undefined, "Europe/Vienna", at),
+      zoneFor(visitor(36.9, 80.8), undefined, "Europe/Belgrade", at),
       "Etc/GMT-5"
     );
     assert.equal(
-      zoneFor(visitor(40.7, -74), undefined, "Europe/Vienna", at),
+      zoneFor(visitor(40.7, -74), undefined, "Europe/Belgrade", at),
       "Etc/GMT+5"
     );
     assert.equal(
@@ -56,7 +56,7 @@ describe("zoneFor", () => {
   });
 
   it("gives a far place its own wall clock", () => {
-    const zone = zoneFor(visitor(36.9, 80.8), undefined, "Europe/Vienna", at);
+    const zone = zoneFor(visitor(36.9, 80.8), undefined, "Europe/Belgrade", at);
     assert.equal(wallMinutes(at, zone), 1 * 60 + 41);
   });
 });

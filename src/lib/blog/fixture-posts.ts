@@ -117,8 +117,8 @@ const words = [
 const lengths = [300, 450, 600, 800, 1000, 1300, 1600, 2000, 2500] as const;
 const startMs = Date.UTC(2023, 0, 1);
 const spanMs = Date.UTC(2025, 11, 31) - startMs;
-const viennaOffset = new Intl.DateTimeFormat("en", {
-  timeZone: "Europe/Vienna",
+const belgradeOffset = new Intl.DateTimeFormat("en", {
+  timeZone: "Europe/Belgrade",
   timeZoneName: "longOffset",
 });
 
@@ -140,9 +140,9 @@ const pick = <T>(next: () => number, list: readonly T[]): T => {
 
 const pad = (value: number): string => String(value).padStart(2, "0");
 
-const viennaIso = (ms: number): string => {
+const belgradeIso = (ms: number): string => {
   const name =
-    viennaOffset
+    belgradeOffset
       .formatToParts(new Date(ms))
       .find((part) => part.type === "timeZoneName")?.value ?? "";
   const offset = name === "GMT" ? "+00:00" : name.replace("GMT", "");
@@ -223,7 +223,7 @@ const fixturePost = (index: number): FixturePost => {
     .toSorted((a, b) => a.order - b.order)
     .slice(0, 2 + Math.floor(next() * 3))
     .map((entry) => entry.tag);
-  const date = viennaIso(startMs + Math.floor(next() * spanMs));
+  const date = belgradeIso(startMs + Math.floor(next() * spanMs));
   const image = index % 6 === 0 ? pick(next, images) : undefined;
   const cover = pick(next, covers);
   const withCode = index % 4 === 1;

@@ -85,7 +85,7 @@ describe("lintCopy", () => {
   });
   it("flags a city name", () => {
     assert.match(
-      lint({ note: "I built it in Vienna. It is plain." })[0] ?? "",
+      lint({ note: "I built it in Belgrade. It is plain." })[0] ?? "",
       /city name/u
     );
   });
@@ -106,7 +106,7 @@ describe("lintCopy", () => {
   });
   it("still checks every other rule when numbers are allowed", () => {
     const messages = lintCopy(
-      { ...base, note: "Why 40 colors? It is in Vienna." },
+      { ...base, note: "Why 40 colors? It is in Belgrade." },
       { numbers: true }
     );
     assert.equal(messages.length, 2);

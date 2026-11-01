@@ -1,4 +1,4 @@
-import { type LatLon, roundPlace, sameSpot, vienna } from "./geo.ts";
+import { belgrade, type LatLon, roundPlace, sameSpot } from "./geo.ts";
 import { en } from "./i18n.ts";
 import { countryName, type PlaceName } from "./place-name.ts";
 import { fillText } from "./template.ts";
@@ -11,7 +11,7 @@ export interface SkyPlace extends LatLon {
   label: string;
 }
 
-type PlaceKind = "vienna" | "visitor";
+type PlaceKind = "belgrade" | "visitor";
 
 export const placeKey = "sky-place";
 
@@ -21,10 +21,10 @@ export const placeNamedEvent = "sky:place-named";
 
 const maxLabel = 80;
 
-export const viennaPlace: Readonly<SkyPlace> = {
-  kind: "vienna",
-  label: en.sky.vienna,
-  ...vienna,
+export const belgradePlace: Readonly<SkyPlace> = {
+  kind: "belgrade",
+  label: en.sky.belgrade,
+  ...belgrade,
 };
 
 export const defaultStore = (): PlaceStore | undefined => {
@@ -55,7 +55,7 @@ export const isPlace = (value: unknown): value is SkyPlace => {
   }
   const { country, kind, label, lat, lon } = value as Record<string, unknown>;
   return (
-    (kind === "vienna" || kind === "visitor") &&
+    (kind === "belgrade" || kind === "visitor") &&
     (country === undefined || isCountry(country)) &&
     isLabel(label) &&
     inRange(lat, 90) &&
@@ -150,8 +150,8 @@ export const startPlace = (
   store: PlaceStore | undefined = defaultStore()
 ): SkyPlace =>
   crawler
-    ? viennaPlace
-    : (placeOverride(search) ?? readPlace(store) ?? viennaPlace);
+    ? belgradePlace
+    : (placeOverride(search) ?? readPlace(store) ?? belgradePlace);
 
 let chosen: SkyPlace | undefined;
 
@@ -167,7 +167,7 @@ export const choosePlace = (
   } else {
     clearPlace(store);
   }
-  chosen = place ?? viennaPlace;
+  chosen = place ?? belgradePlace;
   target.dispatchEvent(
     new CustomEvent<SkyPlace>(placeEvent, { detail: chosen })
   );

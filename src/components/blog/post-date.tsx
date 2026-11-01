@@ -8,11 +8,11 @@ import {
 
 import { Tooltip } from "@/components/ui/tooltip";
 import {
+  belgradeClock,
+  belgradeDate,
+  belgradeZone,
   dateLabel,
   fullDateTime,
-  viennaClock,
-  viennaDate,
-  viennaZone,
 } from "@/lib/blog/dates";
 import { en } from "@/lib/i18n";
 
@@ -63,24 +63,24 @@ const subscribeNever = (): (() => void) => unsubscribeNever;
 const readerZone = (): string =>
   new Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-const viennaLine = (iso: string): string =>
-  en.blog.viennaTime.replace("{time}", () => viennaClock(iso));
+const belgradeLine = (iso: string): string =>
+  en.blog.belgradeTime.replace("{time}", () => belgradeClock(iso));
 
 const tipLines = (iso: string, zone: string): string =>
-  zone === viennaZone
+  zone === belgradeZone
     ? fullDateTime(iso, zone)
-    : `${fullDateTime(iso, zone)}\n${viennaLine(iso)}`;
+    : `${fullDateTime(iso, zone)}\n${belgradeLine(iso)}`;
 
 export const PostDate = ({ iso }: PostDateProps): ReactElement => {
   const label = useSyncExternalStore(
     subscribeClock,
     () => dateLabel(iso, new Date(clockNow), readerZone()),
-    () => viennaDate(iso)
+    () => belgradeDate(iso)
   );
   const tip = useSyncExternalStore(
     subscribeNever,
     () => tipLines(iso, readerZone()),
-    () => tipLines(iso, viennaZone)
+    () => tipLines(iso, belgradeZone)
   );
   const [pinned, setPinned] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);

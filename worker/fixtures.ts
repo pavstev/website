@@ -3,7 +3,7 @@ import { cvSchema } from "../src/lib/cv-schema.ts";
 export const cv = cvSchema.parse({
   basics: {
     headline: "Backend engineer",
-    location: "Vienna, Austria",
+    location: "Belgrade, Serbia",
     name: "Ada Example",
   },
   experience: {

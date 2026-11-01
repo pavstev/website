@@ -235,7 +235,7 @@ describe("createMcpServer", () => {
 
     assert.match(text, /Ada Example/);
     assert.match(text, /Backend engineer/);
-    assert.match(text, /Vienna, Austria/);
+    assert.match(text, /Belgrade, Serbia/);
     assert.match(text, /Builds systems people rely on\./);
     assert.match(text, /Website: https:\/\/ada\.example\//);
     assert.match(text, /GitHub: https:\/\/github\.com\/ada/);

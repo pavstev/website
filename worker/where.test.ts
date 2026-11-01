@@ -16,10 +16,9 @@ describe("whereAnswer", () => {
       }),
       { city: "Berlin", far: true, lat: 52.5, lon: 13.4 }
     ));
-  it("answers a Vienna suburb as near", () =>
+  it("answers a Belgrade suburb as near", () =>
     assert.equal(
-      whereAnswer({ city: "Schwechat", latitude: "48.14", longitude: "16.48" })
-        .far,
+      whereAnswer({ city: "Zemun", latitude: "44.84", longitude: "20.40" }).far,
       false
     ));
   it("answers nulls without data", () =>

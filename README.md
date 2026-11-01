@@ -1,12 +1,12 @@
 # stevanpavlovic.com
 
-My personal site: a contact card over a painted WebGL sky of Vienna, a work page, an about page, a blog (no posts yet), and a Worker that answers questions about my CV and posts.
+My personal site: a contact card over a painted WebGL sky of Belgrade, a work page, an about page, a blog (no posts yet), and a Worker that answers questions about my CV and posts.
 
 **Live:** [stevanpavlovic.com](https://stevanpavlovic.com)
 
 ## What is in it
 
-- **Painted sky.** The home page has a hand-written WebGL sky in a painted style: the real Vienna sun and moon (with its phase), the live weather for Vienna or, if you share it, for your own place (rounded to about 10 km, kept only on your device), a band of space with stars at the top and paper grain. The other pages show the same painted sky, always at night, with light rays from the top left, and the sun glides between the two.
+- **Painted sky.** The home page has a hand-written WebGL sky in a painted style: the real Belgrade sun and moon (with its phase), the live weather for Belgrade or, if you share it, for your own place (rounded to about 10 km, kept only on your device), a band of space with stars at the top and paper grain. The other pages show the same painted sky, always at night, with light rays from the top left, and the sun glides between the two.
 - **Glass controls.** The home buttons, tooltips and panels are translucent glass that reads on a day or a night sky.
 - **Play with the sky.** The home footer panel has three tabs: Stevan's live sky, Mine (your location, or a pick on a small 3D night globe) and Custom (any hour and any weather).
 - **Work.** [/work](https://stevanpavlovic.com/work) lists my products and open-source projects.

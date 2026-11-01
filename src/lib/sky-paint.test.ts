@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { type LatLon, vienna } from "./geo.ts";
+import { belgrade, type LatLon } from "./geo.ts";
 import { lutCols, lutRows, type SkyTable } from "./sky-light.ts";
 import { paintSkyShader } from "./sky-paint-shader.ts";
 import {
@@ -54,7 +54,7 @@ const paint = (
   weather: SkyWeather = fallbackWeather,
   table?: SkyTable,
   view: ViewSize = laptop
-): PaintScene => paintScene(Date.parse(iso), view, weather, vienna, table);
+): PaintScene => paintScene(Date.parse(iso), view, weather, belgrade, table);
 
 const spread = (c: readonly number[]): number =>
   Math.max(...c) - Math.min(...c);
@@ -292,7 +292,7 @@ describe("paintScene", () => {
       Date.parse("2026-10-19T13:30:00Z"),
       laptop,
       weatherPresets.clear,
-      vienna
+      belgrade
     );
     const [r, g, b] = hexBytes(paintPalettes.night.top);
     assert.equal(scene.lutMix, 0);
@@ -301,12 +301,12 @@ describe("paintScene", () => {
 
   it("gives the table the same aim as the scene", () => {
     const at = Date.parse("2026-10-19T15:16:00Z");
-    const input = tableInput(at, laptop, weatherPresets.clear, vienna);
-    const scene = paintScene(at, laptop, weatherPresets.clear, vienna);
+    const input = tableInput(at, laptop, weatherPresets.clear, belgrade);
+    const scene = paintScene(at, laptop, weatherPresets.clear, belgrade);
     const sunAt = projectSight(input.sun, input.center, laptop);
     near(sunAt.x, scene.sun[0], 1e-6);
     near(sunAt.y, scene.sun[1], 1e-6);
-    near(input.sun.altitude, 6.02, 0.05);
+    near(input.sun.altitude, 4.62, 0.05);
     assert.equal(input.haze, weatherPresets.clear.haze);
     assert.equal(input.view, laptop);
   });
@@ -316,13 +316,13 @@ describe("paintScene", () => {
       Date.parse("2026-01-20T23:00:00+01:00"),
       laptop,
       fallbackWeather,
-      vienna
+      belgrade
     );
     assert.equal(scene.moon[3], 0);
     assert.equal(scene.moonGlow, 0);
   });
 
-  it("gives finite scenes far from Vienna", () => {
+  it("gives finite scenes far from Belgrade", () => {
     const noon = Date.parse("2026-10-19T12:00:00+02:00");
     const cases: Array<[LatLon, number]> = [
       [{ lat: -33.9, lon: 151.2 }, noon],
@@ -342,7 +342,7 @@ describe("paintScene", () => {
       Date.parse("2026-10-19T13:00:00+02:00"),
       laptop,
       fallbackWeather,
-      vienna
+      belgrade
     );
     assert.equal(scene.corona[2], 0);
   });
@@ -385,7 +385,7 @@ describe("shotScene", () => {
     Date.parse("2026-08-28T04:00:00+02:00"),
     laptop,
     weatherPresets.clear,
-    vienna
+    belgrade
   );
   const night = nightScene(laptop, weatherPresets.clear);
   const spot = coronaSpot(laptop);
@@ -422,7 +422,7 @@ describe("shotScene", () => {
       Date.parse("2026-10-19T13:00:00+02:00"),
       laptop,
       weatherPresets.clear,
-      vienna
+      belgrade
     );
     const scene = shotScene(sunny, night, 0.5, pose);
     assert.deepEqual(scene.sun, [200, 500, sunny.sun[2]]);
@@ -442,7 +442,7 @@ describe("mixScene", () => {
     Date.parse("2026-10-19T13:00:00+02:00"),
     laptop,
     weatherPresets.clear,
-    vienna,
+    belgrade,
     stubTable
   );
   const night = nightScene(laptop, weatherPresets.overcast);
