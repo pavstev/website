@@ -23,8 +23,9 @@
     {
       "name": "worker",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "wrangler", "dev", "--port", "8787"],
-      "port": 8787
+      "runtimeArgs": ["exec", "wrangler", "dev", "--port", "8788"],
+      "port": 8788,
+      "autoPort": true
     }
   ]
 }
