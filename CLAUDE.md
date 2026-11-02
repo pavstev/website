@@ -1,15 +1,16 @@
 # CLAUDE.md
 
-Project facts only. The harness (commits, secrets, workflow, writing) comes from `~/dotfiles`.
-Path rules in `.claude/rules/` load when you touch matching files. Long notes: `docs/architecture.md`, `docs/theming.md`.
+Long notes: `docs/architecture.md`, `docs/theming.md`.
+
+Read MAP.md first to find where things live.
+
+**Agents:** before you spawn a helper here, read `.claude/AGENT-MAP.md` (who does which job, in what order).
 
 ## Stack gotchas
 
-- Astro 7 static with `build.format: "file"`. Node 24, pnpm 12.
+- Astro static with `build.format: "file"`.
 - One Cloudflare Worker serves `/mcp` and `/where`. three.js loads only in the lazy globe chunk.
 - Blog frontmatter dates must be quoted. The blog has no posts yet. The code, the 30 dev-only test posts and `pnpm dev:many` stay.
-- An Astro component renders at build time. A React component is an island only with a `client:` directive. Browser code reads `import.meta.env`.
-- Never edit `dist/`. Never commit `.env`.
 
 ## Owner rules
 
@@ -28,17 +29,13 @@ Path rules in `.claude/rules/` load when you touch matching files. Long notes: `
 
 ## Commands
 
-- The commit hook runs `pnpm check:fast --staged`. The push hook and CI run the full `pnpm check`.
 - Run `pnpm fix` early: the lint rules are strict.
-- `pnpm types` writes the gitignored `worker-configuration.d.ts` and the `.astro` types. It runs in `prepare` and at the start of `check`.
-- `pnpm dev:many` adds 30 generated test posts (`BLOG_FIXTURES=1`).
 - `pnpm profile:build` builds the GitHub profile files into `./.profile-out`. Never name a script `profile`.
 
 ## Non-negotiables
 
 - No comments, JSDoc, TODO, FIXME, XXX or HACK in source. Lint enforces the last four, not the first two.
 - Reuse existing components. Remove duplicates in every change.
-- Colors live once: CSS in `src/styles/tokens.css`, JS in `src/lib/theme.ts` and `src/lib/sky-palette.ts`. `theme.test.ts` fails on a literal elsewhere.
 - No inline UI strings: use `src/lib/i18n.ts`. Diagram copy lives in `src/lib/blog/diagrams.ts`.
 - Tailwind v4 paren syntax (`bg-(--surface)`), not brackets.
 
@@ -76,4 +73,3 @@ Path rules in `.claude/rules/` load when you touch matching files. Long notes: `
 - Run heavy audits once at the end, in the background. Measure speed on a throttled phone profile.
 - Worktrees: do not symlink `node_modules`. For your own browser runs open `http://localhost:4321`, not `127.0.0.1`.
 - The Claude in Chrome tab is hidden and ignores clicks. Run pointer flows in headless Playwright.
-- Reports, screenshots and one-off test scripts stay out of git.
