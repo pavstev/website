@@ -2,7 +2,7 @@
   "basics": {
     "email": "pavlovicmstevan@gmail.com",
     "githubHandle": "pavstev",
-    "headline": "Senior Software Engineer (Full Stack, AI Systems, Tech Lead)",
+    "headline": "Senior Full Stack Engineer (AI Agents, Tech Lead)",
     "linkedinHandle": "stevanpavlovic",
     "location": "Belgrade, Serbia",
     "name": "Stevan Pavlović",
@@ -46,19 +46,19 @@
         "contributions": [
           {
             "title": "",
+            "description": "Co-founded the company in October 2022 and have owned its technical strategy since the first plan: backend, frontend, infrastructure and, since 2025, the AI products. I interview engineers and lead hiring."
+          },
+          {
+            "title": "",
             "description": "Since September 2025, lead a team of five that builds AI voice agents, workflow automation and fleet optimization for trucking companies, built mostly with Claude, using harness and context engineering."
           },
           {
             "title": "",
-            "description": "Set the architecture of the fleet safety platform on Node.js, NestJS and Redis: pre-trip inspections, accident and damage reports, driver scorecards and live operational visibility."
+            "description": "Set the architecture of the fleet safety platform on Node.js, NestJS and Redis, from the mobile driver apps through real-time Redis pub/sub ingestion to the live operations dashboards: pre-trip inspections, accident reports, driver scorecards and compliance documents."
           },
           {
             "title": "",
-            "description": "Built real-time ingestion of vehicle and driver events with Redis pub/sub, from the mobile driver apps to the live operations dashboards."
-          },
-          {
-            "title": "",
-            "description": "Built scheduling, reminder and document modules that let fleet managers track regulatory renewals, inspections and maintenance compliance."
+            "description": "Built most of the app frontend. Moved safetyrealtime.com from Next.js to Astro: shipped JavaScript fell from about 142 KB to 2.5 KB gzipped per page. PageSpeed mobile performance 98 to 100, LCP 1.8 s, CLS 0 and SEO 100, measured with Lighthouse and web-vitals. I own its structured data, sitemaps and indexing."
           }
         ],
         "from": "Oct 2022",
@@ -90,19 +90,15 @@
           },
           {
             "title": "",
-            "description": "Made the settlement pipeline replay-safe with explicit idempotency keys."
+            "description": "Set up the React architecture of the real-time betting platform and led its move from Next.js to TanStack Router, for a smaller, faster bundle and fully typed routes and search params."
           },
           {
             "title": "",
-            "description": "Added staged rollouts and automated canary analysis for zero-downtime deployments through peak sporting events, plus tracing, structured logs and latency dashboards for faster incident diagnosis during live events."
-          },
-          {
-            "title": "",
-            "description": "Protected hot shards and kept reads fast at peak traffic."
+            "description": "Made the settlement pipeline replay-safe with idempotency keys. Added staged rollouts and automated canary analysis for zero-downtime deployments through peak sporting events, plus tracing, structured logs and latency dashboards for faster incident diagnosis."
           }
         ],
         "from": "Feb 2024",
-        "location": "Belgrade, Serbia",
+        "location": "Remote",
         "overview": "",
         "position": "Senior Software Engineer (B2B contract)",
         "skills": [
@@ -140,7 +136,7 @@
         "from": "Aug 2021",
         "location": "Remote",
         "overview": "",
-        "position": "Software Engineer",
+        "position": "Senior Back-end Developer",
         "skills": [
           "Node.js",
           "NestJS",
@@ -161,10 +157,6 @@
           {
             "title": "",
             "description": "Built automated video transcoding pipelines on AWS for a healthcare education platform, with idempotent retries, traceable state transitions and audit logging."
-          },
-          {
-            "title": "",
-            "description": "Split orchestration from media workers, and wrote AWS infrastructure as code."
           }
         ],
         "from": "Jan 2021",
@@ -188,7 +180,7 @@
         "contributions": [
           {
             "title": "",
-            "description": "Maintained the Symfony 4 core-banking monolith and architected Syllo, its NestJS microservice rewrite: bounded contexts, typed gRPC and Protobuf contracts, event-driven flows over Kafka and Redis, deployed on Kubernetes. First monolith parts moved within 5 months."
+            "description": "Made the case to the CTO for rewriting the Symfony 4 core-banking monolith in NestJS, then architected Syllo, the new service layer: bounded contexts, typed gRPC and Protobuf contracts, event-driven flows over Kafka and Redis, deployed on Kubernetes. First monolith parts moved within 5 months."
           },
           {
             "title": "",
@@ -196,7 +188,7 @@
           },
           {
             "title": "",
-            "description": "Led a team of two engineers across backend and frontend, maintained the whole architecture, advised the DevOps engineer, and mentored the team in NestJS and event-driven design."
+            "description": "Led a team of two engineers across backend and frontend, set the engineering standards, advised the DevOps engineer, and mentored the team through the move to Node.js, TypeScript, NestJS and event-driven design."
           }
         ],
         "from": "Jan 2020",
@@ -225,11 +217,11 @@
         "contributions": [
           {
             "title": "",
-            "description": "Worked for Catena Media on AskGamblers.com (150,000+ registered users): split legacy Symfony modules into cleaner service boundaries and cut resource use by up to 90% on high-load paths."
+            "description": "Worked for Catena Media on AskGamblers.com, an iGaming review platform with 150,000+ registered users and hundreds of thousands of monthly visits: split legacy Symfony modules into cleaner service boundaries and cut resource use by up to 90% on high-load paths."
           },
           {
             "title": "",
-            "description": "Removed PostgreSQL and Redis bottlenecks and tuned caching on SEO-critical public endpoints under hundreds of thousands of monthly visits."
+            "description": "Tuned response times and cache strategy on the SEO-critical public pages, and removed PostgreSQL and Redis bottlenecks."
           }
         ],
         "from": "Nov 2018",
@@ -258,7 +250,7 @@
           }
         ],
         "from": "Sep 2017",
-        "location": "Remote",
+        "location": "Belgrade, Serbia",
         "overview": "",
         "position": "Backend Developer",
         "skills": ["PHP", "Laravel", "JavaScript", "AWS", "Docker"],
@@ -299,7 +291,7 @@
           }
         ],
         "from": "Feb 2015",
-        "location": "Belgrade, Serbia",
+        "location": "Remote",
         "overview": "",
         "position": "Full Stack Web Developer (freelance)",
         "skills": ["PHP", "Laravel", "JavaScript", "MySQL", "HTML", "CSS"],
@@ -311,7 +303,7 @@
   "languages": {
     "items": [
       {
-        "fluency": "Full professional proficiency",
+        "fluency": "Full professional proficiency (C1)",
         "language": "English"
       },
       {
@@ -435,6 +427,7 @@
           "PostgreSQL",
           "Redis",
           "Apache Kafka",
+          "RabbitMQ",
           "Elasticsearch",
           "MySQL"
         ],
@@ -448,6 +441,7 @@
           "GitHub Actions",
           "Cloudflare Workers",
           "Infrastructure as code",
+          "Terraform",
           "Observability",
           "CI/CD"
         ],
@@ -463,6 +457,6 @@
       }
     ]
   },
-  "summary": "Software engineer with 11 years in backend systems: Node.js, NestJS, TypeScript, Kafka, PostgreSQL and Redis, across fintech, betting, healthtech and fleet logistics. Co-founder and part-time CTO of Safety Real Time, where since September 2025 I lead a team of five that builds AI voice agents and workflow automation for trucking fleets. I build with AI coding agents, and I care about evals, correctness and clear interfaces.",
-  "updatedAt": "2026-11-01T20:06:08.000+01:00"
+  "summary": "Software engineer with 11 years in backend and frontend: Node.js, NestJS, TypeScript, React, Kafka, PostgreSQL and Redis, across fintech, betting, healthtech and fleet logistics. Co-founder and part-time CTO of Safety Real Time: I have owned its technical strategy since 2022, and since September 2025 I lead a team of five that builds AI voice agents for trucking fleets. Ten engineers have reported to me directly across three companies. I build with AI coding agents and care about evals and correctness.",
+  "updatedAt": "2026-11-03T15:57:15.000+01:00"
 }
