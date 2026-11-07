@@ -332,6 +332,17 @@
   overflow: visible;
 }
 
+.work-mark-logo {
+  overflow: hidden;
+}
+
+.work-mark-logo img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  scale: 1.08;
+}
+
 .work-mark-day-hi {
   stop-color: var(--work-mark-day-hi);
 }

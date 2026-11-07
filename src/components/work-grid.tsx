@@ -13,6 +13,7 @@ import { type Product, productHost, productMeta } from "@/lib/products";
 import { fillText } from "@/lib/template";
 import {
   defaultWorkView,
+  repoLogo,
   type StoryEntry,
   storyEntry,
   updatedTime,
@@ -113,22 +114,37 @@ const StoryKey = ({
   </a>
 );
 
-const SiteKey = ({
+const OutKey = ({
+  href,
+  label,
+  logo,
+  name,
   newTabId,
-  product,
 }: {
+  href: string;
+  label: string;
+  logo?: string | undefined;
+  name?: string | undefined;
   newTabId: string;
-  product: Product;
 }): ReactElement => (
   <a
     aria-describedby={newTabId}
-    className="work-story-link work-site-link keycap-host focus-ring"
-    href={product.url}
+    aria-label={name ? fillText(en.repos.openAppLabel, { name }) : undefined}
+    className={`work-story-link keycap-host focus-ring${logo ? "" : "work-site-link"}`}
+    data-app-link=""
+    href={href}
     rel="noopener noreferrer"
     target="_blank"
   >
     <span className="keycap">
-      <span className="work-story-link-label">{productHost(product)}</span>
+      <span className="work-story-link-lead">
+        {logo ? (
+          <span aria-hidden="true" className="work-mark work-mark-logo">
+            <img alt="" decoding="async" height="64" src={logo} width="64" />
+          </span>
+        ) : null}
+        <span className="work-story-link-label">{label}</span>
+      </span>
       <Icon
         aria-hidden
         className="work-story-link-arrow"
@@ -138,6 +154,20 @@ const SiteKey = ({
     </span>
   </a>
 );
+
+const repoFoot = (repo: Repo, newTabId: string): ReactNode => {
+  const story = storyEntry(repo.name);
+  if (story) return <StoryKey name={repo.name} story={story} />;
+  return repo.homepage ? (
+    <OutKey
+      href={repo.homepage}
+      label={en.repos.openApp}
+      logo={repoLogo(repo.name)}
+      name={repo.name}
+      newTabId={newTabId}
+    />
+  ) : null;
+};
 
 interface CardShellProps {
   body: ReactNode;
@@ -221,7 +251,13 @@ const ProductCard = ({
       </>
     }
     featured={featured}
-    foot={<SiteKey newTabId={newTabId} product={product} />}
+    foot={
+      <OutKey
+        href={product.url}
+        label={productHost(product)}
+        newTabId={newTabId}
+      />
+    }
     group="products"
     name={product.name}
     newTabId={newTabId}
@@ -254,7 +290,7 @@ const RepoCard = ({
         </>
       }
       featured={featured}
-      foot={story ? <StoryKey name={repo.name} story={story} /> : null}
+      foot={repoFoot(repo, newTabId)}
       group="open-source"
       name={repo.name}
       newTabId={newTabId}

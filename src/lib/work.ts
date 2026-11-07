@@ -35,7 +35,7 @@ export const workConfig: WorkConfig = {
   repos: {
     hidden: [],
     max: 12,
-    pinned: ["website"],
+    pinned: ["website", "atelier"],
     stories: Object.fromEntries(
       storyEntries.map(({ key, path }) => [key, path])
     ),
@@ -52,6 +52,13 @@ export const storyEntry = (
     : undefined;
   return key && path ? { key, path } : undefined;
 };
+
+const repoLogos: Readonly<Record<string, string>> = {
+  atelier: "/work/atelier.svg",
+};
+
+export const repoLogo = (name: string): string | undefined =>
+  Object.hasOwn(repoLogos, name) ? repoLogos[name] : undefined;
 
 export const pickRepos = <T extends { name: string }>(
   repos: readonly T[],

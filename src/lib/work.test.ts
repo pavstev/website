@@ -7,6 +7,7 @@ import {
   parseWorkView,
   pickProducts,
   pickRepos,
+  repoLogo,
   sortWork,
   storyEntry,
   updatedTime,
@@ -74,10 +75,18 @@ describe("pickRepos", () => {
     pickRepos(repos, { hidden: ["alpha"], max: 1, pinned: ["website"] });
     assert.deepEqual(repos, copy);
   });
-  it("pins the website repo by default", () => {
-    assert.deepEqual(workConfig.repos.pinned, ["website"]);
+  it("pins the website and atelier repos by default", () => {
+    assert.deepEqual(workConfig.repos.pinned, ["website", "atelier"]);
     assert.equal(workConfig.repos.max, 12);
     assert.equal(names(pickRepos(repos))[0], "website");
+  });
+});
+
+describe("repoLogo", () => {
+  it("gives the logo of a repo that has one and nothing for others", () => {
+    assert.equal(repoLogo("atelier"), "/work/atelier.svg");
+    assert.equal(repoLogo("hirista"), undefined);
+    assert.equal(repoLogo("toString"), undefined);
   });
 });
 

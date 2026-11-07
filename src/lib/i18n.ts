@@ -259,6 +259,8 @@ export const en = {
     headingOne: "{count} open source project",
     headingOther: "{count} open source projects",
     newTab: "Opens in a new tab",
+    openApp: "Open the app",
+    openAppLabel: "Open the app: {name}",
     seeStory: "See the story",
     seeStoryLabel: "See the story: {name}",
     starsLabel: "stars",

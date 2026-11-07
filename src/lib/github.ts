@@ -12,6 +12,7 @@ export interface Contact {
 export interface Repo {
   description: string;
   forks: number;
+  homepage?: string | undefined;
   language?: string | undefined;
   languages: RepoLanguage[];
   name: string;
@@ -31,6 +32,7 @@ const RawRepoSchema = z.object({
   description: z.string().nullable(),
   fork: z.boolean(),
   forks_count: z.number(),
+  homepage: z.string().nullable().default(null),
   html_url: z.string(),
   language: z.string().nullable(),
   name: z.string(),
@@ -88,6 +90,11 @@ const api = "https://api.github.com";
 const pushedTime = (repo: RawRepo): number =>
   updatedTime(repo.pushed_at ?? undefined);
 
+const appUrl = (url: null | string): string | undefined => {
+  const parsed = URL.parse(url?.trim() ?? "");
+  return parsed?.protocol === "https:" ? parsed.href : undefined;
+};
+
 const selectRepos = (raw: RawRepo[], login: string): Repo[] =>
   pickRepos(
     raw
@@ -106,6 +113,7 @@ const selectRepos = (raw: RawRepo[], login: string): Repo[] =>
   ).map((repo) => ({
     description: repo.description?.trim() ?? "",
     forks: repo.forks_count,
+    homepage: appUrl(repo.homepage),
     language: repo.language ?? undefined,
     languages: repo.language ? [{ name: repo.language }] : [],
     name: repo.name,
