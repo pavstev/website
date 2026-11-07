@@ -34,6 +34,7 @@ const owner = "pavstev";
 const repoName = "dotfiles";
 const repoPath = `/repos/${owner}/${repoName}`;
 const repoVariables = { name: repoName, owner };
+const factsRef = "f10e9409598fb743a207265a92d83d302a3cd4e1";
 
 const TreeEntrySchema = z.object({ path: z.string(), type: z.string() });
 
@@ -58,9 +59,9 @@ const HooksSchema = z.object({ hooks: z.record(z.string(), z.unknown()) });
 
 const blobsQuery = `query ($owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {
-    hooks: object(expression: "HEAD:claude/settings.json") { ... on Blob { text } }
-    guard: object(expression: "HEAD:rust/agent-config/src/guard_checks.rs") { ... on Blob { text } }
-    cargo: object(expression: "HEAD:rust/agent-config/Cargo.toml") { ... on Blob { text } }
+    hooks: object(expression: "${factsRef}:claude/settings.json") { ... on Blob { text } }
+    guard: object(expression: "${factsRef}:rust/agent-config/src/guard_checks.rs") { ... on Blob { text } }
+    cargo: object(expression: "${factsRef}:rust/agent-config/Cargo.toml") { ... on Blob { text } }
   }
 }`;
 
@@ -125,7 +126,7 @@ export const getDotfilesFacts = async (
   fetchImpl: typeof fetch = fetch
 ): Promise<DotfilesFacts> => {
   const [treeData, blobData] = await Promise.all([
-    request(`${repoPath}/git/trees/HEAD?recursive=1`, fetchImpl),
+    request(`${repoPath}/git/trees/${factsRef}?recursive=1`, fetchImpl),
     graph(blobsQuery, repoVariables, fetchImpl),
   ]);
   const texts = parseBlobTexts(blobData);
