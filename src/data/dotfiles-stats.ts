@@ -1,7 +1,7 @@
 import { type CatalogSkill, type LoopPhase } from "../lib/story/skill-map.ts";
 
 export const storyMeta = {
-  updatedAt: "2026-10-27",
+  updatedAt: "2026-11-09",
 };
 
 export const skillCatalog = {
@@ -22,6 +22,11 @@ export const skillCatalog = {
       next: "ps:mic-drop",
       skill: "ps:autopilot",
       what: "Runs a brief to the end.",
+    },
+    {
+      next: "ps:review-panel",
+      skill: "ps:hub",
+      what: "Runs many tasks across projects at once.",
     },
     {
       next: "ps:review-panel",
@@ -80,6 +85,7 @@ export const skillCatalog = {
     },
     { skill: "ps:standup", what: "Yesterday, today and blockers from git." },
     { skill: "ps:draft-reply", what: "Drafts a reply, sends after yes." },
+    { skill: "ps:cleanup", what: "Frees disk space, asks once first." },
   ],
 } as const satisfies Record<
   LoopPhase,

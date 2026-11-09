@@ -4,9 +4,10 @@ import { describe, it } from "node:test";
 import {
   checkFacts,
   countGuardChecks,
+  countHarness,
+  countHomeFiles,
   countHookEvents,
   countRustPrograms,
-  countTree,
   parseBlobTexts,
   parseTree,
 } from "./dotfiles-facts.ts";
@@ -30,30 +31,36 @@ const blob = (path: string): { path: string; type: string } => ({
 });
 
 const entries = [
-  blob("claude/skills/ps_pick/SKILL.md"),
-  blob("claude/skills/README.md"),
-  blob("claude/agents/worker.md"),
-  blob("claude/agents/README.md"),
-  blob("claude/presets/pace/rules.md"),
-  blob("claude/output-styles/concise.md"),
-  blob("claude/output-styles/README.md"),
+  blob("plugins/ps/skills/pick/SKILL.md"),
+  blob("plugins/ps/skills/pick/scripts/pick.sh"),
+  blob("plugins/ps/skills/README.md"),
+  blob("plugins/ps/agents/worker.md"),
+  blob("plugins/ps/agents/README.md"),
+  blob("plugins/ps/presets/clock/rules.md"),
+  blob("plugins/ps/output-styles/concise.md"),
+  blob("plugins/ps/output-styles/README.md"),
   blob("home/.zshrc"),
 ];
 
-describe("countTree", () => {
-  it("counts files and path patterns", () => {
-    assert.deepEqual(countTree(entries), {
+describe("countHarness", () => {
+  it("counts the plugin paths", () => {
+    assert.deepEqual(countHarness(entries), {
       agents: 1,
-      homeFiles: 1,
       outputStyles: 1,
       presets: 1,
       skillNames: ["ps:pick"],
       skills: 1,
     });
   });
+});
+
+describe("countHomeFiles", () => {
+  it("counts files under home", () => {
+    assert.equal(countHomeFiles(entries), 1);
+  });
   it("does not count folders as files", () => {
     assert.equal(
-      countTree([...entries, { path: "home/.config", type: "tree" }]).homeFiles,
+      countHomeFiles([...entries, { path: "home/.config", type: "tree" }]),
       1
     );
   });
@@ -72,33 +79,34 @@ describe("parseTree", () => {
 });
 
 describe("parseBlobTexts", () => {
-  const data = {
-    data: {
-      repository: {
-        cargo: { text: "c" },
-        guard: { text: "g" },
-        hooks: { text: "h" },
-      },
-    },
+  const harness = {
+    cargo: { text: "c" },
+    guard: { text: "g" },
+    hooks: { text: "h" },
   };
-  it("reads the three texts", () => {
+  const data = { data: { dotfiles: { cargo: { text: "d" } }, harness } };
+  it("reads the four texts", () => {
     assert.deepEqual(parseBlobTexts(data), {
-      cargo: "c",
+      dotfilesCargo: "d",
       guard: "g",
+      harnessCargo: "c",
       hooks: "h",
     });
+  });
+  it("throws on a missing repository", () => {
+    assert.throws(() => parseBlobTexts({ data: { dotfiles: null, harness } }));
   });
   it("throws on a missing blob", () => {
     assert.throws(() =>
       parseBlobTexts({
-        data: { repository: { ...data.data.repository, cargo: null } },
+        data: { ...data.data, harness: { ...harness, cargo: null } },
       })
     );
   });
   it("throws on a blob without text", () => {
     assert.throws(() =>
       parseBlobTexts({
-        data: { repository: { ...data.data.repository, guard: {} } },
+        data: { ...data.data, harness: { ...harness, guard: {} } },
       })
     );
   });
@@ -117,9 +125,18 @@ describe("text counters", () => {
   it("counts the binaries of a Cargo manifest", () => {
     assert.equal(
       countRustPrograms(
-        '[package]\nname = "a"\n\n[[bin]]\nname = "a"\n\n[[bin]]\nname = "b"\n[[bench]]\n'
+        '[package]\nname = "a"\n\n[[bin]]\nname = "a"\n\n[[bin]]\nname = "b"\n[[bench]]\nname = "c"\n'
       ),
       2
+    );
+  });
+  it("counts a binary in two manifests once", () => {
+    assert.equal(
+      countRustPrograms(
+        '[[bin]]\nname = "dots"\n[[bin]]\nname = "port"\n',
+        '[[bin]]\npath = "src/guard.rs"\nname = "guard"\n[[bin]]\nname = "port"\n'
+      ),
+      3
     );
   });
 });

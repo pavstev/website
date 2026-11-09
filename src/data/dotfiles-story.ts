@@ -119,8 +119,8 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
       output: [
         "PASS links",
         "PASS settings-built",
-        "PASS bins-fresh",
-        "PASS guard-selftest",
+        "PASS plugin",
+        "PASS no-leak",
       ],
     },
   },
@@ -154,24 +154,25 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
   },
   c06: {
     eyebrow: "Agents",
-    line: "One source for every agent",
-    note: "Claude Code, Cursor and Opencode read the same rules, skills and agents from one folder. Claude gets symlinks. Cursor and Opencode get generated rules and agents with a marker that says they are ours. A file without the marker is yours and is never touched.",
+    line: "One plugin for every agent",
+    note: "The harness lives in its own public repo, tackroom. Claude Code and Cursor install it as a plugin, and Opencode gets a generated one. Generated files carry a marker that says they are ours. A file without the marker is yours and is never touched.",
     strip: {
-      command: 'rg -o "generated-by: dotfiles" .cursor/rules',
+      command:
+        'rg -o "generated-by: tackroom" .cursor/rules .cursor/agents/worker.md',
       output: [
-        ".cursor/rules/claude-global.mdc:generated-by: dotfiles",
-        ".cursor/rules/claude-output-style.mdc:generated-by: dotfiles",
+        ".cursor/rules/claude-global.mdc:generated-by: tackroom",
+        ".cursor/agents/worker.md:generated-by: tackroom",
       ],
     },
   },
   h1: {
     eyebrow: "The guard",
     line: "One tool call",
-    note: "A hook runs on every call and fails open. It hands the call to the guard, a Rust program of named checks. The router picks the model and the effort. A denied call comes back with the rule and the fix.",
+    note: "A hook runs on every call and fails open. It hands the call to the guard, a Rust program of named checks. The router picks the model and the effort. A risky call comes back fixed, or denied with the fix.",
     strip: {
-      command: "sh ~/.claude/hooks/rust-bin --hook guard pretool",
+      command: 'sh "$CLAUDE_PLUGIN_ROOT/bin/rust-bin" --hook guard pretool',
       output: [
-        "G14: bare sed -i on macOS eats the script as the backup suffix. Give a suffix: `sed -i '' 's/a/b/' f` (or `-i.bak`). Or use the Edit tool.",
+        "guard: a general-purpose subagent loads every tool and skill (about 60K tokens; `worker` starts near 15-20K). Use `worker` (edits, commands), `researcher` (web), `Explore` (search), `task-implementer` (one plan task) or `Plan` (planning).",
         "exit 2",
       ],
     },
@@ -179,14 +180,14 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
   h2: {
     eyebrow: "The ledger",
     line: "The token ledger",
-    note: "My time is the cost that counts, and tokens are the second cost. So the guard says no before a helper spends anything. Each row is one rule and the reason it exists. Together they make the weekly budget last all the work days.",
+    note: "My time is the cost that counts, and tokens are the second cost. So the guard says no before a helper spends anything. Each row is one rule and the reason it exists. Together they keep every session small and cheap.",
     strip: {
       output: [
         "preset   off: no tokens",
         "hook     sh, not bash: less time on every call",
         "router   opus: plans, final review. haiku: lookups. sonnet: the rest. xhigh, max: never",
-        "G8 G7    a few helpers at once, fewer when the week runs ahead. general-purpose: refused, much heavier",
-        "status   copper when the context runs full. hand off to a file",
+        "G7       general-purpose: refused, much heavier",
+        "G3       a full context: hand off to a file",
       ],
       title: "token ledger",
     },
@@ -194,10 +195,10 @@ export const stepCopy = (): Record<StepId, StoryCopy> => ({
   h3: {
     eyebrow: "The roster",
     line: "Every agent, pinned down",
-    note: "Skills such as askme, agents such as worker, presets I switch on and off. Each agent gets one model, one effort and only the tools it needs. Every hand-back starts with a status word and has a cap. A pre-commit check keeps the descriptions honest.",
+    note: "Skills such as askme, agents such as worker, presets I switch on and off. Each agent gets one model, one effort and only the tools it needs. Every hand-back starts with a status word and has a cap. A linter checks every skill.",
     strip: {
       command:
-        'rg "^(name|model|effort|tools|disallowedTools):" claude/agents/worker.md',
+        'rg "^(name|model|effort|tools|disallowedTools):" plugins/ps/agents/worker.md',
       output: [
         "name: worker",
         "model: sonnet",
@@ -242,7 +243,7 @@ export const sceneCounts = (facts: DotfilesFacts): SceneCounts => ({
 
 export const storyNames: { harness: StoryName[]; hero: StoryName[] } = {
   harness: [
-    { label: "sed -i, denied", value: "G14" },
+    { label: "sed -i, fixed", value: "G14" },
     { label: "plans, review", value: "opus" },
     { label: "lookups", value: "haiku" },
     { label: "the rest", value: "sonnet" },

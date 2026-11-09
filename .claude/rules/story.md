@@ -22,11 +22,11 @@ Siblings: `card.md` (the `/work` card), `motion.md`, `sky.md`. One page, not a f
 - Copy lives in `src/data/dotfiles-story.ts`. `src/data/dotfiles-stats.ts` holds `storyMeta.updatedAt` and `skillCatalog`. Move `storyMeta.updatedAt` on every copy or catalog edit: it is the sitemap `lastmod` and the `WebPage` `dateModified`.
 - Names, not counts (owner pick 2026-10-22): no line, note, name row or drawing label prints a number. The page names real things instead (tools, rules such as G14, agents, skills, models). The drawing still draws the live counts as shapes, never as digits. A new skill needs an entry in `skillCatalog` (a skill without one shows as new).
 - `copy-rules.ts` checks `line` and `note`, each skill's `what` and `flow`, and the poster facts: 3 to 7 words a line (the hero title excepted), no period at the end of a line, 2 to 4 sentences and 45 words a note, no em dash, no banned word, no question, no exclamation mark, no city, no number at all. Strips are real command output and are not checked.
-- Facts come from GitHub at build (`dotfiles-facts.ts`). A truncated tree, a missing blob or a count of 0 fails the build, so a moved file shows up at once.
+- Facts come from GitHub at build (`dotfiles-facts.ts`). Since 2026-11-09 two public repos feed it: `pavstev/dotfiles` gives `home/**` and `rust/agent-config/Cargo.toml`; `pavstev/tackroom` (the harness, once `agent-kit`) gives the skills, agents, presets, output styles, `plugins/ps/hooks/hooks.json` and `crates/agent-config/src/guard_checks.rs` and `Cargo.toml`. Rust programs count unique bin names across both manifests. A truncated tree, a missing blob or a count of 0 fails the build, so a moved file shows up at once.
 - The dotfiles repo links back: its GitHub homepage is `https://stevanpavlovic.com/work/dotfiles`, and its `AGENTS.md` lists the paths this page reads. Keep the route stable, or change the homepage and those links in the same step.
 - The share image `public/og-dotfiles.jpg` comes from `scripts/generate-images.ts`. It reads the facts, so CI needs `GITHUB_TOKEN`. `images.yml` also runs every Monday.
 - Every command strip shows a real command and its real output. A list that no command prints uses `title` instead of `command` (no `$` prompt).
-- Skill names come from the GitHub tree (`facts.skillNames`, the `claude/skills/ps_*/SKILL.md` paths). A name missing from the catalog gets phase `care` and the new copy, so a new skill never breaks the build.
+- Skill names come from the GitHub tree (`facts.skillNames`, the tackroom `plugins/ps/skills/*/SKILL.md` paths). A name missing from the catalog gets phase `care` and the new copy, so a new skill never breaks the build.
 - No usage data: the owner's own session stats never ship.
 
 ## Code rules
